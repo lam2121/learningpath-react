@@ -1,0 +1,6 @@
+export { LoginPage } from './page/LoginPage'
+export { LoginForm } from './component/LoginForm'
+export { RegisterPage } from './page/RegisterPage'
+export { RegisterForm } from './component/RegisterForm'
+export { ForgotPassPage } from './page/ForgotPassPage'
+export { ForgotPassForm } from './component/ForgotPassForm'
