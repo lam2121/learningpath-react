@@ -19,6 +19,7 @@ export function RegisterForm() {
 	const [agreedToTerms, setAgreedToTerms] = useState(false)
 	const [isLoading, setIsLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
+	const [success, setSuccess] = useState<string | null>(null)
 	const [form, setForm] = useState({
 		fullName: '',
 		email: '',
@@ -47,9 +48,21 @@ export function RegisterForm() {
 			setError('Passwords do not match.')
 			return
 		}
+		if (form.password.length < 6) {
+			setError('Mật khẩu phải dài từ 6 ký tự')
+			return
+		}
+		const passwordRegex =
+			/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
+
+		if (!passwordRegex.test(form.password)) {
+			setError('Mật khẩu cần có ít nhất 1 chữ hoa, chữ thường và kí tự đặc biệt.')
+			return
+		}
 
 		setIsLoading(true)
 		setError(null)
+		setSuccess(null)
 
 		try {
 			await registerUser({
@@ -57,8 +70,10 @@ export function RegisterForm() {
 				name: form.fullName,
 				password: form.password,
 			})
-			// Đăng ký thành công → chuyển hướng sang trang đăng nhập
-			await navigate({ to: '/login' })
+			await setSuccess('Đăng ký thành công')
+			setTimeout(() => {
+				navigate({ to: "/login" });
+			}, 1000); 1000
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Registration failed. Please try again.')
 		} finally {
@@ -190,6 +205,11 @@ export function RegisterForm() {
 				{error && (
 					<p className="register-error" role="alert">
 						{error}
+					</p>
+				)}
+				{success && (
+					<p className="register-success" role="alert">
+						{success}
 					</p>
 				)}
 

@@ -19,7 +19,11 @@ import { Menu, LogOut, History, User } from "lucide-react"
 import { useAuth } from "@/common/context/AuthContext"
 import { cn } from "@/shadcn/lib/util"
 import { TmaLogo } from "./TmaLogo"
+<<<<<<< HEAD
 import { APP_INFO} from "../../const/appConst"
+=======
+import { APP_INFO } from "../const/appConst"
+>>>>>>> 9b9ffe8 (chore:password requirements)
 import { UpskillsIcon } from "../../common/component/SocialMediaIcon";
 
 export function MainNavigationMenu() {
@@ -82,7 +86,7 @@ export function MainNavigationMenu() {
             <header className="bg-white top-0 w-full border-b-1 border-b-gray-300 fixed z-50">
                 <div className="flex items-center justify-between h-13 px-6 py-3">
                     <div className="flex items-center space-x-6">
-                    
+
                         <Link to={"/"} className="flex items-center space-x-3">
                             <UpskillsIcon className="w-10 h-10" />
                             <div className="font-semibold text-base text-sidebar-primary">{APP_INFO.APP_NAME} <span className="text-black"></span></div>
@@ -91,7 +95,7 @@ export function MainNavigationMenu() {
                         <NavigationMenu>
                             <NavigationMenuList className="hidden md:flex">
                                 <NavigationItems />
-                            </NavigationMenuList>   
+                            </NavigationMenuList>
                         </NavigationMenu>
                     </div>
 
@@ -99,8 +103,8 @@ export function MainNavigationMenu() {
                         {auth.isAuthenticated ? (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button 
-                                        variant="outline" 
+                                    <Button
+                                        variant="outline"
                                         className="text-[15px] flex items-center space-x-2"
                                     >
                                         <User className="w-4 h-4" />
@@ -144,8 +148,8 @@ export function MainNavigationMenu() {
 
                         <Sheet>
                             <SheetTrigger asChild>
-                                <Button 
-                                    variant="ghost" 
+                                <Button
+                                    variant="ghost"
                                     className="md:hidden text-sidebar-primary"
                                 >
                                     <Menu className="h-5 w-5" />
@@ -197,7 +201,7 @@ function MobileNav() {
                 <Link to="/" className={linkClass} activeProps={{ className: "bg-accent text-accent-foreground font-semibold" }}>
                     Home
                 </Link>
-                
+
                 <Link to="/test" className={linkClass} activeProps={{ className: "bg-accent text-accent-foreground font-semibold" }}>
                     Test
                 </Link>
