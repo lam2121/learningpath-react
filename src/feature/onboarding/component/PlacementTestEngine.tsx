@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import tmaLogo from '@/asset/image/tma_logo.png'
 import bannerBg from '@/asset/image/banner_background.png'
-import { PLACEMENT_QUESTIONS } from './placementTestData'
+import { PLACEMENT_QUESTIONS } from '../api/placementTestData'
 import { TestQuestionCard } from './TestQuestionCard'
-import type { QuestionResult } from './placementTestTypes'
+import type { QuestionResult } from '../api/placementTestTypes'
 
 const TOTAL = PLACEMENT_QUESTIONS.length // 24
 
@@ -165,11 +165,10 @@ export function PlacementTestEngine() {
               {[1, 2, 3, 4].map((step) => (
                 <div key={step} className="flex items-center">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                      step <= 3
-                        ? 'bg-blue-400 text-white shadow-md shadow-blue-900'
-                        : 'bg-white/10 text-white/40'
-                    }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${step <= 3
+                      ? 'bg-blue-400 text-white shadow-md shadow-blue-900'
+                      : 'bg-white/10 text-white/40'
+                      }`}
                   >
                     {step < 3 ? '✓' : step}
                   </div>
@@ -198,13 +197,12 @@ export function PlacementTestEngine() {
                 {PLACEMENT_QUESTIONS.map((_, i) => (
                   <div
                     key={i}
-                    className={`rounded-full transition-all duration-300 ${
-                      i === currentIndex
-                        ? 'w-5 h-2 bg-blue-300'
-                        : i < currentIndex
+                    className={`rounded-full transition-all duration-300 ${i === currentIndex
+                      ? 'w-5 h-2 bg-blue-300'
+                      : i < currentIndex
                         ? 'w-2 h-2 bg-blue-400/60'
                         : 'w-2 h-2 bg-white/20'
-                    }`}
+                      }`}
                   />
                 ))}
               </div>

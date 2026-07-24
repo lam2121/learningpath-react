@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import tmaLogo from '@/asset/image/tma_logo.png'
 import bannerBg from '@/asset/image/banner_background.png'
-import type { QuestionResult, SkillAxis } from './placementTestTypes'
+import type { QuestionResult, SkillAxis } from '../api/placementTestTypes'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -16,17 +16,17 @@ type AxisMap = Record<SkillAxis, AxisScore>
 // ─── Radar Chart (pure SVG) ───────────────────────────────────────────────────
 
 const AXES: { key: SkillAxis; label: string; labelEn: string }[] = [
-  { key: 'D_doc',     label: 'Tài liệu',   labelEn: 'D' },
-  { key: 'C_comm',    label: 'Giao tiếp',  labelEn: 'C' },
-  { key: 'T_trouble', label: 'Sự cố',      labelEn: 'T' },
-  { key: 'G_biz',     label: 'Thương mại', labelEn: 'G' },
+  { key: 'D_doc', label: 'Tài liệu', labelEn: 'D' },
+  { key: 'C_comm', label: 'Giao tiếp', labelEn: 'C' },
+  { key: 'T_trouble', label: 'Sự cố', labelEn: 'T' },
+  { key: 'G_biz', label: 'Thương mại', labelEn: 'G' },
 ]
 
 const AXIS_COLORS: Record<SkillAxis, string> = {
-  D_doc:     '#60a5fa',  // blue-400
-  C_comm:    '#34d399',  // emerald-400
+  D_doc: '#60a5fa',  // blue-400
+  C_comm: '#34d399',  // emerald-400
   T_trouble: '#f87171',  // rose-400
-  G_biz:     '#fbbf24',  // amber-400
+  G_biz: '#fbbf24',  // amber-400
 }
 
 function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
@@ -187,10 +187,10 @@ function computeAxisScores(results: QuestionResult[]): Record<SkillAxis, number>
 
 // Demo target (Intermediate level for PM — shown when no session data)
 const DEMO_TARGETS: Record<SkillAxis, number> = {
-  D_doc:     (20 / 100) * 78,  // 78 = intermediate total budget, then normalize to 100
-  C_comm:    (50 / 100) * 78,
+  D_doc: (20 / 100) * 78,  // 78 = intermediate total budget, then normalize to 100
+  C_comm: (50 / 100) * 78,
   T_trouble: (10 / 100) * 78,
-  G_biz:     (20 / 100) * 78,
+  G_biz: (20 / 100) * 78,
 }
 
 // Normalize targets to 0-100 scale for radar
@@ -225,10 +225,10 @@ function generateAISummary(scores: Record<SkillAxis, number>): string {
 // ─── Result Breakdown ─────────────────────────────────────────────────────────
 
 const AXIS_META_DISPLAY = [
-  { key: 'D_doc' as SkillAxis,     label: 'Tài liệu',    color: 'text-blue-300',    bar: 'bg-blue-400',    track: 'bg-blue-400/20' },
-  { key: 'C_comm' as SkillAxis,    label: 'Giao tiếp',   color: 'text-emerald-300', bar: 'bg-emerald-400', track: 'bg-emerald-400/20' },
-  { key: 'T_trouble' as SkillAxis, label: 'Sự cố',       color: 'text-rose-300',    bar: 'bg-rose-400',    track: 'bg-rose-400/20' },
-  { key: 'G_biz' as SkillAxis,     label: 'Thương mại',  color: 'text-amber-300',   bar: 'bg-amber-400',   track: 'bg-amber-400/20' },
+  { key: 'D_doc' as SkillAxis, label: 'Tài liệu', color: 'text-blue-300', bar: 'bg-blue-400', track: 'bg-blue-400/20' },
+  { key: 'C_comm' as SkillAxis, label: 'Giao tiếp', color: 'text-emerald-300', bar: 'bg-emerald-400', track: 'bg-emerald-400/20' },
+  { key: 'T_trouble' as SkillAxis, label: 'Sự cố', color: 'text-rose-300', bar: 'bg-rose-400', track: 'bg-rose-400/20' },
+  { key: 'G_biz' as SkillAxis, label: 'Thương mại', color: 'text-amber-300', bar: 'bg-amber-400', track: 'bg-amber-400/20' },
 ]
 
 // ─── Main Result View ─────────────────────────────────────────────────────────
@@ -244,31 +244,31 @@ export function PlacementResultView() {
   // Demo results for testing without going through the test
   const demoResults: QuestionResult[] = hasDemoData
     ? [
-        { questionId: 'd1', axis: 'D_doc',     difficulty: 1, selectedId: 'b', isCorrect: true  },
-        { questionId: 'd2', axis: 'D_doc',     difficulty: 1, selectedId: 'c', isCorrect: true  },
-        { questionId: 'd3', axis: 'D_doc',     difficulty: 2, selectedId: 'b', isCorrect: true  },
-        { questionId: 'd4', axis: 'D_doc',     difficulty: 2, selectedId: 'b', isCorrect: true  },
-        { questionId: 'd5', axis: 'D_doc',     difficulty: 3, selectedId: 'b', isCorrect: true  },
-        { questionId: 'd6', axis: 'D_doc',     difficulty: 3, selectedId: 'a', isCorrect: false },
-        { questionId: 'c1', axis: 'C_comm',    difficulty: 1, selectedId: 'b', isCorrect: true  },
-        { questionId: 'c2', axis: 'C_comm',    difficulty: 1, selectedId: 'b', isCorrect: true  },
-        { questionId: 'c3', axis: 'C_comm',    difficulty: 2, selectedId: 'c', isCorrect: true  },
-        { questionId: 'c4', axis: 'C_comm',    difficulty: 2, selectedId: 'a', isCorrect: false },
-        { questionId: 'c5', axis: 'C_comm',    difficulty: 3, selectedId: 'a', isCorrect: false },
-        { questionId: 'c6', axis: 'C_comm',    difficulty: 3, selectedId: 'b', isCorrect: true  },
-        { questionId: 't1', axis: 'T_trouble', difficulty: 1, selectedId: 'b', isCorrect: true  },
-        { questionId: 't2', axis: 'T_trouble', difficulty: 1, selectedId: 'b', isCorrect: true  },
-        { questionId: 't3', axis: 'T_trouble', difficulty: 2, selectedId: 'c', isCorrect: true  },
-        { questionId: 't4', axis: 'T_trouble', difficulty: 2, selectedId: 'a', isCorrect: false },
-        { questionId: 't5', axis: 'T_trouble', difficulty: 3, selectedId: 'c', isCorrect: false },
-        { questionId: 't6', axis: 'T_trouble', difficulty: 3, selectedId: 'b', isCorrect: true  },
-        { questionId: 'g1', axis: 'G_biz',     difficulty: 1, selectedId: 'c', isCorrect: true  },
-        { questionId: 'g2', axis: 'G_biz',     difficulty: 1, selectedId: 'c', isCorrect: true  },
-        { questionId: 'g3', axis: 'G_biz',     difficulty: 2, selectedId: 'b', isCorrect: true  },
-        { questionId: 'g4', axis: 'G_biz',     difficulty: 2, selectedId: 'a', isCorrect: false },
-        { questionId: 'g5', axis: 'G_biz',     difficulty: 3, selectedId: 'c', isCorrect: false },
-        { questionId: 'g6', axis: 'G_biz',     difficulty: 3, selectedId: 'b', isCorrect: true  },
-      ]
+      { questionId: 'd1', axis: 'D_doc', difficulty: 1, selectedId: 'b', isCorrect: true },
+      { questionId: 'd2', axis: 'D_doc', difficulty: 1, selectedId: 'c', isCorrect: true },
+      { questionId: 'd3', axis: 'D_doc', difficulty: 2, selectedId: 'b', isCorrect: true },
+      { questionId: 'd4', axis: 'D_doc', difficulty: 2, selectedId: 'b', isCorrect: true },
+      { questionId: 'd5', axis: 'D_doc', difficulty: 3, selectedId: 'b', isCorrect: true },
+      { questionId: 'd6', axis: 'D_doc', difficulty: 3, selectedId: 'a', isCorrect: false },
+      { questionId: 'c1', axis: 'C_comm', difficulty: 1, selectedId: 'b', isCorrect: true },
+      { questionId: 'c2', axis: 'C_comm', difficulty: 1, selectedId: 'b', isCorrect: true },
+      { questionId: 'c3', axis: 'C_comm', difficulty: 2, selectedId: 'c', isCorrect: true },
+      { questionId: 'c4', axis: 'C_comm', difficulty: 2, selectedId: 'a', isCorrect: false },
+      { questionId: 'c5', axis: 'C_comm', difficulty: 3, selectedId: 'a', isCorrect: false },
+      { questionId: 'c6', axis: 'C_comm', difficulty: 3, selectedId: 'b', isCorrect: true },
+      { questionId: 't1', axis: 'T_trouble', difficulty: 1, selectedId: 'b', isCorrect: true },
+      { questionId: 't2', axis: 'T_trouble', difficulty: 1, selectedId: 'b', isCorrect: true },
+      { questionId: 't3', axis: 'T_trouble', difficulty: 2, selectedId: 'c', isCorrect: true },
+      { questionId: 't4', axis: 'T_trouble', difficulty: 2, selectedId: 'a', isCorrect: false },
+      { questionId: 't5', axis: 'T_trouble', difficulty: 3, selectedId: 'c', isCorrect: false },
+      { questionId: 't6', axis: 'T_trouble', difficulty: 3, selectedId: 'b', isCorrect: true },
+      { questionId: 'g1', axis: 'G_biz', difficulty: 1, selectedId: 'c', isCorrect: true },
+      { questionId: 'g2', axis: 'G_biz', difficulty: 1, selectedId: 'c', isCorrect: true },
+      { questionId: 'g3', axis: 'G_biz', difficulty: 2, selectedId: 'b', isCorrect: true },
+      { questionId: 'g4', axis: 'G_biz', difficulty: 2, selectedId: 'a', isCorrect: false },
+      { questionId: 'g5', axis: 'G_biz', difficulty: 3, selectedId: 'c', isCorrect: false },
+      { questionId: 'g6', axis: 'G_biz', difficulty: 3, selectedId: 'b', isCorrect: true },
+    ]
     : results
 
   const actualScores = computeAxisScores(demoResults)
@@ -277,10 +277,10 @@ export function PlacementResultView() {
   const overallPct = Math.round((totalCorrect / totalQuestions) * 100)
 
   const axisMap: AxisMap = {
-    D_doc:     { actual: actualScores.D_doc,     target: normalizeTarget(DEMO_TARGETS.D_doc)     },
-    C_comm:    { actual: actualScores.C_comm,    target: normalizeTarget(DEMO_TARGETS.C_comm)    },
+    D_doc: { actual: actualScores.D_doc, target: normalizeTarget(DEMO_TARGETS.D_doc) },
+    C_comm: { actual: actualScores.C_comm, target: normalizeTarget(DEMO_TARGETS.C_comm) },
     T_trouble: { actual: actualScores.T_trouble, target: normalizeTarget(DEMO_TARGETS.T_trouble) },
-    G_biz:     { actual: actualScores.G_biz,     target: normalizeTarget(DEMO_TARGETS.G_biz)     },
+    G_biz: { actual: actualScores.G_biz, target: normalizeTarget(DEMO_TARGETS.G_biz) },
   }
 
   const aiSummary = generateAISummary(actualScores)
@@ -292,10 +292,10 @@ export function PlacementResultView() {
   }, [])
 
   function gradeLabel(pct: number): { label: string; color: string } {
-    if (pct >= 80) return { label: 'Xuất sắc',    color: 'text-emerald-300' }
-    if (pct >= 60) return { label: 'Tốt',         color: 'text-blue-300' }
+    if (pct >= 80) return { label: 'Xuất sắc', color: 'text-emerald-300' }
+    if (pct >= 60) return { label: 'Tốt', color: 'text-blue-300' }
     if (pct >= 40) return { label: 'Cần cải thiện', color: 'text-amber-300' }
-    return              { label: 'Cần nỗ lực',    color: 'text-rose-300' }
+    return { label: 'Cần nỗ lực', color: 'text-rose-300' }
   }
 
   return (

@@ -1,10 +1,10 @@
-import type { TestQuestion } from './placementTestTypes'
+import type { TestQuestion } from '../api/placementTestTypes'
 
 const AXIS_META: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  D_doc:     { label: 'Tài liệu', color: 'text-blue-300',    bg: 'bg-blue-500/20',    dot: 'bg-blue-400' },
-  C_comm:    { label: 'Giao tiếp', color: 'text-emerald-300', bg: 'bg-emerald-500/20', dot: 'bg-emerald-400' },
-  T_trouble: { label: 'Sự cố',    color: 'text-rose-300',    bg: 'bg-rose-500/20',    dot: 'bg-rose-400' },
-  G_biz:     { label: 'Thương mại', color: 'text-amber-300', bg: 'bg-amber-500/20',   dot: 'bg-amber-400' },
+  D_doc: { label: 'Tài liệu', color: 'text-blue-300', bg: 'bg-blue-500/20', dot: 'bg-blue-400' },
+  C_comm: { label: 'Giao tiếp', color: 'text-emerald-300', bg: 'bg-emerald-500/20', dot: 'bg-emerald-400' },
+  T_trouble: { label: 'Sự cố', color: 'text-rose-300', bg: 'bg-rose-500/20', dot: 'bg-rose-400' },
+  G_biz: { label: 'Thương mại', color: 'text-amber-300', bg: 'bg-amber-500/20', dot: 'bg-amber-400' },
 }
 
 const DIFFICULTY_LABEL: Record<number, string> = {
@@ -52,9 +52,8 @@ export function TestQuestionCard({
             {Array.from({ length: 3 }, (_, i) => (
               <div
                 key={i}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  i < question.difficulty ? axis.dot : 'bg-white/20'
-                }`}
+                className={`w-2 h-2 rounded-full transition-colors ${i < question.difficulty ? axis.dot : 'bg-white/20'
+                  }`}
               />
             ))}
             <span className="text-xs text-white/40 ml-1">{DIFFICULTY_LABEL[question.difficulty]}</span>
@@ -87,9 +86,8 @@ export function TestQuestionCard({
               >
                 {/* Option letter */}
                 <span
-                  className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-colors ${
-                    isSelected ? 'bg-white/20 text-white' : 'bg-white/10 text-white/50'
-                  }`}
+                  className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-colors ${isSelected ? 'bg-white/20 text-white' : 'bg-white/10 text-white/50'
+                    }`}
                 >
                   {optionLabels[idx]}
                 </span>
