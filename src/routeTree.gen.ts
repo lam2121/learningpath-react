@@ -9,13 +9,38 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SurveyRouteImport } from './routes/survey'
+import { Route as PlacementTestRouteImport } from './routes/placement-test'
+import { Route as PlacementResultRouteImport } from './routes/placement-result'
+import { Route as MilestoneRouteImport } from './routes/milestone'
 import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as ProtectedUserRouteImport } from './routes/_protected/_user'
 import { Route as authRegisterRouteImport } from './routes/(auth)/register'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
 import { Route as authForgotPasswordRouteImport } from './routes/(auth)/forgot-password'
 import { Route as ProtectedUserDashboardRouteImport } from './routes/_protected/_user/dashboard'
+import { Route as ProtectedUserOnboardingRoleSelectionRouteImport } from './routes/_protected/_user/onboarding/role-selection'
 
+const SurveyRoute = SurveyRouteImport.update({
+  id: '/survey',
+  path: '/survey',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlacementTestRoute = PlacementTestRouteImport.update({
+  id: '/placement-test',
+  path: '/placement-test',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlacementResultRoute = PlacementResultRouteImport.update({
+  id: '/placement-result',
+  path: '/placement-result',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MilestoneRoute = MilestoneRouteImport.update({
+  id: '/milestone',
+  path: '/milestone',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProtectedRoute = ProtectedRouteImport.update({
   id: '/_protected',
   getParentRoute: () => rootRouteImport,
@@ -44,45 +69,93 @@ const ProtectedUserDashboardRoute = ProtectedUserDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => ProtectedUserRoute,
 } as any)
+const ProtectedUserOnboardingRoleSelectionRoute =
+  ProtectedUserOnboardingRoleSelectionRouteImport.update({
+    id: '/onboarding/role-selection',
+    path: '/onboarding/role-selection',
+    getParentRoute: () => ProtectedUserRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
+  '/milestone': typeof MilestoneRoute
+  '/placement-result': typeof PlacementResultRoute
+  '/placement-test': typeof PlacementTestRoute
+  '/survey': typeof SurveyRoute
   '/forgot-password': typeof authForgotPasswordRoute
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
   '/dashboard': typeof ProtectedUserDashboardRoute
+  '/onboarding/role-selection': typeof ProtectedUserOnboardingRoleSelectionRoute
 }
 export interface FileRoutesByTo {
+  '/milestone': typeof MilestoneRoute
+  '/placement-result': typeof PlacementResultRoute
+  '/placement-test': typeof PlacementTestRoute
+  '/survey': typeof SurveyRoute
   '/forgot-password': typeof authForgotPasswordRoute
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
   '/dashboard': typeof ProtectedUserDashboardRoute
+  '/onboarding/role-selection': typeof ProtectedUserOnboardingRoleSelectionRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_protected': typeof ProtectedRouteWithChildren
+  '/milestone': typeof MilestoneRoute
+  '/placement-result': typeof PlacementResultRoute
+  '/placement-test': typeof PlacementTestRoute
+  '/survey': typeof SurveyRoute
   '/(auth)/forgot-password': typeof authForgotPasswordRoute
   '/(auth)/login': typeof authLoginRoute
   '/(auth)/register': typeof authRegisterRoute
   '/_protected/_user': typeof ProtectedUserRouteWithChildren
   '/_protected/_user/dashboard': typeof ProtectedUserDashboardRoute
+  '/_protected/_user/onboarding/role-selection': typeof ProtectedUserOnboardingRoleSelectionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/forgot-password' | '/login' | '/register' | '/dashboard'
+  fullPaths:
+    | '/milestone'
+    | '/placement-result'
+    | '/placement-test'
+    | '/survey'
+    | '/forgot-password'
+    | '/login'
+    | '/register'
+    | '/dashboard'
+    | '/onboarding/role-selection'
   fileRoutesByTo: FileRoutesByTo
-  to: '/forgot-password' | '/login' | '/register' | '/dashboard'
+  to:
+    | '/milestone'
+    | '/placement-result'
+    | '/placement-test'
+    | '/survey'
+    | '/forgot-password'
+    | '/login'
+    | '/register'
+    | '/dashboard'
+    | '/onboarding/role-selection'
   id:
     | '__root__'
     | '/_protected'
+    | '/milestone'
+    | '/placement-result'
+    | '/placement-test'
+    | '/survey'
     | '/(auth)/forgot-password'
     | '/(auth)/login'
     | '/(auth)/register'
     | '/_protected/_user'
     | '/_protected/_user/dashboard'
+    | '/_protected/_user/onboarding/role-selection'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   ProtectedRoute: typeof ProtectedRouteWithChildren
+  MilestoneRoute: typeof MilestoneRoute
+  PlacementResultRoute: typeof PlacementResultRoute
+  PlacementTestRoute: typeof PlacementTestRoute
+  SurveyRoute: typeof SurveyRoute
   authForgotPasswordRoute: typeof authForgotPasswordRoute
   authLoginRoute: typeof authLoginRoute
   authRegisterRoute: typeof authRegisterRoute
@@ -90,6 +163,34 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/survey': {
+      id: '/survey'
+      path: '/survey'
+      fullPath: '/survey'
+      preLoaderRoute: typeof SurveyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/placement-test': {
+      id: '/placement-test'
+      path: '/placement-test'
+      fullPath: '/placement-test'
+      preLoaderRoute: typeof PlacementTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/placement-result': {
+      id: '/placement-result'
+      path: '/placement-result'
+      fullPath: '/placement-result'
+      preLoaderRoute: typeof PlacementResultRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/milestone': {
+      id: '/milestone'
+      path: '/milestone'
+      fullPath: '/milestone'
+      preLoaderRoute: typeof MilestoneRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_protected': {
       id: '/_protected'
       path: ''
@@ -132,15 +233,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedUserDashboardRouteImport
       parentRoute: typeof ProtectedUserRoute
     }
+    '/_protected/_user/onboarding/role-selection': {
+      id: '/_protected/_user/onboarding/role-selection'
+      path: '/onboarding/role-selection'
+      fullPath: '/onboarding/role-selection'
+      preLoaderRoute: typeof ProtectedUserOnboardingRoleSelectionRouteImport
+      parentRoute: typeof ProtectedUserRoute
+    }
   }
 }
 
 interface ProtectedUserRouteChildren {
   ProtectedUserDashboardRoute: typeof ProtectedUserDashboardRoute
+  ProtectedUserOnboardingRoleSelectionRoute: typeof ProtectedUserOnboardingRoleSelectionRoute
 }
 
 const ProtectedUserRouteChildren: ProtectedUserRouteChildren = {
   ProtectedUserDashboardRoute: ProtectedUserDashboardRoute,
+  ProtectedUserOnboardingRoleSelectionRoute:
+    ProtectedUserOnboardingRoleSelectionRoute,
 }
 
 const ProtectedUserRouteWithChildren = ProtectedUserRoute._addFileChildren(
@@ -161,6 +272,10 @@ const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   ProtectedRoute: ProtectedRouteWithChildren,
+  MilestoneRoute: MilestoneRoute,
+  PlacementResultRoute: PlacementResultRoute,
+  PlacementTestRoute: PlacementTestRoute,
+  SurveyRoute: SurveyRoute,
   authForgotPasswordRoute: authForgotPasswordRoute,
   authLoginRoute: authLoginRoute,
   authRegisterRoute: authRegisterRoute,
