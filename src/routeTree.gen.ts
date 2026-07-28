@@ -10,6 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as PlacementTestRouteImport } from './routes/placement-test'
+import { Route as PlacementResultRouteImport } from './routes/placement-result'
+import { Route as MilestoneRouteImport } from './routes/milestone'
 import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminTracksRouteImport } from './routes/admin/tracks'
@@ -23,10 +26,27 @@ import { Route as authForgotPasswordRouteImport } from './routes/(auth)/forgot-p
 import { Route as ProtectedQuizFinalRouteImport } from './routes/_protected/quiz.final'
 import { Route as ProtectedUserDashboardRouteImport } from './routes/_protected/_user/dashboard'
 import { Route as ProtectedQuizQuizTypeTargetIdRouteImport } from './routes/_protected/quiz.$quizType.$targetId'
+import { Route as ProtectedUserOnboardingSurveyRouteImport } from './routes/_protected/_user/onboarding/survey'
+import { Route as ProtectedUserOnboardingRoleSelectionRouteImport } from './routes/_protected/_user/onboarding/role-selection'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlacementTestRoute = PlacementTestRouteImport.update({
+  id: '/placement-test',
+  path: '/placement-test',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlacementResultRoute = PlacementResultRouteImport.update({
+  id: '/placement-result',
+  path: '/placement-result',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MilestoneRoute = MilestoneRouteImport.update({
+  id: '/milestone',
+  path: '/milestone',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProtectedRoute = ProtectedRouteImport.update({
@@ -93,9 +113,24 @@ const ProtectedQuizQuizTypeTargetIdRoute =
     path: '/quiz/$quizType/$targetId',
     getParentRoute: () => ProtectedRoute,
   } as any)
+const ProtectedUserOnboardingSurveyRoute =
+  ProtectedUserOnboardingSurveyRouteImport.update({
+    id: '/onboarding/survey',
+    path: '/onboarding/survey',
+    getParentRoute: () => ProtectedUserRoute,
+  } as any)
+const ProtectedUserOnboardingRoleSelectionRoute =
+  ProtectedUserOnboardingRoleSelectionRouteImport.update({
+    id: '/onboarding/role-selection',
+    path: '/onboarding/role-selection',
+    getParentRoute: () => ProtectedUserRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
+  '/milestone': typeof MilestoneRoute
+  '/placement-result': typeof PlacementResultRoute
+  '/placement-test': typeof PlacementTestRoute
   '/forgot-password': typeof authForgotPasswordRoute
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
@@ -107,8 +142,13 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof ProtectedUserDashboardRoute
   '/quiz/final': typeof ProtectedQuizFinalRoute
   '/quiz/$quizType/$targetId': typeof ProtectedQuizQuizTypeTargetIdRoute
+  '/onboarding/role-selection': typeof ProtectedUserOnboardingRoleSelectionRoute
+  '/onboarding/survey': typeof ProtectedUserOnboardingSurveyRoute
 }
 export interface FileRoutesByTo {
+  '/milestone': typeof MilestoneRoute
+  '/placement-result': typeof PlacementResultRoute
+  '/placement-test': typeof PlacementTestRoute
   '/forgot-password': typeof authForgotPasswordRoute
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
@@ -120,11 +160,16 @@ export interface FileRoutesByTo {
   '/dashboard': typeof ProtectedUserDashboardRoute
   '/quiz/final': typeof ProtectedQuizFinalRoute
   '/quiz/$quizType/$targetId': typeof ProtectedQuizQuizTypeTargetIdRoute
+  '/onboarding/role-selection': typeof ProtectedUserOnboardingRoleSelectionRoute
+  '/onboarding/survey': typeof ProtectedUserOnboardingSurveyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_protected': typeof ProtectedRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/milestone': typeof MilestoneRoute
+  '/placement-result': typeof PlacementResultRoute
+  '/placement-test': typeof PlacementTestRoute
   '/(auth)/forgot-password': typeof authForgotPasswordRoute
   '/(auth)/login': typeof authLoginRoute
   '/(auth)/register': typeof authRegisterRoute
@@ -137,11 +182,16 @@ export interface FileRoutesById {
   '/_protected/_user/dashboard': typeof ProtectedUserDashboardRoute
   '/_protected/quiz/final': typeof ProtectedQuizFinalRoute
   '/_protected/quiz/$quizType/$targetId': typeof ProtectedQuizQuizTypeTargetIdRoute
+  '/_protected/_user/onboarding/role-selection': typeof ProtectedUserOnboardingRoleSelectionRoute
+  '/_protected/_user/onboarding/survey': typeof ProtectedUserOnboardingSurveyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/admin'
+    | '/milestone'
+    | '/placement-result'
+    | '/placement-test'
     | '/forgot-password'
     | '/login'
     | '/register'
@@ -153,8 +203,13 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/quiz/final'
     | '/quiz/$quizType/$targetId'
+    | '/onboarding/role-selection'
+    | '/onboarding/survey'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/milestone'
+    | '/placement-result'
+    | '/placement-test'
     | '/forgot-password'
     | '/login'
     | '/register'
@@ -166,10 +221,15 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/quiz/final'
     | '/quiz/$quizType/$targetId'
+    | '/onboarding/role-selection'
+    | '/onboarding/survey'
   id:
     | '__root__'
     | '/_protected'
     | '/admin'
+    | '/milestone'
+    | '/placement-result'
+    | '/placement-test'
     | '/(auth)/forgot-password'
     | '/(auth)/login'
     | '/(auth)/register'
@@ -182,11 +242,16 @@ export interface FileRouteTypes {
     | '/_protected/_user/dashboard'
     | '/_protected/quiz/final'
     | '/_protected/quiz/$quizType/$targetId'
+    | '/_protected/_user/onboarding/role-selection'
+    | '/_protected/_user/onboarding/survey'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   ProtectedRoute: typeof ProtectedRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
+  MilestoneRoute: typeof MilestoneRoute
+  PlacementResultRoute: typeof PlacementResultRoute
+  PlacementTestRoute: typeof PlacementTestRoute
   authForgotPasswordRoute: typeof authForgotPasswordRoute
   authLoginRoute: typeof authLoginRoute
   authRegisterRoute: typeof authRegisterRoute
@@ -199,6 +264,27 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/placement-test': {
+      id: '/placement-test'
+      path: '/placement-test'
+      fullPath: '/placement-test'
+      preLoaderRoute: typeof PlacementTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/placement-result': {
+      id: '/placement-result'
+      path: '/placement-result'
+      fullPath: '/placement-result'
+      preLoaderRoute: typeof PlacementResultRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/milestone': {
+      id: '/milestone'
+      path: '/milestone'
+      fullPath: '/milestone'
+      preLoaderRoute: typeof MilestoneRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_protected': {
@@ -292,15 +378,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedQuizQuizTypeTargetIdRouteImport
       parentRoute: typeof ProtectedRoute
     }
+    '/_protected/_user/onboarding/survey': {
+      id: '/_protected/_user/onboarding/survey'
+      path: '/onboarding/survey'
+      fullPath: '/onboarding/survey'
+      preLoaderRoute: typeof ProtectedUserOnboardingSurveyRouteImport
+      parentRoute: typeof ProtectedUserRoute
+    }
+    '/_protected/_user/onboarding/role-selection': {
+      id: '/_protected/_user/onboarding/role-selection'
+      path: '/onboarding/role-selection'
+      fullPath: '/onboarding/role-selection'
+      preLoaderRoute: typeof ProtectedUserOnboardingRoleSelectionRouteImport
+      parentRoute: typeof ProtectedUserRoute
+    }
   }
 }
 
 interface ProtectedUserRouteChildren {
   ProtectedUserDashboardRoute: typeof ProtectedUserDashboardRoute
+  ProtectedUserOnboardingRoleSelectionRoute: typeof ProtectedUserOnboardingRoleSelectionRoute
+  ProtectedUserOnboardingSurveyRoute: typeof ProtectedUserOnboardingSurveyRoute
 }
 
 const ProtectedUserRouteChildren: ProtectedUserRouteChildren = {
   ProtectedUserDashboardRoute: ProtectedUserDashboardRoute,
+  ProtectedUserOnboardingRoleSelectionRoute:
+    ProtectedUserOnboardingRoleSelectionRoute,
+  ProtectedUserOnboardingSurveyRoute: ProtectedUserOnboardingSurveyRoute,
 }
 
 const ProtectedUserRouteWithChildren = ProtectedUserRoute._addFileChildren(
@@ -344,6 +449,9 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   ProtectedRoute: ProtectedRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
+  MilestoneRoute: MilestoneRoute,
+  PlacementResultRoute: PlacementResultRoute,
+  PlacementTestRoute: PlacementTestRoute,
   authForgotPasswordRoute: authForgotPasswordRoute,
   authLoginRoute: authLoginRoute,
   authRegisterRoute: authRegisterRoute,
