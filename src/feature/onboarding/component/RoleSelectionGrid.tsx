@@ -281,9 +281,9 @@ export function RoleSelectionGrid() {
   function handleConfirm() {
     if (!selectedRoleId) return
     // Navigate to the next onboarding step (survey)
-    // For now, navigate to dashboard as placeholder
-    navigate({ to: '/dashboard' })
+    navigate({ to: '/onboarding/survey' })
   }
+
 
   return (
     <div

@@ -5,6 +5,8 @@ import { FacebookIcon, GoogleIcon } from '@/common/component/SocialMediaIcon'
 import { loginUser } from '../api/authAPI'
 import { saveUserSession } from '../helper/authHelper'
 import { useAuth } from '@/common/context/AuthContext'
+import { fetchOnboardingStatus } from '@/feature/onboarding/api/onboardingApi'
+
 // GitHub icon (not in SocialMediaIcon.tsx, add inline)
 const GithubIcon = ({ className }: { className?: string }) => (
 	<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={`w-4 h-4 ${className ?? ''}`}>
@@ -42,8 +44,16 @@ export function LoginForm() {
 			// 3. Sync AuthContext so the rest of the app sees the logged-in user
 			await refreshAuth()
 
-			// 4. Redirect to the dashboard
-			await navigate({ to: '/dashboard' })
+			// 4. Check if user has finished survey
+			const status = await fetchOnboardingStatus().catch(() => ({ has_completed_survey: false }))
+
+			if (status.has_completed_survey) {
+				await navigate({ to: '/placement-test' })
+			} else {
+				await navigate({ to: '/onboarding/role-selection' })
+			}
+
+
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Đăng nhập thất bại. Vui lòng thử lại.')
 		} finally {

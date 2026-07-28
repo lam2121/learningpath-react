@@ -2,34 +2,26 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import tmaLogo from '@/asset/image/tma_logo.png'
 import bannerBg from '@/asset/image/banner_background.png'
+import {
+  fetchSurveyQuestions,
+  submitSurveyAnswers,
+  type SurveyQuestion,
+  type SkillAxis,
+  type SubQuestion,
+} from '../api/onboardingApi'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-type SkillAxis = 'D_doc' | 'C_comm' | 'T_trouble' | 'G_biz'
-
-interface SubQuestion {
-  question: string
-  options: { id: string; label: string }[]
-}
-
-interface SurveyQuestion {
-  id: string
-  axis: SkillAxis
-  question: string
-  context: string
-  subQuestion: SubQuestion // shown when rating >= 8
-}
 
 interface Answer {
   rating: number | null
   subAnswer: string | null // option id
 }
 
-// ─── Survey Data (spec: TOEIC_Phase2_Task1.1_ver1.4.html) ────────────────────
+// ─── Fallback Survey Data ──────────────────────────────────────────────────
 
-const QUESTIONS: SurveyQuestion[] = [
+const FALLBACK_QUESTIONS: SurveyQuestion[] = [
   {
-    id: 'q1',
+    id: '1',
     axis: 'C_comm',
     question: 'Bạn thường xuyên tham gia họp với khách hàng nước ngoài ở mức nào?',
     context: 'Bao gồm: Daily stand-up, Sprint review, Kick-off meeting, Retrospective...',
@@ -43,7 +35,7 @@ const QUESTIONS: SurveyQuestion[] = [
     },
   },
   {
-    id: 'q2',
+    id: '2',
     axis: 'C_comm',
     question: 'Bạn phải thuyết trình hoặc demo giải pháp cho khách hàng thường xuyên đến mức nào?',
     context: 'Bao gồm: Demo tính năng mới, bảo vệ kiến trúc, trình bày kết quả Sprint...',
@@ -57,7 +49,7 @@ const QUESTIONS: SurveyQuestion[] = [
     },
   },
   {
-    id: 'q3',
+    id: '3',
     axis: 'D_doc',
     question: 'Bạn có thường xuyên viết tài liệu kỹ thuật hoặc báo cáo bằng tiếng Anh không?',
     context: 'Bao gồm: Technical Spec, Bug report, Meeting minutes, Weekly report...',
@@ -71,7 +63,7 @@ const QUESTIONS: SurveyQuestion[] = [
     },
   },
   {
-    id: 'q4',
+    id: '4',
     axis: 'T_trouble',
     question: 'Mức độ thường xuyên bạn phải xử lý và báo cáo sự cố kỹ thuật với khách hàng?',
     context: 'Bao gồm: Production outage, SLA breach, Bug escalation, Post-mortem...',
@@ -85,7 +77,7 @@ const QUESTIONS: SurveyQuestion[] = [
     },
   },
   {
-    id: 'q5',
+    id: '5',
     axis: 'G_biz',
     question: 'Bạn có tham gia đàm phán yêu cầu hoặc thương thảo hợp đồng với đối tác không?',
     context: 'Bao gồm: Scope negotiation, Deadline extension, Budget discussion...',
@@ -99,7 +91,7 @@ const QUESTIONS: SurveyQuestion[] = [
     },
   },
   {
-    id: 'q6',
+    id: '6',
     axis: 'C_comm',
     question: 'Tần suất bạn viết email giao tiếp với khách hàng hoặc đối tác nước ngoài?',
     context: 'Bao gồm: Status update email, apology email, proposal, follow-up...',
@@ -189,10 +181,11 @@ function SubQuestionPanel({
   selected,
   onSelect,
 }: {
-  subQ: SubQuestion
+  subQ?: SubQuestion
   selected: string | null
   onSelect: (id: string) => void
 }) {
+  if (!subQ) return null
   return (
     <div className="mt-6 animate-in fade-in slide-in-from-top-3 duration-400">
       <div className="flex items-center gap-2 mb-3">
@@ -228,7 +221,13 @@ function SubQuestionPanel({
 
 // ─── Summary / Result View ────────────────────────────────────────────────────
 
-function SurveyResult({ answers }: { answers: Record<string, Answer> }) {
+function SurveyResult({
+  questions,
+  answers
+}: {
+  questions: SurveyQuestion[]
+  answers: Record<string, Answer>
+}) {
   const navigate = useNavigate()
 
   // Compute axis averages
@@ -238,9 +237,9 @@ function SurveyResult({ answers }: { answers: Record<string, Answer> }) {
     T_trouble: { total: 0, count: 0 },
     G_biz: { total: 0, count: 0 },
   }
-  QUESTIONS.forEach((q) => {
+  questions.forEach((q) => {
     const a = answers[q.id]
-    if (a?.rating !== null && a?.rating !== undefined) {
+    if (a?.rating !== null && a?.rating !== undefined && axisScores[q.axis]) {
       axisScores[q.axis].total += a.rating
       axisScores[q.axis].count += 1
     }
@@ -264,7 +263,7 @@ function SurveyResult({ answers }: { answers: Record<string, Answer> }) {
           const { total, count } = axisScores[axis]
           const avg = count > 0 ? total / count : 0
           const pct = (avg / 10) * 100
-          const cfg = AXIS_CONFIG[axis]
+          const cfg = AXIS_CONFIG[axis] ?? { label: axis, color: 'text-blue-300', bg: 'bg-blue-500/20', dot: 'bg-blue-400' }
           return (
             <div key={axis}>
               <div className="flex justify-between items-center mb-1.5">
@@ -275,7 +274,7 @@ function SurveyResult({ answers }: { answers: Record<string, Answer> }) {
               </div>
               <div className="h-3 bg-white/10 rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-700 ${cfg.dot.replace('bg-', 'bg-')}`}
+                  className={`h-full rounded-full transition-all duration-700 ${cfg.dot}`}
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -285,23 +284,25 @@ function SurveyResult({ answers }: { answers: Record<string, Answer> }) {
       </div>
 
       {/* Sub-answers summary */}
-      {QUESTIONS.some((q) => answers[q.id]?.subAnswer) && (
+      {questions.some((q) => answers[q.id]?.subAnswer) && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 mb-8">
           <p className="text-amber-300 text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2">
             <span>⚡</span> Điểm cần cải thiện sâu
           </p>
           <div className="space-y-2">
-            {QUESTIONS.map((q) => {
+            {questions.map((q) => {
               const a = answers[q.id]
-              if (!a?.subAnswer) return null
-              const opt = q.subQuestion.options.find((o) => o.id === a.subAnswer)
+              if (!a?.subAnswer || !q.subQuestion) return null
+              const opt = q.subQuestion.options.find((o) => o.id === a.subAnswer || o.label === a.subAnswer)
+              const displayLabel = opt ? opt.label : a.subAnswer
               return (
                 <div key={q.id} className="flex items-start gap-2 text-sm text-white/80">
                   <span className="text-amber-400 mt-0.5 flex-shrink-0">→</span>
-                  <span>{opt?.label}</span>
+                  <span>{displayLabel}</span>
                 </div>
               )
             })}
+
           </div>
         </div>
       )}
@@ -323,30 +324,60 @@ function SurveyResult({ answers }: { answers: Record<string, Answer> }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function DynamicSurveyForm() {
+  const [questions, setQuestions] = useState<SurveyQuestion[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [answers, setAnswers] = useState<Record<string, Answer>>(
-    Object.fromEntries(QUESTIONS.map((q) => [q.id, { rating: null, subAnswer: null }]))
-  )
+  const [answers, setAnswers] = useState<Record<string, Answer>>({})
   const [direction, setDirection] = useState<'forward' | 'back'>('forward')
   const [animating, setAnimating] = useState(false)
   const [isDone, setIsDone] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
-  const total = QUESTIONS.length
-  const current = QUESTIONS[currentIndex]
+  useEffect(() => {
+    let isMounted = true
+    fetchSurveyQuestions()
+      .then((data) => {
+        if (!isMounted) return
+        if (data && data.length > 0) {
+          setQuestions(data)
+          setAnswers(Object.fromEntries(data.map((q) => [q.id, { rating: null, subAnswer: null }])))
+        } else {
+          setQuestions(FALLBACK_QUESTIONS)
+          setAnswers(Object.fromEntries(FALLBACK_QUESTIONS.map((q) => [q.id, { rating: null, subAnswer: null }])))
+        }
+        setIsLoading(false)
+      })
+      .catch((err) => {
+        if (!isMounted) return
+        console.warn('Could not fetch survey from backend API, using fallback questions:', err)
+        setQuestions(FALLBACK_QUESTIONS)
+        setAnswers(Object.fromEntries(FALLBACK_QUESTIONS.map((q) => [q.id, { rating: null, subAnswer: null }])))
+        setIsLoading(false)
+      })
+    return () => { isMounted = false }
+  }, [])
+
+  const total = questions.length
+  const current = questions[currentIndex]
   const currentAnswer = answers[current?.id ?? ''] ?? { rating: null, subAnswer: null }
   const needsSubAnswer =
-    (currentAnswer.rating ?? 0) >= DEEP_DIVE_THRESHOLD && currentAnswer.subAnswer === null
+    (currentAnswer.rating ?? 0) >= DEEP_DIVE_THRESHOLD && currentAnswer.subAnswer === null && Boolean(current?.subQuestion)
   const canProceed = currentAnswer.rating !== null && !needsSubAnswer
 
   function updateRating(rating: number) {
+    if (!current) return
     setAnswers((prev) => ({
       ...prev,
-      [current.id]: { ...prev[current.id], rating, subAnswer: rating < DEEP_DIVE_THRESHOLD ? null : prev[current.id].subAnswer },
+      [current.id]: {
+        ...prev[current.id],
+        rating,
+        subAnswer: rating < DEEP_DIVE_THRESHOLD ? null : prev[current.id]?.subAnswer ?? null,
+      },
     }))
   }
 
   function updateSubAnswer(subAnswer: string) {
+    if (!current) return
     setAnswers((prev) => ({
       ...prev,
       [current.id]: { ...prev[current.id], subAnswer },
@@ -378,6 +409,29 @@ export function DynamicSurveyForm() {
     animateTransition(() => setCurrentIndex((i) => i - 1))
   }
 
+  // Persist results on complete
+  useEffect(() => {
+    if (isDone && questions.length > 0) {
+      const payload = questions.map((q) => {
+        const a = answers[q.id]
+        let subAnswerText: string | null = null
+        if (a?.subAnswer) {
+          const opt = q.subQuestion?.options.find((o) => o.id === a.subAnswer || o.label === a.subAnswer)
+          subAnswerText = opt ? opt.label : a.subAnswer
+        }
+        return {
+          survey_id: parseInt(q.id, 10) || 1,
+          rating: a?.rating ?? 0,
+          sub_answer: subAnswerText,
+        }
+      })
+      submitSurveyAnswers({ user_id: 1, answers: payload }).catch((err) => {
+        console.warn('Failed to submit survey answers to API:', err)
+      })
+    }
+  }, [isDone, questions, answers])
+
+
   // Keyboard shortcut: Enter to proceed
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -387,8 +441,8 @@ export function DynamicSurveyForm() {
     return () => window.removeEventListener('keydown', onKey)
   }, [canProceed, currentIndex])
 
-  const progress = isDone ? 100 : ((currentIndex) / total) * 100
-  const axisConfig = current ? AXIS_CONFIG[current.axis] : null
+  const progress = isDone ? 100 : total > 0 ? (currentIndex / total) * 100 : 0
+  const axisConfig = current ? (AXIS_CONFIG[current.axis] ?? { label: current.axis, color: 'text-blue-300', bg: 'bg-blue-500/20', dot: 'bg-blue-400' }) : null
 
   return (
     <div
@@ -409,7 +463,6 @@ export function DynamicSurveyForm() {
 
       {/* Progress bar — top */}
       <div className="fixed top-0 left-0 right-0 z-30 h-1 bg-white/10">
-        
         <div
           className="h-full bg-gradient-to-r from-blue-400 to-cyan-400 transition-all duration-500"
           style={{ width: `${progress}%` }}
@@ -419,48 +472,51 @@ export function DynamicSurveyForm() {
       {/* Content */}
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-20">
         <div className="w-full max-w-lg">
-          {/* Header */}
-<div className="flex flex-col items-center mb-8">
-  {/* Progress Steps */}
-  <div className="flex items-center justify-center mb-6">
-    {[1, 2, 3, 4].map((step) => (
-      <div key={step} className="flex items-center">
-        <div
-          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-            step === 1 || step === 2
-              ? "bg-blue-400 text-white shadow-md shadow-blue-900"
-              : "bg-white/10 text-white/40"
-          }`}
-        >
-          {step === 1 ? "✓" : step}
-        </div>
+          {/* Header Stepper */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="flex items-center justify-center mb-6">
+              {[1, 2, 3, 4].map((step) => (
+                <div key={step} className="flex items-center">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                      step === 1 || step === 2
+                        ? "bg-blue-400 text-white shadow-md shadow-blue-900"
+                        : "bg-white/10 text-white/40"
+                    }`}
+                  >
+                    {step === 1 ? "✓" : step}
+                  </div>
 
-        {step < 4 && (
-          <div className="w-10 h-0.5 bg-white/20 mx-2 rounded-full" />
-        )}
-      </div>
-    ))}
-  </div>
+                  {step < 4 && (
+                    <div className="w-10 h-0.5 bg-white/20 mx-2 rounded-full" />
+                  )}
+                </div>
+              ))}
+            </div>
 
-  {/* Badge */}
-  <div className="flex justify-center w-full">
-    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-blue-200 text-sm font-medium">
-      <span className="w-2 h-2 rounded-full bg-blue-300 animate-pulse" />
-      Bước 2 / 4 — Thực Hiện Khảo Sát
-    </div>
-  </div>
-</div>
-          {isDone ? (
-            <SurveyResult answers={answers} />
-          ) : (
+            {/* Badge */}
+            <div className="flex justify-center w-full">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-blue-200 text-sm font-medium">
+                <span className="w-2 h-2 rounded-full bg-blue-300 animate-pulse" />
+                Bước 2 / 4 — Thực Hiện Khảo Sát
+              </div>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-12 shadow-2xl text-center">
+              <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-white font-medium text-sm">Đang tải câu hỏi khảo sát...</p>
+            </div>
+          ) : isDone ? (
+            <SurveyResult questions={questions} answers={answers} />
+          ) : current ? (
             <>
               {/* Step counter */}
               <div className="flex items-center justify-between mb-6">
-                
                 <div className="flex items-center gap-2">
-                  {/* Step dots */}
                   <div className="flex gap-1.5">
-                    {QUESTIONS.map((_, i) => (
+                    {questions.map((_, i) => (
                       <div
                         key={i}
                         className={`rounded-full transition-all duration-300 ${
@@ -508,7 +564,7 @@ export function DynamicSurveyForm() {
                 <RatingButtons value={currentAnswer.rating} onChange={updateRating} />
 
                 {/* Sub-question (deep-dive) */}
-                {(currentAnswer.rating ?? 0) >= DEEP_DIVE_THRESHOLD && (
+                {(currentAnswer.rating ?? 0) >= DEEP_DIVE_THRESHOLD && current.subQuestion && (
                   <SubQuestionPanel
                     subQ={current.subQuestion}
                     selected={currentAnswer.subAnswer}
@@ -566,7 +622,7 @@ export function DynamicSurveyForm() {
                 </p>
               )}
             </>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
