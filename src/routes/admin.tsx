@@ -21,6 +21,7 @@ function AdminSidebar() {
 					<Link
 						key={item.key}
 						to={item.href}
+						activeOptions={{ exact: true }}
 						activeProps={{ className: 'bg-blue-50 text-blue-700 border-blue-200' }}
 						className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900 border transition-colors"
 					>
