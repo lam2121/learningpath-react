@@ -31,9 +31,14 @@ export function LoginForm() {
 
 		try {
 			// 1. Call the API
+<<<<<<< HEAD
 			const data = await loginUser({ identifier: username, password })
 
 			// 2. Persist token + user info from login response
+=======
+			const data = await loginUser({ email: username, password, })
+			// 2. Persist token + build a minimal user object from the email
+>>>>>>> b39e8e1 (add ui lesson_user_profile)
 			saveUserSession({
 				access_token: data.access_token,
 				email: data.email,
@@ -86,7 +91,11 @@ export function LoginForm() {
 					<input
 						id="login-username"
 						type="text"
+<<<<<<< HEAD
 						placeholder="Username or email"
+=======
+						placeholder="Email"
+>>>>>>> b39e8e1 (add ui lesson_user_profile)
 						value={username}
 						onChange={(e) => setUsername(e.target.value)}
 						className="login-input"

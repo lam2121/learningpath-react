@@ -1,2 +1,1 @@
-export { MainPage } from './page/MainPage'
-export { MainDashboard } from './component/MainDashboard'
+export { UserProfile } from '../user-profile/page/user-profile'

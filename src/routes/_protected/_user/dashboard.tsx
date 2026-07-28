@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { MainPage } from '@/feature/learning-path/page/MainPage'
-
+import { CourseLoading } from '@/feature/onboarding/component/CourseLoading'
 export const Route = createFileRoute('/_protected/_user/dashboard')({
-	component: MainPage,
+	component: CourseLoading,
 })
