@@ -1,6 +1,6 @@
 {/* import { TmaLogo } from "./TmaLogo";*/}
 {/* import { TMA_INFO, APP_INFO } from "../const/appConst";*/}
-import { TMA_INFO} from "../const/appConst";
+import { TMA_INFO} from "../../const/appConst";
 export function MainFooter() {
     return (
         <footer className="bg-primary text-primary-foreground border-t border-primary-foreground/10">

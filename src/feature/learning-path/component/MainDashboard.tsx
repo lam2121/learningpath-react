@@ -1,6 +1,5 @@
 import { BookOpen, Target, Trophy, TrendingUp, Clock, Star, ChevronRight, Zap } from 'lucide-react'
 import { useAuth } from '@/common/context/AuthContext'
-import { Link } from '@tanstack/react-router'
 
 // ─── Static mock data (replace with real API data later) ─────────────────────
 

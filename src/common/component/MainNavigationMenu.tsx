@@ -19,7 +19,7 @@ import { Menu, LogOut, History, User } from "lucide-react"
 import { useAuth } from "@/common/context/AuthContext"
 import { cn } from "@/shadcn/lib/util"
 import { TmaLogo } from "./TmaLogo"
-import { APP_INFO} from "../const/appConst"
+import { APP_INFO} from "../../const/appConst"
 import { UpskillsIcon } from "../../common/component/SocialMediaIcon";
 
 export function MainNavigationMenu() {

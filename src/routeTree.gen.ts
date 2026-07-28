@@ -9,16 +9,54 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ProtectedRouteImport } from './routes/_protected'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminTracksRouteImport } from './routes/admin/tracks'
+import { Route as AdminRejectedRouteImport } from './routes/admin/rejected'
+import { Route as AdminKillswitchRouteImport } from './routes/admin/killswitch'
+import { Route as AdminCostsRouteImport } from './routes/admin/costs'
 import { Route as ProtectedUserRouteImport } from './routes/_protected/_user'
 import { Route as authRegisterRouteImport } from './routes/(auth)/register'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
 import { Route as authForgotPasswordRouteImport } from './routes/(auth)/forgot-password'
+import { Route as ProtectedQuizFinalRouteImport } from './routes/_protected/quiz.final'
 import { Route as ProtectedUserDashboardRouteImport } from './routes/_protected/_user/dashboard'
+import { Route as ProtectedQuizQuizTypeTargetIdRouteImport } from './routes/_protected/quiz.$quizType.$targetId'
 
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProtectedRoute = ProtectedRouteImport.update({
   id: '/_protected',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminTracksRoute = AdminTracksRouteImport.update({
+  id: '/tracks',
+  path: '/tracks',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminRejectedRoute = AdminRejectedRouteImport.update({
+  id: '/rejected',
+  path: '/rejected',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminKillswitchRoute = AdminKillswitchRouteImport.update({
+  id: '/killswitch',
+  path: '/killswitch',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCostsRoute = AdminCostsRouteImport.update({
+  id: '/costs',
+  path: '/costs',
+  getParentRoute: () => AdminRoute,
 } as any)
 const ProtectedUserRoute = ProtectedUserRouteImport.update({
   id: '/_user',
@@ -39,50 +77,116 @@ const authForgotPasswordRoute = authForgotPasswordRouteImport.update({
   path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProtectedQuizFinalRoute = ProtectedQuizFinalRouteImport.update({
+  id: '/quiz/final',
+  path: '/quiz/final',
+  getParentRoute: () => ProtectedRoute,
+} as any)
 const ProtectedUserDashboardRoute = ProtectedUserDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => ProtectedUserRoute,
 } as any)
+const ProtectedQuizQuizTypeTargetIdRoute =
+  ProtectedQuizQuizTypeTargetIdRouteImport.update({
+    id: '/quiz/$quizType/$targetId',
+    path: '/quiz/$quizType/$targetId',
+    getParentRoute: () => ProtectedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
+  '/admin': typeof AdminRouteWithChildren
   '/forgot-password': typeof authForgotPasswordRoute
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
+  '/admin/costs': typeof AdminCostsRoute
+  '/admin/killswitch': typeof AdminKillswitchRoute
+  '/admin/rejected': typeof AdminRejectedRoute
+  '/admin/tracks': typeof AdminTracksRoute
+  '/admin/': typeof AdminIndexRoute
   '/dashboard': typeof ProtectedUserDashboardRoute
+  '/quiz/final': typeof ProtectedQuizFinalRoute
+  '/quiz/$quizType/$targetId': typeof ProtectedQuizQuizTypeTargetIdRoute
 }
 export interface FileRoutesByTo {
   '/forgot-password': typeof authForgotPasswordRoute
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
+  '/admin/costs': typeof AdminCostsRoute
+  '/admin/killswitch': typeof AdminKillswitchRoute
+  '/admin/rejected': typeof AdminRejectedRoute
+  '/admin/tracks': typeof AdminTracksRoute
+  '/admin': typeof AdminIndexRoute
   '/dashboard': typeof ProtectedUserDashboardRoute
+  '/quiz/final': typeof ProtectedQuizFinalRoute
+  '/quiz/$quizType/$targetId': typeof ProtectedQuizQuizTypeTargetIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_protected': typeof ProtectedRouteWithChildren
+  '/admin': typeof AdminRouteWithChildren
   '/(auth)/forgot-password': typeof authForgotPasswordRoute
   '/(auth)/login': typeof authLoginRoute
   '/(auth)/register': typeof authRegisterRoute
   '/_protected/_user': typeof ProtectedUserRouteWithChildren
+  '/admin/costs': typeof AdminCostsRoute
+  '/admin/killswitch': typeof AdminKillswitchRoute
+  '/admin/rejected': typeof AdminRejectedRoute
+  '/admin/tracks': typeof AdminTracksRoute
+  '/admin/': typeof AdminIndexRoute
   '/_protected/_user/dashboard': typeof ProtectedUserDashboardRoute
+  '/_protected/quiz/final': typeof ProtectedQuizFinalRoute
+  '/_protected/quiz/$quizType/$targetId': typeof ProtectedQuizQuizTypeTargetIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/forgot-password' | '/login' | '/register' | '/dashboard'
+  fullPaths:
+    | '/admin'
+    | '/forgot-password'
+    | '/login'
+    | '/register'
+    | '/admin/costs'
+    | '/admin/killswitch'
+    | '/admin/rejected'
+    | '/admin/tracks'
+    | '/admin/'
+    | '/dashboard'
+    | '/quiz/final'
+    | '/quiz/$quizType/$targetId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/forgot-password' | '/login' | '/register' | '/dashboard'
+  to:
+    | '/forgot-password'
+    | '/login'
+    | '/register'
+    | '/admin/costs'
+    | '/admin/killswitch'
+    | '/admin/rejected'
+    | '/admin/tracks'
+    | '/admin'
+    | '/dashboard'
+    | '/quiz/final'
+    | '/quiz/$quizType/$targetId'
   id:
     | '__root__'
     | '/_protected'
+    | '/admin'
     | '/(auth)/forgot-password'
     | '/(auth)/login'
     | '/(auth)/register'
     | '/_protected/_user'
+    | '/admin/costs'
+    | '/admin/killswitch'
+    | '/admin/rejected'
+    | '/admin/tracks'
+    | '/admin/'
     | '/_protected/_user/dashboard'
+    | '/_protected/quiz/final'
+    | '/_protected/quiz/$quizType/$targetId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   ProtectedRoute: typeof ProtectedRouteWithChildren
+  AdminRoute: typeof AdminRouteWithChildren
   authForgotPasswordRoute: typeof authForgotPasswordRoute
   authLoginRoute: typeof authLoginRoute
   authRegisterRoute: typeof authRegisterRoute
@@ -90,12 +194,54 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_protected': {
       id: '/_protected'
       path: ''
       fullPath: ''
       preLoaderRoute: typeof ProtectedRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/tracks': {
+      id: '/admin/tracks'
+      path: '/tracks'
+      fullPath: '/admin/tracks'
+      preLoaderRoute: typeof AdminTracksRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/rejected': {
+      id: '/admin/rejected'
+      path: '/rejected'
+      fullPath: '/admin/rejected'
+      preLoaderRoute: typeof AdminRejectedRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/killswitch': {
+      id: '/admin/killswitch'
+      path: '/killswitch'
+      fullPath: '/admin/killswitch'
+      preLoaderRoute: typeof AdminKillswitchRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/costs': {
+      id: '/admin/costs'
+      path: '/costs'
+      fullPath: '/admin/costs'
+      preLoaderRoute: typeof AdminCostsRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/_protected/_user': {
       id: '/_protected/_user'
@@ -125,12 +271,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof authForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_protected/quiz/final': {
+      id: '/_protected/quiz/final'
+      path: '/quiz/final'
+      fullPath: '/quiz/final'
+      preLoaderRoute: typeof ProtectedQuizFinalRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
     '/_protected/_user/dashboard': {
       id: '/_protected/_user/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof ProtectedUserDashboardRouteImport
       parentRoute: typeof ProtectedUserRoute
+    }
+    '/_protected/quiz/$quizType/$targetId': {
+      id: '/_protected/quiz/$quizType/$targetId'
+      path: '/quiz/$quizType/$targetId'
+      fullPath: '/quiz/$quizType/$targetId'
+      preLoaderRoute: typeof ProtectedQuizQuizTypeTargetIdRouteImport
+      parentRoute: typeof ProtectedRoute
     }
   }
 }
@@ -149,18 +309,41 @@ const ProtectedUserRouteWithChildren = ProtectedUserRoute._addFileChildren(
 
 interface ProtectedRouteChildren {
   ProtectedUserRoute: typeof ProtectedUserRouteWithChildren
+  ProtectedQuizFinalRoute: typeof ProtectedQuizFinalRoute
+  ProtectedQuizQuizTypeTargetIdRoute: typeof ProtectedQuizQuizTypeTargetIdRoute
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedUserRoute: ProtectedUserRouteWithChildren,
+  ProtectedQuizFinalRoute: ProtectedQuizFinalRoute,
+  ProtectedQuizQuizTypeTargetIdRoute: ProtectedQuizQuizTypeTargetIdRoute,
 }
 
 const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
   ProtectedRouteChildren,
 )
 
+interface AdminRouteChildren {
+  AdminCostsRoute: typeof AdminCostsRoute
+  AdminKillswitchRoute: typeof AdminKillswitchRoute
+  AdminRejectedRoute: typeof AdminRejectedRoute
+  AdminTracksRoute: typeof AdminTracksRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminCostsRoute: AdminCostsRoute,
+  AdminKillswitchRoute: AdminKillswitchRoute,
+  AdminRejectedRoute: AdminRejectedRoute,
+  AdminTracksRoute: AdminTracksRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   ProtectedRoute: ProtectedRouteWithChildren,
+  AdminRoute: AdminRouteWithChildren,
   authForgotPasswordRoute: authForgotPasswordRoute,
   authLoginRoute: authLoginRoute,
   authRegisterRoute: authRegisterRoute,
