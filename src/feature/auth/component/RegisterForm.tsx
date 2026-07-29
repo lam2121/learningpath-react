@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Eye, EyeOff } from 'lucide-react'
-import { FacebookIcon, GoogleIcon } from '@/common/component/SocialMediaIcon'
 import { registerUser } from '../api/authAPI'
 
 const GithubIcon = ({ className }: { className?: string }) => (
@@ -45,7 +44,7 @@ export function RegisterForm() {
 		e.preventDefault()
 
 		if (form.password !== form.confirmPassword) {
-			setError('Mật khẩu xác nhận không khớp.')
+			setError('Passwords do not match.')
 			return
 		}
 
@@ -61,7 +60,7 @@ export function RegisterForm() {
 			// Đăng ký thành công → chuyển hướng sang trang đăng nhập
 			await navigate({ to: '/login' })
 		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Đăng ký thất bại. Vui lòng thử lại.')
+			setError(err instanceof Error ? err.message : 'Registration failed. Please try again.')
 		} finally {
 			setIsLoading(false)
 		}
@@ -76,14 +75,14 @@ export function RegisterForm() {
 			</div>
 
 			{/* Title */}
-			<h1 className="register-title">Đăng ký tài khoản cho CareerPath</h1>
+			<h1 className="register-title">Create a CareerPath account</h1>
 
 			{/* Welcome text */}
 			<p className="register-welcome">
-				Chào mừng bạn đến{' '}
-				<strong className="register-welcome-highlight">Nền tảng CareerPath!</strong>{' '}
-				Tham gia cùng chúng tôi để tìm kiếm thông tin hữu ích cần thiết để cải thiện kỹ năng Tiếng Anh trong công việc của bạn.
-				Vui lòng điền thông tin của bạn vào biểu mẫu bên dưới để tiếp tục.
+				Welcome to the{' '}
+				<strong className="register-welcome-highlight">CareerPath Platform!</strong>{' '}
+				Join us to find the information you need to improve your English skills at work.
+				Please fill in your details below to continue.
 			</p>
 
 			{/* Form */}
@@ -93,7 +92,7 @@ export function RegisterForm() {
 					id="register-fullname"
 					type="text"
 					name="fullName"
-					placeholder="Tên của bạn"
+					placeholder="Your full name"
 					value={form.fullName}
 					onChange={handleChange}
 					className="register-input"
@@ -106,7 +105,7 @@ export function RegisterForm() {
 						id="register-email"
 						type="email"
 						name="email"
-						placeholder="Địa chỉ email của bạn"
+						placeholder="Your email address"
 						value={form.email}
 						onChange={handleChange}
 						className="register-input"
@@ -116,7 +115,7 @@ export function RegisterForm() {
 						id="register-username"
 						type="text"
 						name="username"
-						placeholder="Tên tài khoản"
+						placeholder="Username"
 						value={form.username}
 						onChange={handleChange}
 						className="register-input"
@@ -130,7 +129,7 @@ export function RegisterForm() {
 						id="register-password"
 						type={showPassword ? 'text' : 'password'}
 						name="password"
-						placeholder="Mật khẩu"
+						placeholder="Password"
 						value={form.password}
 						onChange={handleChange}
 						className="register-input"
@@ -141,7 +140,7 @@ export function RegisterForm() {
 						className="register-eye-btn"
 						onClick={() => setShowPassword((v) => !v)}
 						tabIndex={-1}
-						aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+						aria-label={showPassword ? 'Hide password' : 'Show password'}
 					>
 						{showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
 					</button>
@@ -153,7 +152,7 @@ export function RegisterForm() {
 						id="register-confirm-password"
 						type={showConfirmPassword ? 'text' : 'password'}
 						name="confirmPassword"
-						placeholder="Xác nhận mật khẩu của bạn"
+						placeholder="Confirm your password"
 						value={form.confirmPassword}
 						onChange={handleChange}
 						className="register-input"
@@ -164,7 +163,7 @@ export function RegisterForm() {
 						className="register-eye-btn"
 						onClick={() => setShowConfirmPassword((v) => !v)}
 						tabIndex={-1}
-						aria-label={showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+						aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
 					>
 						{showConfirmPassword ? <EyeOff size={15} /> : <Eye size={15} />}
 					</button>
@@ -180,9 +179,9 @@ export function RegisterForm() {
 						className="register-checkbox"
 					/>
 					<span>
-						Tôi đồng ý{' '}
+						I agree to the{' '}
 						<a href="#" className="register-terms-link">
-							Điều khoản dịch vụ của CareerPath
+							CareerPath Terms of Service
 						</a>
 					</span>
 				</label>
@@ -201,36 +200,19 @@ export function RegisterForm() {
 					className={`register-btn${isFormValid && !isLoading ? '' : ' register-btn--disabled'}`}
 					disabled={!isFormValid || isLoading}
 				>
-					{isLoading ? 'Đang đăng ký...' : 'Đăng ký'}
+					{isLoading ? 'Creating account...' : 'Create Account'}
 				</button>
 			</form>
+					 <div>
+			 <br />
 
-			{/* Divider */}
-			<div className="login-divider">
-				<span>Đăng nhập với</span>
-			</div>
-
-			{/* Social Buttons */}
-			<div className="login-social-grid">
-				<button id="register-facebook-btn" type="button" className="login-social-btn">
-					<FacebookIcon className="social-icon facebook-icon" />
-					<span>Facebook</span>
-				</button>
-				<button id="register-google-btn" type="button" className="login-social-btn">
-					<GoogleIcon className="social-icon google-icon" />
-					<span>Google</span>
-				</button>
-				<button id="register-github-btn" type="button" className="login-social-btn">
-					<GithubIcon className="social-icon github-icon" />
-					<span>Github</span>
-				</button>
 			</div>
 
 			{/* Login link */}
 			<p className="register-login-prompt">
-				Đã có tài khoản?{' '}
+				Already have an account?{' '}
 				<Link to="/login" className="login-link">
-					Đăng nhập
+					Sign In
 				</Link>
 			</p>
 		</div>

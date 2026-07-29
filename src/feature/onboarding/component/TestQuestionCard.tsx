@@ -1,16 +1,16 @@
 import type { TestQuestion } from '../api/placementTestTypes'
 
 const AXIS_META: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  D_doc: { label: 'Tài liệu', color: 'text-blue-300', bg: 'bg-blue-500/20', dot: 'bg-blue-400' },
-  C_comm: { label: 'Giao tiếp', color: 'text-emerald-300', bg: 'bg-emerald-500/20', dot: 'bg-emerald-400' },
-  T_trouble: { label: 'Sự cố', color: 'text-rose-300', bg: 'bg-rose-500/20', dot: 'bg-rose-400' },
-  G_biz: { label: 'Thương mại', color: 'text-amber-300', bg: 'bg-amber-500/20', dot: 'bg-amber-400' },
+  D_doc:     { label: 'Documentation', color: 'text-blue-300',    bg: 'bg-blue-500/20',    dot: 'bg-blue-400' },
+  C_comm:    { label: 'Communication', color: 'text-emerald-300', bg: 'bg-emerald-500/20', dot: 'bg-emerald-400' },
+  T_trouble: { label: 'Troubleshooting', color: 'text-rose-300',  bg: 'bg-rose-500/20',    dot: 'bg-rose-400' },
+  G_biz:     { label: 'Business',       color: 'text-amber-300',  bg: 'bg-amber-500/20',   dot: 'bg-amber-400' },
 }
 
 const DIFFICULTY_LABEL: Record<number, string> = {
-  1: 'Cơ bản',
-  2: 'Trung bình',
-  3: 'Nâng cao',
+  1: 'Basic',
+  2: 'Intermediate',
+  3: 'Advanced',
 }
 
 interface TestQuestionCardProps {
@@ -100,7 +100,7 @@ export function TestQuestionCard({
 
       {/* Progress sub-text */}
       <p className="text-center text-xs text-white/30 mt-4">
-        Câu {questionNumber} / {total} — Chọn đáp án để tiếp tục
+        Question {questionNumber} / {total} — Select an answer to continue
       </p>
     </div>
   )

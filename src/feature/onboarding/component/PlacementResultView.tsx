@@ -16,10 +16,10 @@ type AxisMap = Record<SkillAxis, AxisScore>
 // ─── Radar Chart (pure SVG) ───────────────────────────────────────────────────
 
 const AXES: { key: SkillAxis; label: string; labelEn: string }[] = [
-  { key: 'D_doc', label: 'Tài liệu', labelEn: 'D' },
-  { key: 'C_comm', label: 'Giao tiếp', labelEn: 'C' },
-  { key: 'T_trouble', label: 'Sự cố', labelEn: 'T' },
-  { key: 'G_biz', label: 'Thương mại', labelEn: 'G' },
+  { key: 'D_doc',     label: 'Documentation',   labelEn: 'D' },
+  { key: 'C_comm',    label: 'Communication',    labelEn: 'C' },
+  { key: 'T_trouble', label: 'Troubleshooting',  labelEn: 'T' },
+  { key: 'G_biz',     label: 'Business',         labelEn: 'G' },
 ]
 
 const AXIS_COLORS: Record<SkillAxis, string> = {
@@ -195,40 +195,31 @@ const DEMO_TARGETS: Record<SkillAxis, number> = {
 
 // Normalize targets to 0-100 scale for radar
 function normalizeTarget(t: number): number {
-  return Math.round((t / 78) * 100)
-}
-
-// ─── AI Summary Generator (simulated) ────────────────────────────────────────
-
-function generateAISummary(scores: Record<SkillAxis, number>): string {
-  const best = (Object.entries(scores) as [SkillAxis, number][]).sort((a, b) => b[1] - a[1])[0]
-  const worst = (Object.entries(scores) as [SkillAxis, number][]).sort((a, b) => a[1] - b[1])[0]
-
   const axisNames: Record<SkillAxis, string> = {
-    D_doc: 'viết tài liệu kỹ thuật',
-    C_comm: 'giao tiếp và thuyết trình',
-    T_trouble: 'xử lý sự cố',
-    G_biz: 'đàm phán thương mại',
+    D_doc: 'technical documentation',
+    C_comm: 'communication & presentation',
+    T_trouble: 'troubleshooting',
+    G_biz: 'business negotiation',
   }
 
   const totalAvg = Math.round(Object.values(scores).reduce((a, b) => a + b, 0) / 4)
 
   if (totalAvg >= 75) {
-    return `Xuất sắc! Năng lực giao tiếp IT của bạn ở mức cao — đặc biệt về kỹ năng ${axisNames[best[0]]}. Hệ thống sẽ tập trung vào ${axisNames[worst[0]]} để giúp bạn đạt đến mức chuyên gia toàn diện.`
+    return `Excellent! Your IT communication skills are at a high level — particularly in ${axisNames[best[0]]}. The system will focus on ${axisNames[worst[0]]} to help you reach expert-level proficiency.`
   } else if (totalAvg >= 50) {
-    return `Tốt! Bạn có nền tảng vững chắc về ${axisNames[best[0]]}. Lộ trình học sẽ được cá nhân hóa để nâng cao ${axisNames[worst[0]]} — kỹ năng quan trọng nhất cần cải thiện trong career track của bạn.`
+    return `Good! You have a solid foundation in ${axisNames[best[0]]}. Your learning path will be personalized to strengthen ${axisNames[worst[0]]} — the most important skill to improve in your career track.`
   } else {
-    return `Chào mừng đến với hành trình! Mỗi chuyên gia đều bắt đầu từ đây. Hệ thống sẽ xây dựng lộ trình từng bước, ưu tiên ${axisNames[worst[0]]} và củng cố ${axisNames[best[0]]} — hoàn toàn phù hợp với nhịp học của bạn.`
+    return `Welcome to the journey! Every expert starts here. The system will build a step-by-step learning path, prioritizing ${axisNames[worst[0]]} and reinforcing ${axisNames[best[0]]} — perfectly suited to your learning pace.`
   }
 }
 
 // ─── Result Breakdown ─────────────────────────────────────────────────────────
 
 const AXIS_META_DISPLAY = [
-  { key: 'D_doc' as SkillAxis, label: 'Tài liệu', color: 'text-blue-300', bar: 'bg-blue-400', track: 'bg-blue-400/20' },
-  { key: 'C_comm' as SkillAxis, label: 'Giao tiếp', color: 'text-emerald-300', bar: 'bg-emerald-400', track: 'bg-emerald-400/20' },
-  { key: 'T_trouble' as SkillAxis, label: 'Sự cố', color: 'text-rose-300', bar: 'bg-rose-400', track: 'bg-rose-400/20' },
-  { key: 'G_biz' as SkillAxis, label: 'Thương mại', color: 'text-amber-300', bar: 'bg-amber-400', track: 'bg-amber-400/20' },
+  { key: 'D_doc'     as SkillAxis, label: 'Documentation',  color: 'text-blue-300',    bar: 'bg-blue-400',    track: 'bg-blue-400/20' },
+  { key: 'C_comm'    as SkillAxis, label: 'Communication',  color: 'text-emerald-300', bar: 'bg-emerald-400', track: 'bg-emerald-400/20' },
+  { key: 'T_trouble' as SkillAxis, label: 'Troubleshooting', color: 'text-rose-300',   bar: 'bg-rose-400',    track: 'bg-rose-400/20' },
+  { key: 'G_biz'     as SkillAxis, label: 'Business',       color: 'text-amber-300',   bar: 'bg-amber-400',   track: 'bg-amber-400/20' },
 ]
 
 // ─── Main Result View ─────────────────────────────────────────────────────────
@@ -292,10 +283,10 @@ export function PlacementResultView() {
   }, [])
 
   function gradeLabel(pct: number): { label: string; color: string } {
-    if (pct >= 80) return { label: 'Xuất sắc', color: 'text-emerald-300' }
-    if (pct >= 60) return { label: 'Tốt', color: 'text-blue-300' }
-    if (pct >= 40) return { label: 'Cần cải thiện', color: 'text-amber-300' }
-    return { label: 'Cần nỗ lực', color: 'text-rose-300' }
+    if (pct >= 80) return { label: 'Excellent',    color: 'text-emerald-300' }
+    if (pct >= 60) return { label: 'Good',          color: 'text-blue-300' }
+    if (pct >= 40) return { label: 'Needs Work',    color: 'text-amber-300' }
+    return           { label: 'Keep Practicing', color: 'text-rose-300' }
   }
 
   return (
@@ -321,14 +312,14 @@ export function PlacementResultView() {
           <div className="text-center mb-8">
             <div className="text-6xl mb-4 animate-in zoom-in-50 duration-500">🎉</div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 drop-shadow-md">
-              Hoàn thành Placement Test!
+              Placement Test Complete!
             </h1>
             <p className="text-blue-100/60 text-sm">
-              Đây là hồ sơ năng lực giao tiếp IT của bạn — được đo qua 24 câu hỏi thực chiến.
+              This is your IT communication skill profile — measured across 24 real-world questions.
             </p>
             {hasDemoData && (
               <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-xs font-medium">
-                ⚡ Dữ liệu demo — truy cập /placement-test để làm bài thật
+                ⚡ Demo data — go to /placement-test to take the real test
               </div>
             )}
           </div>
@@ -368,7 +359,7 @@ export function PlacementResultView() {
                   {gradeLabel(overallPct).label}
                 </div>
                 <div className="text-white/60 text-sm">
-                  {totalCorrect} / {totalQuestions} câu đúng
+                  {totalCorrect} / {totalQuestions} correct
                 </div>
                 <div className="mt-2 flex gap-2 flex-wrap">
                   {AXIS_META_DISPLAY.map((ax) => (
@@ -384,7 +375,7 @@ export function PlacementResultView() {
           {/* ── Radar Chart + Legend ─────────────────────────────────────── */}
           <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-6 mb-5">
             <p className="text-xs text-white/40 uppercase tracking-widest mb-5 text-center">
-              Radar Chart D/C/T/G — Năng lực vs Mục tiêu
+              Radar Chart D/C/T/G — Actual vs Target
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -399,11 +390,11 @@ export function PlacementResultView() {
                 <div className="flex gap-4 justify-center sm:justify-start">
                   <div className="flex items-center gap-2 text-xs text-white/60">
                     <div className="w-6 h-0.5 bg-blue-400 rounded" />
-                    Thực tế
+                    Actual
                   </div>
                   <div className="flex items-center gap-2 text-xs text-white/60">
                     <div className="w-6 h-0.5 bg-indigo-400 rounded border-0" style={{ borderTop: '1.5px dashed #818cf8' }} />
-                    Mục tiêu
+                    Target
                   </div>
                 </div>
 
@@ -417,7 +408,7 @@ export function PlacementResultView() {
                       <div className="flex justify-between items-center mb-1">
                         <span className={`text-xs font-semibold ${ax.color}`}>{ax.label}</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-white/40 text-[10px]">Mục tiêu: {target}%</span>
+                          <span className="text-white/40 text-[10px]">Target: {target}%</span>
                           <span className={`text-xs font-bold ${actual >= target ? 'text-emerald-300' : 'text-rose-300'}`}>
                             {delta >= 0 ? '+' : ''}{delta}%
                           </span>
@@ -450,7 +441,7 @@ export function PlacementResultView() {
               </div>
               <div>
                 <p className="text-xs text-indigo-300 font-semibold uppercase tracking-wider mb-2">
-                  AI Advisor · Nhận xét cá nhân
+                  AI Advisor · Personal Feedback
                 </p>
                 <p className="text-sm text-white/80 leading-relaxed italic">
                   "{aiSummary}"
@@ -466,14 +457,14 @@ export function PlacementResultView() {
             onClick={() => navigate({ to: '/milestone' })}
             className="w-full py-5 px-6 rounded-2xl bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 hover:from-blue-600 hover:via-indigo-600 hover:to-violet-600 text-white font-extrabold text-lg shadow-2xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-3"
           >
-            <span>✨ Tạo khóa học của tôi</span>
+            <span>✨ Create My Course</span>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
           </button>
 
           <p className="text-center text-xs text-white/30 mt-3">
-            AI sẽ sinh ra 24 bài học được cá nhân hóa hoàn toàn cho career track của bạn
+            AI will generate 24 fully personalized lessons for your career track
           </p>
         </div>
       </div>
