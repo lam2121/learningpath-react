@@ -4,7 +4,7 @@ import { DailyPlanView } from '../component/DailyPlanView'
 import { LearningCalendar } from '@/feature/user-profile/component/LearningCalendar'
 import { LearningHistoryChart } from '@/feature/user-profile/component/LearningHistoryChart'
 import { MainNavigationMenu } from '@/common/component/MainNavigationMenu'
-export function MainPage() {
+export function UserProfile() {
 	return (
 		<>
 			<MainNavigationMenu />

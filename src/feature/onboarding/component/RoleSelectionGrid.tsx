@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useState, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import tmaLogo from '@/asset/image/tma_logo.png'
@@ -49,6 +50,72 @@ const SKILL_COLOR: Record<string, string> = {
   T: 'bg-rose-500',
   G: 'bg-amber-500',
 }
+=======
+
+import { useNavigate } from '@tanstack/react-router'
+import tmaLogo from '@/asset/image/tma_logo.png'
+import bannerBg from '@/asset/image/banner_background.png'
+import { useEffect, useState } from "react";
+import { getJobRoles } from "@/feature/onboarding/api/career";
+// ─── Role Data (sourced from TOEIC_Phase2_Task1.1_ver1.4.html spec) ─────────
+
+interface SkillWeight {
+  D_doc: number   // Documentation
+  C_comm: number  // Communication
+  T_trouble: number // Troubleshooting
+  G_biz: number   // Business / Commercial
+}
+interface JobRoleApi {
+  id: number;
+  name: string;
+  JD: string;
+  UI: {
+    subtitle: string;
+    toeicTarget: string;
+    icon: string;
+    color: string;
+    gradient: string;
+    accentColor: string;
+  };
+  seed_tier: {
+    tier: number;
+    name: string;
+  }[];
+  init_weights: SkillWeight;
+  example_question: string[];
+}
+interface RoleCard {
+  id: number
+  title: string
+  subtitle: string
+  toeicTarget: string
+  weights: SkillWeight
+  tier1: string[]
+  tier2: string[]
+  icon: string
+  color: string
+  gradient: string
+  accentColor: string
+  jd: string
+  exampleQuestion: string[];
+}
+
+// ─── Skill Weight Bar Component ───────────────────────────────────────────────
+function SkillBar({ label, value, color }: { label: string; value: number; color: string }) {
+  const colorMap: Record<string, string> = {
+    D_doc: 'bg-blue-500',
+    C_comm: 'bg-emerald-500',
+    T_trouble: 'bg-rose-500',
+    G_biz: 'bg-amber-500',
+  }
+
+  const labelMap: Record<string, string> = {
+    D_doc: 'D',
+    C_comm: 'C',
+    T_trouble: 'T',
+    G_biz: 'G',
+  }
+>>>>>>> d4c83d0 (Begin)
 
 function SkillBar({ axis, value }: { axis: 'D' | 'C' | 'T' | 'G'; value: number }) {
   return (
@@ -93,8 +160,8 @@ function RoleCardItem({ role, paletteIdx, isSelected, isHovered, onSelect, onHov
         ${isSelected
           ? 'border-indigo-500 shadow-lg shadow-indigo-100 scale-[1.02] bg-white'
           : isHovered
-          ? 'border-gray-300 shadow-md scale-[1.01] bg-white'
-          : 'border-gray-200 shadow-sm bg-white/80 hover:bg-white'
+            ? 'border-gray-300 shadow-md scale-[1.01] bg-white'
+            : 'border-gray-200 shadow-sm bg-white/80 hover:bg-white'
         }
       `}
     >
@@ -177,14 +244,19 @@ function SkillLegend() {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function RoleSelectionGrid() {
+<<<<<<< HEAD
   const [roles, setRoles] = useState<JobRole[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+=======
+  const [roles, setRoles] = useState<RoleCard[]>([]);
+>>>>>>> d4c83d0 (Begin)
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)
   const [hoveredRoleId, setHoveredRoleId] = useState<number | null>(null)
   const navigate = useNavigate()
   const { logout } = useAuth()
 
+<<<<<<< HEAD
   useEffect(() => {
     fetchJobRoles()
       .then(setRoles)
@@ -194,7 +266,45 @@ export function RoleSelectionGrid() {
 
   const selectedRole = roles.find(r => r.id === selectedRoleId) ?? null
   const selectedPaletteIdx = selectedRoleId != null ? roles.findIndex(r => r.id === selectedRoleId) : 0
+=======
+  const selectedRole =
+    roles.find((r) => r.id === selectedRoleId) ?? null;
+  useEffect(() => {
+    async function fetchRoles() {
+      try {
+        const data: JobRoleApi[] = await getJobRoles();
+>>>>>>> d4c83d0 (Begin)
 
+        const mappedRoles: RoleCard[] = data.map((item) => ({
+          id: item.id,
+          title: item.name,
+          subtitle: item.UI.subtitle,
+          toeicTarget: item.UI.toeicTarget,
+          icon: item.UI.icon,
+          color: item.UI.color,
+          gradient: item.UI.gradient,
+          accentColor: item.UI.accentColor,
+          jd: item.JD,
+
+          exampleQuestion: item.example_question,
+          weights: item.init_weights,
+          tier1: item.seed_tier
+            .filter((s) => s.tier === 1)
+            .map((s) => s.name),
+
+          tier2: item.seed_tier
+            .filter((s) => s.tier === 2)
+            .map((s) => s.name),
+        }));
+
+        setRoles(mappedRoles);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    fetchRoles();
+  }, []);
   function handleConfirm() {
     if (!selectedRoleId) return
     localStorage.setItem('pending_role_id', selectedRoleId.toString())
@@ -252,11 +362,10 @@ export function RoleSelectionGrid() {
               {[1, 2, 3, 4].map((step) => (
                 <div key={step} className="flex items-center">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                      step === 1
-                        ? 'bg-blue-400 text-white shadow-md shadow-blue-900'
-                        : 'bg-white/10 text-white/40'
-                    }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${step === 1
+                      ? 'bg-blue-400 text-white shadow-md shadow-blue-900'
+                      : 'bg-white/10 text-white/40'
+                      }`}
                   >
                     {step < 1 ? '✓' : step}
                   </div>
@@ -314,6 +423,7 @@ export function RoleSelectionGrid() {
         )}
 
         {/* Role Grid */}
+<<<<<<< HEAD
         {!isLoading && !error && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
             {roles.map((role, idx) => (
@@ -330,6 +440,21 @@ export function RoleSelectionGrid() {
             ))}
           </div>
         )}
+=======
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+          {roles.map((role) => (
+            <RoleCardItem
+              key={role.id}
+              role={role}
+              isSelected={selectedRoleId === role.id}
+              isHovered={hoveredRoleId === role.id}
+              onSelect={() => setSelectedRoleId(role.id)}
+              onHover={() => setHoveredRoleId(role.id)}
+              onLeave={() => setHoveredRoleId(null)}
+            />
+          ))}
+        </div>
+>>>>>>> d4c83d0 (Begin)
 
         {/* Selection summary & CTA */}
         {!isLoading && !error && (
@@ -359,8 +484,54 @@ export function RoleSelectionGrid() {
                         </div>
                       </div>
                     </div>
+<<<<<<< HEAD
                   )
                 })()}
+=======
+                    <p className="text-sm text-gray-500 mt-0.5">{selectedRole.subtitle}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {selectedRole.tier2.slice(0, 2).map((t, i) => (
+                        <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 text-xs font-medium border border-rose-100">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-400 flex-shrink-0" />
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="border-t pt-5">
+                      <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                        📋 Job Description
+                      </h3>
+
+                      <p className="text-sm leading-7 text-gray-600">
+                        {selectedRole.jd}
+                      </p>
+                    </div>
+                    <div className="border-t mt-5 pt-5">
+                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        💬 Example Questions
+                      </h3>
+
+                      <div className="space-y-3">
+                        {selectedRole.exampleQuestion.map((question, index) => (
+                          <div
+                            key={index}
+                            className="rounded-xl bg-gray-50 p-3 border border-gray-200"
+                          >
+                            <span className="font-semibold text-indigo-600">
+                              {index + 1}.
+                            </span>
+
+                            <span className="ml-2 text-gray-700">
+                              {question}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+>>>>>>> d4c83d0 (Begin)
 
                 <button
                   id="btn-confirm-role"
