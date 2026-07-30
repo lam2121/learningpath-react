@@ -151,7 +151,7 @@ export async function fetchJobRoles(): Promise<JobRole[]> {
 export interface RawPlacementQuestionApi {
   id: number
   skill: 'D' | 'C' | 'T' | 'G'
-  level: 1 | 2 | 3
+  level: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
   statement: string
   options: string[]
   correct_answer: string

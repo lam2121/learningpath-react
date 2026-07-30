@@ -169,6 +169,16 @@ function RadarChart({ axisMap, animated }: RadarChartProps) {
 
 // ─── Score computation ────────────────────────────────────────────────────────
 
+/**
+ * Final score per axis = the difficulty level of the LAST question answered
+ * for that axis (the adaptive endpoint after 6 questions per axis).
+ *
+ * Rule (US-06c):
+ *  - Each axis starts at level 5/10
+ *  - Correct → +1, Wrong → -1 (clamped 1–10)
+ *  - After 6 questions the level reached IS the score for that axis
+ *  - Final vector stored as level (1-10); displayed as level / 10 * 100 for radar
+ */
 function computeAxisScores(results: QuestionResult[]): Record<SkillAxis, number> {
   const axes: SkillAxis[] = ['D_doc', 'C_comm', 'T_trouble', 'G_biz']
   const scores: Record<SkillAxis, number> = { D_doc: 0, C_comm: 0, T_trouble: 0, G_biz: 0 }
@@ -176,13 +186,28 @@ function computeAxisScores(results: QuestionResult[]): Record<SkillAxis, number>
   axes.forEach((axis) => {
     const relevant = results.filter((r) => r.axis === axis)
     if (relevant.length === 0) return
-    const correct = relevant.filter((r) => r.isCorrect)
-    const weightedScore = correct.reduce((sum, r) => sum + r.difficulty, 0)
-    const maxWeight = relevant.reduce((sum, r) => sum + r.difficulty, 0)
-    scores[axis] = Math.round((weightedScore / maxWeight) * 100)
+    // The LAST question's difficulty = the adaptive level reached for this axis
+    const lastLevel = relevant[relevant.length - 1].difficulty  // 1–10
+    // Normalize to 0-100 for radar display
+    scores[axis] = Math.round((lastLevel / 10) * 100)
   })
 
   return scores
+}
+
+/**
+ * Raw level vector (1-10) per axis, stored in test_session.final_vector.
+ * Used for backend submission and display labels.
+ */
+function computeLevelVector(results: QuestionResult[]): Record<SkillAxis, number> {
+  const axes: SkillAxis[] = ['D_doc', 'C_comm', 'T_trouble', 'G_biz']
+  const levels: Record<SkillAxis, number> = { D_doc: 0, C_comm: 0, T_trouble: 0, G_biz: 0 }
+  axes.forEach((axis) => {
+    const relevant = results.filter((r) => r.axis === axis)
+    if (relevant.length === 0) return
+    levels[axis] = relevant[relevant.length - 1].difficulty  // 1–10
+  })
+  return levels
 }
 
 // Demo target (Intermediate level for PM — shown when no session data)
@@ -233,39 +258,51 @@ export function PlacementResultView() {
   const hasDemoData = results.length === 0
 
   // Demo results for testing without going through the test
+  // Simulates the T-axis example from the spec:
+  // Q1 lvl5(✓)→Q2 lvl6(✓)→Q3 lvl7(✗)→Q4 lvl6(✓)→Q5 lvl7(✓)→Q6 lvl8  → T score = lvl 8
   const demoResults: QuestionResult[] = hasDemoData
     ? [
-      { questionId: 'd1', axis: 'D_doc', difficulty: 1, selectedId: 'b', isCorrect: true },
-      { questionId: 'd2', axis: 'D_doc', difficulty: 1, selectedId: 'c', isCorrect: true },
-      { questionId: 'd3', axis: 'D_doc', difficulty: 2, selectedId: 'b', isCorrect: true },
-      { questionId: 'd4', axis: 'D_doc', difficulty: 2, selectedId: 'b', isCorrect: true },
-      { questionId: 'd5', axis: 'D_doc', difficulty: 3, selectedId: 'b', isCorrect: true },
-      { questionId: 'd6', axis: 'D_doc', difficulty: 3, selectedId: 'a', isCorrect: false },
-      { questionId: 'c1', axis: 'C_comm', difficulty: 1, selectedId: 'b', isCorrect: true },
-      { questionId: 'c2', axis: 'C_comm', difficulty: 1, selectedId: 'b', isCorrect: true },
-      { questionId: 'c3', axis: 'C_comm', difficulty: 2, selectedId: 'c', isCorrect: true },
-      { questionId: 'c4', axis: 'C_comm', difficulty: 2, selectedId: 'a', isCorrect: false },
-      { questionId: 'c5', axis: 'C_comm', difficulty: 3, selectedId: 'a', isCorrect: false },
-      { questionId: 'c6', axis: 'C_comm', difficulty: 3, selectedId: 'b', isCorrect: true },
-      { questionId: 't1', axis: 'T_trouble', difficulty: 1, selectedId: 'b', isCorrect: true },
-      { questionId: 't2', axis: 'T_trouble', difficulty: 1, selectedId: 'b', isCorrect: true },
-      { questionId: 't3', axis: 'T_trouble', difficulty: 2, selectedId: 'c', isCorrect: true },
-      { questionId: 't4', axis: 'T_trouble', difficulty: 2, selectedId: 'a', isCorrect: false },
-      { questionId: 't5', axis: 'T_trouble', difficulty: 3, selectedId: 'c', isCorrect: false },
-      { questionId: 't6', axis: 'T_trouble', difficulty: 3, selectedId: 'b', isCorrect: true },
-      { questionId: 'g1', axis: 'G_biz', difficulty: 1, selectedId: 'c', isCorrect: true },
-      { questionId: 'g2', axis: 'G_biz', difficulty: 1, selectedId: 'c', isCorrect: true },
-      { questionId: 'g3', axis: 'G_biz', difficulty: 2, selectedId: 'b', isCorrect: true },
-      { questionId: 'g4', axis: 'G_biz', difficulty: 2, selectedId: 'a', isCorrect: false },
-      { questionId: 'g5', axis: 'G_biz', difficulty: 3, selectedId: 'c', isCorrect: false },
-      { questionId: 'g6', axis: 'G_biz', difficulty: 3, selectedId: 'b', isCorrect: true },
+      // D_doc: 5→6→7→8→9→10 (all correct) → final level 10
+      { questionId: 'd1', axis: 'D_doc',     difficulty: 5,  selectedId: 'b', isCorrect: true },
+      { questionId: 'd2', axis: 'D_doc',     difficulty: 6,  selectedId: 'c', isCorrect: true },
+      { questionId: 'd3', axis: 'D_doc',     difficulty: 7,  selectedId: 'b', isCorrect: true },
+      { questionId: 'd4', axis: 'D_doc',     difficulty: 8,  selectedId: 'b', isCorrect: true },
+      { questionId: 'd5', axis: 'D_doc',     difficulty: 9,  selectedId: 'b', isCorrect: true },
+      { questionId: 'd6', axis: 'D_doc',     difficulty: 10, selectedId: 'b', isCorrect: true },
+      // C_comm: 5→6→5→6→5→6 (alternating) → final level 6
+      { questionId: 'c1', axis: 'C_comm',    difficulty: 5,  selectedId: 'b', isCorrect: true },
+      { questionId: 'c2', axis: 'C_comm',    difficulty: 6,  selectedId: 'b', isCorrect: false },
+      { questionId: 'c3', axis: 'C_comm',    difficulty: 5,  selectedId: 'c', isCorrect: true },
+      { questionId: 'c4', axis: 'C_comm',    difficulty: 6,  selectedId: 'a', isCorrect: false },
+      { questionId: 'c5', axis: 'C_comm',    difficulty: 5,  selectedId: 'a', isCorrect: true },
+      { questionId: 'c6', axis: 'C_comm',    difficulty: 6,  selectedId: 'b', isCorrect: false },
+      // T_trouble: spec example 5→6→7→6→7→8 → final level 8
+      { questionId: 't1', axis: 'T_trouble', difficulty: 5,  selectedId: 'b', isCorrect: true },
+      { questionId: 't2', axis: 'T_trouble', difficulty: 6,  selectedId: 'b', isCorrect: true },
+      { questionId: 't3', axis: 'T_trouble', difficulty: 7,  selectedId: 'c', isCorrect: false },
+      { questionId: 't4', axis: 'T_trouble', difficulty: 6,  selectedId: 'a', isCorrect: true },
+      { questionId: 't5', axis: 'T_trouble', difficulty: 7,  selectedId: 'c', isCorrect: true },
+      { questionId: 't6', axis: 'T_trouble', difficulty: 8,  selectedId: 'b', isCorrect: true },
+      // G_biz: 5→4→3→4→3→4 (mostly wrong) → final level 4
+      { questionId: 'g1', axis: 'G_biz',     difficulty: 5,  selectedId: 'c', isCorrect: false },
+      { questionId: 'g2', axis: 'G_biz',     difficulty: 4,  selectedId: 'c', isCorrect: false },
+      { questionId: 'g3', axis: 'G_biz',     difficulty: 3,  selectedId: 'b', isCorrect: true },
+      { questionId: 'g4', axis: 'G_biz',     difficulty: 4,  selectedId: 'a', isCorrect: false },
+      { questionId: 'g5', axis: 'G_biz',     difficulty: 3,  selectedId: 'c', isCorrect: true },
+      { questionId: 'g6', axis: 'G_biz',     difficulty: 4,  selectedId: 'b', isCorrect: false },
     ]
     : results
 
-  const actualScores = computeAxisScores(demoResults)
+  const actualScores = computeAxisScores(demoResults)   // 0–100 for radar
+  const levelVector  = computeLevelVector(demoResults)   // 1–10 final_vector
   const totalCorrect = demoResults.filter((r) => r.isCorrect).length
   const totalQuestions = demoResults.length || 24
-  const overallPct = Math.round((totalCorrect / totalQuestions) * 100)
+  // Overall level = average of the 4 axis final levels (1-10 scale)
+  const avgLevel = Math.round(
+    Object.values(levelVector).reduce((a, b) => a + b, 0) / 4
+  )
+  // Normalized to 0-100 for the score ring
+  const overallPct = Math.round((avgLevel / 10) * 100)
 
   const axisMap: AxisMap = {
     D_doc: { actual: actualScores.D_doc, target: normalizeTarget(DEMO_TARGETS.D_doc) },
@@ -324,10 +361,10 @@ export function PlacementResultView() {
             )}
           </div>
 
-          {/* ── Overall score ───────────────────────────────────────────── */}
+          {/* ── Overall score (level 1-10 scale) ────────────────────────── */}
           <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-6 mb-5 text-center">
             <div className="flex items-center justify-center gap-6">
-              {/* Big score circle */}
+              {/* Big score circle — shows average level / 10 */}
               <div className="relative w-28 h-28">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
@@ -348,8 +385,8 @@ export function PlacementResultView() {
                   </defs>
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-black text-white">{overallPct}</span>
-                  <span className="text-xs text-white/40">%</span>
+                  <span className="text-3xl font-black text-white">{avgLevel}</span>
+                  <span className="text-xs text-white/40">/10</span>
                 </div>
               </div>
 
@@ -361,10 +398,13 @@ export function PlacementResultView() {
                 <div className="text-white/60 text-sm">
                   {totalCorrect} / {totalQuestions} correct
                 </div>
+                <div className="mt-1 text-white/40 text-xs">
+                  Avg level: {avgLevel}/10
+                </div>
                 <div className="mt-2 flex gap-2 flex-wrap">
                   {AXIS_META_DISPLAY.map((ax) => (
                     <div key={ax.key} className={`text-[10px] font-bold ${ax.color}`}>
-                      {ax.label}: {actualScores[ax.key]}%
+                      {ax.label}: Lv {levelVector[ax.key]}
                     </div>
                   ))}
                 </div>
@@ -403,14 +443,18 @@ export function PlacementResultView() {
                   const actual = axisMap[ax.key].actual
                   const target = axisMap[ax.key].target
                   const delta = actual - target
+                  const lvl = levelVector[ax.key]  // 1–10
                   return (
                     <div key={ax.key}>
                       <div className="flex justify-between items-center mb-1">
                         <span className={`text-xs font-semibold ${ax.color}`}>{ax.label}</span>
                         <div className="flex items-center gap-2">
                           <span className="text-white/40 text-[10px]">Target: {target}%</span>
-                          <span className={`text-xs font-bold ${actual >= target ? 'text-emerald-300' : 'text-rose-300'}`}>
-                            {delta >= 0 ? '+' : ''}{delta}%
+                          <span className={`text-xs font-bold tabular-nums ${actual >= target ? 'text-emerald-300' : 'text-rose-300'}`}>
+                            Lv {lvl}/10
+                          </span>
+                          <span className={`text-[10px] ${delta >= 0 ? 'text-emerald-300/60' : 'text-rose-300/60'}`}>
+                            ({delta >= 0 ? '+' : ''}{delta}%)
                           </span>
                         </div>
                       </div>

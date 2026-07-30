@@ -3,15 +3,20 @@ import { useNavigate } from '@tanstack/react-router'
 import tmaLogo from '@/asset/image/tma_logo.png'
 import bannerBg from '@/asset/image/banner_background.png'
 import { TestQuestionCard } from './TestQuestionCard'
-import type { TestQuestion, QuestionResult, SkillAxis } from '../api/placementTestTypes'
+import type { TestQuestion, QuestionResult, SkillAxis, DifficultyLevel } from '../api/placementTestTypes'
 import { SKILL_TO_AXIS } from '../api/placementTestTypes'
 import { completePlacementTest, fetchPlacementTestQuestions } from '../api/onboardingApi'
 import type { RawPlacementQuestionApi } from '../api/onboardingApi'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+// DB: 4 skills × 10 difficulty levels × 5 questions = 200 questions/role
+// Test session: 24 questions (6 per axis), adaptive ±1 per answer
 const TOTAL_QUESTIONS = 24        // 6 per axis × 4 axes
 const QUESTIONS_PER_AXIS = 6
+const MIN_LEVEL: DifficultyLevel = 1
+const MAX_LEVEL: DifficultyLevel = 10
+const START_LEVEL: DifficultyLevel = 5  // start at middle of 1-10 range
 const AXIS_SEQUENCE: Array<'D' | 'C' | 'T' | 'G'> = [
   'D', 'C', 'T', 'G',
   'D', 'C', 'T', 'G',
@@ -23,7 +28,10 @@ const AXIS_SEQUENCE: Array<'D' | 'C' | 'T' | 'G'> = [
 
 // ─── Pool Helpers ─────────────────────────────────────────────────────────────
 
-type Pool = Record<'D' | 'C' | 'T' | 'G', Record<1 | 2 | 3, TestQuestion[]>>
+/** All valid difficulty levels */
+const ALL_LEVELS: DifficultyLevel[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+type Pool = Record<'D' | 'C' | 'T' | 'G', Partial<Record<DifficultyLevel, TestQuestion[]>>>
 
 /** Transform raw API questions into the frontend TestQuestion shape */
 function normalise(raw: RawPlacementQuestionApi): TestQuestion {
@@ -33,7 +41,7 @@ function normalise(raw: RawPlacementQuestionApi): TestQuestion {
   return {
     id: String(raw.id),
     axis: SKILL_TO_AXIS[raw.skill],
-    difficulty: raw.level,
+    difficulty: raw.level as DifficultyLevel,
     question: raw.statement,
     options,
     correctId: correctOption?.id ?? options[0]?.id ?? 'a',
@@ -41,20 +49,14 @@ function normalise(raw: RawPlacementQuestionApi): TestQuestion {
   }
 }
 
-/** Build the pool structure from the raw API response */
+/** Build the pool structure from the raw API response (levels 1–10) */
 function buildPool(rawList: RawPlacementQuestionApi[]): Pool {
-  const pool: Pool = {
-    D: { 1: [], 2: [], 3: [] },
-    C: { 1: [], 2: [], 3: [] },
-    T: { 1: [], 2: [], 3: [] },
-    G: { 1: [], 2: [], 3: [] },
-  }
+  const pool: Pool = { D: {}, C: {}, T: {}, G: {} }
   for (const raw of rawList) {
     const skill = raw.skill as 'D' | 'C' | 'T' | 'G'
-    const level = raw.level as 1 | 2 | 3
-    if (pool[skill] && pool[skill][level]) {
-      pool[skill][level].push(normalise(raw))
-    }
+    const level = raw.level as DifficultyLevel
+    if (!pool[skill][level]) pool[skill][level] = []
+    pool[skill][level]!.push(normalise(raw))
   }
   return pool
 }
@@ -68,16 +70,27 @@ function pickRandom<T>(arr: T[]): T | null {
 
 /**
  * Pick the next question for an axis at the given level.
- * Falls back to adjacent levels if the desired level is exhausted.
+ * Falls back to adjacent levels (expanding outward) if the desired level is exhausted.
  */
 function pickQuestion(
   pool: Pool,
   axis: 'D' | 'C' | 'T' | 'G',
-  level: 1 | 2 | 3,
+  level: DifficultyLevel,
 ): TestQuestion | null {
-  for (const fallback of [level, Math.min(level + 1, 3) as 1 | 2 | 3, Math.max(level - 1, 1) as 1 | 2 | 3]) {
-    const q = pickRandom(pool[axis][fallback as 1 | 2 | 3])
-    if (q) return q
+  // Try the exact level first, then expand outward (±1, ±2, …)
+  const candidates: DifficultyLevel[] = [level]
+  for (let delta = 1; delta < ALL_LEVELS.length; delta++) {
+    const up = (level + delta) as DifficultyLevel
+    const down = (level - delta) as DifficultyLevel
+    if (up <= MAX_LEVEL) candidates.push(up)
+    if (down >= MIN_LEVEL) candidates.push(down)
+  }
+  for (const lvl of candidates) {
+    const bucket = pool[axis][lvl]
+    if (bucket && bucket.length > 0) {
+      const q = pickRandom(bucket)
+      if (q) return q
+    }
   }
   return null
 }
@@ -175,9 +188,9 @@ export function PlacementTestEngine() {
   // ── Question pool (mutable ref so pickQuestion can splice without re-renders)
   const poolRef = useRef<Pool | null>(null)
 
-  // ── Adaptive per-axis current difficulty level ───────────────────────────────
-  const [axisLevel, setAxisLevel] = useState<Record<'D' | 'C' | 'T' | 'G', 1 | 2 | 3>>({
-    D: 1, C: 1, T: 1, G: 1,
+  // ── Adaptive per-axis current difficulty level (starts at 5 = midpoint of 1-10)
+  const [axisLevel, setAxisLevel] = useState<Record<'D' | 'C' | 'T' | 'G', DifficultyLevel>>({
+    D: START_LEVEL, C: START_LEVEL, T: START_LEVEL, G: START_LEVEL,
   })
   const axisLevelRef = useRef(axisLevel) // keep ref in sync for use inside pickQuestion
   useEffect(() => { axisLevelRef.current = axisLevel }, [axisLevel])
@@ -211,9 +224,9 @@ export function PlacementTestEngine() {
         const pool = buildPool(data)
         poolRef.current = pool
 
-        // Pick the very first question (axis D, starting level 1)
+        // Pick the very first question (axis D, starting level 5 = midpoint)
         const firstAxis = AXIS_SEQUENCE[0]
-        const firstQ = pickQuestion(pool, firstAxis, 1)
+        const firstQ = pickQuestion(pool, firstAxis, START_LEVEL)
         if (!firstQ) {
           setLoadState('empty')
           return
@@ -263,14 +276,14 @@ export function PlacementTestEngine() {
     }
     const updatedResults = [...results, newResult]
 
-    // ── Adaptive: update difficulty for this axis ────────────────────────────
+    // ── Adaptive: update difficulty for this axis (+1 on correct, -1 on wrong) ──
     const skill = AXIS_SEQUENCE[currentIndex]
     const prevLevel = axisLevelRef.current[skill]
     const nextLevel = (
       isCorrect
-        ? Math.min(prevLevel + 1, 3)
-        : Math.max(prevLevel - 1, 1)
-    ) as 1 | 2 | 3
+        ? Math.min(prevLevel + 1, MAX_LEVEL)
+        : Math.max(prevLevel - 1, MIN_LEVEL)
+    ) as DifficultyLevel
     const updatedAxisLevel = { ...axisLevelRef.current, [skill]: nextLevel }
 
     const isLastQuestion = currentIndex === TOTAL_QUESTIONS - 1
