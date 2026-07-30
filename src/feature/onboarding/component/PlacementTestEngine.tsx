@@ -2,13 +2,100 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import tmaLogo from '@/asset/image/tma_logo.png'
 import bannerBg from '@/asset/image/banner_background.png'
-import { PLACEMENT_QUESTIONS } from '../api/placementTestData'
 import { TestQuestionCard } from './TestQuestionCard'
-import type { QuestionResult } from '../api/placementTestTypes'
+import type { TestQuestion, QuestionResult, SkillAxis, DifficultyLevel } from '../api/placementTestTypes'
+import { SKILL_TO_AXIS } from '../api/placementTestTypes'
+import { completePlacementTest, fetchPlacementTestQuestions } from '../api/onboardingApi'
+import type { RawPlacementQuestionApi } from '../api/onboardingApi'
 
-const TOTAL = PLACEMENT_QUESTIONS.length // 24
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-// ─── Quit Confirmation Modal ──────────────────────────────────────────────────
+// DB: 4 skills × 10 difficulty levels × 5 questions = 200 questions/role
+// Test session: 24 questions (6 per axis), adaptive ±1 per answer
+const TOTAL_QUESTIONS = 24        // 6 per axis × 4 axes
+const QUESTIONS_PER_AXIS = 6
+const MIN_LEVEL: DifficultyLevel = 1
+const MAX_LEVEL: DifficultyLevel = 10
+const START_LEVEL: DifficultyLevel = 5  // start at middle of 1-10 range
+const AXIS_SEQUENCE: Array<'D' | 'C' | 'T' | 'G'> = [
+  'D', 'C', 'T', 'G',
+  'D', 'C', 'T', 'G',
+  'D', 'C', 'T', 'G',
+  'D', 'C', 'T', 'G',
+  'D', 'C', 'T', 'G',
+  'D', 'C', 'T', 'G',
+] // 24 slots, round-robin across axes
+
+// ─── Pool Helpers ─────────────────────────────────────────────────────────────
+
+/** All valid difficulty levels */
+const ALL_LEVELS: DifficultyLevel[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+type Pool = Record<'D' | 'C' | 'T' | 'G', Partial<Record<DifficultyLevel, TestQuestion[]>>>
+
+/** Transform raw API questions into the frontend TestQuestion shape */
+function normalise(raw: RawPlacementQuestionApi): TestQuestion {
+  const optionIds = ['a', 'b', 'c', 'd']
+  const options = raw.options.map((text, i) => ({ id: optionIds[i] ?? String(i), text }))
+  const correctOption = options.find((o) => o.text === raw.correct_answer)
+  return {
+    id: String(raw.id),
+    axis: SKILL_TO_AXIS[raw.skill],
+    difficulty: raw.level as DifficultyLevel,
+    question: raw.statement,
+    options,
+    correctId: correctOption?.id ?? options[0]?.id ?? 'a',
+    explanation: '',
+  }
+}
+
+/** Build the pool structure from the raw API response (levels 1–10) */
+function buildPool(rawList: RawPlacementQuestionApi[]): Pool {
+  const pool: Pool = { D: {}, C: {}, T: {}, G: {} }
+  for (const raw of rawList) {
+    const skill = raw.skill as 'D' | 'C' | 'T' | 'G'
+    const level = raw.level as DifficultyLevel
+    if (!pool[skill][level]) pool[skill][level] = []
+    pool[skill][level]!.push(normalise(raw))
+  }
+  return pool
+}
+
+/** Pick a random item from an array (modifies in place, returns picked item) */
+function pickRandom<T>(arr: T[]): T | null {
+  if (arr.length === 0) return null
+  const idx = Math.floor(Math.random() * arr.length)
+  return arr.splice(idx, 1)[0]
+}
+
+/**
+ * Pick the next question for an axis at the given level.
+ * Falls back to adjacent levels (expanding outward) if the desired level is exhausted.
+ */
+function pickQuestion(
+  pool: Pool,
+  axis: 'D' | 'C' | 'T' | 'G',
+  level: DifficultyLevel,
+): TestQuestion | null {
+  // Try the exact level first, then expand outward (±1, ±2, …)
+  const candidates: DifficultyLevel[] = [level]
+  for (let delta = 1; delta < ALL_LEVELS.length; delta++) {
+    const up = (level + delta) as DifficultyLevel
+    const down = (level - delta) as DifficultyLevel
+    if (up <= MAX_LEVEL) candidates.push(up)
+    if (down >= MIN_LEVEL) candidates.push(down)
+  }
+  for (const lvl of candidates) {
+    const bucket = pool[axis][lvl]
+    if (bucket && bucket.length > 0) {
+      const q = pickRandom(bucket)
+      if (q) return q
+    }
+  }
+  return null
+}
+
+// ─── Quit Modal ────────────────────────────────────────────────────────────────
 
 function QuitModal({ onStay, onQuit }: { onStay: () => void; onQuit: () => void }) {
   return (
@@ -18,9 +105,9 @@ function QuitModal({ onStay, onQuit }: { onStay: () => void; onQuit: () => void 
         <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-rose-500/15 border border-rose-400/30 flex items-center justify-center text-2xl">
           ⚠️
         </div>
-        <h3 className="text-lg font-bold text-white text-center mb-2">Thoát bài test?</h3>
+        <h3 className="text-lg font-bold text-white text-center mb-2">Exit the test?</h3>
         <p className="text-sm text-white/60 text-center mb-6 leading-relaxed">
-          Tiến độ bài test <span className="text-rose-300 font-semibold">sẽ bị mất hoàn toàn</span> nếu bạn thoát. Bạn có chắc chắn?
+          Your test progress will be <span className="text-rose-300 font-semibold">completely lost</span> if you exit. Are you sure?
         </p>
         <div className="flex gap-3">
           <button
@@ -28,16 +115,62 @@ function QuitModal({ onStay, onQuit }: { onStay: () => void; onQuit: () => void 
             onClick={onStay}
             className="flex-1 py-3 rounded-xl bg-blue-500/30 border border-blue-400/40 text-blue-300 hover:bg-blue-500/40 font-bold text-sm transition-all"
           >
-            Tiếp tục làm bài
+            Continue Test
           </button>
           <button
             id="btn-quit-confirm"
             onClick={onQuit}
             className="flex-1 py-3 rounded-xl border border-white/20 text-white/60 hover:bg-white/10 font-medium text-sm transition-all"
           >
-            Thoát
+            Exit
           </button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Loading Screen ────────────────────────────────────────────────────────────
+
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center relative"
+      style={{ backgroundImage: `url(${bannerBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+    >
+      <div className="fixed inset-0 bg-blue-700/80" />
+      <div className="relative z-10 flex flex-col items-center gap-5">
+        <div className="w-16 h-16 rounded-full border-4 border-blue-300/30 border-t-blue-300 animate-spin" />
+        <p className="text-white/70 text-sm font-medium">Loading questions...</p>
+      </div>
+    </div>
+  )
+}
+
+// ─── Empty State ───────────────────────────────────────────────────────────────
+
+function NoQuestionsScreen({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center relative"
+      style={{ backgroundImage: `url(${bannerBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+    >
+      <div className="fixed inset-0 bg-blue-700/80" />
+      <div className="relative z-10 flex flex-col items-center gap-6 max-w-sm text-center px-6">
+        <div className="w-20 h-20 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-4xl">
+          📭
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-white mb-2">No Questions Available</h2>
+          <p className="text-white/60 text-sm leading-relaxed">
+            There are no questions for this role yet. Please check back later or select a different role.
+          </p>
+        </div>
+        <button
+          id="btn-no-questions-back"
+          onClick={onBack}
+          className="px-6 py-3 rounded-xl bg-white/15 border border-white/25 text-white font-semibold text-sm hover:bg-white/25 transition-all"
+        >
+          ← Back to Role Selection
+        </button>
       </div>
     </div>
   )
@@ -48,23 +181,70 @@ function QuitModal({ onStay, onQuit }: { onStay: () => void; onQuit: () => void 
 export function PlacementTestEngine() {
   const navigate = useNavigate()
 
+  // ── Fetch state ─────────────────────────────────────────────────────────────
+  const [loadState, setLoadState] = useState<'loading' | 'empty' | 'ready'>('loading')
+  const [fetchError, setFetchError] = useState<string | null>(null)
+
+  // ── Question pool (mutable ref so pickQuestion can splice without re-renders)
+  const poolRef = useRef<Pool | null>(null)
+
+  // ── Adaptive per-axis current difficulty level (starts at 5 = midpoint of 1-10)
+  const [axisLevel, setAxisLevel] = useState<Record<'D' | 'C' | 'T' | 'G', DifficultyLevel>>({
+    D: START_LEVEL, C: START_LEVEL, T: START_LEVEL, G: START_LEVEL,
+  })
+  const axisLevelRef = useRef(axisLevel) // keep ref in sync for use inside pickQuestion
+  useEffect(() => { axisLevelRef.current = axisLevel }, [axisLevel])
+
+  // ── Quiz state ───────────────────────────────────────────────────────────────
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [currentQuestion, setCurrentQuestion] = useState<TestQuestion | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [results, setResults] = useState<QuestionResult[]>([])
   const [visible, setVisible] = useState(true)
   const [showQuit, setShowQuit] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const current = PLACEMENT_QUESTIONS[currentIndex]
-  const progress = ((currentIndex) / TOTAL) * 100
-  const isLastQuestion = currentIndex === TOTAL - 1
-
-  // ── Block browser back button (US-10) ──────────────────────────────────────
+  // ── Fetch questions on mount ─────────────────────────────────────────────────
   useEffect(() => {
-    // Push a state so the back button pops back to this state, not leaves
+    const rawRoleId = localStorage.getItem('pending_role_id')
+    const roleId = rawRoleId ? parseInt(rawRoleId, 10) : null
+
+    if (!roleId) {
+      setFetchError('No role selected. Please go back and choose a role.')
+      setLoadState('empty')
+      return
+    }
+
+    fetchPlacementTestQuestions(roleId)
+      .then((data) => {
+        if (!data || data.length === 0) {
+          setLoadState('empty')
+          return
+        }
+        const pool = buildPool(data)
+        poolRef.current = pool
+
+        // Pick the very first question (axis D, starting level 5 = midpoint)
+        const firstAxis = AXIS_SEQUENCE[0]
+        const firstQ = pickQuestion(pool, firstAxis, START_LEVEL)
+        if (!firstQ) {
+          setLoadState('empty')
+          return
+        }
+        setCurrentQuestion(firstQ)
+        setLoadState('ready')
+      })
+      .catch((err) => {
+        console.error('Failed to load placement test questions:', err)
+        setFetchError(err?.message ?? 'Failed to load questions.')
+        setLoadState('empty')
+      })
+  }, [])
+
+  // ── Block browser back button ────────────────────────────────────────────────
+  useEffect(() => {
     window.history.pushState(null, '', window.location.href)
     const handlePopState = () => {
-      // Re-push to stay on this page and show quit modal instead
       window.history.pushState(null, '', window.location.href)
       setShowQuit(true)
     }
@@ -72,49 +252,94 @@ export function PlacementTestEngine() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
-  // ── Auto-scroll to top when question changes ───────────────────────────────
+  // ── Auto-scroll to top when question changes ─────────────────────────────────
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [currentIndex])
+
+  // ─────────────────────────────────────────────────────────────────────────────
 
   function handleSelect(optionId: string) {
     setSelectedId(optionId)
   }
 
   function handleNext() {
-    if (!selectedId || isSubmitting) return
+    if (!selectedId || !currentQuestion || isSubmitting || !poolRef.current) return
 
-    const isCorrect = selectedId === current.correctId
+    const isCorrect = selectedId === currentQuestion.correctId
     const newResult: QuestionResult = {
-      questionId: current.id,
-      axis: current.axis,
-      difficulty: current.difficulty,
+      questionId: currentQuestion.id,
+      axis: currentQuestion.axis,
+      difficulty: currentQuestion.difficulty,
       selectedId,
       isCorrect,
     }
     const updatedResults = [...results, newResult]
 
+    // ── Adaptive: update difficulty for this axis (+1 on correct, -1 on wrong) ──
+    const skill = AXIS_SEQUENCE[currentIndex]
+    const prevLevel = axisLevelRef.current[skill]
+    const nextLevel = (
+      isCorrect
+        ? Math.min(prevLevel + 1, MAX_LEVEL)
+        : Math.max(prevLevel - 1, MIN_LEVEL)
+    ) as DifficultyLevel
+    const updatedAxisLevel = { ...axisLevelRef.current, [skill]: nextLevel }
+
+    const isLastQuestion = currentIndex === TOTAL_QUESTIONS - 1
+
     if (isLastQuestion) {
-      // Submit — navigate to result page with results in state
       setIsSubmitting(true)
-      setTimeout(() => {
-        navigate({
-          to: '/placement-result',
-          state: { results: updatedResults },
+
+      const rawAnswers = localStorage.getItem('pending_survey_answers')
+      const rawRoleId = localStorage.getItem('pending_role_id')
+      const surveyAnswers = rawAnswers ? JSON.parse(rawAnswers) : null
+      const roleId = rawRoleId ? parseInt(rawRoleId, 10) : null
+
+      completePlacementTest({ role_id: roleId, survey_answers: surveyAnswers })
+        .catch((err) => console.warn('Failed to commit placement test:', err))
+        .finally(() => {
+          localStorage.removeItem('pending_survey_answers')
+          localStorage.removeItem('pending_role_id')
+          navigate({ to: '/placement-result', state: { results: updatedResults } as any })
         })
-      }, 600)
       return
     }
 
-    // Animate transition to next question
+    // ── Pick next question adaptively ────────────────────────────────────────
+    const nextIndex = currentIndex + 1
+    const nextAxis = AXIS_SEQUENCE[nextIndex]
+    const nextLevelForAxis = nextAxis === skill ? nextLevel : updatedAxisLevel[nextAxis]
+    const nextQ = pickQuestion(poolRef.current, nextAxis, nextLevelForAxis)
+
+    // Animate out → update state → animate in
     setVisible(false)
     setTimeout(() => {
       setResults(updatedResults)
-      setCurrentIndex((i) => i + 1)
+      setAxisLevel(updatedAxisLevel)
+      axisLevelRef.current = updatedAxisLevel
+      setCurrentIndex(nextIndex)
+      setCurrentQuestion(nextQ)
       setSelectedId(null)
       setVisible(true)
     }, 250)
   }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  if (loadState === 'loading') return <LoadingScreen />
+  if (loadState === 'empty') {
+    return (
+      <NoQuestionsScreen
+        onBack={() => navigate({ to: '/onboarding/role-selection' })}
+      />
+    )
+  }
+
+  // ── Progress ─────────────────────────────────────────────────────────────────
+  const progress = (currentIndex / TOTAL_QUESTIONS) * 100
+  const isLastQuestion = currentIndex === TOTAL_QUESTIONS - 1
+  const current = currentQuestion!
 
   return (
     <div
@@ -133,7 +358,7 @@ export function PlacementTestEngine() {
       {/* TMA Logo */}
       <img src={tmaLogo} alt="TMA Solutions" className="absolute top-6 left-6 w-45 h-auto z-20" />
 
-      {/* Exit Button */}
+      {/* Exit button */}
       <button
         id="btn-exit-test"
         type="button"
@@ -141,9 +366,9 @@ export function PlacementTestEngine() {
         className="absolute top-6 right-6 z-20 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/70 hover:text-white transition-colors text-xs font-medium flex items-center gap-1.5 backdrop-blur-md"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
-        <span>Thoát</span>
+        <span>Back to Survey</span>
       </button>
 
       {/* Progress bar — top */}
@@ -154,25 +379,24 @@ export function PlacementTestEngine() {
         />
       </div>
 
-      {/* ── Main content ──────────────────────────────────────────────────── */}
+      {/* ── Main content ────────────────────────────────────────────────────── */}
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-20">
         <div className="w-full max-w-xl">
 
           {/* Header Stepper & Badge */}
           <div className="flex flex-col items-center mb-8">
-            {/* Progress Steps */}
             <div className="flex items-center justify-center mb-6">
               {[1, 2, 3, 4].map((step) => (
                 <div key={step} className="flex items-center">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${step <= 3
-                      ? 'bg-blue-400 text-white shadow-md shadow-blue-900'
-                      : 'bg-white/10 text-white/40'
-                      }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                      step <= 3
+                        ? 'bg-blue-400 text-white shadow-md shadow-blue-900'
+                        : 'bg-white/10 text-white/40'
+                    }`}
                   >
                     {step < 3 ? '✓' : step}
                   </div>
-
                   {step < 4 && (
                     <div className="w-10 h-0.5 bg-white/20 mx-2 rounded-full" />
                   )}
@@ -180,35 +404,34 @@ export function PlacementTestEngine() {
               ))}
             </div>
 
-            {/* Badge */}
             <div className="flex justify-center w-full">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-blue-200 text-sm font-medium">
                 <span className="w-2 h-2 rounded-full bg-blue-300 animate-pulse" />
-                Bước 3 / 4 — Bài Test Trình Độ
+                Step 3 / 4 — Placement Test
               </div>
             </div>
           </div>
 
-          {/* Sub-step dots progress & counter bar */}
+          {/* Sub-step dots progress & counter */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2 overflow-hidden">
-              {/* Step dots */}
               <div className="flex gap-1.5 flex-wrap max-w-[280px] sm:max-w-none">
-                {PLACEMENT_QUESTIONS.map((_, i) => (
+                {AXIS_SEQUENCE.map((_, i) => (
                   <div
                     key={i}
-                    className={`rounded-full transition-all duration-300 ${i === currentIndex
-                      ? 'w-5 h-2 bg-blue-300'
-                      : i < currentIndex
+                    className={`rounded-full transition-all duration-300 ${
+                      i === currentIndex
+                        ? 'w-5 h-2 bg-blue-300'
+                        : i < currentIndex
                         ? 'w-2 h-2 bg-blue-400/60'
                         : 'w-2 h-2 bg-white/20'
-                      }`}
+                    }`}
                   />
                 ))}
               </div>
             </div>
             <span className="text-white/40 text-sm font-mono shrink-0 ml-3">
-              {currentIndex + 1} / {TOTAL}
+              {currentIndex + 1} / {TOTAL_QUESTIONS}
             </span>
           </div>
 
@@ -216,7 +439,7 @@ export function PlacementTestEngine() {
           <TestQuestionCard
             question={current}
             questionNumber={currentIndex + 1}
-            total={TOTAL}
+            total={TOTAL_QUESTIONS}
             selectedId={selectedId}
             onSelect={handleSelect}
             visible={visible}
@@ -241,16 +464,16 @@ export function PlacementTestEngine() {
                   <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
-                  <span>Đang tổng hợp kết quả...</span>
+                  <span>Compiling results...</span>
                 </>
               ) : isLastQuestion ? (
                 <>
-                  <span>Nộp bài</span>
+                  <span>Submit</span>
                   <span>🎉</span>
                 </>
               ) : (
                 <>
-                  <span>Câu tiếp theo</span>
+                  <span>Next Question</span>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
@@ -258,13 +481,17 @@ export function PlacementTestEngine() {
               )}
             </button>
 
-            {/* No-back reminder */}
             {!isLastQuestion && (
               <p className="text-center text-[11px] text-white/25 mt-2">
-                🔒 Không thể quay lại câu trước — hãy chọn cẩn thận
+                🔒 You cannot go back — choose carefully
               </p>
             )}
           </div>
+
+          {/* Error notice */}
+          {fetchError && (
+            <p className="mt-4 text-center text-xs text-rose-300/70">{fetchError}</p>
+          )}
         </div>
       </div>
 
@@ -272,7 +499,7 @@ export function PlacementTestEngine() {
       {showQuit && (
         <QuitModal
           onStay={() => setShowQuit(false)}
-          onQuit={() => navigate({ to: '/survey' })}
+          onQuit={() => navigate({ to: '/onboarding/survey' })}
         />
       )}
     </div>

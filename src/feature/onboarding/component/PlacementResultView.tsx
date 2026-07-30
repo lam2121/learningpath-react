@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
+import { LogOut } from 'lucide-react'
 import tmaLogo from '@/asset/image/tma_logo.png'
 import bannerBg from '@/asset/image/banner_background.png'
+import { useAuth } from '@/common/context/AuthContext'
 import type { QuestionResult, SkillAxis } from '../api/placementTestTypes'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -16,10 +18,10 @@ type AxisMap = Record<SkillAxis, AxisScore>
 // ─── Radar Chart (pure SVG) ───────────────────────────────────────────────────
 
 const AXES: { key: SkillAxis; label: string; labelEn: string }[] = [
-  { key: 'D_doc', label: 'Tài liệu', labelEn: 'D' },
-  { key: 'C_comm', label: 'Giao tiếp', labelEn: 'C' },
-  { key: 'T_trouble', label: 'Sự cố', labelEn: 'T' },
-  { key: 'G_biz', label: 'Thương mại', labelEn: 'G' },
+  { key: 'D_doc',     label: 'Documentation',   labelEn: 'D' },
+  { key: 'C_comm',    label: 'Communication',    labelEn: 'C' },
+  { key: 'T_trouble', label: 'Troubleshooting',  labelEn: 'T' },
+  { key: 'G_biz',     label: 'Business',         labelEn: 'G' },
 ]
 
 const AXIS_COLORS: Record<SkillAxis, string> = {
@@ -169,6 +171,16 @@ function RadarChart({ axisMap, animated }: RadarChartProps) {
 
 // ─── Score computation ────────────────────────────────────────────────────────
 
+/**
+ * Final score per axis = the difficulty level of the LAST question answered
+ * for that axis (the adaptive endpoint after 6 questions per axis).
+ *
+ * Rule (US-06c):
+ *  - Each axis starts at level 5/10
+ *  - Correct → +1, Wrong → -1 (clamped 1–10)
+ *  - After 6 questions the level reached IS the score for that axis
+ *  - Final vector stored as level (1-10); displayed as level / 10 * 100 for radar
+ */
 function computeAxisScores(results: QuestionResult[]): Record<SkillAxis, number> {
   const axes: SkillAxis[] = ['D_doc', 'C_comm', 'T_trouble', 'G_biz']
   const scores: Record<SkillAxis, number> = { D_doc: 0, C_comm: 0, T_trouble: 0, G_biz: 0 }
@@ -176,13 +188,28 @@ function computeAxisScores(results: QuestionResult[]): Record<SkillAxis, number>
   axes.forEach((axis) => {
     const relevant = results.filter((r) => r.axis === axis)
     if (relevant.length === 0) return
-    const correct = relevant.filter((r) => r.isCorrect)
-    const weightedScore = correct.reduce((sum, r) => sum + r.difficulty, 0)
-    const maxWeight = relevant.reduce((sum, r) => sum + r.difficulty, 0)
-    scores[axis] = Math.round((weightedScore / maxWeight) * 100)
+    // The LAST question's difficulty = the adaptive level reached for this axis
+    const lastLevel = relevant[relevant.length - 1].difficulty  // 1–10
+    // Normalize to 0-100 for radar display
+    scores[axis] = Math.round((lastLevel / 10) * 100)
   })
 
   return scores
+}
+
+/**
+ * Raw level vector (1-10) per axis, stored in test_session.final_vector.
+ * Used for backend submission and display labels.
+ */
+function computeLevelVector(results: QuestionResult[]): Record<SkillAxis, number> {
+  const axes: SkillAxis[] = ['D_doc', 'C_comm', 'T_trouble', 'G_biz']
+  const levels: Record<SkillAxis, number> = { D_doc: 0, C_comm: 0, T_trouble: 0, G_biz: 0 }
+  axes.forEach((axis) => {
+    const relevant = results.filter((r) => r.axis === axis)
+    if (relevant.length === 0) return
+    levels[axis] = relevant[relevant.length - 1].difficulty  // 1–10
+  })
+  return levels
 }
 
 // Demo target (Intermediate level for PM — shown when no session data)
@@ -195,86 +222,106 @@ const DEMO_TARGETS: Record<SkillAxis, number> = {
 
 // Normalize targets to 0-100 scale for radar
 function normalizeTarget(t: number): number {
-  return Math.round((t / 78) * 100)
+  return Math.round(Math.min(Math.max(t, 0), 100))
 }
 
-// ─── AI Summary Generator (simulated) ────────────────────────────────────────
-
+/**
+ * Generate a personalized AI summary based on actual axis scores (0-100 scale).
+ */
 function generateAISummary(scores: Record<SkillAxis, number>): string {
-  const best = (Object.entries(scores) as [SkillAxis, number][]).sort((a, b) => b[1] - a[1])[0]
-  const worst = (Object.entries(scores) as [SkillAxis, number][]).sort((a, b) => a[1] - b[1])[0]
-
   const axisNames: Record<SkillAxis, string> = {
-    D_doc: 'viết tài liệu kỹ thuật',
-    C_comm: 'giao tiếp và thuyết trình',
-    T_trouble: 'xử lý sự cố',
-    G_biz: 'đàm phán thương mại',
+    D_doc: 'technical documentation',
+    C_comm: 'communication & presentation',
+    T_trouble: 'troubleshooting',
+    G_biz: 'business negotiation',
   }
+
+  const entries = Object.entries(scores) as [SkillAxis, number][]
+  const sorted = [...entries].sort((a, b) => b[1] - a[1])
+  const best = sorted.map(([k]) => k)
+  const worst = [...best].reverse()
 
   const totalAvg = Math.round(Object.values(scores).reduce((a, b) => a + b, 0) / 4)
 
   if (totalAvg >= 75) {
-    return `Xuất sắc! Năng lực giao tiếp IT của bạn ở mức cao — đặc biệt về kỹ năng ${axisNames[best[0]]}. Hệ thống sẽ tập trung vào ${axisNames[worst[0]]} để giúp bạn đạt đến mức chuyên gia toàn diện.`
+    return `Excellent! Your IT communication skills are at a high level — particularly in ${axisNames[best[0]]}. The system will focus on ${axisNames[worst[0]]} to help you reach expert-level proficiency.`
   } else if (totalAvg >= 50) {
-    return `Tốt! Bạn có nền tảng vững chắc về ${axisNames[best[0]]}. Lộ trình học sẽ được cá nhân hóa để nâng cao ${axisNames[worst[0]]} — kỹ năng quan trọng nhất cần cải thiện trong career track của bạn.`
+    return `Good! You have a solid foundation in ${axisNames[best[0]]}. Your learning path will be personalized to strengthen ${axisNames[worst[0]]} — the most important skill to improve in your career track.`
   } else {
-    return `Chào mừng đến với hành trình! Mỗi chuyên gia đều bắt đầu từ đây. Hệ thống sẽ xây dựng lộ trình từng bước, ưu tiên ${axisNames[worst[0]]} và củng cố ${axisNames[best[0]]} — hoàn toàn phù hợp với nhịp học của bạn.`
+    return `Welcome to the journey! Every expert starts here. The system will build a step-by-step learning path, prioritizing ${axisNames[worst[0]]} and reinforcing ${axisNames[best[0]]} — perfectly suited to your learning pace.`
   }
 }
 
 // ─── Result Breakdown ─────────────────────────────────────────────────────────
 
 const AXIS_META_DISPLAY = [
-  { key: 'D_doc' as SkillAxis, label: 'Tài liệu', color: 'text-blue-300', bar: 'bg-blue-400', track: 'bg-blue-400/20' },
-  { key: 'C_comm' as SkillAxis, label: 'Giao tiếp', color: 'text-emerald-300', bar: 'bg-emerald-400', track: 'bg-emerald-400/20' },
-  { key: 'T_trouble' as SkillAxis, label: 'Sự cố', color: 'text-rose-300', bar: 'bg-rose-400', track: 'bg-rose-400/20' },
-  { key: 'G_biz' as SkillAxis, label: 'Thương mại', color: 'text-amber-300', bar: 'bg-amber-400', track: 'bg-amber-400/20' },
+  { key: 'D_doc'     as SkillAxis, label: 'Documentation',  color: 'text-blue-300',    bar: 'bg-blue-400',    track: 'bg-blue-400/20' },
+  { key: 'C_comm'    as SkillAxis, label: 'Communication',  color: 'text-emerald-300', bar: 'bg-emerald-400', track: 'bg-emerald-400/20' },
+  { key: 'T_trouble' as SkillAxis, label: 'Troubleshooting', color: 'text-rose-300',   bar: 'bg-rose-400',    track: 'bg-rose-400/20' },
+  { key: 'G_biz'     as SkillAxis, label: 'Business',       color: 'text-amber-300',   bar: 'bg-amber-400',   track: 'bg-amber-400/20' },
 ]
 
 // ─── Main Result View ─────────────────────────────────────────────────────────
 
 export function PlacementResultView() {
   const navigate = useNavigate()
+  const { logout } = useAuth()
   const routerState = useRouterState({ select: (s) => s.location.state })
+  const handleSignOut = () => {
+    logout()
+    navigate({ to: '/login' })
+  }
 
   // Pull results from router state, or use demo data
   const results: QuestionResult[] = (routerState as { results?: QuestionResult[] })?.results ?? []
   const hasDemoData = results.length === 0
 
   // Demo results for testing without going through the test
+  // Simulates the T-axis example from the spec:
+  // Q1 lvl5(✓)→Q2 lvl6(✓)→Q3 lvl7(✗)→Q4 lvl6(✓)→Q5 lvl7(✓)→Q6 lvl8  → T score = lvl 8
   const demoResults: QuestionResult[] = hasDemoData
     ? [
-      { questionId: 'd1', axis: 'D_doc', difficulty: 1, selectedId: 'b', isCorrect: true },
-      { questionId: 'd2', axis: 'D_doc', difficulty: 1, selectedId: 'c', isCorrect: true },
-      { questionId: 'd3', axis: 'D_doc', difficulty: 2, selectedId: 'b', isCorrect: true },
-      { questionId: 'd4', axis: 'D_doc', difficulty: 2, selectedId: 'b', isCorrect: true },
-      { questionId: 'd5', axis: 'D_doc', difficulty: 3, selectedId: 'b', isCorrect: true },
-      { questionId: 'd6', axis: 'D_doc', difficulty: 3, selectedId: 'a', isCorrect: false },
-      { questionId: 'c1', axis: 'C_comm', difficulty: 1, selectedId: 'b', isCorrect: true },
-      { questionId: 'c2', axis: 'C_comm', difficulty: 1, selectedId: 'b', isCorrect: true },
-      { questionId: 'c3', axis: 'C_comm', difficulty: 2, selectedId: 'c', isCorrect: true },
-      { questionId: 'c4', axis: 'C_comm', difficulty: 2, selectedId: 'a', isCorrect: false },
-      { questionId: 'c5', axis: 'C_comm', difficulty: 3, selectedId: 'a', isCorrect: false },
-      { questionId: 'c6', axis: 'C_comm', difficulty: 3, selectedId: 'b', isCorrect: true },
-      { questionId: 't1', axis: 'T_trouble', difficulty: 1, selectedId: 'b', isCorrect: true },
-      { questionId: 't2', axis: 'T_trouble', difficulty: 1, selectedId: 'b', isCorrect: true },
-      { questionId: 't3', axis: 'T_trouble', difficulty: 2, selectedId: 'c', isCorrect: true },
-      { questionId: 't4', axis: 'T_trouble', difficulty: 2, selectedId: 'a', isCorrect: false },
-      { questionId: 't5', axis: 'T_trouble', difficulty: 3, selectedId: 'c', isCorrect: false },
-      { questionId: 't6', axis: 'T_trouble', difficulty: 3, selectedId: 'b', isCorrect: true },
-      { questionId: 'g1', axis: 'G_biz', difficulty: 1, selectedId: 'c', isCorrect: true },
-      { questionId: 'g2', axis: 'G_biz', difficulty: 1, selectedId: 'c', isCorrect: true },
-      { questionId: 'g3', axis: 'G_biz', difficulty: 2, selectedId: 'b', isCorrect: true },
-      { questionId: 'g4', axis: 'G_biz', difficulty: 2, selectedId: 'a', isCorrect: false },
-      { questionId: 'g5', axis: 'G_biz', difficulty: 3, selectedId: 'c', isCorrect: false },
-      { questionId: 'g6', axis: 'G_biz', difficulty: 3, selectedId: 'b', isCorrect: true },
+      // D_doc: 5→6→7→8→9→10 (all correct) → final level 10
+      { questionId: 'd1', axis: 'D_doc',     difficulty: 5,  selectedId: 'b', isCorrect: true },
+      { questionId: 'd2', axis: 'D_doc',     difficulty: 6,  selectedId: 'c', isCorrect: true },
+      { questionId: 'd3', axis: 'D_doc',     difficulty: 7,  selectedId: 'b', isCorrect: true },
+      { questionId: 'd4', axis: 'D_doc',     difficulty: 8,  selectedId: 'b', isCorrect: true },
+      { questionId: 'd5', axis: 'D_doc',     difficulty: 9,  selectedId: 'b', isCorrect: true },
+      { questionId: 'd6', axis: 'D_doc',     difficulty: 10, selectedId: 'b', isCorrect: true },
+      // C_comm: 5→6→5→6→5→6 (alternating) → final level 6
+      { questionId: 'c1', axis: 'C_comm',    difficulty: 5,  selectedId: 'b', isCorrect: true },
+      { questionId: 'c2', axis: 'C_comm',    difficulty: 6,  selectedId: 'b', isCorrect: false },
+      { questionId: 'c3', axis: 'C_comm',    difficulty: 5,  selectedId: 'c', isCorrect: true },
+      { questionId: 'c4', axis: 'C_comm',    difficulty: 6,  selectedId: 'a', isCorrect: false },
+      { questionId: 'c5', axis: 'C_comm',    difficulty: 5,  selectedId: 'a', isCorrect: true },
+      { questionId: 'c6', axis: 'C_comm',    difficulty: 6,  selectedId: 'b', isCorrect: false },
+      // T_trouble: spec example 5→6→7→6→7→8 → final level 8
+      { questionId: 't1', axis: 'T_trouble', difficulty: 5,  selectedId: 'b', isCorrect: true },
+      { questionId: 't2', axis: 'T_trouble', difficulty: 6,  selectedId: 'b', isCorrect: true },
+      { questionId: 't3', axis: 'T_trouble', difficulty: 7,  selectedId: 'c', isCorrect: false },
+      { questionId: 't4', axis: 'T_trouble', difficulty: 6,  selectedId: 'a', isCorrect: true },
+      { questionId: 't5', axis: 'T_trouble', difficulty: 7,  selectedId: 'c', isCorrect: true },
+      { questionId: 't6', axis: 'T_trouble', difficulty: 8,  selectedId: 'b', isCorrect: true },
+      // G_biz: 5→4→3→4→3→4 (mostly wrong) → final level 4
+      { questionId: 'g1', axis: 'G_biz',     difficulty: 5,  selectedId: 'c', isCorrect: false },
+      { questionId: 'g2', axis: 'G_biz',     difficulty: 4,  selectedId: 'c', isCorrect: false },
+      { questionId: 'g3', axis: 'G_biz',     difficulty: 3,  selectedId: 'b', isCorrect: true },
+      { questionId: 'g4', axis: 'G_biz',     difficulty: 4,  selectedId: 'a', isCorrect: false },
+      { questionId: 'g5', axis: 'G_biz',     difficulty: 3,  selectedId: 'c', isCorrect: true },
+      { questionId: 'g6', axis: 'G_biz',     difficulty: 4,  selectedId: 'b', isCorrect: false },
     ]
     : results
 
-  const actualScores = computeAxisScores(demoResults)
+  const actualScores = computeAxisScores(demoResults)   // 0–100 for radar
+  const levelVector  = computeLevelVector(demoResults)   // 1–10 final_vector
   const totalCorrect = demoResults.filter((r) => r.isCorrect).length
   const totalQuestions = demoResults.length || 24
-  const overallPct = Math.round((totalCorrect / totalQuestions) * 100)
+  // Overall level = average of the 4 axis final levels (1-10 scale)
+  const avgLevel = Math.round(
+    Object.values(levelVector).reduce((a, b) => a + b, 0) / 4
+  )
+  // Normalized to 0-100 for the score ring
+  const overallPct = Math.round((avgLevel / 10) * 100)
 
   const axisMap: AxisMap = {
     D_doc: { actual: actualScores.D_doc, target: normalizeTarget(DEMO_TARGETS.D_doc) },
@@ -292,10 +339,10 @@ export function PlacementResultView() {
   }, [])
 
   function gradeLabel(pct: number): { label: string; color: string } {
-    if (pct >= 80) return { label: 'Xuất sắc', color: 'text-emerald-300' }
-    if (pct >= 60) return { label: 'Tốt', color: 'text-blue-300' }
-    if (pct >= 40) return { label: 'Cần cải thiện', color: 'text-amber-300' }
-    return { label: 'Cần nỗ lực', color: 'text-rose-300' }
+    if (pct >= 80) return { label: 'Excellent',    color: 'text-emerald-300' }
+    if (pct >= 60) return { label: 'Good',          color: 'text-blue-300' }
+    if (pct >= 40) return { label: 'Needs Work',    color: 'text-amber-300' }
+    return           { label: 'Keep Practicing', color: 'text-rose-300' }
   }
 
   return (
@@ -313,6 +360,15 @@ export function PlacementResultView() {
       {/* TMA Logo */}
       <img src={tmaLogo} alt="TMA Solutions" className="absolute top-6 left-6 w-45 h-auto z-20" />
 
+      {/* Sign out */}
+      <button
+        onClick={handleSignOut}
+        className="absolute top-6 right-6 z-20 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/70 hover:text-white transition-colors text-xs font-medium flex items-center gap-1.5 backdrop-blur-md"
+      >
+        <LogOut className="w-4 h-4" />
+        <span>Đăng xuất</span>
+      </button>
+
       {/* Content */}
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-start px-4 pt-24 pb-16">
         <div className={`w-full max-w-2xl transition-all duration-700 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
@@ -321,22 +377,22 @@ export function PlacementResultView() {
           <div className="text-center mb-8">
             <div className="text-6xl mb-4 animate-in zoom-in-50 duration-500">🎉</div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 drop-shadow-md">
-              Hoàn thành Placement Test!
+              Placement Test Complete!
             </h1>
             <p className="text-blue-100/60 text-sm">
-              Đây là hồ sơ năng lực giao tiếp IT của bạn — được đo qua 24 câu hỏi thực chiến.
+              This is your IT communication skill profile — measured across 24 real-world questions.
             </p>
             {hasDemoData && (
               <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-xs font-medium">
-                ⚡ Dữ liệu demo — truy cập /placement-test để làm bài thật
+                ⚡ Demo data — go to /placement-test to take the real test
               </div>
             )}
           </div>
 
-          {/* ── Overall score ───────────────────────────────────────────── */}
+          {/* ── Overall score (level 1-10 scale) ────────────────────────── */}
           <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-6 mb-5 text-center">
             <div className="flex items-center justify-center gap-6">
-              {/* Big score circle */}
+              {/* Big score circle — shows average level / 10 */}
               <div className="relative w-28 h-28">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
@@ -357,8 +413,8 @@ export function PlacementResultView() {
                   </defs>
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-black text-white">{overallPct}</span>
-                  <span className="text-xs text-white/40">%</span>
+                  <span className="text-3xl font-black text-white">{avgLevel}</span>
+                  <span className="text-xs text-white/40">/10</span>
                 </div>
               </div>
 
@@ -368,12 +424,15 @@ export function PlacementResultView() {
                   {gradeLabel(overallPct).label}
                 </div>
                 <div className="text-white/60 text-sm">
-                  {totalCorrect} / {totalQuestions} câu đúng
+                  {totalCorrect} / {totalQuestions} correct
+                </div>
+                <div className="mt-1 text-white/40 text-xs">
+                  Avg level: {avgLevel}/10
                 </div>
                 <div className="mt-2 flex gap-2 flex-wrap">
                   {AXIS_META_DISPLAY.map((ax) => (
                     <div key={ax.key} className={`text-[10px] font-bold ${ax.color}`}>
-                      {ax.label}: {actualScores[ax.key]}%
+                      {ax.label}: Lv {levelVector[ax.key]}
                     </div>
                   ))}
                 </div>
@@ -384,7 +443,7 @@ export function PlacementResultView() {
           {/* ── Radar Chart + Legend ─────────────────────────────────────── */}
           <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-6 mb-5">
             <p className="text-xs text-white/40 uppercase tracking-widest mb-5 text-center">
-              Radar Chart D/C/T/G — Năng lực vs Mục tiêu
+              Radar Chart D/C/T/G — Actual vs Target
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -399,11 +458,11 @@ export function PlacementResultView() {
                 <div className="flex gap-4 justify-center sm:justify-start">
                   <div className="flex items-center gap-2 text-xs text-white/60">
                     <div className="w-6 h-0.5 bg-blue-400 rounded" />
-                    Thực tế
+                    Actual
                   </div>
                   <div className="flex items-center gap-2 text-xs text-white/60">
                     <div className="w-6 h-0.5 bg-indigo-400 rounded border-0" style={{ borderTop: '1.5px dashed #818cf8' }} />
-                    Mục tiêu
+                    Target
                   </div>
                 </div>
 
@@ -412,14 +471,18 @@ export function PlacementResultView() {
                   const actual = axisMap[ax.key].actual
                   const target = axisMap[ax.key].target
                   const delta = actual - target
+                  const lvl = levelVector[ax.key]  // 1–10
                   return (
                     <div key={ax.key}>
                       <div className="flex justify-between items-center mb-1">
                         <span className={`text-xs font-semibold ${ax.color}`}>{ax.label}</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-white/40 text-[10px]">Mục tiêu: {target}%</span>
-                          <span className={`text-xs font-bold ${actual >= target ? 'text-emerald-300' : 'text-rose-300'}`}>
-                            {delta >= 0 ? '+' : ''}{delta}%
+                          <span className="text-white/40 text-[10px]">Target: {target}%</span>
+                          <span className={`text-xs font-bold tabular-nums ${actual >= target ? 'text-emerald-300' : 'text-rose-300'}`}>
+                            Lv {lvl}/10
+                          </span>
+                          <span className={`text-[10px] ${delta >= 0 ? 'text-emerald-300/60' : 'text-rose-300/60'}`}>
+                            ({delta >= 0 ? '+' : ''}{delta}%)
                           </span>
                         </div>
                       </div>
@@ -450,7 +513,7 @@ export function PlacementResultView() {
               </div>
               <div>
                 <p className="text-xs text-indigo-300 font-semibold uppercase tracking-wider mb-2">
-                  AI Advisor · Nhận xét cá nhân
+                  AI Advisor · Personal Feedback
                 </p>
                 <p className="text-sm text-white/80 leading-relaxed italic">
                   "{aiSummary}"
@@ -466,14 +529,14 @@ export function PlacementResultView() {
             onClick={() => navigate({ to: '/milestone' })}
             className="w-full py-5 px-6 rounded-2xl bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 hover:from-blue-600 hover:via-indigo-600 hover:to-violet-600 text-white font-extrabold text-lg shadow-2xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-3"
           >
-            <span>✨ Tạo khóa học của tôi</span>
+            <span>✨ Create My Course</span>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
           </button>
 
           <p className="text-center text-xs text-white/30 mt-3">
-            AI sẽ sinh ra 24 bài học được cá nhân hóa hoàn toàn cho career track của bạn
+            AI will generate 24 fully personalized lessons for your career track
           </p>
         </div>
       </div>

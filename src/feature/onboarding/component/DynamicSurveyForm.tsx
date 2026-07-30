@@ -4,7 +4,6 @@ import tmaLogo from '@/asset/image/tma_logo.png'
 import bannerBg from '@/asset/image/banner_background.png'
 import {
   fetchSurveyQuestions,
-  submitSurveyAnswers,
   type SurveyQuestion,
   type SkillAxis,
   type SubQuestion,
@@ -109,10 +108,10 @@ const FALLBACK_QUESTIONS: SurveyQuestion[] = [
 const DEEP_DIVE_THRESHOLD = 8
 
 const AXIS_CONFIG: Record<SkillAxis, { label: string; color: string; bg: string; dot: string }> = {
-  D_doc:     { label: 'Tài liệu (D)', color: 'text-blue-300',    bg: 'bg-blue-500/20',    dot: 'bg-blue-400' },
-  C_comm:    { label: 'Giao tiếp (C)', color: 'text-emerald-300', bg: 'bg-emerald-500/20', dot: 'bg-emerald-400' },
-  T_trouble: { label: 'Sự cố (T)',    color: 'text-rose-300',    bg: 'bg-rose-500/20',    dot: 'bg-rose-400' },
-  G_biz:     { label: 'Thương mại (G)', color: 'text-amber-300', bg: 'bg-amber-500/20',   dot: 'bg-amber-400' },
+  D_doc:     { label: 'Documentation (D)', color: 'text-blue-300',    bg: 'bg-blue-500/20',    dot: 'bg-blue-400' },
+  C_comm:    { label: 'Communication (C)', color: 'text-emerald-300', bg: 'bg-emerald-500/20', dot: 'bg-emerald-400' },
+  T_trouble: { label: 'Troubleshooting (T)', color: 'text-rose-300',  bg: 'bg-rose-500/20',    dot: 'bg-rose-400' },
+  G_biz:     { label: 'Business (G)',      color: 'text-amber-300',   bg: 'bg-amber-500/20',   dot: 'bg-amber-400' },
 }
 
 // ─── Rating Button Component ──────────────────────────────────────────────────
@@ -128,8 +127,8 @@ function RatingButtons({
     <div className="flex flex-col gap-3">
       {/* Labels */}
       <div className="flex justify-between text-xs text-white/40 px-1">
-        <span>Rất hiếm</span>
-        <span>Thường xuyên</span>
+        <span>Rarely</span>
+        <span>Very Often</span>
       </div>
 
       {/* Number buttons */}
@@ -166,7 +165,7 @@ function RatingButtons({
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/15 border border-amber-500/30 animate-in fade-in slide-in-from-top-2 duration-300">
           <span className="text-amber-400 text-sm">⚡</span>
           <span className="text-xs text-amber-300 font-medium">
-            Điểm cao! Hệ thống sẽ hỏi thêm để cá nhân hóa lộ trình của bạn.
+            High score! The system will ask a follow-up question to personalize your learning path.
           </span>
         </div>
       )}
@@ -190,7 +189,7 @@ function SubQuestionPanel({
     <div className="mt-6 animate-in fade-in slide-in-from-top-3 duration-400">
       <div className="flex items-center gap-2 mb-3">
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-400/40 to-transparent" />
-        <span className="text-xs text-amber-300 font-semibold uppercase tracking-widest px-2">Câu hỏi nâng cao</span>
+        <span className="text-xs text-amber-300 font-semibold uppercase tracking-widest px-2">Follow-up Question</span>
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-400/40 to-transparent" />
       </div>
 
@@ -251,9 +250,9 @@ function SurveyResult({
         <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-emerald-500/20 border-2 border-emerald-400/50 flex items-center justify-center text-4xl">
           🎉
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Hoàn thành Khảo sát!</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">Survey Complete!</h2>
         <p className="text-blue-200/70 text-sm max-w-sm mx-auto">
-          Dưới đây là hồ sơ năng lực giao tiếp của bạn. Hệ thống sẽ dùng dữ liệu này để tạo Placement Test phù hợp.
+          Here is your communication skill profile. The system will use this data to create a personalized Placement Test.
         </p>
       </div>
 
@@ -287,7 +286,7 @@ function SurveyResult({
       {questions.some((q) => answers[q.id]?.subAnswer) && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 mb-8">
           <p className="text-amber-300 text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2">
-            <span>⚡</span> Điểm cần cải thiện sâu
+            <span>⚡</span> Areas to improve
           </p>
           <div className="space-y-2">
             {questions.map((q) => {
@@ -312,7 +311,7 @@ function SurveyResult({
         onClick={() => navigate({ to: '/placement-test' })}
         className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-bold text-base shadow-lg shadow-blue-500/20 hover:shadow-xl hover:scale-[1.01] transition-all duration-300 flex items-center justify-center gap-2"
       >
-        <span>Bắt đầu Placement Test</span>
+        <span>Start Placement Test</span>
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
         </svg>
@@ -324,6 +323,7 @@ function SurveyResult({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function DynamicSurveyForm() {
+  const navigate = useNavigate()
   const [questions, setQuestions] = useState<SurveyQuestion[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -404,12 +404,15 @@ export function DynamicSurveyForm() {
   }
 
   function handleBack() {
-    if (currentIndex === 0) return
+    if (currentIndex === 0) {
+      navigate({ to: '/onboarding/role-selection' })
+      return
+    }
     setDirection('back')
     animateTransition(() => setCurrentIndex((i) => i - 1))
   }
 
-  // Persist results on complete
+  // Save results temporarily on complete (do not persist to DB until placement test is done)
   useEffect(() => {
     if (isDone && questions.length > 0) {
       const payload = questions.map((q) => {
@@ -425,11 +428,10 @@ export function DynamicSurveyForm() {
           sub_answer: subAnswerText,
         }
       })
-      submitSurveyAnswers({ user_id: 1, answers: payload }).catch((err) => {
-        console.warn('Failed to submit survey answers to API:', err)
-      })
+      localStorage.setItem('pending_survey_answers', JSON.stringify(payload))
     }
   }, [isDone, questions, answers])
+
 
 
   // Keyboard shortcut: Enter to proceed
@@ -460,6 +462,20 @@ export function DynamicSurveyForm() {
 
       {/* TMA Logo */}
       <img src={tmaLogo} alt="TMA Solutions" className="absolute top-6 left-6 w-45 h-auto z-20" />
+
+      {/* Back to Role Selection Button */}
+      <button
+        id="btn-back-to-role-selection"
+        type="button"
+        onClick={() => navigate({ to: '/onboarding/role-selection' })}
+        className="absolute top-6 right-6 z-20 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/70 hover:text-white transition-colors text-xs font-medium flex items-center gap-1.5 backdrop-blur-md"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        <span>Change Career Track</span>
+      </button>
+
 
       {/* Progress bar — top */}
       <div className="fixed top-0 left-0 right-0 z-30 h-1 bg-white/10">
@@ -498,7 +514,7 @@ export function DynamicSurveyForm() {
             <div className="flex justify-center w-full">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-blue-200 text-sm font-medium">
                 <span className="w-2 h-2 rounded-full bg-blue-300 animate-pulse" />
-                Bước 2 / 4 — Thực Hiện Khảo Sát
+                Step 2 / 4 — Complete the Survey
               </div>
             </div>
           </div>
@@ -506,7 +522,7 @@ export function DynamicSurveyForm() {
           {isLoading ? (
             <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-12 shadow-2xl text-center">
               <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-white font-medium text-sm">Đang tải câu hỏi khảo sát...</p>
+              <p className="text-white font-medium text-sm">Loading survey questions...</p>
             </div>
           ) : isDone ? (
             <SurveyResult questions={questions} answers={answers} />
@@ -579,8 +595,7 @@ export function DynamicSurveyForm() {
                   id="btn-survey-back"
                   type="button"
                   onClick={handleBack}
-                  disabled={currentIndex === 0}
-                  className="w-12 h-12 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white/60 hover:text-white transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
+                  className="w-12 h-12 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white/60 hover:text-white transition-all duration-200 flex items-center justify-center"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -596,14 +611,14 @@ export function DynamicSurveyForm() {
                 >
                   {currentIndex < total - 1 ? (
                     <>
-                      <span>Câu tiếp theo</span>
+                      <span>Next Question</span>
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
                     </>
                   ) : (
                     <>
-                      <span>Hoàn thành khảo sát</span>
+                      <span>Complete Survey</span>
                       <span>🎉</span>
                     </>
                   )}
@@ -613,12 +628,12 @@ export function DynamicSurveyForm() {
               {/* Hint */}
               {!canProceed && currentAnswer.rating !== null && (
                 <p className="text-center text-xs text-amber-300/70 mt-3 animate-pulse">
-                  ☝️ Hãy chọn câu trả lời nâng cao để tiếp tục
+                  ☝️ Please select a follow-up answer to continue
                 </p>
               )}
               {currentAnswer.rating === null && (
                 <p className="text-center text-xs text-white/30 mt-3">
-                  Chọn điểm từ 1-10 để tiếp tục
+                  Select a score from 1-10 to continue
                 </p>
               )}
             </>

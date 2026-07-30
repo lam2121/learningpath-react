@@ -1,16 +1,23 @@
 import type { TestQuestion } from '../api/placementTestTypes'
 
 const AXIS_META: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  D_doc: { label: 'Tài liệu', color: 'text-blue-300', bg: 'bg-blue-500/20', dot: 'bg-blue-400' },
-  C_comm: { label: 'Giao tiếp', color: 'text-emerald-300', bg: 'bg-emerald-500/20', dot: 'bg-emerald-400' },
-  T_trouble: { label: 'Sự cố', color: 'text-rose-300', bg: 'bg-rose-500/20', dot: 'bg-rose-400' },
-  G_biz: { label: 'Thương mại', color: 'text-amber-300', bg: 'bg-amber-500/20', dot: 'bg-amber-400' },
+  D_doc:     { label: 'Documentation', color: 'text-blue-300',    bg: 'bg-blue-500/20',    dot: 'bg-blue-400' },
+  C_comm:    { label: 'Communication', color: 'text-emerald-300', bg: 'bg-emerald-500/20', dot: 'bg-emerald-400' },
+  T_trouble: { label: 'Troubleshooting', color: 'text-rose-300',  bg: 'bg-rose-500/20',    dot: 'bg-rose-400' },
+  G_biz:     { label: 'Business',       color: 'text-amber-300',  bg: 'bg-amber-500/20',   dot: 'bg-amber-400' },
 }
 
-const DIFFICULTY_LABEL: Record<number, string> = {
-  1: 'Cơ bản',
-  2: 'Trung bình',
-  3: 'Nâng cao',
+/** Map level 1-10 to a visible tier (1, 2, or 3 dots) */
+function getDifficultyTier(level: number): 1 | 2 | 3 {
+  if (level <= 3) return 1
+  if (level <= 7) return 2
+  return 3
+}
+
+const TIER_LABEL: Record<1 | 2 | 3, string> = {
+  1: 'Easy',
+  2: 'Medium',
+  3: 'Hard',
 }
 
 interface TestQuestionCardProps {
@@ -47,16 +54,23 @@ export function TestQuestionCard({
             <span className={`text-xs font-semibold ${axis.color}`}>{axis.label}</span>
           </div>
 
-          {/* Difficulty */}
+          {/* Difficulty dots — 1-3: 1 dot | 4-7: 2 dots | 8-10: 3 dots */}
           <div className="flex items-center gap-2">
-            {Array.from({ length: 3 }, (_, i) => (
-              <div
-                key={i}
-                className={`w-2 h-2 rounded-full transition-colors ${i < question.difficulty ? axis.dot : 'bg-white/20'
+            {Array.from({ length: 3 }, (_, i) => {
+              const tier = getDifficultyTier(question.difficulty)
+              return (
+                <div
+                  key={i}
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    i < tier ? axis.dot : 'bg-white/20'
                   }`}
-              />
-            ))}
-            <span className="text-xs text-white/40 ml-1">{DIFFICULTY_LABEL[question.difficulty]}</span>
+                />
+              )
+            })}
+            <span className="text-xs text-white/40 ml-1">
+              {TIER_LABEL[getDifficultyTier(question.difficulty)]}
+              <span className="text-white/20 ml-1">Lv {question.difficulty}</span>
+            </span>
           </div>
         </div>
 
@@ -100,7 +114,7 @@ export function TestQuestionCard({
 
       {/* Progress sub-text */}
       <p className="text-center text-xs text-white/30 mt-4">
-        Câu {questionNumber} / {total} — Chọn đáp án để tiếp tục
+        Question {questionNumber} / {total} — Select an answer to continue
       </p>
     </div>
   )

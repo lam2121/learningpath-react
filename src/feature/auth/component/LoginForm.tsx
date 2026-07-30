@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Eye, EyeOff, User, Lock } from 'lucide-react'
-import { FacebookIcon, GoogleIcon } from '@/common/component/SocialMediaIcon'
 import { loginUser } from '../api/authAPI'
 import { saveUserSession } from '../helper/authHelper'
 import { useAuth } from '@/common/context/AuthContext'
@@ -49,22 +48,20 @@ export function LoginForm() {
 
 			// 4. Redirect based on role
 			if (data.role_id === 2) {
-				// Admin → go to admin dashboard
 				await navigate({ to: '/admin' })
 				return
 			}
 
-			// Learner → check onboarding status
-			const status = await fetchOnboardingStatus().catch(() => ({ has_completed_survey: false }))
+			// Learner → check if placement test is finished
+			const status = await fetchOnboardingStatus().catch(() => ({ is_finished_placement_test: false }))
 
-			if (status.has_completed_survey) {
-				await navigate({ to: '/placement-test' })
+			if (status.is_finished_placement_test) {
+				await navigate({ to: '/placement-result' })
 			} else {
 				await navigate({ to: '/onboarding/role-selection' })
 			}
-
 		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Đăng nhập thất bại. Vui lòng thử lại.')
+			setError(err instanceof Error ? err.message : 'Login failed. Please try again.')
 		} finally {
 			setIsLoading(false)
 		}
@@ -78,7 +75,7 @@ export function LoginForm() {
 				<div className="logo-underline" />
 			</div>
 			{/* Title */}
-			<h1 className="login-title">Đăng nhập vào CareerPath</h1>
+			<h1 className="login-title">Sign in to CareerPath</h1>
 			{/* Form */}
 			<form onSubmit={handleSubmit} className="login-form">
 				{/* Username / Email */}
@@ -89,7 +86,7 @@ export function LoginForm() {
 					<input
 						id="login-username"
 						type="text"
-						placeholder="Tên người dùng hoặc email"
+						placeholder="Username or email"
 						value={username}
 						onChange={(e) => setUsername(e.target.value)}
 						className="login-input"
@@ -104,7 +101,7 @@ export function LoginForm() {
 					<input
 						id="login-password"
 						type={showPassword ? 'text' : 'password'}
-						placeholder="Mật khẩu"
+						placeholder="Password"
 						value={password}
 						onChange={(e) => setPassword(e.target.value)}
 						className="login-input"
@@ -115,7 +112,7 @@ export function LoginForm() {
 						className="login-eye-btn"
 						onClick={() => setShowPassword((v) => !v)}
 						tabIndex={-1}
-						aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+						aria-label={showPassword ? 'Hide password' : 'Show password'}
 					>
 						{showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
 					</button>
@@ -133,37 +130,23 @@ export function LoginForm() {
 					className={`login-btn${isLoading ? ' login-btn--loading' : ''}`}
 					disabled={isLoading}
 				>
-					{isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+					{isLoading ? 'Signing in...' : 'Sign In'}
 				</button>
 			</form>
+			 <div>
+			 <br />
+
+			</div>
 			{/* Links */}
 			<div className="login-links">
 				<Link to="/forgot-password" className="login-link">
-					Quên mật khẩu?
+					Forgot password?
 				</Link>
 				<Link to="/register" className="login-link">
-					Tạo tài khoản
+					Create account
 				</Link>
 			</div>
-			{/* Divider */}
-			<div className="login-divider">
-				<span>Đăng nhập bằng</span>
-			</div>
-			{/* Social Buttons */}
-			<div className="login-social-grid">
-				<button id="login-facebook-btn" type="button" className="login-social-btn">
-					<FacebookIcon className="social-icon facebook-icon" />
-					<span>Facebook</span>
-				</button>
-				<button id="login-google-btn" type="button" className="login-social-btn">
-					<GoogleIcon className="social-icon google-icon" />
-					<span>Google</span>
-				</button>
-				<button id="login-github-btn" type="button" className="login-social-btn">
-					<GithubIcon className="social-icon github-icon" />
-					<span>Github</span>
-				</button>
-			</div>
+			
 		</div>
 	)
 }

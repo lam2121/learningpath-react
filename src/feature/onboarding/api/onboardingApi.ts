@@ -78,9 +78,10 @@ export async function submitSurveyAnswers(
 export interface OnboardingStatus {
   user_id: number
   has_completed_survey: boolean
+  is_finished_placement_test: boolean
 }
 
-/** Check if current user has completed onboarding survey. */
+/** Check if current user has completed onboarding survey and placement test. */
 export async function fetchOnboardingStatus(): Promise<OnboardingStatus> {
   const res = await fetch(`${BASE_URL}/onboarding/status`, {
     method: 'GET',
@@ -89,3 +90,86 @@ export async function fetchOnboardingStatus(): Promise<OnboardingStatus> {
   return handleResponse<OnboardingStatus>(res)
 }
 
+export interface CompletePlacementTestPayload {
+  user_id?: number
+  role_id?: number | null
+  survey_answers?: SurveyAnswerPayload[] | null
+}
+
+/** Finalize onboarding by committing survey answers, role_id, and setting is_finished_placement_test = True. */
+export async function completePlacementTest(
+  payload: CompletePlacementTestPayload,
+): Promise<{ message: string; is_finished_placement_test: boolean }> {
+  const res = await fetch(`${BASE_URL}/onboarding/placement-test/complete`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(payload),
+  })
+  return handleResponse<{ message: string; is_finished_placement_test: boolean }>(res)
+}
+
+
+// ─── Job Role API ─────────────────────────────────────────────────────────────
+
+export interface JobRoleInitWeights {
+  // Flat keys used in toeic_learningpath schema
+  D_doc?: number
+  C_comm?: number
+  T_trouble?: number
+  G_biz?: number
+  // Alternative flat keys (toeic_learningpath1 schema)
+  D?: number
+  C?: number
+  T?: number
+  G?: number
+  // Nested by milestone (future-proof)
+  Basic?: { D?: number; C?: number; T?: number; G?: number; D_doc?: number; C_comm?: number; T_trouble?: number; G_biz?: number }
+  Intermediate?: { D?: number; C?: number; T?: number; G?: number }
+  Advanced?: { D?: number; C?: number; T?: number; G?: number }
+}
+
+export interface JobRole {
+  id: number
+  name: string
+  JD: string
+  seed_tier: Record<string, unknown>
+  init_weights: JobRoleInitWeights
+  example_question: Record<string, unknown>
+}
+
+/** Fetch all job roles from database. No auth required. */
+export async function fetchJobRoles(): Promise<JobRole[]> {
+  const res = await fetch(`${BASE_URL}/onboarding/job-roles`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  })
+  return handleResponse<JobRole[]>(res)
+}
+
+// ─── Placement Test Questions API ─────────────────────────────────────────────
+
+export interface RawPlacementQuestionApi {
+  id: number
+  skill: 'D' | 'C' | 'T' | 'G'
+  level: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
+  statement: string
+  options: string[]
+  correct_answer: string
+}
+
+/**
+ * Fetch all placement test questions for a given job role from the database.
+ * The frontend adaptive engine will select 24 questions from this pool.
+ */
+export async function fetchPlacementTestQuestions(
+  roleId: number,
+): Promise<RawPlacementQuestionApi[]> {
+  const res = await fetch(
+    `${BASE_URL}/onboarding/placement-test/questions?role_id=${roleId}`,
+    {
+      method: 'GET',
+      headers: authHeaders(),
+    },
+  )
+  return handleResponse<RawPlacementQuestionApi[]>(res)
+}

@@ -12,10 +12,10 @@ export const Route = createFileRoute('/(auth)/login')({
 				throw redirect({ to: '/admin' })
 			}
 
-			// Learner → check onboarding status
-			const status = await fetchOnboardingStatus().catch(() => ({ has_completed_survey: false }))
-			if (status.has_completed_survey) {
-				throw redirect({ to: '/placement-test' })
+			// Learner → check if placement test is finished
+			const status = await fetchOnboardingStatus().catch(() => ({ is_finished_placement_test: false }))
+			if (status.is_finished_placement_test) {
+				throw redirect({ to: '/placement-result' })
 			}
 			throw redirect({ to: '/onboarding/role-selection' })
 		}
