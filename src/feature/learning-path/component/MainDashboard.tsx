@@ -1,4 +1,5 @@
 import { BookOpen, Target, Trophy, TrendingUp, Clock, Star, ChevronRight, Zap } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
 import { useAuth } from '@/common/context/AuthContext'
 
 // ─── Static mock data (replace with real API data later) ─────────────────────
@@ -79,6 +80,7 @@ const RECENT_LESSONS = [
 
 export function MainDashboard() {
 	const { user, logout } = useAuth()
+	const navigate = useNavigate()
 
 	const displayName = user?.username || user?.email?.split('@')[0] || 'Học viên'
 
@@ -124,7 +126,7 @@ export function MainDashboard() {
 					<button
 						id="dashboard-logout-btn"
 						className="sidebar-logout-btn"
-						onClick={logout}
+						onClick={() => { logout(); navigate({ to: '/login' }) }}
 						title="Đăng xuất"
 					>
 						Đăng xuất
