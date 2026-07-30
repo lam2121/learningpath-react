@@ -15,13 +15,14 @@ import {
 } from "@/shadcn/component/ui/dropdown-menu"
 import { Button } from "../../shadcn/component/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/shadcn/component/ui/sheet"
-import { Menu, LogOut, History, User } from "lucide-react"
+import { Menu, LogOut, History, User, Flame, Bell } from "lucide-react"
 import { useAuth } from "@/common/context/AuthContext"
 import { cn } from "@/shadcn/lib/util"
 import { TmaLogo } from "./TmaLogo"
 import { APP_INFO } from "../const/appConst"
-import { UpskillsIcon } from "../../common/component/SocialMediaIcon";
-
+import { CareerpathIcon } from "../../common/component/SocialMediaIcon";
+import { StreakDropdown } from "@/feature/user-profile/component/StreakDropdown";
+import { NotificationDropdown } from "@/feature/user-profile/component/NotificationDropdown";
 export function MainNavigationMenu() {
     const router = useRouter()
     const navigate = useNavigate()
@@ -84,7 +85,7 @@ export function MainNavigationMenu() {
                     <div className="flex items-center space-x-6">
 
                         <Link to={"/"} className="flex items-center space-x-3">
-                            <UpskillsIcon className="w-10 h-10" />
+                            <CareerpathIcon className="w-10 h-10" />
                             <div className="font-semibold text-base text-sidebar-primary">{APP_INFO.APP_NAME} <span className="text-black"></span></div>
                         </Link>
 
@@ -94,8 +95,10 @@ export function MainNavigationMenu() {
                             </NavigationMenuList>
                         </NavigationMenu>
                     </div>
+                    <div className="flex items-center gap-6">
+                        <NotificationDropdown />
 
-                    <div className="flex items-center">
+                        <StreakDropdown />
                         {auth.isAuthenticated ? (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
