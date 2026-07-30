@@ -9,13 +9,28 @@ import { AuthProvider, type AuthContextValue } from './common/context/AuthContex
 import { GeminiGradientDefs } from './common/component/GeminiIcon'
 import { MainApp } from './common/component/MainApp'
 
-// Dev-only: auto-login mock user for local development
-if (import.meta.env.DEV && !localStorage.getItem('auth_user')) {
-  localStorage.setItem('auth_user', JSON.stringify({
-    username: 'dev_user',
-    email: 'dev@tma.com.vn',
-    role: 'admin'
-  }));
+// Dev-only bypass: set VITE_BYPASS_AUTH=false (or remove from .env) to disable
+const BYPASS_AUTH = import.meta.env.VITE_BYPASS_AUTH === 'true'
+
+if (import.meta.env.DEV && BYPASS_AUTH) {
+  const existing = localStorage.getItem('auth_user')
+  if (!existing) {
+    localStorage.setItem('auth_user', JSON.stringify({
+      username: 'dev_admin',
+      email: 'admin@tma.com.vn',
+      role: 'admin',
+      role_id: 2,
+    }))
+    localStorage.setItem('auth_access_token', 'dev-bypass-token')
+  } else {
+    try {
+      const parsed = JSON.parse(existing)
+      if (parsed.role_id === undefined) {
+        parsed.role_id = 2
+        localStorage.setItem('auth_user', JSON.stringify(parsed))
+      }
+    } catch { /* ignore corrupt data */ }
+  }
 }
 
 const queryClient = new QueryClient({

@@ -22,7 +22,7 @@ export async function registerUser(data: RegisterRequest): Promise<UserResponse>
 export async function loginUser(data: LoginRequest): Promise<LoginResponse> {
 	// FastAPI OAuth2 form expects application/x-www-form-urlencoded
 	const formBody = new URLSearchParams({
-		username: data.email,
+		username: data.identifier,
 		password: data.password,
 	})
 	const res = await fetch(`${BASE_URL}/auth/login`, {

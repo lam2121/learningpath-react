@@ -14,6 +14,9 @@ export interface UserSessionData {
   username?: string;
   email?: string;
   role?: string;
+  role_id?: number;
+  user_id?: number;
+  name?: string;
 }
 
 /**
@@ -27,9 +30,10 @@ export function saveUserSession(data: UserSessionData): void {
   }
 
   const user: AuthUser = data.user ?? {
-    username: data.username ?? "",
+    username: data.username ?? data.name ?? "",
     email: data.email ?? "",
     role: data.role,
+    role_id: data.role_id,
   };
 
   localStorage.setItem(USER_KEY, JSON.stringify(user));

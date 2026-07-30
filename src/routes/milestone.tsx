@@ -1,7 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { MilestonePage } from '@/feature/onboarding/page/MilestonePage'
 
-// Public route — no session required (for testing purposes)
 export const Route = createFileRoute('/milestone')({
+	beforeLoad: ({ context }) => {
+		if (context.auth.user?.role_id === 2) {
+			throw redirect({ to: '/admin' })
+		}
+	},
 	component: MilestonePage,
 })

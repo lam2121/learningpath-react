@@ -32,19 +32,29 @@ export function LoginForm() {
 
 		try {
 			// 1. Call the API
-			const data = await loginUser({ email: username, password })
+			const data = await loginUser({ identifier: username, password })
 
-			// 2. Persist token + build a minimal user object from the email
+			// 2. Persist token + user info from login response
 			saveUserSession({
 				access_token: data.access_token,
-				email: username,
-				username: username.split('@')[0],
+				email: data.email,
+				username: data.name,
+				role_id: data.role_id,
+				user_id: data.user_id,
+				name: data.name,
 			})
 
 			// 3. Sync AuthContext so the rest of the app sees the logged-in user
 			await refreshAuth()
 
-			// 4. Check if user has finished survey
+			// 4. Redirect based on role
+			if (data.role_id === 2) {
+				// Admin → go to admin dashboard
+				await navigate({ to: '/admin' })
+				return
+			}
+
+			// Learner → check onboarding status
 			const status = await fetchOnboardingStatus().catch(() => ({ has_completed_survey: false }))
 
 			if (status.has_completed_survey) {
@@ -52,7 +62,6 @@ export function LoginForm() {
 			} else {
 				await navigate({ to: '/onboarding/role-selection' })
 			}
-
 
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Đăng nhập thất bại. Vui lòng thử lại.')
