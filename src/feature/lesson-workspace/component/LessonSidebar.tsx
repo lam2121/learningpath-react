@@ -54,7 +54,7 @@ const lessons = [
 
 export function LessonSidebar() {
     return (
-        <div className="sticky top-24 space-y-5">
+        <div className="xl:sticky xl:top-24 space-y-5">
 
             {/* Progress */}
 

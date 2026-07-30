@@ -6,7 +6,7 @@ import { AICoachSkeleton } from "./AICoachSkeleton";
 export function LessonSkeleton() {
     return (
         <div className="min-h-screen bg-slate-50">
-            <div className="mx-auto flex max-w-screen-xl gap-6 px-6 py-6">
+            <div className="mx-auto flex max-w-screen-2xl gap-6 px-3 py-4 sm:px-6 sm:py-6 xl:px-8">
 
                 <aside className="hidden xl:block w-72 shrink-0">
                     <SidebarSkeleton />

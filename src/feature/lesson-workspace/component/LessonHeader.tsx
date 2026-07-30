@@ -65,7 +65,7 @@ export function LessonHeader() {
 
                     <Button
                         variant="outline"
-                        className="w-full lg:w-auto"
+                        className="w-full sm:w-auto"
                     >
 
                         <Bookmark className="size-5" />
@@ -90,14 +90,14 @@ export function LessonHeader() {
 
                     <Badge
                         variant="secondary"
-                        className="flex items-center gap-2 px-4 py-2"
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm sm:px-4 sm:py-2"
                     >
                         <GraduationCap className="size-4" />
                         Intermediate
                     </Badge>
 
                     <Badge
-                        className="bg-blue-100 text-blue-700 hover:bg-blue-100 px-4 py-2"
+                        className="bg-blue-100 text-blue-700 hover:bg-blue-100 px-3 py-1.5 text-xs sm:text-sm sm:px-4 sm:py-2"
                     >
                         Lesson 3 / 8
                     </Badge>
@@ -136,9 +136,9 @@ export function LessonHeader() {
         flex
         flex-col
         gap-4
-        lg:flex-row
-        lg:items-center
-        lg:justify-between
+        sm:flex-row
+        sm:items-center
+        sm:justify-between
     "
                 >
 
@@ -148,7 +148,7 @@ export function LessonHeader() {
 
                     </div>
 
-                    <Button className="w-full lg:w-auto">
+                    <Button className="w-full sm:w-auto">
 
                         <CheckCircle2 className="size-5" />
 

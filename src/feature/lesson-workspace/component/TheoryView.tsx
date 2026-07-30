@@ -18,7 +18,7 @@ export function TheoryView() {
 
             <Card className="overflow-hidden rounded-3xl border-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm">
 
-                <CardContent className="p-8">
+                <CardContent className="p-5 sm:p-8">
 
                     <div className="flex items-center gap-4">
 
@@ -54,7 +54,7 @@ export function TheoryView() {
 
             <Card className="rounded-2xl">
 
-                <CardContent className="p-8">
+                <CardContent className="p-5 sm:p-8">
 
                     <h2 className="text-xl font-bold mb-4">
 
@@ -78,7 +78,7 @@ export function TheoryView() {
 
             <Card className="rounded-2xl border-blue-200 bg-blue-50">
 
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
 
                     <div className="flex gap-4">
 
@@ -113,7 +113,7 @@ export function TheoryView() {
 
                 <CardContent className="p-0">
 
-                    <div className="flex items-center justify-between border-b px-6 py-4">
+                    <div className="flex items-center justify-between border-b px-4 py-3 sm:px-6 sm:py-4">
 
                         <div className="flex items-center gap-2">
 
@@ -136,7 +136,7 @@ export function TheoryView() {
 
                     </div>
 
-                    <pre className="overflow-x-auto bg-slate-900 p-6 text-sm text-green-300">
+                    <pre className="overflow-x-auto bg-slate-900 p-4 sm:p-6 text-xs sm:text-sm text-green-300">
 
                         {`SELECT *
 FROM Student
@@ -252,7 +252,7 @@ ON Student.id = Score.student_id;`}
 
             <Card className="rounded-2xl">
 
-                <CardContent className="p-8">
+                <CardContent className="p-5 sm:p-8">
 
                     <h2 className="text-xl font-bold mb-5">
 

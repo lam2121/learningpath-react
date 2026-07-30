@@ -8,7 +8,7 @@ export function LessonPage() {
     useEffect(() => {
         const timer = setTimeout(() => {
             setLoading(false);
-        }, 3000); // giả lập API mất 3 giây
+        }, 2000); // giả lập API mất 2 giây
 
         return () => clearTimeout(timer);
     }, []);
