@@ -108,17 +108,10 @@ const FALLBACK_QUESTIONS: SurveyQuestion[] = [
 const DEEP_DIVE_THRESHOLD = 8
 
 const AXIS_CONFIG: Record<SkillAxis, { label: string; color: string; bg: string; dot: string }> = {
-<<<<<<< HEAD
-  D_doc:     { label: 'Documentation (D)', color: 'text-blue-300',    bg: 'bg-blue-500/20',    dot: 'bg-blue-400' },
-  C_comm:    { label: 'Communication (C)', color: 'text-emerald-300', bg: 'bg-emerald-500/20', dot: 'bg-emerald-400' },
-  T_trouble: { label: 'Troubleshooting (T)', color: 'text-rose-300',  bg: 'bg-rose-500/20',    dot: 'bg-rose-400' },
-  G_biz:     { label: 'Business (G)',      color: 'text-amber-300',   bg: 'bg-amber-500/20',   dot: 'bg-amber-400' },
-=======
-  D_doc: { label: 'Documentation', color: 'text-blue-300', bg: 'bg-blue-500/20', dot: 'bg-blue-400' },
-  C_comm: { label: 'Communication', color: 'text-emerald-300', bg: 'bg-emerald-500/20', dot: 'bg-emerald-400' },
-  T_trouble: { label: 'Troubleshooting', color: 'text-rose-300', bg: 'bg-rose-500/20', dot: 'bg-rose-400' },
-  G_biz: { label: 'Business', color: 'text-amber-300', bg: 'bg-amber-500/20', dot: 'bg-amber-400' },
->>>>>>> b86971d (fix err)
+  D_doc: { label: 'Documentation (D)', color: 'text-blue-300', bg: 'bg-blue-500/20', dot: 'bg-blue-400' },
+  C_comm: { label: 'Communication (C)', color: 'text-emerald-300', bg: 'bg-emerald-500/20', dot: 'bg-emerald-400' },
+  T_trouble: { label: 'Troubleshooting (T)', color: 'text-rose-300', bg: 'bg-rose-500/20', dot: 'bg-rose-400' },
+  G_biz: { label: 'Business (G)', color: 'text-amber-300', bg: 'bg-amber-500/20', dot: 'bg-amber-400' },
 }
 
 // ─── Rating Button Component ──────────────────────────────────────────────────

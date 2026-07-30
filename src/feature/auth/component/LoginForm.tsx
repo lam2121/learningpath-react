@@ -31,14 +31,9 @@ export function LoginForm() {
 
 		try {
 			// 1. Call the API
-<<<<<<< HEAD
 			const data = await loginUser({ identifier: username, password })
 
 			// 2. Persist token + user info from login response
-=======
-			const data = await loginUser({ email: username, password, })
-			// 2. Persist token + build a minimal user object from the email
->>>>>>> b39e8e1 (add ui lesson_user_profile)
 			saveUserSession({
 				access_token: data.access_token,
 				email: data.email,
@@ -51,7 +46,6 @@ export function LoginForm() {
 			// 3. Sync AuthContext so the rest of the app sees the logged-in user
 			await refreshAuth()
 
-<<<<<<< HEAD
 			// 4. Redirect based on role
 			if (data.role_id === 2) {
 				await navigate({ to: '/admin' })
@@ -66,19 +60,6 @@ export function LoginForm() {
 			} else {
 				await navigate({ to: '/onboarding/role-selection' })
 			}
-=======
-			// 4. Check if user has finished placement test
-			const status = await fetchOnboardingStatus().catch(() => ({ has_completed_survey: false, is_finished_placement_test: false }))
-
-			if (status.has_completed_survey) {
-				await navigate({ to: '/dashboard' })
-			} else {
-				await navigate({ to: '/onboarding/role-selection' })
-			}
-
-
-
->>>>>>> b86971d (fix err)
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Login failed. Please try again.')
 		} finally {
@@ -105,15 +86,7 @@ export function LoginForm() {
 					<input
 						id="login-username"
 						type="text"
-<<<<<<< HEAD
-<<<<<<< HEAD
 						placeholder="Username or email"
-=======
-						placeholder="Email"
->>>>>>> b39e8e1 (add ui lesson_user_profile)
-=======
-						placeholder="Username or email"
->>>>>>> b86971d (fix err)
 						value={username}
 						onChange={(e) => setUsername(e.target.value)}
 						className="login-input"
@@ -160,13 +133,8 @@ export function LoginForm() {
 					{isLoading ? 'Signing in...' : 'Sign In'}
 				</button>
 			</form>
-<<<<<<< HEAD
-			 <div>
-			 <br />
-=======
 			<div>
 				<br />
->>>>>>> b86971d (fix err)
 
 			</div>
 			{/* Links */}
@@ -178,11 +146,7 @@ export function LoginForm() {
 					Create account
 				</Link>
 			</div>
-<<<<<<< HEAD
-			
-=======
 
->>>>>>> b86971d (fix err)
 		</div>
 	)
 }

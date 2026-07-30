@@ -13,7 +13,7 @@ export interface AuthUser {
   username: string;
   email: string;
   role?: string;
-  role_id?: number;
+  role_id?: number | null;
 }
 
 export interface AuthContextValue {

@@ -14,7 +14,7 @@ export interface UserSessionData {
   username?: string;
   email?: string;
   role?: string;
-  role_id?: number;
+  role_id?: number | null;
   user_id?: number;
   name?: string;
 }

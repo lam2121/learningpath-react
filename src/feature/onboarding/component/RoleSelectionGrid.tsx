@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
 import { useState, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import tmaLogo from '@/asset/image/tma_logo.png'
@@ -51,71 +49,6 @@ const SKILL_COLOR: Record<string, string> = {
   T: 'bg-rose-500',
   G: 'bg-amber-500',
 }
-=======
-
-=======
-import { useState, useEffect } from 'react'
->>>>>>> b86971d (fix err)
-import { useNavigate } from '@tanstack/react-router'
-import tmaLogo from '@/asset/image/tma_logo.png'
-import bannerBg from '@/asset/image/banner_background.png'
-import { fetchJobRoles, type JobRole } from '../api/onboardingApi'
-import { useAuth } from '@/common/context/AuthContext'
-
-// ─── Visual palette — assigned per card index ─────────────────────────────────
-
-const ROLE_PALETTE = [
-  { icon: '🎯', color: 'from-violet-500 to-purple-600', gradient: 'from-violet-50 to-purple-50', accentColor: 'violet' },
-  { icon: '📊', color: 'from-blue-500 to-indigo-600', gradient: 'from-blue-50 to-indigo-50', accentColor: 'blue' },
-  { icon: '⚡', color: 'from-emerald-500 to-teal-600', gradient: 'from-emerald-50 to-teal-50', accentColor: 'emerald' },
-  { icon: '🏗️', color: 'from-amber-500 to-orange-600', gradient: 'from-amber-50 to-orange-50', accentColor: 'amber' },
-  { icon: '🔍', color: 'from-rose-500 to-pink-600', gradient: 'from-rose-50 to-pink-50', accentColor: 'rose' },
-  { icon: '🛠️', color: 'from-slate-500 to-gray-600', gradient: 'from-slate-50 to-gray-50', accentColor: 'slate' },
-  { icon: '🎨', color: 'from-cyan-500 to-sky-600', gradient: 'from-cyan-50 to-sky-50', accentColor: 'cyan' },
-  { icon: '🤖', color: 'from-fuchsia-500 to-violet-600', gradient: 'from-fuchsia-50 to-violet-50', accentColor: 'fuchsia' },
-  { icon: '🚀', color: 'from-green-500 to-emerald-600', gradient: 'from-green-50 to-emerald-50', accentColor: 'green' },
-  { icon: '💡', color: 'from-yellow-500 to-amber-600', gradient: 'from-yellow-50 to-amber-50', accentColor: 'yellow' },
-]
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Extract DCTG weights (0-100) from init_weights. Prefers Basic tier; falls back to flat keys. */
-function extractWeights(init_weights: JobRole['init_weights']): { D: number; C: number; T: number; G: number } {
-  const src = (init_weights as any)?.Basic ?? init_weights ?? {}
-  return {
-    D: Number(src.D ?? src.D_doc ?? 25),
-    C: Number(src.C ?? src.C_comm ?? 25),
-    T: Number(src.T ?? src.T_trouble ?? 25),
-    G: Number(src.G ?? src.G_biz ?? 25),
-  }
-}
-
-/** Get the first 2 example questions to show as a preview on the card. */
-function getExampleQuestions(example_question: unknown): string[] {
-  if (Array.isArray(example_question)) {
-    return (example_question as string[]).slice(0, 2)
-  }
-  return []
-}
-
-// ─── Skill Weight Bar Component ───────────────────────────────────────────────
-
-<<<<<<< HEAD
-  const labelMap: Record<string, string> = {
-    D_doc: 'D',
-    C_comm: 'C',
-    T_trouble: 'T',
-    G_biz: 'G',
-  }
->>>>>>> d4c83d0 (Begin)
-=======
-const SKILL_COLOR: Record<string, string> = {
-  D: 'bg-blue-500',
-  C: 'bg-emerald-500',
-  T: 'bg-rose-500',
-  G: 'bg-amber-500',
-}
->>>>>>> b86971d (fix err)
 
 function SkillBar({ axis, value }: { axis: 'D' | 'C' | 'T' | 'G'; value: number }) {
   return (
@@ -205,19 +138,11 @@ function RoleCardItem({ role, paletteIdx, isSelected, isHovered, onSelect, onHov
         <ul className="space-y-1.5">
           {exampleQs.length > 0
             ? exampleQs.map((q, i) => (
-<<<<<<< HEAD
-                <li key={i} className="flex items-start gap-1.5 text-[11px] text-gray-700 leading-snug">
-                  <span className="mt-0.5 text-[10px] font-bold text-gray-400 flex-shrink-0">Q{i + 1}</span>
-                  {q}
-                </li>
-              ))
-=======
               <li key={i} className="flex items-start gap-1.5 text-[11px] text-gray-700 leading-snug">
                 <span className="mt-0.5 text-[10px] font-bold text-gray-400 flex-shrink-0">Q{i + 1}</span>
                 {q}
               </li>
             ))
->>>>>>> b86971d (fix err)
             : (
               <li className="text-[11px] text-gray-500 italic">No example questions available.</li>
             )
@@ -252,51 +177,20 @@ function SkillLegend() {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function RoleSelectionGrid() {
-<<<<<<< HEAD
-<<<<<<< HEAD
   const [roles, setRoles] = useState<JobRole[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-=======
-  const [roles, setRoles] = useState<RoleCard[]>([]);
->>>>>>> d4c83d0 (Begin)
-=======
-  const [roles, setRoles] = useState<JobRole[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
->>>>>>> b86971d (fix err)
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)
   const [hoveredRoleId, setHoveredRoleId] = useState<number | null>(null)
   const navigate = useNavigate()
   const { logout } = useAuth()
 
-<<<<<<< HEAD
-<<<<<<< HEAD
   useEffect(() => {
     fetchJobRoles()
       .then(setRoles)
       .catch(err => setError(err.message ?? 'Unable to load role list.'))
       .finally(() => setIsLoading(false))
   }, [])
-
-  const selectedRole = roles.find(r => r.id === selectedRoleId) ?? null
-  const selectedPaletteIdx = selectedRoleId != null ? roles.findIndex(r => r.id === selectedRoleId) : 0
-=======
-  const selectedRole =
-    roles.find((r) => r.id === selectedRoleId) ?? null;
-  useEffect(() => {
-    async function fetchRoles() {
-      try {
-        const data: JobRoleApi[] = await getJobRoles();
->>>>>>> d4c83d0 (Begin)
-=======
-  useEffect(() => {
-    fetchJobRoles()
-      .then(setRoles)
-      .catch(err => setError(err.message ?? 'Unable to load role list.'))
-      .finally(() => setIsLoading(false))
-  }, [])
->>>>>>> b86971d (fix err)
 
   const selectedRole = roles.find(r => r.id === selectedRoleId) ?? null
   const selectedPaletteIdx = selectedRoleId != null ? roles.findIndex(r => r.id === selectedRoleId) : 0
@@ -419,10 +313,6 @@ export function RoleSelectionGrid() {
         )}
 
         {/* Role Grid */}
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> b86971d (fix err)
         {!isLoading && !error && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
             {roles.map((role, idx) => (
@@ -439,24 +329,6 @@ export function RoleSelectionGrid() {
             ))}
           </div>
         )}
-<<<<<<< HEAD
-=======
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
-          {roles.map((role) => (
-            <RoleCardItem
-              key={role.id}
-              role={role}
-              isSelected={selectedRoleId === role.id}
-              isHovered={hoveredRoleId === role.id}
-              onSelect={() => setSelectedRoleId(role.id)}
-              onHover={() => setHoveredRoleId(role.id)}
-              onLeave={() => setHoveredRoleId(null)}
-            />
-          ))}
-        </div>
->>>>>>> d4c83d0 (Begin)
-=======
->>>>>>> b86971d (fix err)
 
         {/* Selection summary & CTA */}
         {!isLoading && !error && (
@@ -484,63 +356,10 @@ export function RoleSelectionGrid() {
                             </div>
                           ))}
                         </div>
-<<<<<<< HEAD
-                      </div>
-                    </div>
-<<<<<<< HEAD
-                  )
-                })()}
-=======
-                    <p className="text-sm text-gray-500 mt-0.5">{selectedRole.subtitle}</p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {selectedRole.tier2.slice(0, 2).map((t, i) => (
-                        <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 text-xs font-medium border border-rose-100">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-400 flex-shrink-0" />
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="border-t pt-5">
-                      <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                        📋 Job Description
-                      </h3>
-
-                      <p className="text-sm leading-7 text-gray-600">
-                        {selectedRole.jd}
-                      </p>
-                    </div>
-                    <div className="border-t mt-5 pt-5">
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        💬 Example Questions
-                      </h3>
-
-                      <div className="space-y-3">
-                        {selectedRole.exampleQuestion.map((question, index) => (
-                          <div
-                            key={index}
-                            className="rounded-xl bg-gray-50 p-3 border border-gray-200"
-                          >
-                            <span className="font-semibold text-indigo-600">
-                              {index + 1}.
-                            </span>
-
-                            <span className="ml-2 text-gray-700">
-                              {question}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
->>>>>>> d4c83d0 (Begin)
-=======
                       </div>
                     </div>
                   )
                 })()}
->>>>>>> b86971d (fix err)
 
                 <button
                   id="btn-confirm-role"

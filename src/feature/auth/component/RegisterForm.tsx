@@ -107,11 +107,7 @@ export function RegisterForm() {
 					id="register-fullname"
 					type="text"
 					name="fullName"
-<<<<<<< HEAD
 					placeholder="Your full name"
-=======
-					placeholder="Họ và tên của bạn"
->>>>>>> b39e8e1 (add ui lesson_user_profile)
 					value={form.fullName}
 					onChange={handleChange}
 					className="register-input"
@@ -227,8 +223,8 @@ export function RegisterForm() {
 					{isLoading ? 'Creating account...' : 'Create Account'}
 				</button>
 			</form>
-					 <div>
-			 <br />
+			<div>
+				<br />
 
 			</div>
 
