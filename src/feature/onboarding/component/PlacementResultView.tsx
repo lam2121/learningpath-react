@@ -220,12 +220,24 @@ const DEMO_TARGETS: Record<SkillAxis, number> = {
 
 // Normalize targets to 0-100 scale for radar
 function normalizeTarget(t: number): number {
+  return Math.round(Math.min(Math.max(t, 0), 100))
+}
+
+/**
+ * Generate a personalized AI summary based on actual axis scores (0-100 scale).
+ */
+function generateAISummary(scores: Record<SkillAxis, number>): string {
   const axisNames: Record<SkillAxis, string> = {
     D_doc: 'technical documentation',
     C_comm: 'communication & presentation',
     T_trouble: 'troubleshooting',
     G_biz: 'business negotiation',
   }
+
+  const entries = Object.entries(scores) as [SkillAxis, number][]
+  const sorted = [...entries].sort((a, b) => b[1] - a[1])
+  const best = sorted.map(([k]) => k)
+  const worst = [...best].reverse()
 
   const totalAvg = Math.round(Object.values(scores).reduce((a, b) => a + b, 0) / 4)
 
