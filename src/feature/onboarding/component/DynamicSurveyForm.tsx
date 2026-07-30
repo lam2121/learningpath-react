@@ -108,10 +108,17 @@ const FALLBACK_QUESTIONS: SurveyQuestion[] = [
 const DEEP_DIVE_THRESHOLD = 8
 
 const AXIS_CONFIG: Record<SkillAxis, { label: string; color: string; bg: string; dot: string }> = {
+<<<<<<< HEAD
   D_doc:     { label: 'Documentation (D)', color: 'text-blue-300',    bg: 'bg-blue-500/20',    dot: 'bg-blue-400' },
   C_comm:    { label: 'Communication (C)', color: 'text-emerald-300', bg: 'bg-emerald-500/20', dot: 'bg-emerald-400' },
   T_trouble: { label: 'Troubleshooting (T)', color: 'text-rose-300',  bg: 'bg-rose-500/20',    dot: 'bg-rose-400' },
   G_biz:     { label: 'Business (G)',      color: 'text-amber-300',   bg: 'bg-amber-500/20',   dot: 'bg-amber-400' },
+=======
+  D_doc: { label: 'Documentation', color: 'text-blue-300', bg: 'bg-blue-500/20', dot: 'bg-blue-400' },
+  C_comm: { label: 'Communication', color: 'text-emerald-300', bg: 'bg-emerald-500/20', dot: 'bg-emerald-400' },
+  T_trouble: { label: 'Troubleshooting', color: 'text-rose-300', bg: 'bg-rose-500/20', dot: 'bg-rose-400' },
+  G_biz: { label: 'Business', color: 'text-amber-300', bg: 'bg-amber-500/20', dot: 'bg-amber-400' },
+>>>>>>> b86971d (fix err)
 }
 
 // ─── Rating Button Component ──────────────────────────────────────────────────
@@ -149,8 +156,8 @@ function RatingButtons({
                     ? 'bg-amber-400 text-gray-900 shadow-lg shadow-amber-400/30 scale-110'
                     : 'bg-blue-400 text-gray-900 shadow-lg shadow-blue-400/30 scale-110'
                   : isHighlight
-                  ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 hover:scale-105 border border-amber-500/30'
-                  : 'bg-white/10 text-white/70 hover:bg-white/20 hover:scale-105 border border-white/10'
+                    ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 hover:scale-105 border border-amber-500/30'
+                    : 'bg-white/10 text-white/70 hover:bg-white/20 hover:scale-105 border border-white/10'
                 }
               `}
             >
@@ -494,11 +501,10 @@ export function DynamicSurveyForm() {
               {[1, 2, 3, 4].map((step) => (
                 <div key={step} className="flex items-center">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                      step === 1 || step === 2
-                        ? "bg-blue-400 text-white shadow-md shadow-blue-900"
-                        : "bg-white/10 text-white/40"
-                    }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${step === 1 || step === 2
+                      ? "bg-blue-400 text-white shadow-md shadow-blue-900"
+                      : "bg-white/10 text-white/40"
+                      }`}
                   >
                     {step === 1 ? "✓" : step}
                   </div>
@@ -535,13 +541,12 @@ export function DynamicSurveyForm() {
                     {questions.map((_, i) => (
                       <div
                         key={i}
-                        className={`rounded-full transition-all duration-300 ${
-                          i === currentIndex
-                            ? 'w-5 h-2 bg-blue-300'
-                            : i < currentIndex
+                        className={`rounded-full transition-all duration-300 ${i === currentIndex
+                          ? 'w-5 h-2 bg-blue-300'
+                          : i < currentIndex
                             ? 'w-2 h-2 bg-blue-400/60'
                             : 'w-2 h-2 bg-white/20'
-                        }`}
+                          }`}
                       />
                     ))}
                   </div>
@@ -554,13 +559,12 @@ export function DynamicSurveyForm() {
               {/* Card */}
               <div
                 ref={cardRef}
-                className={`bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-7 shadow-2xl transition-all duration-250 ${
-                  animating
-                    ? direction === 'forward'
-                      ? 'opacity-0 translate-x-4'
-                      : 'opacity-0 -translate-x-4'
-                    : 'opacity-100 translate-x-0'
-                }`}
+                className={`bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-7 shadow-2xl transition-all duration-250 ${animating
+                  ? direction === 'forward'
+                    ? 'opacity-0 translate-x-4'
+                    : 'opacity-0 -translate-x-4'
+                  : 'opacity-100 translate-x-0'
+                  }`}
               >
                 {/* Axis badge */}
                 {axisConfig && (
