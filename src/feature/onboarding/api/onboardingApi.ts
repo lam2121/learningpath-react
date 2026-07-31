@@ -128,13 +128,24 @@ export interface JobRoleInitWeights {
   Advanced?: { D?: number; C?: number; T?: number; G?: number }
 }
 
+export interface SeedTierItem {
+  tier: number
+  name: string
+}
+
+export interface WeightDescription {
+  name: string
+  description: string
+}
+
 export interface JobRole {
   id: number
   name: string
   JD: string
-  seed_tier: Record<string, unknown>
+  seed_tier: SeedTierItem[]
   init_weights: JobRoleInitWeights
-  example_question: Record<string, unknown>
+  example_question: string[]
+  weight_descriptions?: Record<string, WeightDescription>
 }
 
 /** Fetch all job roles from database. No auth required. */

@@ -342,45 +342,33 @@ export function PlacementTestEngine() {
   const current = currentQuestion!
 
   return (
-    <div
-      className="min-h-screen relative"
-      style={{ backgroundImage: `url(${bannerBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-    >
-      {/* Blue overlay */}
-      <div className="fixed inset-0 bg-blue-700/80" />
-
-      {/* Glow */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-indigo-400/10 rounded-full blur-3xl" />
+    <div className="min-h-screen relative bg-slate-50">
+      {/* Header */}
+      <div className="fixed top-0 left-0 right-0 h-16 bg-[#0072FF] z-40 flex items-center justify-between px-6 shadow-md">
+        <img src={tmaLogo} alt="TMA Solutions" className="h-8 w-auto" />
+        <button
+          id="btn-exit-test"
+          type="button"
+          onClick={() => setShowQuit(true)}
+          className="px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 border border-white/20 text-white transition-colors text-sm font-medium flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          <span>Back to Survey</span>
+        </button>
       </div>
 
-      {/* TMA Logo */}
-      <img src={tmaLogo} alt="TMA Solutions" className="absolute top-6 left-6 w-45 h-auto z-20" />
-
-      {/* Exit button */}
-      <button
-        id="btn-exit-test"
-        type="button"
-        onClick={() => setShowQuit(true)}
-        className="absolute top-6 right-6 z-20 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/70 hover:text-white transition-colors text-xs font-medium flex items-center gap-1.5 backdrop-blur-md"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        <span>Back to Survey</span>
-      </button>
-
       {/* Progress bar — top */}
-      <div className="fixed top-0 left-0 right-0 z-30 h-1 bg-white/10">
+      <div className="fixed top-16 left-0 right-0 z-30 h-1 bg-gray-200">
         <div
-          className="h-full bg-gradient-to-r from-blue-400 to-cyan-400 transition-all duration-500"
+          className="h-full bg-blue-500 transition-all duration-500"
           style={{ width: `${progress}%` }}
         />
       </div>
 
       {/* ── Main content ────────────────────────────────────────────────────── */}
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-20">
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-20 pt-24">
         <div className="w-full max-w-xl">
 
           {/* Header Stepper & Badge */}
@@ -391,22 +379,22 @@ export function PlacementTestEngine() {
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
                       step <= 3
-                        ? 'bg-blue-400 text-white shadow-md shadow-blue-900'
-                        : 'bg-white/10 text-white/40'
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'bg-gray-200 text-gray-500'
                     }`}
                   >
                     {step < 3 ? '✓' : step}
                   </div>
                   {step < 4 && (
-                    <div className="w-10 h-0.5 bg-white/20 mx-2 rounded-full" />
+                    <div className="w-10 h-0.5 bg-gray-200 mx-2 rounded-full" />
                   )}
                 </div>
               ))}
             </div>
 
             <div className="flex justify-center w-full">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-blue-200 text-sm font-medium">
-                <span className="w-2 h-2 rounded-full bg-blue-300 animate-pulse" />
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-sm font-medium">
+                <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
                 Step 3 / 4 — Placement Test
               </div>
             </div>
@@ -421,16 +409,16 @@ export function PlacementTestEngine() {
                     key={i}
                     className={`rounded-full transition-all duration-300 ${
                       i === currentIndex
-                        ? 'w-5 h-2 bg-blue-300'
+                        ? 'w-5 h-2 bg-blue-600'
                         : i < currentIndex
-                        ? 'w-2 h-2 bg-blue-400/60'
-                        : 'w-2 h-2 bg-white/20'
+                        ? 'w-2 h-2 bg-blue-300'
+                        : 'w-2 h-2 bg-gray-200'
                     }`}
                   />
                 ))}
               </div>
             </div>
-            <span className="text-white/40 text-sm font-mono shrink-0 ml-3">
+            <span className="text-gray-500 text-sm font-mono shrink-0 ml-3">
               {currentIndex + 1} / {TOTAL_QUESTIONS}
             </span>
           </div>
@@ -482,7 +470,7 @@ export function PlacementTestEngine() {
             </button>
 
             {!isLastQuestion && (
-              <p className="text-center text-[11px] text-white/25 mt-2">
+              <p className="text-center text-[11px] text-gray-400 mt-2">
                 🔒 You cannot go back — choose carefully
               </p>
             )}
@@ -490,7 +478,7 @@ export function PlacementTestEngine() {
 
           {/* Error notice */}
           {fetchError && (
-            <p className="mt-4 text-center text-xs text-rose-300/70">{fetchError}</p>
+            <p className="mt-4 text-center text-xs text-red-500">{fetchError}</p>
           )}
         </div>
       </div>

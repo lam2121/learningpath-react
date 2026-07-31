@@ -45,53 +45,53 @@ const MILESTONE_CONFIG: Record<MilestoneLevel, {
 }> = {
   basic: {
     label: 'Basic',
-    sublabel: 'Nền tảng giao tiếp',
+    sublabel: 'Communication Foundation',
     multiplier: 0.60,
     totalBudget: 60,
     color: 'from-sky-400 to-blue-500',
     border: 'border-sky-400/60',
     glow: 'shadow-sky-400/20',
-    tag: 'Khởi đầu',
+    tag: 'Getting Started',
     tagColor: 'bg-sky-500/20 text-sky-300 border-sky-400/30',
     hours: 48,
     icon: '🌱',
-    desc: 'Xây dựng nền tảng giao tiếp IT thiết yếu — email, meeting cơ bản, báo cáo trạng thái.',
+    desc: 'Build essential IT communication foundation — emails, basic meetings, status reports.',
   },
   intermediate: {
     label: 'Intermediate',
-    sublabel: 'Giao tiếp chủ động',
+    sublabel: 'Proactive Communication',
     multiplier: 0.78,
     totalBudget: 78,
     color: 'from-violet-400 to-indigo-500',
     border: 'border-violet-400/60',
     glow: 'shadow-violet-400/20',
-    tag: 'Phổ biến nhất',
+    tag: 'Most Popular',
     tagColor: 'bg-violet-500/20 text-violet-300 border-violet-400/30',
     hours: 96,
     icon: '🚀',
-    desc: 'Tự tin trình bày giải pháp, xử lý Q&A, và viết tài liệu kỹ thuật chuyên nghiệp.',
+    desc: 'Confidently present solutions, handle Q&A, and write professional technical documentation.',
   },
   advanced: {
     label: 'Advanced',
-    sublabel: 'Giao tiếp chuyên gia',
+    sublabel: 'Expert Communication',
     multiplier: 0.95,
     totalBudget: 95,
     color: 'from-amber-400 to-orange-500',
     border: 'border-amber-400/60',
     glow: 'shadow-amber-400/20',
-    tag: 'Thử thách cao',
+    tag: 'High Challenge',
     tagColor: 'bg-amber-500/20 text-amber-300 border-amber-400/30',
     hours: 144,
     icon: '👑',
-    desc: 'Đàm phán, pitching chiến lược, xử lý khủng hoảng và thuyết phục cấp C-level.',
+    desc: 'Negotiation, strategic pitching, crisis management, and persuading C-level executives.',
   },
 }
 
 const AXIS_META = [
-  { key: 'D' as const, label: 'Tài liệu', color: 'bg-blue-400',    track: 'bg-blue-400/20',  text: 'text-blue-300' },
-  { key: 'C' as const, label: 'Giao tiếp', color: 'bg-emerald-400', track: 'bg-emerald-400/20', text: 'text-emerald-300' },
-  { key: 'T' as const, label: 'Sự cố',    color: 'bg-rose-400',    track: 'bg-rose-400/20',   text: 'text-rose-300' },
-  { key: 'G' as const, label: 'Thương mại', color: 'bg-amber-400', track: 'bg-amber-400/20',  text: 'text-amber-300' },
+  { key: 'D' as const, label: 'Documentation', color: 'bg-blue-400',    track: 'bg-blue-400/20',  text: 'text-blue-300' },
+  { key: 'C' as const, label: 'Communication', color: 'bg-emerald-400', track: 'bg-emerald-400/20', text: 'text-emerald-300' },
+  { key: 'T' as const, label: 'Troubleshooting', color: 'bg-rose-400',    track: 'bg-rose-400/20',   text: 'text-rose-300' },
+  { key: 'G' as const, label: 'Commercial', color: 'bg-amber-400', track: 'bg-amber-400/20',  text: 'text-amber-300' },
 ]
 
 // Compute D/C/T/G targets for a given role + level
@@ -164,11 +164,11 @@ function WarningModal({
           <span className="text-2xl">⚠️</span>
         </div>
         <h3 className="text-lg font-bold text-white text-center mb-2">
-          Đổi mục tiêu sẽ RESET tiến độ
+          Changing Goal will RESET Progress
         </h3>
         <p className="text-sm text-white/60 text-center mb-6 leading-relaxed">
-          Thay đổi Milestone sẽ xóa toàn bộ tiến độ học hiện tại của bạn và tạo lại khóa học từ đầu. 
-          <span className="text-amber-300 font-medium"> Bạn có chắc chắn muốn tiếp tục?</span>
+          Changing your Milestone will reset all your current learning progress and regenerate the course from scratch. 
+          <span className="text-amber-300 font-medium"> Are you sure you want to continue?</span>
         </p>
         <div className="flex gap-3">
           <button
@@ -176,14 +176,14 @@ function WarningModal({
             onClick={onCancel}
             className="flex-1 py-3 rounded-xl border border-white/20 text-white/70 hover:bg-white/10 hover:text-white transition-all duration-200 font-medium text-sm"
           >
-            Hủy bỏ
+            Cancel
           </button>
           <button
             id="btn-modal-confirm"
             onClick={onConfirm}
             className="flex-1 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-sm shadow-lg shadow-amber-500/20 transition-all duration-200 active:scale-95"
           >
-            Xác nhận đổi
+            Confirm Change
           </button>
         </div>
       </div>
@@ -207,18 +207,18 @@ function ETADisplay({
 
   return (
     <div className="bg-white/5 border border-white/15 rounded-2xl p-5 text-center">
-      <p className="text-xs text-white/40 uppercase tracking-widest mb-3">Thời gian hoàn thành dự kiến</p>
+      <p className="text-xs text-white/40 uppercase tracking-widest mb-3">Estimated Completion Time</p>
 
       <div className="flex items-end justify-center gap-2 mb-2">
         <span className={`text-5xl font-black bg-gradient-to-br ${cfg.color} bg-clip-text text-transparent`}>
           <AnimatedNumber value={weeks} />
         </span>
-        <span className="text-white/50 text-lg font-medium mb-1.5">tuần</span>
+        <span className="text-white/50 text-lg font-medium mb-1.5">weeks</span>
       </div>
 
       <p className="text-white/40 text-sm mb-4">
-        ≈ <span className="text-white/70 font-semibold">{months}</span> tháng với{' '}
-        <span className="text-white/70 font-semibold">{hours}h/tuần</span>
+        ≈ <span className="text-white/70 font-semibold">{months}</span> months at{' '}
+        <span className="text-white/70 font-semibold">{hours}h/week</span>
       </p>
 
       {/* Timeline bar */}
@@ -238,10 +238,10 @@ function ETADisplay({
       {/* Smart tips */}
       <div className="mt-4 text-xs text-white/40">
         {hours >= 14
-          ? '🔥 Tốc độ học tuyệt vời!'
+          ? '🔥 Great learning pace!'
           : hours >= 8
-          ? '✅ Tiến độ ổn định, đúng hướng.'
-          : '💡 Thêm vài giờ/tuần sẽ đạt mục tiêu nhanh hơn nhiều.'}
+          ? '✅ Steady progress, on the right track.'
+          : '💡 Adding a few more hours/week will get you to your goal much faster.'}
       </div>
     </div>
   )
@@ -350,24 +350,24 @@ export function MilestoneForm() {
 
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-blue-200 text-sm font-medium mb-4">
               <span className="w-2 h-2 rounded-full bg-blue-300 animate-pulse" />
-              Bước 4 / 4 — Đặt Mục tiêu Milestone
+              Step 4 / 4 — Set Milestone Goal
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight mb-2 drop-shadow-md">
-              Bạn muốn đạt đến{' '}
+              Which level do you want to{' '}
               <span className="bg-gradient-to-r from-blue-300 via-cyan-300 to-sky-300 bg-clip-text text-transparent">
-                mức độ nào?
+                reach?
               </span>
             </h1>
             <p className="text-blue-100/60 text-sm max-w-lg mx-auto">
-              Hệ thống sẽ quy đổi milestone thành ngân sách{' '}
-              <span className="font-semibold text-white/80">D/C/T/G</span> làm đích đến cho khóa học của bạn.
+              The system will convert the milestone into a{' '}
+              <span className="font-semibold text-white/80">D/C/T/G</span> budget as the target for your course.
             </p>
           </div>
 
           {/* Role Selector */}
           <div className="bg-white/5 border border-white/15 rounded-2xl p-4 mb-5">
             <label className="text-xs text-white/40 uppercase tracking-widest mb-2.5 block">
-              Career Track của bạn
+              Your Career Track
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {ROLES.map((r) => (
@@ -411,7 +411,7 @@ export function MilestoneForm() {
                   {/* Popular badge */}
                   {lvl === 'intermediate' && (
                     <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-violet-500 text-white text-[10px] font-bold shadow-md whitespace-nowrap">
-                      ⭐ Phổ biến nhất
+                      ⭐ Most Popular
                     </div>
                   )}
 
@@ -454,7 +454,7 @@ export function MilestoneForm() {
 
                   {/* Hours badge */}
                   <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
-                    <span className="text-[10px] text-white/30">Tổng ngân sách</span>
+                    <span className="text-[10px] text-white/30">Total Budget</span>
                     <span className={`text-xs font-bold bg-gradient-to-r ${c.color} bg-clip-text text-transparent`}>
                       {c.totalBudget} pts
                     </span>
@@ -472,7 +472,7 @@ export function MilestoneForm() {
               {targets && (
                 <div className="bg-white/5 border border-white/15 rounded-2xl p-5">
                   <p className="text-xs text-white/40 uppercase tracking-widest mb-4">
-                    Ngân sách D/C/T/G mục tiêu — {role.label} / {MILESTONE_CONFIG[selectedLevel].label}
+                    Target D/C/T/G Budget — {role.label} / {MILESTONE_CONFIG[selectedLevel].label}
                   </p>
                   <div className="grid grid-cols-4 gap-3">
                     {AXIS_META.map((ax) => (
@@ -497,10 +497,10 @@ export function MilestoneForm() {
               <div className="bg-white/5 border border-white/15 rounded-2xl p-5">
                 <div className="flex justify-between items-center mb-4">
                   <label htmlFor="hours-slider" className="text-sm font-semibold text-white/80">
-                    Số giờ học mỗi tuần
+                    Weekly Study Hours
                   </label>
                   <div className={`px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r ${cfg!.color} text-white shadow-sm`}>
-                    {hoursPerWeek}h / tuần
+                    {hoursPerWeek}h / week
                   </div>
                 </div>
 
@@ -515,9 +515,9 @@ export function MilestoneForm() {
                 />
 
                 <div className="flex justify-between text-[10px] text-white/30 mt-1.5">
-                  <span>1h (Thoải mái)</span>
-                  <span>10h (Cân bằng)</span>
-                  <span>20h (Cường độ cao)</span>
+                  <span>1h (Relaxed)</span>
+                  <span>10h (Balanced)</span>
+                  <span>20h (Intensive)</span>
                 </div>
               </div>
 
@@ -546,23 +546,23 @@ export function MilestoneForm() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                 </svg>
-                <span>Đã lưu! Đang chuyển sang Placement Test...</span>
+                <span>Saved! System is initializing course...</span>
               </>
             ) : selectedLevel ? (
               <>
-                <span>Xác nhận: {MILESTONE_CONFIG[selectedLevel].label} — {hoursPerWeek}h/tuần</span>
+                <span>Confirm: {MILESTONE_CONFIG[selectedLevel].label} — {hoursPerWeek}h/week</span>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </>
             ) : (
-              <span>Chọn mức mục tiêu để tiếp tục</span>
+              <span>Select a target level to continue</span>
             )}
           </button>
 
           {!selectedLevel && (
             <p className="text-center text-xs text-white/30 mt-3 animate-pulse">
-              ☝️ Chọn Basic, Intermediate hoặc Advanced để bắt đầu
+              ☝️ Select Basic, Intermediate, or Advanced to get started
             </p>
           )}
         </div>
