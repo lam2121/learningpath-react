@@ -43,7 +43,7 @@ function DashboardPage() {
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-					<p className="text-gray-500">Quản trị hệ thống TMA IT Communication</p>
+					<p className="text-gray-500">Manage TMA IT Communication System</p>
 				</div>
 				<Badge variant="outline" className="gap-1.5 px-3 py-1">
 					<Zap className="h-3 w-3" />
@@ -69,7 +69,7 @@ function DashboardPage() {
 							</div>
 							<div>
 								<h3 className="font-semibold text-gray-900">Emergency Kill Switch</h3>
-								<p className="text-sm text-gray-500">AI Generation đang hoạt động bình thường</p>
+								<p className="text-sm text-gray-500">AI Generation operating normally</p>
 							</div>
 						</div>
 						<Badge variant="default" className="text-base px-3 py-1 bg-green-100 text-green-700">
@@ -87,17 +87,17 @@ function DashboardPage() {
 						<Link to="/admin/tracks" className="p-4 rounded-lg border hover:bg-gray-50 transition-colors">
 							<Plus className="h-8 w-8 text-blue-600 mb-2" />
 							<h4 className="font-medium text-gray-900">Create New Track</h4>
-							<p className="text-sm text-gray-500">Thêm career track mới với budget D/C/T/G</p>
+							<p className="text-sm text-gray-500">Add new career track with D/C/T/G budget</p>
 						</Link>
 						<Link to="/admin/costs" className="p-4 rounded-lg border hover:bg-gray-50 transition-colors">
 							<DollarSign className="h-8 w-8 text-green-600 mb-2" />
 							<h4 className="font-medium text-gray-900">View Cost Dashboard</h4>
-							<p className="text-sm text-gray-500">Theo dõi chi phí AI theo generator</p>
+							<p className="text-sm text-gray-500">Track AI costs by generator</p>
 						</Link>
 						<Link to="/admin/rejected" className="p-4 rounded-lg border hover:bg-gray-50 transition-colors">
 							<AlertTriangle className="h-8 w-8 text-red-600 mb-2" />
 							<h4 className="font-medium text-gray-900">Review Rejected Content</h4>
-							<p className="text-sm text-gray-500">Xem và xử lý nội dung bị validator từ chối</p>
+							<p className="text-sm text-gray-500">View and process content rejected by validator</p>
 						</Link>
 					</div>
 				</CardContent>

@@ -85,7 +85,7 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 			onSuccess?.(result);
 		} catch (error) {
 			console.error('Save failed:', error);
-			alert('Lưu thất bại. Vui lòng thử lại.');
+			alert('Save failed. Please try again.');
 		} finally {
 			setSubmitting(false);
 		}
@@ -101,7 +101,7 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 			setPreviewData(result);
 		} catch (error) {
 			console.error('Preview failed:', error);
-			setPreviewData({ examples: ['Không thể tạo preview. Vui lòng thử lại.'] });
+			setPreviewData({ examples: ['Cannot generate preview. Please try again.'] });
 		}
 	};
 
@@ -120,7 +120,7 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 			onSuccess?.({ ...initialTrack, isActive: false });
 		} catch (error) {
 			console.error('Deactivate failed:', error);
-			alert('Tắt track thất bại.');
+			alert('Deactivate track failed.');
 		} finally {
 			setSubmitting(false);
 			setShowDeactivateConfirm(false);
@@ -133,12 +133,12 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 			<div className="flex items-center justify-between">
 				<div>
 					<h2 className="text-2xl font-bold text-gray-900">
-						{isEdit ? 'Chỉnh sửa Career Track' : 'Tạo Career Track mới'}
+						{isEdit ? 'Edit Career Track' : 'Create New Career Track'}
 					</h2>
 					<p className="text-gray-500 mt-1">
 						{isEdit 
-							? `Đang chỉnh sửa: ${initialTrack?.name} (${initialTrack?.activeLearnerCount || 0} học viên đang học)`
-							: 'Điền thông tin role, ngân sách D/C/T/G, và preview AI trước khi lưu.'
+							? `Editing: ${initialTrack?.name} (${initialTrack?.activeLearnerCount || 0} learners active)`
+							: 'Enter role info, D/C/T/G budget, and AI preview before saving.'
 						}
 					</p>
 				</div>
@@ -148,10 +148,10 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 						Preview AI
 					</Button>
 					{isEdit && initialTrack?.isActive && (
-						<Button variant="destructive" onClick={handleDeactivate} disabled={submitting}>
-							<Trash2 className="w-4 h-4 mr-2" />
-							Tắt track
-						</Button>
+<Button variant="destructive" onClick={handleDeactivate} disabled={submitting}>
+								<Trash2 className="w-4 h-4 mr-2" />
+								Deactivate Track
+							</Button>
 					)}
 				</div>
 			</div>
@@ -159,8 +159,8 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 			{/* Form Tabs */}
 			<Tabs defaultValue="basic" className="space-y-6">
 				<TabsList className="grid w-full grid-cols-3">
-					<TabsTrigger value="basic">Thông tin cơ bản</TabsTrigger>
-					<TabsTrigger value="budget">Ngân sách D/C/T/G</TabsTrigger>
+					<TabsTrigger value="basic">Basic Info</TabsTrigger>
+					<TabsTrigger value="budget">D/C/T/G Budget</TabsTrigger>
 					<TabsTrigger value="seed">Seed Content</TabsTrigger>
 				</TabsList>
 
@@ -168,9 +168,9 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 				<TabsContent value="basic" className="space-y-6 p-4 pt-0">
 					<div className="space-y-4">
 						<div>
-							<Label className="block text-sm font-medium text-gray-700 mb-1">Tên Role *</Label>
+							<Label className="block text-sm font-medium text-gray-700 mb-1">Role Name *</Label>
 							<Input
-								placeholder="VD: Business Analyst, QA Engineer, DevOps..."
+								placeholder="e.g., Business Analyst, QA Engineer, DevOps..."
 								value={formData.name}
 								onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
 								className="text-lg"
@@ -180,25 +180,25 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 						<div>
 							<Label className="block text-sm font-medium text-gray-700 mb-1">Job Description *</Label>
 							<Textarea
-								placeholder="Mô tả công việc chi tiết..."
+								placeholder="Detailed job description..."
 								value={formData.jobDescription}
 								onChange={e => setFormData(prev => ({ ...prev, jobDescription: e.target.value }))}
 								rows={6}
 								className="resize-none"
 							/>
-							<p className="text-xs text-gray-500 mt-1">Mô tả sẽ được dùng để AI generate lesson content liên quan đến role này.</p>
+							<p className="text-xs text-gray-500 mt-1">Description will be used to AI generate lesson content related to this role.</p>
 						</div>
 						
 						<div>
-							<Label className="block text-sm font-medium text-gray-700 mb-1">G-Skill Definition (Kỹ năng chuyên ngành) *</Label>
+							<Label className="block text-sm font-medium text-gray-700 mb-1">G-Skill Definition (Professional Skill) *</Label>
 							<Textarea
-								placeholder="VD: Eliciting requirements, clarifying scope, stakeholder communication, writing BRD/FSD..."
+								placeholder="e.g., Eliciting requirements, clarifying scope, stakeholder communication, writing BRD/FSD..."
 								value={formData.gSkillDefinition}
 								onChange={e => setFormData(prev => ({ ...prev, gSkillDefinition: e.target.value }))}
 								rows={4}
 								className="resize-none"
 							/>
-							<p className="text-xs text-gray-500 mt-1">Định nghĩa kỹ năng trục G (chuyên ngành). Quan trọng để AI hiểu đúng context chuyên môn.</p>
+							<p className="text-xs text-gray-500 mt-1">Definition of G-skill (professional). Important for AI to understand correct professional context.</p>
 						</div>
 					</div>
 				</TabsContent>
@@ -218,25 +218,25 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 						<div>
 							<Label className="block text-sm font-medium text-gray-700 mb-1">Seed Tier 1 (Basic Vocabulary) *</Label>
 							<Textarea
-								placeholder="Từ vựng cơ bản, cấu trúc câu đơn giản... (cách nhau bằng dấu phẩy)"
+								placeholder="Basic vocabulary, simple sentence structures... (separated by commas)"
 								value={formData.seedTier1}
 								onChange={e => setFormData(prev => ({ ...prev, seedTier1: e.target.value }))}
 								rows={4}
 								className="resize-none"
 							/>
-							<p className="text-xs text-gray-500 mt-1">Dùng cho các bài học level Basic (Vocabulary, Grammar, Reading cơ bản).</p>
+							<p className="text-xs text-gray-500 mt-1">Used for Basic level lessons (Vocabulary, Grammar, Basic Reading).</p>
 						</div>
 						
 						<div>
 							<Label className="block text-sm font-medium text-gray-700 mb-1">Seed Tier 2 (Advanced Terminology) *</Label>
 							<Textarea
-								placeholder="Thuật ngữ nâng cao, cấu trúc phức tạp... (cách nhau bằng dấu phẩy)"
+								placeholder="Advanced terminology, complex structures... (separated by commas)"
 								value={formData.seedTier2}
 								onChange={e => setFormData(prev => ({ ...prev, seedTier2: e.target.value }))}
 								rows={4}
 								className="resize-none"
 							/>
-							<p className="text-xs text-gray-500 mt-1">Dùng cho các bài học level Intermediate/Advanced (Troubleshooting, Negotiation, Advanced topics).</p>
+							<p className="text-xs text-gray-500 mt-1">Used for Intermediate/Advanced level lessons (Troubleshooting, Negotiation, Advanced topics).</p>
 						</div>
 					</div>
 				</TabsContent>
@@ -247,13 +247,13 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 				<Alert variant="destructive" className="border-red-200">
 					<AlertCircle className="h-4 w-4" />
 					<AlertDescription className="flex flex-col gap-1">
-						<span className="font-medium">Form chưa hợp lệ:</span>
-						<ul className="list-disc list-inside text-sm space-y-1">
-							{!formData.name.trim() && <li>Chưa nhập tên Role</li>}
-							{!formData.jobDescription.trim() && <li>Chưa nhập Job Description</li>}
-							{!formData.gSkillDefinition.trim() && <li>Chưa nhập G-Skill Definition</li>}
-							{!formData.seedTier1.trim() && <li>Chưa nhập Seed Tier 1</li>}
-							{!formData.seedTier2.trim() && <li>Chưa nhập Seed Tier 2</li>}
+						<span className="font-medium">Form invalid:</span>
+<ul className="list-disc list-inside text-sm space-y-1">
+									{!formData.name.trim() && <li>Role name not entered</li>}
+									{!formData.jobDescription.trim() && <li>Job description not entered</li>}
+									{!formData.gSkillDefinition.trim() && <li>G-skill definition not entered</li>}
+									{!formData.seedTier1.trim() && <li>Seed Tier 1 not entered</li>}
+									{!formData.seedTier2.trim() && <li>Seed Tier 2 not entered</li>}
 							{Object.entries(validations).filter(([, v]) => !v.isValid).map(([k, v]) => (
 								<li key={k}>{k}: {v.errors.join(', ')}</li>
 							))}
@@ -264,9 +264,9 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 
 			{/* Action Buttons */}
 			<div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-				<Button variant="outline" onClick={() => window.history.back()} disabled={submitting}>
-					Hủy
-				</Button>
+<Button variant="outline" onClick={() => window.history.back()} disabled={submitting}>
+							Cancel
+						</Button>
 				<Button 
 					onClick={handleSubmit} 
 					disabled={submitting || !isAllValid()}
@@ -274,13 +274,13 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 				>
 					{submitting ? (
 						<>
-							<Loader2 className="w-4 h-4 animate-spin mr-2" />
-							Đang lưu...
+<Loader2 className="w-4 h-4 animate-spin mr-2" />
+									Saving...
 						</>
 					) : (
 						<>
 							<Save className="w-4 h-4 mr-2" />
-							{isEdit ? 'Cập nhật' : 'Tạo mới'}
+							{isEdit ? 'Update' : 'Create New'}
 						</>
 					)}
 				</Button>
@@ -299,10 +299,10 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 					<DialogHeader>
 						<DialogTitle className="flex items-center gap-2 text-red-600">
 							<AlertCircle className="h-5 w-5" />
-							Xác nhận tắt track
+							Confirm Track Deactivation
 						</DialogTitle>
 						<DialogDescription>
-							Bạn sắp tắt track <strong>{initialTrack?.name}</strong>. Hành động này không thể hoàn tác.
+							You are about to deactivate track <strong>{initialTrack?.name}</strong>. This action cannot be undone.
 						</DialogDescription>
 					</DialogHeader>
 					
@@ -317,11 +317,11 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 							
 							{deactivateWarning.activeLearnersPreview.length > 0 && (
 								<div className="text-sm">
-									<p className="font-medium mb-2">Một số học viên đang học:</p>
+									<p className="font-medium mb-2">Some active learners:</p>
 									<ul className="space-y-1">
 										{deactivateWarning.activeLearnersPreview.map(u => (
 											<li key={u.id} className="text-gray-600">
-												{u.name} ({u.email}) - {u.progress}% hoàn thành
+												{u.name} ({u.email}) - {u.progress}% completed
 											</li>
 										))}
 									</ul>
@@ -331,11 +331,11 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 					)}
 					
 					<DialogFooter className="flex-col-reverse sm:flex-row gap-3">
-						<Button variant="outline" onClick={() => setShowDeactivateConfirm(false)}>
-							Hủy
-						</Button>
+<Button variant="outline" onClick={() => setShowDeactivateConfirm(false)}>
+								Cancel
+							</Button>
 						<Button variant="destructive" onClick={confirmDeactivate} disabled={submitting}>
-							{submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : 'Xác nhận tắt'}
+							{submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : 'Confirm Deactivate'}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

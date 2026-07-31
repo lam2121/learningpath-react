@@ -18,10 +18,10 @@ interface FailureRoutingModalProps {
 }
 
 const skillLabels: Record<string, string> = {
-	D: 'Văn bản kỹ thuật (D)',
-	C: 'Giao tiếp (C)',
-	T: 'Xử lý rủi ro (T)',
-	G: 'Thương mại (G)'
+	D: 'Technical Document (D)',
+	C: 'Communication (C)',
+	T: 'Troubleshooting (T)',
+	G: 'Growth/Economics (G)'
 };
 
 const skillColors: Record<string, string> = {
@@ -88,22 +88,22 @@ export function FailureRoutingModal({
 						)}
 					</div>
 					<DialogTitle className="text-xl font-bold">
-						{passed ? 'Chúc mừng! Bạn đã đạt' : 'Chưa đạt điểm yêu cầu'}
+						{passed ? 'Congratulations! You passed' : 'Did not meet required score'}
 					</DialogTitle>
 					<DialogDescription className="text-gray-600">
-						{passed 
-							? `Điểm: ${result.percentage}% (Yêu cầu ${isFinalTest ? '80%' : '70%'})` 
-							: `Điểm: ${result.percentage}% · Cần ${isFinalTest ? '80%' : '70%'} để qua`
-						}
+{passed 
+						? `Score: ${result.percentage}% (Required ${isFinalTest ? '80%' : '70%'})` 
+						: `Score: ${result.percentage}% · Need ${isFinalTest ? '80%' : '70%'} to pass`
+					}
 					</DialogDescription>
 				</DialogHeader>
 
 				{/* Score Breakdown */}
 				<div className="space-y-4 mb-6 p-4 rounded-xl bg-gray-50">
-					<h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-						<Target className="w-4 h-4 text-blue-600" />
-						Phân tích theo kỹ năng
-					</h4>
+<h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+							<Target className="w-4 h-4 text-blue-600" />
+							Skill Analysis
+						</h4>
 					<div className="space-y-3">
 						{(['D', 'C', 'T', 'G'] as const).map(skill => {
 							const data = result.skillBreakdown[skill];
@@ -133,20 +133,20 @@ export function FailureRoutingModal({
 
 				{/* AI Recommendation */}
 				<div className="p-4 rounded-xl bg-blue-50 border border-blue-100 mb-6">
-					<h4 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
-						<Target className="w-4 h-4" />
-						Khuyến nghị từ AI:
-					</h4>
+<h4 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+							<Target className="w-4 h-4" />
+							AI Recommendation:
+						</h4>
 					<p className="text-blue-700 text-sm">{result.aiSummary}</p>
 				</div>
 
 				{/* Weak Skills Focus */}
 				{weakSkills.length > 0 && !passed && (
 					<div className="p-4 rounded-xl bg-amber-50 border border-amber-100 mb-6">
-						<h4 className="font-medium text-amber-900 mb-3 flex items-center gap-2">
-							<AlertTriangle className="w-4 h-4" />
-							Kỹ năng cần tập trung ôn lại:
-						</h4>
+<h4 className="font-medium text-amber-900 mb-3 flex items-center gap-2">
+								<AlertTriangle className="w-4 h-4" />
+								Skills to Focus Review:
+							</h4>
 						<div className="flex flex-wrap gap-2">
 							{weakSkills.map(([skill]) => (
 								<span key={skill} className={cn(
@@ -163,29 +163,28 @@ export function FailureRoutingModal({
 				{/* Final Test Specific - Failure Routing */}
 				{isFinalTest && !passed && (
 					<div className="p-4 rounded-xl bg-red-50 border border-red-100 mb-6">
-						<h4 className="font-medium text-red-900 mb-2 flex items-center gap-2">
-							<AlertTriangle className="w-4 h-4" />
-							Final Test - Quy trình xử lý
-						</h4>
-						<ul className="text-sm text-red-700 space-y-1 list-disc list-inside">
-							<li>Bạn cần ôn lại ít nhất 2 bài học yếu nhất trước khi thi lại.</li>
-							<li>Hệ thống sẽ khóa nút "Thi lại" cho đến khi bạn đọc xong lý thuyết.</li>
-							<li>Có tối đa 3 lần yêu cầu Re-path (tái cấu trúc lộ trình).</li>
-						</ul>
+<h4 className="font-medium text-red-900 mb-2 flex items-center gap-2">
+								<AlertTriangle className="w-4 h-4" />
+								Final Test - Handling Process
+							</h4>
+<ul className="text-sm text-red-700 space-y-1 list-disc list-inside">
+								<li>You need to review at least 2 weakest lessons before retaking.</li>
+								<li>System will lock the "Retake" button until you finish reviewing the theory.</li>
+								<li>Maximum 3 Re-path (learning path restructuring) requests allowed.</li>
+							</ul>
 					</div>
 				)}
 
 				{/* Lesson Quiz Failure - Lock Retry */}
 				{isLessonQuiz && shouldLockRetry && (
 					<div className="p-4 rounded-xl bg-red-50 border border-red-100 mb-6">
-						<h4 className="font-medium text-red-900 mb-2 flex items-center gap-2">
-							<AlertTriangle className="w-4 h-4" />
-							Đã trượt {failureCount} lần - Yêu cầu đọc lại lý thuyết
-						</h4>
-						<p className="text-red-700 text-sm">
-							Theo chính sách Anti-Farming, bạn phải đọc lại phần lý thuyết của bài học này 
-							trước khi được phép làm lại quiz lần thứ {failureCount + 1}.
-						</p>
+<h4 className="font-medium text-red-900 mb-2 flex items-center gap-2">
+								<AlertTriangle className="w-4 h-4" />
+								Failed {failureCount} times - Required to review theory again
+							</h4>
+							<p className="text-red-700 text-sm">
+								Per Anti-Farming policy, you must review the theory section of this lesson before being allowed to retake quiz attempt #{failureCount + 1}.
+							</p>
 					</div>
 				)}
 
@@ -198,7 +197,7 @@ export function FailureRoutingModal({
 							disabled={submittingReview}
 						>
 							<BookOpen className="w-4 h-4 mr-2" />
-							{submittingReview ? 'Đang mở...' : 'Đọc lại lý thuyết'}
+							{submittingReview ? 'Opening...' : 'Review Theory'}
 						</Button>
 					)}
 					
@@ -213,17 +212,17 @@ export function FailureRoutingModal({
 								{shouldLockRetry ? (
 									<>
 										<Lock className="w-4 h-4 mr-2" />
-										Khóa - Cần đọc lý thuyết
+										Locked - Must Review Theory
 									</>
 								) : submittingRetry ? (
 									<>
 										<Loader2 className="w-4 h-4 animate-spin mr-2" />
-										Đang tải...
+										Loading...
 									</>
 								) : (
 									<>
 										<RotateCcw className="w-4 h-4 mr-2" />
-										Làm lại quiz
+										Retake Quiz
 									</>
 								)}
 							</Button>
@@ -234,13 +233,13 @@ export function FailureRoutingModal({
 							className="flex-1"
 							onClick={onClose}
 						>
-							Đóng
+							Close
 						</Button>
 					</div>
 					
 					{passed && (
 						<Button className="w-full" onClick={onClose}>
-							Tiếp tục
+							Continue
 						</Button>
 					)}
 				</DialogFooter>

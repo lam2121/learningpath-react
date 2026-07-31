@@ -105,9 +105,9 @@ export function OrderingQuestion({
 	return (
 		<div className="space-y-6 p-6 bg-white rounded-2xl border border-gray-100 shadow-sm">
 			<div className="flex items-center justify-between">
-				<h3 className="text-lg font-semibold text-gray-900">
-					Câu {questionNumber} / {totalQuestions} · <span className="text-gray-500 font-normal">Ordering</span>
-				</h3>
+<h3 className="text-lg font-semibold text-gray-900">
+				Question {questionNumber} / {totalQuestions} · <span className="text-gray-500 font-normal">Ordering</span>
+			</h3>
 				<div className="px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-medium">
 					T
 				</div>
@@ -115,12 +115,12 @@ export function OrderingQuestion({
 
 			{/* Instruction */}
 			<div className="p-4 rounded-xl bg-orange-50 border border-orange-100">
-				<p className="font-medium text-orange-900 mb-2">📋 Yêu cầu:</p>
+				<p className="font-medium text-orange-900 mb-2">📋 Instruction:</p>
 				<p className="text-gray-800">{instruction}</p>
 			</div>
 
 			{/* Drag and Drop List */}
-			<div className="space-y-3" role="list" aria-label="Các bước cần sắp xếp">
+			<div className="space-y-3" role="list" aria-label="Steps to order">
 				{orderedSteps.map((step, index) => (
 					<div
 						key={index}
@@ -191,7 +191,7 @@ export function OrderingQuestion({
 					}}
 					className="w-full px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
 				>
-					🔄 Xáo trộn lại
+					🔄 Shuffle Again
 				</button>
 			)}
 
@@ -206,7 +206,7 @@ export function OrderingQuestion({
 							{isCorrect ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
 						</div>
 						<div className="flex-1">
-							<p className="font-medium text-gray-900">Giải thích:</p>
+							<p className="font-medium text-gray-900">Explanation:</p>
 							<p className="text-sm text-gray-600 mt-1">{explanation || expl}</p>
 						</div>
 					</div>

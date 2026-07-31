@@ -4,9 +4,9 @@ import { useAuth } from '@/common/context/AuthContext'
 import { useEffect } from 'react'
 
 const navigation = [
-	{ key: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard, href: '/admin' },
+	{ key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
 	{ key: 'tracks', label: 'Career Tracks', icon: Settings, href: '/admin/tracks' },
-	{ key: 'costs', label: 'Chi phí AI', icon: DollarSign, href: '/admin/costs' },
+	{ key: 'costs', label: 'AI Costs', icon: DollarSign, href: '/admin/costs' },
 	{ key: 'rejected', label: 'Rejected Content', icon: AlertTriangle, href: '/admin/rejected' },
 	{ key: 'killswitch', label: 'Kill Switch', icon: Shield, href: '/admin/killswitch' },
 ]
@@ -46,7 +46,7 @@ function AdminSidebar() {
 					className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-700 border border-transparent hover:border-red-200 transition-colors"
 				>
 					<LogOut className="h-5 w-5" />
-					<span className="font-medium">Đăng xuất</span>
+					<span className="font-medium">Sign Out</span>
 				</button>
 			</div>
 		</aside>

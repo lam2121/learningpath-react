@@ -38,7 +38,7 @@ export function RejectedContentTable() {
 			setItems(prev => prev.map(item => item.id === id ? updated : item));
 		} catch (error) {
 			console.error('Failed to update status:', error);
-			alert('Cập nhật thất bại');
+			alert('Update failed');
 		} finally {
 			setUpdating(null);
 		}
@@ -46,7 +46,7 @@ export function RejectedContentTable() {
 
 	const copyToClipboard = (text: string) => {
 		navigator.clipboard.writeText(text);
-		alert('Đã copy vào clipboard');
+		alert('Copied to clipboard');
 	};
 
 	const generatorLabels: Record<string, string> = {
@@ -60,9 +60,9 @@ export function RejectedContentTable() {
 	};
 
 	const statusLabels: Record<string, { label: string; color: string }> = {
-		pending: { label: 'Chờ xử lý', color: 'bg-amber-100 text-amber-800' },
-		fixed: { label: 'Đã sửa', color: 'bg-green-100 text-green-800' },
-		ignored: { label: 'Bỏ qua', color: 'bg-gray-100 text-gray-600' }
+pending: { label: 'Pending', color: 'bg-amber-100 text-amber-800' },
+	fixed: { label: 'Fixed', color: 'bg-green-100 text-green-800' },
+	ignored: { label: 'Ignored', color: 'bg-gray-100 text-gray-600' }
 	};
 
 	if (loading) {
@@ -106,7 +106,7 @@ export function RejectedContentTable() {
 				</Select>
 
 				<Input
-					placeholder="Lọc theo Role..."
+					placeholder="Filter by Role..."
 					value={filters.role}
 					onChange={e => setFilters(f => ({ ...f, role: e.target.value }))}
 					className="w-[200px]"
@@ -134,7 +134,7 @@ export function RejectedContentTable() {
 						{items.length === 0 ? (
 							<TableRow>
 								<TableCell colSpan={6} className="text-center py-8 text-gray-500">
-									Không có nội dung bị reject
+									No rejected content
 								</TableCell>
 							</TableRow>
 						) : (
@@ -164,7 +164,7 @@ export function RejectedContentTable() {
 												size="icon"
 												onClick={() => setSelectedItem(item)}
 												className="h-8 w-8"
-												title="Xem chi tiết"
+												title="View Details"
 											>
 												<Eye className="h-4 w-4" />
 											</Button>
@@ -186,7 +186,7 @@ export function RejectedContentTable() {
 														disabled={updating === item.id}
 														className="h-8 text-xs"
 													>
-														{updating === item.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Đã sửa'}
+														{updating === item.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Fixed'}
 													</Button>
 													<Button
 														variant="ghost"
@@ -195,7 +195,7 @@ export function RejectedContentTable() {
 														disabled={updating === item.id}
 														className="h-8 text-xs text-gray-500"
 													>
-														Bỏ qua
+Ignore
 													</Button>
 												</>
 											)}
@@ -214,7 +214,7 @@ export function RejectedContentTable() {
 					<DialogHeader>
 						<DialogTitle className="flex items-center gap-2">
 							<AlertTriangle className="h-5 w-5 text-amber-600" />
-							Chi tiết Rejected Content
+							Rejected Content Details
 						</DialogTitle>
 						<DialogDescription>
 							{generatorLabels[selectedItem?.generator || '']} - {selectedItem?.role}
@@ -288,15 +288,15 @@ export function RejectedContentTable() {
 						{selectedItem?.status === 'pending' && (
 							<>
 								<Button variant="outline" onClick={() => handleStatusChange(selectedItem!.id, 'ignored')}>
-									Bỏ qua
+									Ignore
 								</Button>
 								<Button onClick={() => handleStatusChange(selectedItem!.id, 'fixed')}>
-									Đã sửa
+									Fix
 								</Button>
 							</>
 						)}
 						<Button variant="outline" onClick={() => setSelectedItem(null)}>
-							Đóng
+							Close
 						</Button>
 					</DialogFooter>
 				</DialogContent>

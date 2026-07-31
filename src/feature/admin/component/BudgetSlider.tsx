@@ -16,10 +16,10 @@ interface BudgetSliderProps {
 }
 
 const skillInfo: Record<'D' | 'C' | 'T' | 'G', { label: string; color: string; bgColor: string; icon: string }> = {
-	D: { label: 'Văn bản (D)', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: '📄' },
-	C: { label: 'Giao tiếp (C)', color: 'bg-green-500', bgColor: 'bg-green-50', icon: '💬' },
-	T: { label: 'Xử lý rủi ro (T)', color: 'bg-orange-500', bgColor: 'bg-orange-50', icon: '⚠️' },
-	G: { label: 'Thương mại (G)', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: '💰' }
+	D: { label: 'Document (D)', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: '📄' },
+	C: { label: 'Communication (C)', color: 'bg-green-500', bgColor: 'bg-green-50', icon: '💬' },
+	T: { label: 'Troubleshooting (T)', color: 'bg-orange-500', bgColor: 'bg-orange-50', icon: '⚠️' },
+	G: { label: 'Growth/Economics (G)', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: '💰' }
 };
 
 export function BudgetSlider({ value, onChange, skillKey, allValues, validation, disabled }: BudgetSliderProps) {
@@ -57,7 +57,7 @@ export function BudgetSlider({ value, onChange, skillKey, allValues, validation,
 				
 				{hasError && (
 					<div className="mt-2 text-xs text-red-600">
-						Tổng phải = 100% (hiện tại: {sum}%)
+						Total must = 100% (currently: {sum}%)
 					</div>
 				)}
 			</div>
@@ -151,7 +151,7 @@ export function BudgetSlidersGroup({ initialBudgets, onChange, disabled }: Budge
 						disabled={disabled}
 						className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 					/>
-					<span className="text-sm text-gray-700">Chế độ liên kết (tự động cân bằng các kỹ năng khác khi kéo)</span>
+					<span className="text-sm text-gray-700">Linked Mode (auto-balances other skills when dragging)</span>
 				</label>
 			</div>
 
@@ -166,7 +166,7 @@ export function BudgetSlidersGroup({ initialBudgets, onChange, disabled }: Budge
 						<div key={milestone} className="space-y-4 p-4 rounded-xl border bg-gray-50">
 							<h4 className="font-semibold text-gray-900 flex items-center gap-2">
 								<span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded">{label}</span>
-								Ngân sách D/C/T/G
+								D/C/T/G Budget
 							</h4>
 							
 							<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -189,7 +189,7 @@ export function BudgetSlidersGroup({ initialBudgets, onChange, disabled }: Budge
 
 			{/* Summary */}
 			<div className="p-4 rounded-xl bg-white border">
-				<h4 className="font-medium text-gray-900 mb-3">Tóm tắt ngân sách</h4>
+				<h4 className="font-medium text-gray-900 mb-3">Budget Summary</h4>
 				<div className="overflow-x-auto">
 					<table className="w-full text-sm">
 						<thead>
@@ -199,8 +199,8 @@ export function BudgetSlidersGroup({ initialBudgets, onChange, disabled }: Budge
 								<th className="pb-2 text-center">C</th>
 								<th className="pb-2 text-center">T</th>
 								<th className="pb-2 text-center">G</th>
-								<th className="pb-2 text-center">Tổng</th>
-								<th className="pb-2 text-center">Trạng thái</th>
+								<th className="pb-2 text-center">Total</th>
+								<th className="pb-2 text-center">Status</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -218,9 +218,9 @@ export function BudgetSlidersGroup({ initialBudgets, onChange, disabled }: Budge
 										<td className={cn('py-2 text-center font-bold', sum === 100 ? 'text-green-600' : 'text-red-600')}>{sum}</td>
 										<td className="py-2 text-center">
 											{validation?.isValid ? (
-												<span className="text-green-600 text-xs">✓ Hợp lệ</span>
+												<span className="text-green-600 text-xs">✓ Valid</span>
 											) : (
-												<span className="text-red-600 text-xs">✗ Lỗi</span>
+												<span className="text-red-600 text-xs">✗ Error</span>
 											)}
 										</td>
 									</tr>
@@ -234,7 +234,7 @@ export function BudgetSlidersGroup({ initialBudgets, onChange, disabled }: Budge
 					<Alert className="mt-3" variant="destructive">
 						<AlertCircle className="h-4 w-4" />
 						<AlertDescription>
-							Có {Object.values(validations).filter(v => !v.isValid).length} milestone bị lỗi ngân sách. Không thể lưu cho đến khi sửa.
+							{Object.values(validations).filter(v => !v.isValid).length} milestone(s) have budget errors. Cannot save until fixed.
 						</AlertDescription>
 					</Alert>
 				)}

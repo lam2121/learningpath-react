@@ -47,12 +47,12 @@ const handleTrackSaved = () => {
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-gray-900">Career Tracks</h1>
-					<p className="text-gray-500">Quản lý các career track và ngân sách D/C/T/G</p>
+					<p className="text-gray-500">Manage career tracks and D/C/T/G budget</p>
 				</div>
-				<Button onClick={() => { setEditingTrack(undefined); setShowForm(true); }}>
-					<Plus className="h-4 w-4 mr-2" />
-					Thêm Track mới
-				</Button>
+<Button onClick={() => { setEditingTrack(undefined); setShowForm(true); }}>
+				<Plus className="h-4 w-4 mr-2" />
+				Add New Track
+			</Button>
 			</div>
 
 			<div className="overflow-x-auto rounded-lg border bg-white">

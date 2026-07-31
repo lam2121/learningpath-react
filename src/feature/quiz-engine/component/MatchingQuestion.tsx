@@ -41,23 +41,23 @@ export function MatchingQuestion({
 	return (
 		<div className="space-y-6 p-6 bg-white rounded-2xl border border-gray-100 shadow-sm">
 			<div className="flex items-center justify-between">
-				<h3 className="text-lg font-semibold text-gray-900">
-					Câu {questionNumber} / {totalQuestions} · <span className="text-gray-500 font-normal">Matching</span>
-				</h3>
+<h3 className="text-lg font-semibold text-gray-900">
+				Question {questionNumber} / {totalQuestions} · <span className="text-gray-500 font-normal">Matching</span>
+			</h3>
 				{isSubmitted && (
 					<div className={cn(
 						'px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1',
 						isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
 					)}>
 						{isCorrect ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-						{isCorrect ? 'Đúng' : 'Sai'}
+						{isCorrect ? 'Correct' : 'Incorrect'}
 					</div>
 				)}
 			</div>
 
 			{/* Client Statement */}
 			<div className="p-5 rounded-xl bg-purple-50 border border-purple-100">
-				<p className="font-medium text-purple-900 mb-2">💬 Khách hàng / Quản trị nói:</p>
+				<p className="font-medium text-purple-900 mb-2">💬 Customer/Management says:</p>
 				<p className="text-gray-800 text-lg italic">"{prompt}"</p>
 			</div>
 
@@ -67,7 +67,7 @@ export function MatchingQuestion({
 				onValueChange={onAnswerChange}
 				disabled={isSubmitted}
 			>
-				<div className="space-y-3" role="radiogroup" aria-label="Chọn phản hồi phù hợp">
+				<div className="space-y-3" role="radiogroup" aria-label="Select appropriate response">
 					{options.map((option, index) => {
 						const isSelected = userAnswer === option;
 						const showResult = isSubmitted && (isSelected || option === correctAnswer);
@@ -142,7 +142,7 @@ export function MatchingQuestion({
 							{isCorrect ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
 						</div>
 						<div className="flex-1">
-							<p className="font-medium text-gray-900">Giải thích:</p>
+							<p className="font-medium text-gray-900">Explanation:</p>
 							<p className="text-sm text-gray-600 mt-1">{explanation || expl}</p>
 						</div>
 					</div>

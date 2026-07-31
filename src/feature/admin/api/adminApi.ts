@@ -43,7 +43,7 @@ const mockTracks: CareerTrack[] = [
 	{
 		id: 'track_ba',
 		name: 'Business Analyst',
-		jobDescription: 'Business Analyst làm việc với stakeholders để thu thập, phân tích và ghi chép yêu cầu nghiệp vụ. Chuyển đổi nhu cầu khách hàng thành đặc tả kỹ thuật rõ ràng cho đội phát triển.',
+		jobDescription: 'Business Analyst works with stakeholders to gather, analyze, and document business requirements. Transforms customer needs into clear technical specifications for the development team.',
 		gSkillDefinition: 'Eliciting requirements, clarifying scope, stakeholder communication, writing BRD/FSD, acceptance criteria definition, user story mapping, process modeling (BPMN), gap analysis, facilitating workshops.',
 		seedTier1: 'stakeholder, requirement, scope, business process, user story, acceptance criteria, workshop, interview, documentation, validation',
 		seedTier2: 'gap analysis, traceability matrix, impact assessment, change request, baseline, sign-off, elicitation techniques, prioritization frameworks, conflict resolution, negotiation',
@@ -60,7 +60,7 @@ const mockTracks: CareerTrack[] = [
 	{
 		id: 'track_qa',
 		name: 'QA Engineer',
-		jobDescription: 'QA Engineer đảm bảo chất lượng phần mềm thông qua kiểm thử thủ công và tự động hóa. Viết test case, báo cáo lỗi, và cộng tác với dev để cải thiện quy trình.',
+		jobDescription: 'QA Engineer ensures software quality through manual and automated testing. Writes test cases, reports bugs, and collaborates with developers to improve processes.',
 		gSkillDefinition: 'Writing bug reports, test plans, test cases, automation scripts, regression testing, defect triage, severity/priority classification, root cause analysis, test metrics reporting.',
 		seedTier1: 'bug report, test case, test plan, regression, automation, severity, priority, defect, verification, validation',
 		seedTier2: 'root cause analysis, flaky test, test pyramid, CI/CD integration, test coverage, mutation testing, contract testing, performance testing, security testing, test strategy',
@@ -77,7 +77,7 @@ const mockTracks: CareerTrack[] = [
 	{
 		id: 'track_devops',
 		name: 'DevOps Engineer',
-		jobDescription: 'DevOps Engineer xây dựng và vận hành hạ tầng CI/CD, monitoring, và deployment. Cân bằng giữa tốc độ phát hành và độ ổn định hệ thống.',
+		jobDescription: 'DevOps Engineer builds and operates CI/CD infrastructure, monitoring, and deployment. Balances between release speed and system stability.',
 		gSkillDefinition: 'Incident response, runbook writing, post-mortem analysis, capacity planning, infrastructure as code, deployment strategies, monitoring/alerting, disaster recovery, SLO/SLI definition.',
 		seedTier1: 'deployment, pipeline, monitoring, incident, alert, rollback, infrastructure, container, orchestration, cloud',
 		seedTier2: 'chaos engineering, SRE practices, error budgets, SLI/SLO, canary deployment, blue-green, feature flags, observability, distributed tracing, runbook automation',
@@ -94,7 +94,7 @@ const mockTracks: CareerTrack[] = [
 	{
 		id: 'track_pm',
 		name: 'Project Manager',
-		jobDescription: 'Project Manager điều phối dự án phần mềm từ khâu khởi tạo đến bàn giao. Quản lý scope, timeline, budget, risk và team communication.',
+		jobDescription: 'Project Manager coordinates software projects from initiation to delivery. Manages scope, timeline, budget, risk, and team communication.',
 		gSkillDefinition: 'Project charter, scope management, timeline planning, risk management, stakeholder communication, status reporting, change control, resource allocation, vendor management, lessons learned.',
 		seedTier1: 'project plan, scope, timeline, budget, risk, stakeholder, milestone, deliverable, status report, change request',
 		seedTier2: 'critical path, earned value, agile hybrid, portfolio management, benefits realization, governance, escalation, negotiation, conflict resolution, organizational change',
@@ -111,7 +111,7 @@ const mockTracks: CareerTrack[] = [
 	{
 		id: 'track_sa',
 		name: 'Solution Architect',
-		jobDescription: 'Solution Architect thiết kế kiến trúc hệ thống đáp ứng yêu cầu kỹ thuật và phi kỹ thuật. Cân bằng giữa scalability, security, cost và time-to-market.',
+		jobDescription: 'Solution Architect designs system architecture to meet technical and non-technical requirements. Balances scalability, security, cost, and time-to-market.',
 		gSkillDefinition: 'Architecture decision records, technical design docs, trade-off analysis, technology evaluation, proof of concept, non-functional requirements, security architecture, data architecture, integration patterns, cost optimization.',
 		seedTier1: 'architecture, design, scalability, security, integration, technology, evaluation, documentation, decision, trade-off',
 		seedTier2: 'domain-driven design, event-driven, microservices, serverless, API gateway, service mesh, data mesh, zero trust, compliance, technical debt management',
@@ -224,7 +224,7 @@ function generateMockCostData(): CostDashboardData {
 		alerts.push({
 			date: dailyCosts[dailyCosts.length - 1].date,
 			type: 'spike' as const,
-			message: `Chi phí hôm qua ($${yesterday.toFixed(2)}) vượt ${((yesterday/avg7d - 1)*100).toFixed(0)}% trung bình 7 ngày ($${avg7d.toFixed(2)})`
+			message: `Yesterday's cost ($${yesterday.toFixed(2)}) exceeded ${((yesterday/avg7d - 1)*100).toFixed(0)}% vs 7-day average ($${avg7d.toFixed(2)})`
 		});
 	}
 	
@@ -288,13 +288,13 @@ export async function getDeactivationWarning(id: string): Promise<TrackDeactivat
 		hasActiveLearners: track.activeLearnerCount > 0,
 		activeLearnerCount: track.activeLearnerCount,
 		activeLearnersPreview: track.activeLearnerCount > 0 ? [
-			{ id: 'user_1', name: 'Nguyễn Văn A', email: 'a@tma.com.vn', progress: 45 },
-			{ id: 'user_2', name: 'Trần Thị B', email: 'b@tma.com.vn', progress: 72 },
-			{ id: 'user_3', name: 'Lê Văn C', email: 'c@tma.com.vn', progress: 23 }
-		].slice(0, 3) : [],
+				{ id: 'user_1', name: 'Nguyen Van A', email: 'a@tma.com.vn', progress: 45 },
+				{ id: 'user_2', name: 'Tran Thi B', email: 'b@tma.com.vn', progress: 72 },
+				{ id: 'user_3', name: 'Le Van C', email: 'c@tma.com.vn', progress: 23 }
+			].slice(0, 3) : [],
 		message: track.activeLearnerCount > 0
-			? `Track này đang có ${track.activeLearnerCount} học viên đang học. Việc tắt track sẽ không ảnh hưởng đến khóa học hiện tại của họ (đã đóng băng ngân sách tại thời điểm tạo), nhưng học viên MỚI sẽ không thể chọn track này.`
-			: 'Track này không có học viên đang hoạt động. Có thể tắt an toàn.'
+			? `This track currently has ${track.activeLearnerCount} active learners. Deactivating the track will not affect their current courses (budget frozen at creation time), but NEW learners will not be able to select this track.`
+			: 'This track has no active learners. Safe to deactivate.'
 	};
 }
 
@@ -305,19 +305,19 @@ export async function validateBudget(budget: BudgetVector): Promise<BudgetValida
 	const warnings: string[] = [];
 	
 	if (sum !== 100) {
-		errors.push(`Tổng ngân sách phải bằng 100 (hiện tại: ${sum})`);
+		errors.push(`Total budget must equal 100 (currently: ${sum})`);
 	}
 	if (budget.D < 0 || budget.C < 0 || budget.T < 0 || budget.G < 0) {
-		errors.push('Không được có giá trị âm');
+		errors.push('Cannot have negative values');
 	}
 	if (budget.D > 100 || budget.C > 100 || budget.T > 100 || budget.G > 100) {
-		errors.push('Không được vượt quá 100 cho một kỹ năng');
+		errors.push('Cannot exceed 100 for a single skill');
 	}
 	
 	// Anti-flattening warning
 	const nonZero = [budget.D, budget.C, budget.T, budget.G].filter(v => v > 0).length;
 	if (nonZero === 4 && Math.max(...Object.values(budget)) - Math.min(...Object.values(budget).filter(v => v > 0)) < 15) {
-		warnings.push('Phân bổ quá đều (anti-flattening). Nên tập trung vào 1-2 kỹ năng chính cho mỗi milestone.');
+		warnings.push('Distribution too even (anti-flattening). Should focus on 1-2 main skills for each milestone.');
 	}
 	
 	return {
@@ -333,26 +333,26 @@ export async function previewAiGeneration(request: AiPreviewRequest): Promise<Ai
 	const { jobDescription, gSkillDefinition } = request;
 	
 	// Generate mock preview based on input quality
-	const isVague = gSkillDefinition.length < 50 || gSkillDefinition.toLowerCase().includes('làm việc') || gSkillDefinition.toLowerCase().includes('công việc');
+	const isVague = gSkillDefinition.length < 50 || gSkillDefinition.toLowerCase().includes('work with') || gSkillDefinition.toLowerCase().includes('job');
 	
 	if (isVague) {
 		return {
 			examples: [
-				'Làm việc với dữ liệu để phân tích xu hướng.',
-				'Giao tiếp với team để hiểu yêu cầu.',
-				'Viết báo cáo định kỳ cho quản lý.'
+				'Work with data to analyze trends.',
+				'Communicate with team to understand requirements.',
+				'Write periodic reports for management.'
 			],
-			warning: 'Định nghĩa G-skill quá chung chung. AI sinh ra các ví dụ không mang tính chuyên ngành. Hãy bổ sung các từ khóa kỹ thuật cụ thể (VD: ETL pipeline, data quality metrics, stakeholder elicitation...).'
+			warning: 'G-skill definition is too generic. AI generates non-specialized examples. Please add specific technical keywords (e.g., ETL pipeline, data quality metrics, stakeholder elicitation...).'
 		};
 	}
 	
 	return {
 		examples: [
-			`Dựa trên JD: "${jobDescription.slice(0, 80)}..." và G-skill: "${gSkillDefinition.slice(0, 80)}..."`,
-			'Ví dụ 1: Stakeholder mô tả yêu cầu mơ hồ → BA dùng kỹ thuật "5 Whys" để làm rõ root cause.',
-			'Ví dụ 2: Scope creep xuất hiện mid-sprint → BA facilitator workshop ưu tiên backlog với MoSCoW.',
-			'Ví dụ 3: Handover sang Dev → BA viết Acceptance Criteria theo format Given/When/Then.',
-			'Ví dụ 4: UAT phase → BA coordinate với QA thiết kế test case trace từ AC.'
+			`Based on JD: "${jobDescription.slice(0, 80)}..." and G-skill: "${gSkillDefinition.slice(0, 80)}..."`,
+			'Example 1: Stakeholder describes vague requirement → BA uses "5 Whys" technique to clarify root cause.',
+			'Example 2: Scope creep appears mid-sprint → BA facilitates workshop to prioritize backlog with MoSCoW.',
+			'Example 3: Handover to Dev → BA writes Acceptance Criteria in Given/When/Then format.',
+			'Example 4: UAT phase → BA coordinates with QA to design test cases traced from AC.'
 		]
 	};
 }

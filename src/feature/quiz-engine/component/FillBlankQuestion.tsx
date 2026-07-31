@@ -73,7 +73,7 @@ export function FillBlankQuestion({
 			{/* Question Header */}
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2">
-					<span className="text-sm font-medium text-gray-500">Câu {questionNumber} / {totalQuestions}</span>
+					<span className="text-sm font-medium text-gray-500">Question {questionNumber} / {totalQuestions}</span>
 					<span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded">Fill-in-the-blank</span>
 				</div>
 				{isSubmitted && (
@@ -81,8 +81,8 @@ export function FillBlankQuestion({
 						'px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1',
 						isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
 					)}>
-						{isCorrect ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-						{isCorrect ? 'Đúng' : 'Sai'}
+{isCorrect ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+							{isCorrect ? 'Correct' : 'Incorrect'}
 					</div>
 				)}
 			</div>
@@ -137,9 +137,9 @@ export function FillBlankQuestion({
 								<span className="text-gray-900 font-medium text-base flex-1">{option}</span>
 
 								{isOptionCorrect && (
-									<span className="ml-auto px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">
-										Đáp án đúng
-									</span>
+<span className="ml-auto px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+									Correct Answer
+								</span>
 								)}
 							</Label>
 						</div>
@@ -162,7 +162,7 @@ export function FillBlankQuestion({
 							)}
 						</div>
 						<div className="flex-1">
-							<p className="font-medium text-gray-900">Giải thích:</p>
+							<p className="font-medium text-gray-900">Explanation:</p>
 							<p className="text-sm text-gray-600 mt-1">{explanation}</p>
 						</div>
 					</div>

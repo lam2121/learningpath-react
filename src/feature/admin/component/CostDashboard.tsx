@@ -73,7 +73,7 @@ export function CostDashboard() {
 	if (!data) {
 		return (
 			<div className="text-center py-12 text-gray-500">
-				Không thể tải dữ liệu chi phí
+				Cannot load cost data
 			</div>
 		);
 	}
@@ -90,7 +90,7 @@ export function CostDashboard() {
 			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 				<div>
 					<h2 className="text-2xl font-bold text-gray-900">AI Cost Dashboard</h2>
-					<p className="text-gray-500">Theo dõi chi phí AI theo generator ({days} ngày gần nhất)</p>
+					<p className="text-gray-500">Track AI costs by generator ({days} recent days)</p>
 				</div>
 				<KillSwitchToggle 
 					enabled={killSwitch.enabled} 
@@ -104,11 +104,11 @@ export function CostDashboard() {
 				<Alert variant="destructive" className="border-red-200">
 					<AlertTriangle className="h-4 w-4" />
 					<AlertDescription className="flex items-center gap-2">
-						<strong>Cảnh báo chi phí:</strong> 
-						Hôm qua chi phí ${yesterdayCost.toFixed(2)} vượt {spikePercent.toFixed(0)}% so với trung bình 7 ngày (${avg7d.toFixed(2)}).
+						<strong>Cost Alert:</strong> 
+						Yesterday's cost ${yesterdayCost.toFixed(2)} exceeded {spikePercent.toFixed(0)}% vs 7-day average (${avg7d.toFixed(2)}).
 						{data.alerts.length > 0 && (
 							<Button variant="link" className="ml-2 h-auto p-0 text-xs">
-								Xem chi tiết
+								View Details
 							</Button>
 						)}
 					</AlertDescription>
@@ -119,18 +119,18 @@ export function CostDashboard() {
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between pb-2">
-						<CardTitle className="text-sm font-medium text-gray-500">Tổng 30 ngày</CardTitle>
+						<CardTitle className="text-sm font-medium text-gray-500">Total 30 Days</CardTitle>
 						<DollarSign className="h-4 w-4 text-gray-400" />
 					</CardHeader>
 					<CardContent>
 						<div className="text-3xl font-bold text-gray-900">${data.totalCost30d.toFixed(2)}</div>
-						<p className="text-xs text-gray-500">TB/ngày: ${data.dailyAverage.toFixed(2)}</p>
+						<p className="text-xs text-gray-500">Daily Avg: ${data.dailyAverage.toFixed(2)}</p>
 					</CardContent>
 				</Card>
 
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between pb-2">
-						<CardTitle className="text-sm font-medium text-gray-500">Hôm qua</CardTitle>
+						<CardTitle className="text-sm font-medium text-gray-500">Yesterday</CardTitle>
 						<TrendingUp className="h-4 w-4 text-gray-400" />
 					</CardHeader>
 					<CardContent>
@@ -140,7 +140,7 @@ export function CostDashboard() {
 						)}>
 							${yesterdayCost.toFixed(2)}
 						</div>
-						<p className="text-xs text-gray-500">TB 7 ngày: ${avg7d.toFixed(2)}</p>
+						<p className="text-xs text-gray-500">7-Day Avg: ${avg7d.toFixed(2)}</p>
 					</CardContent>
 				</Card>
 
@@ -151,7 +151,7 @@ export function CostDashboard() {
 					</CardHeader>
 					<CardContent>
 						<div className="text-3xl font-bold text-gray-900">{data.generatorBreakdown.length}</div>
-						<p className="text-xs text-gray-500">Loại prompt đang hoạt động</p>
+						<p className="text-xs text-gray-500">Active Prompt Type</p>
 					</CardContent>
 				</Card>
 
@@ -163,11 +163,11 @@ export function CostDashboard() {
 					<CardContent>
 						<div className="flex items-center gap-2">
 							<Badge variant={killSwitch.enabled ? 'destructive' : 'default'} className="text-base px-3 py-1">
-								{killSwitch.enabled ? 'BẬT' : 'TẮT'}
+								{killSwitch.enabled ? 'ON' : 'OFF'}
 							</Badge>
 							{killSwitch.enabledAt && (
 								<span className="text-xs text-gray-500">
-									Từ {new Date(killSwitch.enabledAt).toLocaleString('vi-VN')}
+									Since {new Date(killSwitch.enabledAt).toLocaleString()}
 								</span>
 							)}
 						</div>
@@ -178,9 +178,9 @@ export function CostDashboard() {
 			{/* Tabs */}
 			<Tabs defaultValue="daily" className="space-y-6">
 				<TabsList className="grid w-full grid-cols-3">
-					<TabsTrigger value="daily">Biểu đồ hàng ngày</TabsTrigger>
-					<TabsTrigger value="generator">Theo Generator</TabsTrigger>
-					<TabsTrigger value="alerts">Cảnh báo</TabsTrigger>
+					<TabsTrigger value="daily">Daily Chart</TabsTrigger>
+					<TabsTrigger value="generator">By Generator</TabsTrigger>
+					<TabsTrigger value="alerts">Alerts</TabsTrigger>
 				</TabsList>
 
 				{/* Daily Costs Tab */}
@@ -203,8 +203,8 @@ export function CostDashboard() {
 											<DollarSign className={cn('w-5 h-5', isSpikeDay ? 'text-amber-600' : isYesterday ? 'text-blue-600' : 'text-gray-500')} />
 										</div>
 										<div>
-											<p className="font-medium text-gray-900">{new Date(day.date).toLocaleDateString('vi-VN')}</p>
-											<p className="text-xs text-gray-500">{isYesterday ? 'Hôm qua' : isSpikeDay ? 'Vượt ngưỡng' : 'Bình thường'}</p>
+											<p className="font-medium text-gray-900">{new Date(day.date).toLocaleDateString()}</p>
+											<p className="text-xs text-gray-500">{isYesterday ? 'Yesterday' : isSpikeDay ? 'Above Threshold' : 'Normal'}</p>
 										</div>
 									</div>
 									
@@ -237,11 +237,11 @@ export function CostDashboard() {
 							<thead>
 								<tr className="text-left text-gray-500 border-b border-gray-100">
 									<th className="pb-2">Generator</th>
-									<th className="pb-2 text-right">Số lần gọi</th>
+									<th className="pb-2 text-right">Call Count</th>
 									<th className="pb-2 text-right">Total Tokens</th>
-									<th className="pb-2 text-right">Tổng chi phí</th>
-									<th className="pb-2 text-right">Chi phí TB</th>
-									<th className="pb-2 text-right">% Tổng</th>
+									<th className="pb-2 text-right">Total Cost</th>
+									<th className="pb-2 text-right">Avg Cost</th>
+									<th className="pb-2 text-right">% of Total</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -280,7 +280,7 @@ export function CostDashboard() {
 					{data.alerts.length === 0 ? (
 						<div className="text-center py-12 text-gray-500">
 							<AlertTriangle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-							<p>Không có cảnh báo nào</p>
+							<p>No alerts</p>
 						</div>
 					) : (
 						<div className="space-y-3">
@@ -289,7 +289,7 @@ export function CostDashboard() {
 									<AlertTriangle className="h-4 w-4" />
 									<AlertDescription className="flex items-center justify-between">
 										<span>{alert.message}</span>
-										<span className="text-xs text-gray-500">{new Date(alert.date).toLocaleDateString('vi-VN')}</span>
+										<span className="text-xs text-gray-500">{new Date(alert.date).toLocaleDateString()}</span>
 									</AlertDescription>
 								</Alert>
 							))}
