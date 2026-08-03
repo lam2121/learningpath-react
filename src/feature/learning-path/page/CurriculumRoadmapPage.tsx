@@ -105,7 +105,7 @@ export function CurriculumRoadmapPage() {
                         size="lg"
                         className="gap-3 px-12 h-16 text-lg rounded-full shadow-[0_10px_40px_-10px_rgba(59,130,246,0.6)] hover:shadow-[0_10px_40px_-5px_rgba(59,130,246,0.8)] transition-all duration-300 hover:-translate-y-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold"
                     >
-                        <Link to="/lesson">
+                        <Link to="/lessons/lesson">
                             Start Learning Now
                         </Link>
                         <ArrowRight className="h-6 w-6" />

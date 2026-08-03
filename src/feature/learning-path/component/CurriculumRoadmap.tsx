@@ -34,7 +34,7 @@ export function CurriculumRoadmap() {
                     <TopicNode {...topic}
                         onClick={
                             topic.status === "current"
-                                ? () => navigate({ to: "/lesson" })
+                                ? () => navigate({ to: "/lessons/lesson" })
                                 : undefined
                         } />
                 </div>
