@@ -24,7 +24,8 @@ export function CurriculumRoadmap() {
             {roadmap.map((topic) => (
                 <div
                     key={topic.id}
-                    className="absolute"
+                    id={`topic-${topic.id}`}
+                    className="absolute scroll-mt-32"
                     style={{
                         left: topic.x,
                         top: topic.y,

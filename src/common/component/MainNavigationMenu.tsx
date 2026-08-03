@@ -15,7 +15,7 @@ import {
 } from "@/shadcn/component/ui/dropdown-menu"
 import { Button } from "../../shadcn/component/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/shadcn/component/ui/sheet"
-import { Menu, LogOut, History, User, Flame, Bell } from "lucide-react"
+import { Menu, LogOut, History, User, CircleUser } from "lucide-react"
 import { useAuth } from "@/common/context/AuthContext"
 import { cn } from "@/shadcn/lib/util"
 import { TmaLogo } from "./TmaLogo"
@@ -33,7 +33,7 @@ export function MainNavigationMenu() {
             try {
                 auth.logout()
                 await router.invalidate()
-                await navigate({ to: '/login' })
+                await navigate({ to: '/home' })
             } catch (error) {
                 console.error('Logout error:', error)
             }
@@ -45,7 +45,7 @@ export function MainNavigationMenu() {
             <NavigationMenuItem>
                 <NavigationMenuLink asChild>
                     <Link
-                        to="/"
+                        to="/home"
                         className="!text-base !bg-white px-4 py-2 font-medium"
                     >
                         Home
@@ -56,10 +56,10 @@ export function MainNavigationMenu() {
             <NavigationMenuItem>
                 <NavigationMenuLink asChild>
                     <Link
-                        to="/test"
+                        to="/lessons/learning-path"
                         className="!text-base !bg-white px-4 py-2 font-medium"
                     >
-                        Tests
+                        Path
                     </Link>
                 </NavigationMenuLink>
             </NavigationMenuItem>
@@ -84,7 +84,7 @@ export function MainNavigationMenu() {
                 <div className="flex items-center justify-between h-13 px-6 py-3">
                     <div className="flex items-center space-x-6">
 
-                        <Link to={"/"} className="flex items-center space-x-3">
+                        <Link to={"/home"} className="flex items-center space-x-3">
                             <CareerpathIcon className="w-10 h-10" />
                             <div className="font-semibold text-base text-sidebar-primary">{APP_INFO.APP_NAME} <span className="text-black"></span></div>
                         </Link>
@@ -96,45 +96,54 @@ export function MainNavigationMenu() {
                         </NavigationMenu>
                     </div>
                     <div className="flex items-center gap-6">
-                        <NotificationDropdown />
-
-                        <StreakDropdown />
                         {auth.isAuthenticated ? (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        className="text-[15px] flex items-center space-x-2"
-                                    >
-                                        <User className="w-4 h-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-52" align="end">
-                                    <DropdownMenuLabel className="text-center">
-                                        <div className="space-y-1">
-                                            <p className="text-base font-semibold">{auth.user?.username || 'User'}</p>
-                                            <p className="text-xs text-muted-foreground">{auth.user?.email}</p>
-                                        </div>
-                                    </DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem asChild>
-                                        <Link to="/history" className="font-medium text-base cursor-pointer">
-                                            <History className="mr-2 w-4 h-4" />
-                                            History
-                                        </Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem asChild className="hover:!bg-red-50">
-                                        <button
-                                            onClick={handleLogout}
-                                            className="flex items-center w-full font-medium text-base cursor-pointer text-red-600 hover:!text-red-600 transition-colors duration-200"
+                            <>
+                                <NotificationDropdown />
+
+                                <StreakDropdown />
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className="text-[15px] flex items-center space-x-2"
                                         >
-                                            <LogOut className="mr-2 w-4 h-4 text-red-600" />
-                                            <span>Log-out</span>
-                                        </button>
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                                            <User className="w-4 h-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-52" align="end">
+                                        <DropdownMenuLabel className="text-center">
+                                            <div className="space-y-1">
+                                                <p className="text-base font-semibold">{auth.user?.username || 'User'}</p>
+                                                <p className="text-xs text-muted-foreground">{auth.user?.email}</p>
+                                            </div>
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/profile" className="font-medium text-base cursor-pointer">
+                                                <CircleUser className="mr-2 w-4 h-4" />
+                                                Profile
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/history" className="font-medium text-base cursor-pointer">
+                                                <History className="mr-2 w-4 h-4" />
+                                                History
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem asChild className="hover:!bg-red-50">
+                                            <button
+                                                onClick={handleLogout}
+                                                className="flex items-center w-full font-medium text-base cursor-pointer text-red-600 hover:!text-red-600 transition-colors duration-200"
+                                            >
+                                                <LogOut className="mr-2 w-4 h-4 text-red-600" />
+                                                <span>Log-out</span>
+                                            </button>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </>
                         ) : (
                             <div className="flex items-center space-x-2">
                                 <Button asChild variant="outline" className="text-[15px]">
