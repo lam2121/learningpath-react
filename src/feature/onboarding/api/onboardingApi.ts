@@ -2,37 +2,6 @@ import { getStoredToken } from '@/common/context/AuthContext'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api'
 
-export type SkillAxis = 'D_doc' | 'C_comm' | 'T_trouble' | 'G_biz'
-
-export interface SubQuestionOption {
-  id: string
-  label: string
-}
-
-export interface SubQuestion {
-  question: string
-  options: SubQuestionOption[]
-}
-
-export interface SurveyQuestion {
-  id: string
-  axis: SkillAxis
-  question: string
-  context: string
-  subQuestion?: SubQuestion
-}
-
-export interface SurveyAnswerPayload {
-  survey_id: number
-  rating: number
-  sub_answer: string | null
-}
-
-export interface SubmitSurveyRequest {
-  user_id: number
-  answers: SurveyAnswerPayload[]
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Build headers with Authorization Bearer token when a session exists. */
@@ -52,36 +21,14 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>
 }
 
-// ─── Survey API ───────────────────────────────────────────────────────────────
-
-/** Fetch all active survey questions. Requires a valid session token. */
-export async function fetchSurveyQuestions(): Promise<SurveyQuestion[]> {
-  const res = await fetch(`${BASE_URL}/onboarding/surveys`, {
-    method: 'GET',
-    headers: authHeaders(),
-  })
-  return handleResponse<SurveyQuestion[]>(res)
-}
-
-/** Submit the user's survey answers. Requires a valid session token. */
-export async function submitSurveyAnswers(
-  payload: SubmitSurveyRequest,
-): Promise<{ message: string; recorded_count: number }> {
-  const res = await fetch(`${BASE_URL}/onboarding/surveys/submit`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(payload),
-  })
-  return handleResponse<{ message: string; recorded_count: number }>(res)
-}
+// ─── Onboarding status ─────────────────────────────────────────────────────────
 
 export interface OnboardingStatus {
   user_id: number
-  has_completed_survey: boolean
   is_finished_placement_test: boolean
 }
 
-/** Check if current user has completed onboarding survey and placement test. */
+/** Check if the current user has finished the placement test. */
 export async function fetchOnboardingStatus(): Promise<OnboardingStatus> {
   const res = await fetch(`${BASE_URL}/onboarding/status`, {
     method: 'GET',
@@ -90,13 +37,23 @@ export async function fetchOnboardingStatus(): Promise<OnboardingStatus> {
   return handleResponse<OnboardingStatus>(res)
 }
 
+// ─── Placement Test API ───────────────────────────────────────────────────────
+
+export interface PlacementTestResultPayload {
+  question_id: number;
+  selected_id: string;
+  is_correct: boolean;
+  axis: string;
+  difficulty: number;
+}
+
 export interface CompletePlacementTestPayload {
   user_id?: number
   role_id?: number | null
-  survey_answers?: SurveyAnswerPayload[] | null
+  placement_test_answers?: PlacementTestResultPayload[] | null
 }
 
-/** Finalize onboarding by committing survey answers, role_id, and setting is_finished_placement_test = True. */
+/** Finalize onboarding by committing role_id and placement test answers. */
 export async function completePlacementTest(
   payload: CompletePlacementTestPayload,
 ): Promise<{ message: string; is_finished_placement_test: boolean }> {
@@ -121,7 +78,9 @@ export interface JobRoleBaseline {
 export interface JobRole {
   id: number
   name: string
+  job_description?: string | null
   baseline: JobRoleBaseline
+  g_skill_description?: string | null
   example_question: string[] | null
 }
 
@@ -147,7 +106,7 @@ export interface RawPlacementQuestionApi {
 
 /**
  * Fetch all placement test questions for a given job role from the database.
- * The frontend adaptive engine will select 24 questions from this pool.
+ * The frontend adaptive engine will select questions from this pool.
  */
 export async function fetchPlacementTestQuestions(
   roleId: number,

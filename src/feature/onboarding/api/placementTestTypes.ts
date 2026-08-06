@@ -42,4 +42,7 @@ export interface QuestionResult {
   difficulty: DifficultyLevel
   selectedId: string | null
   isCorrect: boolean
+  questionText?: string
+  options?: { id: string; text: string }[]
+  correctId?: string
 }

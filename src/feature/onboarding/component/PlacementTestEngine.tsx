@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, type HistoryState } from '@tanstack/react-router'
 import tmaLogo from '@/asset/image/tma_logo.png'
 import bannerBg from '@/asset/image/banner_background.png'
 import { TestQuestionCard } from './TestQuestionCard'
-import type { TestQuestion, QuestionResult, SkillAxis, DifficultyLevel } from '../api/placementTestTypes'
+import type { TestQuestion, QuestionResult, DifficultyLevel } from '../api/placementTestTypes'
 import { SKILL_TO_AXIS } from '../api/placementTestTypes'
 import { completePlacementTest, fetchPlacementTestQuestions } from '../api/onboardingApi'
 import type { RawPlacementQuestionApi } from '../api/onboardingApi'
@@ -12,12 +12,18 @@ import type { RawPlacementQuestionApi } from '../api/onboardingApi'
 
 // DB: 4 skills × 10 difficulty levels × 5 questions = 200 questions/role
 // Test session: 24 questions (6 per axis), adaptive ±1 per answer
-const TOTAL_QUESTIONS = 24        // 6 per axis × 4 axes
-const QUESTIONS_PER_AXIS = 6
+const TOTAL_QUESTIONS = 48       // 6 per axis × 4 axes
 const MIN_LEVEL: DifficultyLevel = 1
-const MAX_LEVEL: DifficultyLevel = 10
-const START_LEVEL: DifficultyLevel = 5  // start at middle of 1-10 range
+const MAX_LEVEL: DifficultyLevel = 8
+const START_LEVEL: DifficultyLevel = 4  // start at middle of 1-10 range
+const TEST_DURATION_SECONDS = 30 * 60
 const AXIS_SEQUENCE: Array<'D' | 'C' | 'T' | 'G'> = [
+  'D', 'C', 'T', 'G',
+  'D', 'C', 'T', 'G',
+  'D', 'C', 'T', 'G',
+  'D', 'C', 'T', 'G',
+  'D', 'C', 'T', 'G',
+  'D', 'C', 'T', 'G',
   'D', 'C', 'T', 'G',
   'D', 'C', 'T', 'G',
   'D', 'C', 'T', 'G',
@@ -33,10 +39,22 @@ const ALL_LEVELS: DifficultyLevel[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 type Pool = Record<'D' | 'C' | 'T' | 'G', Partial<Record<DifficultyLevel, TestQuestion[]>>>
 
+/** Fisher-Yates shuffle — returns a new shuffled array */
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 /** Transform raw API questions into the frontend TestQuestion shape */
 function normalise(raw: RawPlacementQuestionApi): TestQuestion {
   const optionIds = ['a', 'b', 'c', 'd']
-  const options = raw.options.map((text, i) => ({ id: optionIds[i] ?? String(i), text }))
+  // Shuffle the plain-text options so the correct answer is not always at position 'a'
+  const shuffledTexts = shuffleArray(raw.options)
+  const options = shuffledTexts.map((text, i) => ({ id: optionIds[i] ?? String(i), text }))
   const correctOption = options.find((o) => o.text === raw.correct_answer)
   return {
     id: String(raw.id),
@@ -203,6 +221,29 @@ export function PlacementTestEngine() {
   const [visible, setVisible] = useState(true)
   const [showQuit, setShowQuit] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [remainingSeconds, setRemainingSeconds] = useState(TEST_DURATION_SECONDS)
+  const timerDeadlineRef = useRef<number | null>(null)
+
+  // ── 30-minute countdown timer ───────────────────────────────────────────────
+  useEffect(() => {
+    if (loadState !== 'ready' || isSubmitting) return
+
+    if (timerDeadlineRef.current === null) {
+      timerDeadlineRef.current = Date.now() + TEST_DURATION_SECONDS * 1000
+    }
+
+    const timerId = window.setInterval(() => {
+      const secondsLeft = Math.max(
+        0,
+        Math.ceil((timerDeadlineRef.current! - Date.now()) / 1000),
+      )
+      setRemainingSeconds(secondsLeft)
+
+      if (secondsLeft === 0) window.clearInterval(timerId)
+    }, 1000)
+
+    return () => window.clearInterval(timerId)
+  }, [loadState, isSubmitting])
 
   // ── Fetch questions on mount ─────────────────────────────────────────────────
   useEffect(() => {
@@ -273,6 +314,9 @@ export function PlacementTestEngine() {
       difficulty: currentQuestion.difficulty,
       selectedId,
       isCorrect,
+      questionText: currentQuestion.question,
+      options: currentQuestion.options,
+      correctId: currentQuestion.correctId,
     }
     const updatedResults = [...results, newResult]
 
@@ -291,17 +335,34 @@ export function PlacementTestEngine() {
     if (isLastQuestion) {
       setIsSubmitting(true)
 
-      const rawAnswers = localStorage.getItem('pending_survey_answers')
       const rawRoleId = localStorage.getItem('pending_role_id')
-      const surveyAnswers = rawAnswers ? JSON.parse(rawAnswers) : null
       const roleId = rawRoleId ? parseInt(rawRoleId, 10) : null
 
-      completePlacementTest({ role_id: roleId, survey_answers: surveyAnswers })
+      if (!roleId) {
+        setIsSubmitting(false)
+        setFetchError('No role selected. Please go back and choose a role.')
+        navigate({ to: '/onboarding/role-selection' })
+        return
+      }
+
+      type AnsweredResult = QuestionResult & { selectedId: string }
+      const answeredResults = updatedResults.filter(
+        (r): r is AnsweredResult => r.selectedId !== null,
+      )
+      const formattedResults = answeredResults.map((r) => ({
+        question_id: parseInt(r.questionId, 10),
+        selected_id: r.selectedId,
+        is_correct: r.isCorrect,
+        axis: r.axis,
+        difficulty: r.difficulty,
+      }))
+
+      completePlacementTest({ role_id: roleId, placement_test_answers: formattedResults })
         .catch((err) => console.warn('Failed to commit placement test:', err))
         .finally(() => {
           localStorage.removeItem('pending_survey_answers')
           localStorage.removeItem('pending_role_id')
-          navigate({ to: '/placement-result', state: { results: updatedResults } as any })
+          navigate({ to: '/placement-result', state: { results: updatedResults } as HistoryState })
         })
       return
     }
@@ -340,47 +401,67 @@ export function PlacementTestEngine() {
   const progress = (currentIndex / TOTAL_QUESTIONS) * 100
   const isLastQuestion = currentIndex === TOTAL_QUESTIONS - 1
   const current = currentQuestion!
+  const timerMinutes = Math.floor(remainingSeconds / 60)
+  const timerSeconds = remainingSeconds % 60
+  const isTimeRunningLow = remainingSeconds <= 5 * 60
 
   return (
-    <div
-      className="min-h-screen relative"
-      style={{ backgroundImage: `url(${bannerBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-    >
-      {/* Blue overlay */}
-      <div className="fixed inset-0 bg-blue-700/80" />
-
-      {/* Glow */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-indigo-400/10 rounded-full blur-3xl" />
+    <div className="min-h-screen relative bg-slate-50">
+      {/* Header */}
+      <div className="fixed top-0 left-0 right-0 h-16 bg-[#0072FF] z-40 flex items-center justify-between px-6 shadow-md">
+        <img src={tmaLogo} alt="TMA Solutions" className="h-8 w-auto" />
+        <button
+          id="btn-exit-test"
+          type="button"
+          onClick={() => setShowQuit(true)}
+          className="px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 border border-white/20 text-white transition-colors text-sm font-medium flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          <span>Back to Role Selection</span>
+        </button>
       </div>
 
-      {/* TMA Logo */}
-      <img src={tmaLogo} alt="TMA Solutions" className="absolute top-6 left-6 w-45 h-auto z-20" />
-
-      {/* Exit button */}
-      <button
-        id="btn-exit-test"
-        type="button"
-        onClick={() => setShowQuit(true)}
-        className="absolute top-6 right-6 z-20 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/70 hover:text-white transition-colors text-xs font-medium flex items-center gap-1.5 backdrop-blur-md"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        <span>Back to Survey</span>
-      </button>
-
       {/* Progress bar — top */}
-      <div className="fixed top-0 left-0 right-0 z-30 h-1 bg-white/10">
+      <div className="fixed top-16 left-0 right-0 z-30 h-1 bg-gray-200">
         <div
-          className="h-full bg-gradient-to-r from-blue-400 to-cyan-400 transition-all duration-500"
+          className="h-full bg-blue-500 transition-all duration-500"
           style={{ width: `${progress}%` }}
         />
       </div>
 
+      {/* Countdown timer — fixed to the right side in normal and F11 modes */}
+      <aside
+        aria-live="polite"
+        aria-label="Placement test time remaining"
+        className={`fixed right-8 top-24 z-30 w-[280px] rounded-2xl border bg-white/95 p-4 shadow-lg backdrop-blur-sm
+          sm:right-6 lg:right-7 lg:top-5/14 lg:-translate-y-1/2
+          ${isTimeRunningLow ? 'border-rose-200' : 'border-blue-100'}
+        `}
+      >
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <svg className={`h-4 w-4 ${isTimeRunningLow ? 'text-rose-500' : 'text-blue-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Time left
+        </div>
+        <div className={`mt-2 font-mono text-3xl font-bold tabular-nums ${isTimeRunningLow ? 'text-rose-600' : 'text-slate-800'}`}>
+          {String(timerMinutes).padStart(2, '0')}:{String(timerSeconds).padStart(2, '0')}
+        </div>
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-gray-100">
+          <div
+            className={`h-full rounded-full transition-[width] duration-1000 ${isTimeRunningLow ? 'bg-rose-500' : 'bg-blue-600'}`}
+            style={{ width: `${(remainingSeconds / TEST_DURATION_SECONDS) * 100}%` }}
+          />
+        </div>
+        {remainingSeconds === 0 && (
+          <p className="mt-2 text-xs font-semibold text-rose-600">Time is up</p>
+        )}
+      </aside>
+
       {/* ── Main content ────────────────────────────────────────────────────── */}
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-20">
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-20 pt-24">
         <div className="w-full max-w-xl">
 
           {/* Header Stepper & Badge */}
@@ -389,25 +470,24 @@ export function PlacementTestEngine() {
               {[1, 2, 3, 4].map((step) => (
                 <div key={step} className="flex items-center">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                      step <= 3
-                        ? 'bg-blue-400 text-white shadow-md shadow-blue-900'
-                        : 'bg-white/10 text-white/40'
-                    }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${step <= 3
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-200 text-gray-500'
+                      }`}
                   >
                     {step < 3 ? '✓' : step}
                   </div>
                   {step < 4 && (
-                    <div className="w-10 h-0.5 bg-white/20 mx-2 rounded-full" />
+                    <div className="w-10 h-0.5 bg-gray-200 mx-2 rounded-full" />
                   )}
                 </div>
               ))}
             </div>
 
             <div className="flex justify-center w-full">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-blue-200 text-sm font-medium">
-                <span className="w-2 h-2 rounded-full bg-blue-300 animate-pulse" />
-                Step 3 / 4 — Placement Test
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-sm font-medium">
+                <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+                Step 2 / 3 — Placement Test
               </div>
             </div>
           </div>
@@ -415,22 +495,21 @@ export function PlacementTestEngine() {
           {/* Sub-step dots progress & counter */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2 overflow-hidden">
-              <div className="flex gap-1.5 flex-wrap max-w-[280px] sm:max-w-none">
+              <div className="flex gap-1.5 w-86 flex-wrap max-w-[280px] sm:max-w-none">
                 {AXIS_SEQUENCE.map((_, i) => (
                   <div
                     key={i}
-                    className={`rounded-full transition-all duration-300 ${
-                      i === currentIndex
-                        ? 'w-5 h-2 bg-blue-300'
-                        : i < currentIndex
-                        ? 'w-2 h-2 bg-blue-400/60'
-                        : 'w-2 h-2 bg-white/20'
-                    }`}
+                    className={`rounded-full transition-all duration-300 ${i === currentIndex
+                      ? 'w-5 h-2 bg-blue-600'
+                      : i < currentIndex
+                        ? 'w-2 h-2 bg-blue-300'
+                        : 'w-2 h-2 bg-gray-200'
+                      }`}
                   />
                 ))}
               </div>
             </div>
-            <span className="text-white/40 text-sm font-mono shrink-0 ml-3">
+            <span className="text-gray-500 text-sm font-mono shrink-0 ml-3">
               {currentIndex + 1} / {TOTAL_QUESTIONS}
             </span>
           </div>
@@ -482,7 +561,7 @@ export function PlacementTestEngine() {
             </button>
 
             {!isLastQuestion && (
-              <p className="text-center text-[11px] text-white/25 mt-2">
+              <p className="text-center text-[11px] text-gray-400 mt-2">
                 🔒 You cannot go back — choose carefully
               </p>
             )}
@@ -490,7 +569,7 @@ export function PlacementTestEngine() {
 
           {/* Error notice */}
           {fetchError && (
-            <p className="mt-4 text-center text-xs text-rose-300/70">{fetchError}</p>
+            <p className="mt-4 text-center text-xs text-red-500">{fetchError}</p>
           )}
         </div>
       </div>
@@ -499,7 +578,7 @@ export function PlacementTestEngine() {
       {showQuit && (
         <QuitModal
           onStay={() => setShowQuit(false)}
-          onQuit={() => navigate({ to: '/onboarding/survey' })}
+          onQuit={() => navigate({ to: '/onboarding/role-selection' })}
         />
       )}
     </div>
