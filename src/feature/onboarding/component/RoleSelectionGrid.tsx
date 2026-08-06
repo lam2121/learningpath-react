@@ -284,12 +284,97 @@ function SkillLegend({ weightDescriptions }: { weightDescriptions?: Record<strin
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+// ─── Warning Confirmation Modal ───────────────────────────────────────────────
+
+function ConfirmRoleModal({
+  roleName,
+  onConfirm,
+  onCancel,
+}: {
+  roleName: string
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  return (
+    <div
+      id="modal-confirm-role-overlay"
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ backgroundColor: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onCancel() }}
+    >
+      <div
+        id="modal-confirm-role-dialog"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in zoom-in-95 fade-in duration-200"
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-r from-amber-400 to-orange-500 px-6 pt-6 pb-5">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center text-2xl flex-shrink-0">
+              ⚠️
+            </div>
+            <div>
+              <h2 className="text-white font-bold text-lg leading-tight">Before You Continue</h2>
+              <p className="text-white/80 text-xs mt-0.5">Please read this carefully</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5 space-y-3">
+          <p className="text-gray-800 text-sm leading-relaxed">
+            You are about to start the <span className="font-bold text-indigo-700">Placement Test</span> for the
+            <span className="font-bold text-orange-600"> {roleName}</span> career track.
+          </p>
+          <ul className="space-y-2">
+            {[
+              { icon: '🎯', text: 'The test will assess your current IT English proficiency.' },
+              { icon: '⏱️', text: 'Once started, you should complete it without interruption.' },
+              { icon: '🔒', text: 'Your career track cannot be changed until the test is completed.' },
+            ].map(({ icon, text }) => (
+              <li key={text} className="flex items-start gap-2.5 text-xs text-gray-600 leading-relaxed">
+                <span className="text-base flex-shrink-0 mt-0.5">{icon}</span>
+                <span>{text}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+            <p className="text-amber-800 text-xs font-medium leading-relaxed">
+              Are you ready to proceed with <span className="font-bold">{roleName}</span>?
+            </p>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="px-6 pb-6 flex gap-3">
+          <button
+            id="modal-btn-cancel"
+            type="button"
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 cursor-pointer"
+          >
+            Go Back
+          </button>
+          <button
+            id="modal-btn-confirm"
+            type="button"
+            onClick={onConfirm}
+            className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-sm shadow-md shadow-indigo-200 hover:shadow-lg transition-all duration-200 active:scale-[0.98] cursor-pointer"
+          >
+            Yes, Proceed →
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function RoleSelectionGrid() {
   const [roles, setRoles] = useState<JobRole[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)
   const [hoveredRoleId, setHoveredRoleId] = useState<number | null>(null)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
   const navigate = useNavigate()
   const { logout } = useAuth()
 
@@ -302,8 +387,14 @@ export function RoleSelectionGrid() {
 
   const selectedRole = roles.find(r => r.id === selectedRoleId) ?? null
 
+  function handleContinueClick() {
+    if (!selectedRoleId) return
+    setShowConfirmModal(true)
+  }
+
   function handleConfirm() {
     if (!selectedRoleId) return
+    setShowConfirmModal(false)
     localStorage.removeItem('pending_survey_answers')
     localStorage.setItem('pending_role_id', selectedRoleId.toString())
     navigate({ to: '/placement-test' })
@@ -316,6 +407,14 @@ export function RoleSelectionGrid() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
+      {/* Warning Confirmation Modal */}
+      {showConfirmModal && selectedRole && (
+        <ConfirmRoleModal
+          roleName={selectedRole.name}
+          onConfirm={handleConfirm}
+          onCancel={() => setShowConfirmModal(false)}
+        />
+      )}
       {/* Top Header Bar */}
       <header className="w-full bg-[#0072FF] px-6 py-3.5 flex items-center justify-between shadow-md sticky top-0 z-30">
         <img src={tmaLogo} alt="TMA Solutions" className="h-9 w-auto" />
@@ -432,7 +531,7 @@ export function RoleSelectionGrid() {
                 {/* Continue button */}
                 <button
                   id="btn-confirm-role"
-                  onClick={handleConfirm}
+                  onClick={handleContinueClick}
                   disabled={!selectedRoleId}
                   className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-base shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-200 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none active:scale-[0.98] flex items-center justify-center gap-2.5"
                 >

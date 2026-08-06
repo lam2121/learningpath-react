@@ -56,7 +56,7 @@ export function LoginForm() {
 			const status = await fetchOnboardingStatus().catch(() => ({ is_finished_placement_test: false }))
 
 			if (status.is_finished_placement_test) {
-				await navigate({ to: '/placement-result' })
+				await navigate({ to: '/profile' })
 			} else {
 				await navigate({ to: '/onboarding/role-selection' })
 			}

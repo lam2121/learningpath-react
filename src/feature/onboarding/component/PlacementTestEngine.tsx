@@ -40,10 +40,22 @@ const ALL_LEVELS: DifficultyLevel[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 type Pool = Record<'D' | 'C' | 'T' | 'G', Partial<Record<DifficultyLevel, TestQuestion[]>>>
 
+/** Fisher-Yates shuffle — returns a new shuffled array */
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 /** Transform raw API questions into the frontend TestQuestion shape */
 function normalise(raw: RawPlacementQuestionApi): TestQuestion {
   const optionIds = ['a', 'b', 'c', 'd']
-  const options = raw.options.map((text, i) => ({ id: optionIds[i] ?? String(i), text }))
+  // Shuffle the plain-text options so the correct answer is not always at position 'a'
+  const shuffledTexts = shuffleArray(raw.options)
+  const options = shuffledTexts.map((text, i) => ({ id: optionIds[i] ?? String(i), text }))
   const correctOption = options.find((o) => o.text === raw.correct_answer)
   return {
     id: String(raw.id),

@@ -65,6 +65,46 @@ function generateAISummary(scores: Record<SkillAxis, number>): string {
   }
 }
 
+// ─── Track Level Configuration ────────────────────────────────────────────────
+
+type StartingLevel = 'basic' | 'intermediate' | 'advanced'
+
+const LEVEL_CONFIG: Record<StartingLevel, {
+  label: string
+  hours: number
+  color: string
+}> = {
+  basic: {
+    label: 'Basic Track',
+    hours: 48,
+    color: 'text-slate-700',
+  },
+  intermediate: {
+    label: 'Intermediate Track',
+    hours: 96,
+    color: 'text-blue-700',
+  },
+  advanced: {
+    label: 'Advanced Track',
+    hours: 144,
+    color: 'text-emerald-700',
+  },
+}
+
+function determineStartingLevel(scores: Record<SkillAxis, number>): StartingLevel {
+  const fractions = Object.values(scores).map(s => s / 100)
+  const overall = fractions.reduce((a, b) => a + b, 0) / fractions.length
+  const minSkill = Math.min(...fractions)
+
+  if (overall < 0.45 || minSkill < 0.30) {
+    return 'basic'
+  } else if (overall >= 0.75 && minSkill >= 0.50) {
+    return 'advanced'
+  } else {
+    return 'intermediate'
+  }
+}
+
 // ─── Result Breakdown ─────────────────────────────────────────────────────────
 
 const AXIS_META_DISPLAY = [
@@ -90,10 +130,10 @@ export function PlacementResultView() {
 
   const demoResults: QuestionResult[] = hasDemoData
     ? [
-      { questionId: 'd1', axis: 'D_doc', difficulty: 5, selectedId: 'b', isCorrect: true },
-      { questionId: 'd2', axis: 'D_doc', difficulty: 6, selectedId: 'c', isCorrect: true },
-      { questionId: 'd3', axis: 'D_doc', difficulty: 7, selectedId: 'b', isCorrect: true },
-      { questionId: 'd4', axis: 'D_doc', difficulty: 8, selectedId: 'b', isCorrect: true },
+      { questionId: 'd1', axis: 'D_doc', difficulty: 5, selectedId: 'a', isCorrect: false },
+      { questionId: 'd2', axis: 'D_doc', difficulty: 6, selectedId: 'a', isCorrect: false },
+      { questionId: 'd3', axis: 'D_doc', difficulty: 7, selectedId: 'a', isCorrect: false },
+      { questionId: 'd4', axis: 'D_doc', difficulty: 8, selectedId: 'a', isCorrect: false },
       { questionId: 'd5', axis: 'D_doc', difficulty: 9, selectedId: 'b', isCorrect: true },
       { questionId: 'd6', axis: 'D_doc', difficulty: 10, selectedId: 'b', isCorrect: true },
       { questionId: 'd7', axis: 'D_doc', difficulty: 5, selectedId: 'a', isCorrect: false },
@@ -104,43 +144,43 @@ export function PlacementResultView() {
       { questionId: 'd12', axis: 'D_doc', difficulty: 10, selectedId: 'b', isCorrect: true },
 
       { questionId: 'c1', axis: 'C_comm', difficulty: 5, selectedId: 'b', isCorrect: true },
-      { questionId: 'c2', axis: 'C_comm', difficulty: 6, selectedId: 'b', isCorrect: false },
+      { questionId: 'c2', axis: 'C_comm', difficulty: 6, selectedId: 'b', isCorrect: true },
       { questionId: 'c3', axis: 'C_comm', difficulty: 5, selectedId: 'c', isCorrect: true },
-      { questionId: 'c4', axis: 'C_comm', difficulty: 6, selectedId: 'a', isCorrect: false },
+      { questionId: 'c4', axis: 'C_comm', difficulty: 6, selectedId: 'a', isCorrect: true },
       { questionId: 'c5', axis: 'C_comm', difficulty: 5, selectedId: 'a', isCorrect: true },
-      { questionId: 'c6', axis: 'C_comm', difficulty: 6, selectedId: 'b', isCorrect: false },
+      { questionId: 'c6', axis: 'C_comm', difficulty: 6, selectedId: 'b', isCorrect: true },
       { questionId: 'c7', axis: 'C_comm', difficulty: 5, selectedId: 'b', isCorrect: true },
-      { questionId: 'c8', axis: 'C_comm', difficulty: 6, selectedId: 'b', isCorrect: false },
+      { questionId: 'c8', axis: 'C_comm', difficulty: 6, selectedId: 'b', isCorrect: true },
       { questionId: 'c9', axis: 'C_comm', difficulty: 5, selectedId: 'c', isCorrect: true },
-      { questionId: 'c10', axis: 'C_comm', difficulty: 6, selectedId: 'a', isCorrect: false },
+      { questionId: 'c10', axis: 'C_comm', difficulty: 6, selectedId: 'a', isCorrect: true },
       { questionId: 'c11', axis: 'C_comm', difficulty: 5, selectedId: 'a', isCorrect: true },
-      { questionId: 'c12', axis: 'C_comm', difficulty: 6, selectedId: 'b', isCorrect: false },
+      { questionId: 'c12', axis: 'C_comm', difficulty: 6, selectedId: 'b', isCorrect: true },
 
       { questionId: 't1', axis: 'T_trouble', difficulty: 5, selectedId: 'b', isCorrect: true },
       { questionId: 't2', axis: 'T_trouble', difficulty: 6, selectedId: 'b', isCorrect: true },
-      { questionId: 't3', axis: 'T_trouble', difficulty: 7, selectedId: 'c', isCorrect: false },
+      { questionId: 't3', axis: 'T_trouble', difficulty: 7, selectedId: 'c', isCorrect: true },
       { questionId: 't4', axis: 'T_trouble', difficulty: 6, selectedId: 'a', isCorrect: true },
       { questionId: 't5', axis: 'T_trouble', difficulty: 7, selectedId: 'c', isCorrect: true },
       { questionId: 't6', axis: 'T_trouble', difficulty: 8, selectedId: 'b', isCorrect: true },
       { questionId: 't7', axis: 'T_trouble', difficulty: 5, selectedId: 'b', isCorrect: true },
       { questionId: 't8', axis: 'T_trouble', difficulty: 6, selectedId: 'b', isCorrect: true },
-      { questionId: 't9', axis: 'T_trouble', difficulty: 7, selectedId: 'c', isCorrect: false },
+      { questionId: 't9', axis: 'T_trouble', difficulty: 7, selectedId: 'c', isCorrect: true },
       { questionId: 't10', axis: 'T_trouble', difficulty: 6, selectedId: 'a', isCorrect: true },
       { questionId: 't11', axis: 'T_trouble', difficulty: 7, selectedId: 'c', isCorrect: true },
       { questionId: 't12', axis: 'T_trouble', difficulty: 8, selectedId: 'b', isCorrect: true },
 
-      { questionId: 'g1', axis: 'G_biz', difficulty: 5, selectedId: 'c', isCorrect: false },
-      { questionId: 'g2', axis: 'G_biz', difficulty: 4, selectedId: 'c', isCorrect: false },
+      { questionId: 'g1', axis: 'G_biz', difficulty: 5, selectedId: 'c', isCorrect: true },
+      { questionId: 'g2', axis: 'G_biz', difficulty: 4, selectedId: 'c', isCorrect: true },
       { questionId: 'g3', axis: 'G_biz', difficulty: 3, selectedId: 'b', isCorrect: true },
-      { questionId: 'g4', axis: 'G_biz', difficulty: 4, selectedId: 'a', isCorrect: false },
+      { questionId: 'g4', axis: 'G_biz', difficulty: 4, selectedId: 'a', isCorrect: true },
       { questionId: 'g5', axis: 'G_biz', difficulty: 3, selectedId: 'c', isCorrect: true },
-      { questionId: 'g6', axis: 'G_biz', difficulty: 4, selectedId: 'b', isCorrect: false },
-      { questionId: 'g7', axis: 'G_biz', difficulty: 5, selectedId: 'c', isCorrect: false },
-      { questionId: 'g8', axis: 'G_biz', difficulty: 4, selectedId: 'c', isCorrect: false },
+      { questionId: 'g6', axis: 'G_biz', difficulty: 4, selectedId: 'b', isCorrect: true },
+      { questionId: 'g7', axis: 'G_biz', difficulty: 5, selectedId: 'c', isCorrect: true },
+      { questionId: 'g8', axis: 'G_biz', difficulty: 4, selectedId: 'c', isCorrect: true },
       { questionId: 'g9', axis: 'G_biz', difficulty: 3, selectedId: 'b', isCorrect: true },
-      { questionId: 'g10', axis: 'G_biz', difficulty: 4, selectedId: 'a', isCorrect: false },
+      { questionId: 'g10', axis: 'G_biz', difficulty: 4, selectedId: 'a', isCorrect: true },
       { questionId: 'g11', axis: 'G_biz', difficulty: 3, selectedId: 'c', isCorrect: true },
-      { questionId: 'g12', axis: 'G_biz', difficulty: 4, selectedId: 'b', isCorrect: false },
+      { questionId: 'g12', axis: 'G_biz', difficulty: 4, selectedId: 'b', isCorrect: true },
     ]
     : results
 
@@ -169,12 +209,14 @@ export function PlacementResultView() {
   }
 
   const aiSummary = generateAISummary(actualScores)
+  const startingLevel = determineStartingLevel(actualScores)
+  
   const [showContent, setShowContent] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [activeTab, setActiveTab] = useState<SkillAxis>('D_doc')
   const [hoursPerWeek, setHoursPerWeek] = useState(8)
 
-  const totalHours = 96 // Assume Intermediate level for default ETA
+  const totalHours = LEVEL_CONFIG[startingLevel].hours
   const weeks = Math.ceil(totalHours / hoursPerWeek)
   const months = (weeks / 4.33).toFixed(1)
 
@@ -246,11 +288,13 @@ export function PlacementResultView() {
 
           </div>
 
-          {/* ── Overall score (Căn giữa, mở rộng size) ─────────────── */}
-          <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-10 mb-6 text-center">
-            <div className="flex flex-col md:flex-row items-center justify-center gap-14">
+          {/* ── Overall score & Starting Track ─────────────── */}
+          <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-8 mb-6 flex flex-col md:flex-row items-stretch">
+            
+            {/* LEFT SIDE: Score */}
+            <div className="flex-1 flex items-center justify-center gap-6 pr-0 md:pr-8">
               {/* Score circle */}
-              <div className="relative w-44 h-44">
+              <div className="relative w-40 h-40 shrink-0">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="42" fill="none" stroke="#f1f5f9" strokeWidth="8" />
                   <circle
@@ -270,21 +314,38 @@ export function PlacementResultView() {
                   </defs>
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-6xl font-black text-slate-800">{scoreOutOf10}</span>
-                  <span className="text-lg font-bold text-slate-400 mt-1">/10</span>
+                  <span className="text-5xl font-black text-slate-800">{scoreOutOf10}</span>
+                  <span className="text-base font-bold text-slate-400 mt-1">/10</span>
                 </div>
               </div>
 
               {/* Score details */}
-              <div className="text-center md:text-left flex flex-col justify-center">
-                <div className={`text-5xl font-extrabold mb-4 ${gradeLabel(overallPct).color}`}>
+              <div className="text-left flex flex-col justify-center">
+                <div className={`text-4xl font-extrabold mb-3 ${gradeLabel(overallPct).color}`}>
                   {gradeLabel(overallPct).label}
                 </div>
-                <div className="text-slate-600 text-xl font-bold bg-slate-50 inline-block px-5 py-2.5 rounded-2xl border border-slate-100">
+                <div className="text-slate-600 text-lg font-bold bg-slate-50 inline-flex px-4 py-2 rounded-xl border border-slate-100 whitespace-nowrap">
                   {totalCorrect} / {totalQuestions} correct overall
                 </div>
               </div>
             </div>
+
+            {/* DIVIDER */}
+            <div className="hidden md:block w-px bg-slate-200 mx-6 my-4" />
+            <div className="md:hidden h-px bg-slate-200 my-8 w-full" />
+
+            {/* RIGHT SIDE: Starting Track */}
+            <div className="flex-1 flex items-center justify-center pl-0 md:pl-8">
+              <div className="w-full text-center flex flex-col items-center justify-center">
+                 <p className={`text-sm ${LEVEL_CONFIG[startingLevel].color} font-bold uppercase tracking-widest mb-3 opacity-90`}>
+                   RECOMMENDED TRACK
+                 </p>
+                 <h2 className={`text-4xl font-black ${LEVEL_CONFIG[startingLevel].color}`}>
+                   {LEVEL_CONFIG[startingLevel].label}
+                 </h2>
+              </div>
+            </div>
+
           </div>
 
           {/* ── Vertical Bar Chart ─────────────────────────────────────── */}
@@ -463,7 +524,7 @@ export function PlacementResultView() {
           <button
             id="btn-create-course"
             type="button"
-            onClick={() => navigate({ to: '/dashboard' })}
+            onClick={() => navigate({ to: '/profile' })}
             className="w-full py-5 px-6 rounded-2xl bg-[#007aff] hover:bg-blue-600 text-white font-extrabold text-xl shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-3"
           >
             <span>Create My Course</span>
