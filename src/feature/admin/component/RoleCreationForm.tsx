@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Button } from '@/shadcn/component/ui/button';
 import { Input } from '@/shadcn/component/ui/input';
 import { Textarea } from '@/shadcn/component/ui/textarea';
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertCircle, Loader2, Eye, Save, Trash2 } from 'lucide-react';
 import { BudgetSlidersGroup } from './BudgetSlider';
 import { AiPreviewModal } from './AiPreviewModal';
-import { validateBudget, type CareerTrack, type BudgetVector } from '../api/adminApi';
+import { type CareerTrack, type BudgetVector } from '../api/adminApi';
 import { createTrack, updateTrack, deactivateTrack, getDeactivationWarning } from '../api/adminApi';
 
 interface RoleCreationFormProps {
@@ -27,17 +27,26 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 		seedTier2: initialTrack?.seedTier2 || ''
 	});
 	
-	const [budgets, setBudgets] = useState<{
-		basic: BudgetVector;
-		intermediate: BudgetVector;
-		advanced: BudgetVector;
-	}>({
-		basic: initialTrack?.budgets.basic || { D: 25, C: 25, T: 25, G: 25 },
-		intermediate: initialTrack?.budgets.intermediate || { D: 25, C: 25, T: 25, G: 25 },
-		advanced: initialTrack?.budgets.advanced || { D: 25, C: 25, T: 25, G: 25 }
-	});
+  const [baselineBudget, setBaselineBudget] = useState<BudgetVector>(() => {
+    if (initialTrack?.budgets) {
+      return initialTrack.budgets.basic || { D: 25, C: 25, T: 25, G: 25 };
+    } else {
+      return { D: 25, C: 25, T: 25, G: 25 };
+    }
+  });
+
+  const initialBudgetsForSlider = useMemo(() => {
+    if (initialTrack?.budgets) return initialTrack.budgets;
+    return {
+      basic: { D: 25, C: 25, T: 25, G: 25 },
+      intermediate: { D: 25, C: 25, T: 25, G: 25 },
+      advanced: { D: 25, C: 25, T: 25, G: 25 },
+    };
+  }, [initialTrack]);
+
+
 	
-	const [validations, setValidations] = useState<Record<string, { isValid: boolean; errors: string[]; warnings: string[] }>>({});
+	const [validations] = useState<Record<string, { isValid: boolean; errors: string[]; warnings: string[] }>>({});
 	const [submitting, setSubmitting] = useState(false);
 	const [showPreview, setShowPreview] = useState(false);
 	const [previewData, setPreviewData] = useState<{ examples: string[]; warning?: string } | null>(null);
@@ -45,39 +54,47 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 	const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
 
 	// Validate budgets on change
-const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
-		setBudgets(prev => ({ ...prev, [milestone]: budget }));
-		const validation = await validateBudget(budget);
-		setValidations(prev => ({ ...prev, [milestone]: validation }));
-	};
+  const handleBudgetChange = useCallback((budget: BudgetVector) => {
+    setBaselineBudget(budget);
+  }, []);
 
-	const isAllValid = () => {
-		// Check form fields
-		if (!formData.name.trim()) return false;
-		if (!formData.jobDescription.trim()) return false;
-		if (!formData.gSkillDefinition.trim()) return false;
-		if (!formData.seedTier1.trim()) return false;
-		if (!formData.seedTier2.trim()) return false;
-		
-		// Check budgets
-		return Object.values(validations).every(v => v.isValid);
-	};
+  const isAllValid = () => {
+    // Check form fields
+    if (!formData.name.trim()) return false;
+    if (!formData.jobDescription.trim()) return false;
+    if (!formData.gSkillDefinition.trim()) return false;
+    if (!formData.seedTier1.trim()) return false;
+    if (!formData.seedTier2.trim()) return false;
+    
+    // Check budgets (validate sum and floor)
+    const values = Object.values(baselineBudget);
+    const sum = values.reduce((acc, val) => acc + val, 0);
+    const isValidSum = Math.abs(sum - 100) < 0.1;
+    const isValidFloor = values.every((value) => value >= 10);
+    
+    return isValidSum && isValidFloor;
+  };
 
 	const handleSubmit = async () => {
 		if (!isAllValid()) return;
 		
 		setSubmitting(true);
 		try {
+			const currentBudgets = {
+				basic: baselineBudget,
+				intermediate: baselineBudget,
+				advanced: baselineBudget,
+			};
 			let result: CareerTrack;
 			if (isEdit && initialTrack) {
 				result = await updateTrack(initialTrack.id, {
 					...formData,
-					budgets
+					budgets: currentBudgets
 				});
 			} else {
 				result = await createTrack({
 					...formData,
-					budgets,
+					budgets: currentBudgets,
 					isActive: true,
 					createdBy: 'admin@tma.com.vn'
 				});
@@ -205,11 +222,11 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 
 				{/* Budget Tab */}
 				<TabsContent value="budget" className="space-y-6 p-4 pt-0">
-					<BudgetSlidersGroup
-						initialBudgets={budgets}
-						onChange={handleBudgetChange}
-						disabled={submitting}
-					/>
+        <BudgetSlidersGroup
+          initialBudgets={initialBudgetsForSlider}
+          onChange={handleBudgetChange}
+          disabled={submitting}
+        />
 				</TabsContent>
 
 				{/* Seed Content Tab */}
