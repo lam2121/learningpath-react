@@ -22,14 +22,14 @@ const ROLE_PALETTE = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Extract DCTG weights (0-100) from init_weights. Prefers Basic tier; falls back to flat keys. */
-function extractWeights(init_weights: JobRole['init_weights']): { D: number; C: number; T: number; G: number } {
-  const src = (init_weights as any)?.Basic ?? init_weights ?? {}
+/** Extract DCTG weights (0-100) from the baseline JSON blob. */
+function extractWeights(baseline: JobRole['baseline']): { D: number; C: number; T: number; G: number } {
+  const src = baseline ?? {}
   return {
-    D: Number(src.D ?? src.D_doc ?? 25),
-    C: Number(src.C ?? src.C_comm ?? 25),
-    T: Number(src.T ?? src.T_trouble ?? 25),
-    G: Number(src.G ?? src.G_biz ?? 25),
+    D: Number(src.D_doc ?? 25),
+    C: Number(src.C_comm ?? 25),
+    T: Number(src.T_trouble ?? 25),
+    G: Number(src.G_custom ?? 25),
   }
 }
 
@@ -79,7 +79,7 @@ interface RoleCardItemProps {
 
 function RoleCardItem({ role, paletteIdx, isSelected, isHovered, onSelect, onHover, onLeave }: RoleCardItemProps) {
   const palette = ROLE_PALETTE[paletteIdx % ROLE_PALETTE.length]
-  const weights = extractWeights(role.init_weights)
+  const weights = extractWeights(role.baseline)
   const exampleQs = getExampleQuestions(role.example_question)
 
   return (

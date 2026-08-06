@@ -1,21 +1,12 @@
 import { useState, useEffect } from 'react';
 import { cn } from '@/shadcn/lib/util';
-import { Slider } from '@/shadcn/component/ui/slider';
 import { Label } from '@/shadcn/component/ui/label';
 import { Alert, AlertDescription } from '@/shadcn/component/ui/alert';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shadcn/component/ui/tooltip';
 import { AlertCircle, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import useSkillDistribution from '@/hooks/useSkillDistribution';
-import { type BudgetVector } from '../api/adminApi';
-
-// Map v2.1 skill tags to v1.x budget keys
-const skillMap = {
-  D_doc: 'D',
-  C_comm: 'C',
-  T_trouble: 'T',
-  G_custom: 'G',
-} as const;
+import { DEFAULT_BASELINE, type BudgetVector, type SkillKey } from '../api/adminApi';
 
 const skillInfo = {
   D_doc: { label: 'Documentation (D)', color: '#3b82f6', icon: '📄' },
@@ -68,7 +59,7 @@ const SkillDistributionVisualizer = ({
             onClick={(e) => onSegmentClick(e.name as keyof typeof skillInfo)}
             label={({ name, percent }) => `
               ${skillInfo[name as keyof typeof skillInfo].icon} 
-              ${Math.round(percent * 100)}%`
+              ${Math.round((percent ?? 0) * 100)}%`
             }
           >
             {data.map((entry, index) => (
@@ -79,7 +70,7 @@ const SkillDistributionVisualizer = ({
             ))}
           </Pie>
           <RechartsTooltip
-            formatter={(value: number, name: string) => [
+            formatter={(value, name) => [
               `${value}%`,
               skillInfo[name as keyof typeof skillInfo].label,
             ]}
@@ -191,50 +182,29 @@ const WarningMessage = ({ message, isBlocking }: WarningMessageProps) => {
 };
 
 interface BudgetSlidersGroupProps {
-  initialBudgets?: {
-    basic: BudgetVector;
-    intermediate: BudgetVector;
-    advanced: BudgetVector;
-  };
+  initialBudget?: BudgetVector;
   onChange: (budget: BudgetVector) => void;
   disabled?: boolean;
 }
 
-export function BudgetSlidersGroup({ initialBudgets, onChange, disabled }: BudgetSlidersGroupProps) {
+export function BudgetSlidersGroup({ initialBudget, onChange, disabled }: BudgetSlidersGroupProps) {
   const {
     skillValues,
-    setSkillValues,
     updateSkillValue,
     showWarning,
     warningMessage,
     isFloorViolated,
     isSumViolated,
-  } = useSkillDistribution();
+  } = useSkillDistribution({ initialValues: initialBudget ?? DEFAULT_BASELINE });
 
   const [isTableCollapsed, setIsTableCollapsed] = useState<boolean>(true);
 
 
-  // Initialize skillValues from initialBudgets (use basic milestone as baseline)
+  // Sync skillValues back to the v2.1 BudgetVector
   useEffect(() => {
-    if (initialBudgets) {
-      const baseline = initialBudgets.basic || { D: 25, C: 25, T: 25, G: 25 };
-      const newSkillValues = { ...skillValues };
-      (Object.keys(skillMap) as Array<keyof typeof skillInfo>).forEach((skill) => {
-        const budgetKey = skillMap[skill];
-        newSkillValues[skill] = baseline[budgetKey] || 25;
-      });
-      setSkillValues(newSkillValues);
-      
-
-    }
-  }, [initialBudgets]);
-
-  // Sync budget with skillValues (v2.1 → v1.x)
-  useEffect(() => {
-    const budget: BudgetVector = { D: 25, C: 25, T: 25, G: 25 };
-    (Object.keys(skillValues) as Array<keyof typeof skillInfo>).forEach((skill) => {
-      const budgetKey = skillMap[skill];
-      budget[budgetKey] = skillValues[skill];
+    const budget: BudgetVector = { ...DEFAULT_BASELINE };
+    (Object.keys(skillInfo) as SkillKey[]).forEach((skill) => {
+      budget[skill] = skillValues[skill];
     });
     onChange(budget);
   }, [skillValues, onChange]);

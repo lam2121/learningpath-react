@@ -13,7 +13,7 @@ export function RejectedContentTable() {
 	const [loading, setLoading] = useState(true);
 	const [filters, setFilters] = useState({ generator: 'all', status: 'all', role: '' });
 	const [selectedItem, setSelectedItem] = useState<RejectedContent | null>(null);
-	const [updating, setUpdating] = useState<string | null>(null);
+	const [updating, setUpdating] = useState<number | null>(null);
 
 	const loadItems = useCallback(async () => {
 		setLoading(true);
@@ -31,7 +31,7 @@ export function RejectedContentTable() {
 		loadItems();
 	}, [filters, loadItems]);
 
-	const handleStatusChange = async (id: string, status: 'fixed' | 'ignored') => {
+	const handleStatusChange = async (id: number, status: 'fixed' | 'ignored') => {
 		setUpdating(id);
 		try {
 			const updated = await updateRejectedContentStatus(id, status);
@@ -269,17 +269,21 @@ Ignore
 						<div>
 							<p className="text-sm font-medium text-gray-500 mb-2">Validator Checks</p>
 							<div className="space-y-2">
-								{selectedItem?.validatorChecks.map((check, idx) => (
-									<div key={idx} className="flex items-center gap-2 p-2 rounded bg-white border">
-										{check.passed ? (
-											<CheckCircle className="h-4 w-4 text-green-500" />
-										) : (
-											<XCircle className="h-4 w-4 text-red-500" />
-										)}
-										<span className="text-sm font-medium">{check.check}</span>
-										{check.details && <span className="text-xs text-gray-500 ml-auto">{check.details}</span>}
-									</div>
-								))}
+								{!selectedItem?.validatorChecks || selectedItem.validatorChecks.length === 0 ? (
+									<p className="text-sm text-gray-500">No validator checks recorded.</p>
+								) : (
+									selectedItem.validatorChecks.map((check, idx) => (
+										<div key={idx} className="flex items-center gap-2 p-2 rounded bg-white border">
+											{check.passed ? (
+												<CheckCircle className="h-4 w-4 text-green-500" />
+											) : (
+												<XCircle className="h-4 w-4 text-red-500" />
+											)}
+											<span className="text-sm font-medium">{check.check}</span>
+											{check.details && <span className="text-xs text-gray-500 ml-auto">{check.details}</span>}
+										</div>
+									))
+								)}
 							</div>
 						</div>
 					</div>

@@ -11,7 +11,7 @@ import { deactivateTrack, getDeactivationWarning, type TrackDeactivationWarning 
 interface DeactivateTrackModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	trackId: string;
+	trackId: number;
 	trackName: string;
 	onSuccess: () => void;
 }

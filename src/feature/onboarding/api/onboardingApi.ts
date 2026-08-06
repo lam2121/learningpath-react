@@ -111,30 +111,18 @@ export async function completePlacementTest(
 
 // ─── Job Role API ─────────────────────────────────────────────────────────────
 
-export interface JobRoleInitWeights {
-  // Flat keys used in toeic_learningpath schema
+export interface JobRoleBaseline {
   D_doc?: number
   C_comm?: number
   T_trouble?: number
-  G_biz?: number
-  // Alternative flat keys (toeic_learningpath1 schema)
-  D?: number
-  C?: number
-  T?: number
-  G?: number
-  // Nested by milestone (future-proof)
-  Basic?: { D?: number; C?: number; T?: number; G?: number; D_doc?: number; C_comm?: number; T_trouble?: number; G_biz?: number }
-  Intermediate?: { D?: number; C?: number; T?: number; G?: number }
-  Advanced?: { D?: number; C?: number; T?: number; G?: number }
+  G_custom?: number
 }
 
 export interface JobRole {
   id: number
   name: string
-  JD: string
-  seed_tier: Record<string, unknown>
-  init_weights: JobRoleInitWeights
-  example_question: Record<string, unknown>
+  baseline: JobRoleBaseline
+  example_question: string[] | null
 }
 
 /** Fetch all job roles from database. No auth required. */

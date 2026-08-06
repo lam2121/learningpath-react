@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Button } from '@/shadcn/component/ui/button';
 import { Input } from '@/shadcn/component/ui/input';
 import { Textarea } from '@/shadcn/component/ui/textarea';
@@ -9,12 +9,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertCircle, Loader2, Eye, Save, Trash2 } from 'lucide-react';
 import { BudgetSlidersGroup } from './BudgetSlider';
 import { AiPreviewModal } from './AiPreviewModal';
-import { type CareerTrack, type BudgetVector } from '../api/adminApi';
+import { type CareerTrack, type BudgetVector, DEFAULT_BASELINE } from '../api/adminApi';
 import { createTrack, updateTrack, deactivateTrack, getDeactivationWarning } from '../api/adminApi';
 
 interface RoleCreationFormProps {
 	initialTrack?: CareerTrack;
-	onSuccess?: (track: CareerTrack) => void;
+	onSuccess?: (track?: CareerTrack) => void;
 }
 
 export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormProps) {
@@ -24,29 +24,16 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 		jobDescription: initialTrack?.jobDescription || '',
 		gSkillDefinition: initialTrack?.gSkillDefinition || '',
 		seedTier1: initialTrack?.seedTier1 || '',
-		seedTier2: initialTrack?.seedTier2 || ''
+		seedTier2: initialTrack?.seedTier2 || '',
+		exampleQuestion1: initialTrack?.exampleQuestion?.[0] || '',
+		exampleQuestion2: initialTrack?.exampleQuestion?.[1] || ''
 	});
 	
   const [baselineBudget, setBaselineBudget] = useState<BudgetVector>(() => {
-    if (initialTrack?.budgets) {
-      return initialTrack.budgets.basic || { D: 25, C: 25, T: 25, G: 25 };
-    } else {
-      return { D: 25, C: 25, T: 25, G: 25 };
-    }
+    return initialTrack?.baseline ? { ...initialTrack.baseline } : { ...DEFAULT_BASELINE };
   });
 
-  const initialBudgetsForSlider = useMemo(() => {
-    if (initialTrack?.budgets) return initialTrack.budgets;
-    return {
-      basic: { D: 25, C: 25, T: 25, G: 25 },
-      intermediate: { D: 25, C: 25, T: 25, G: 25 },
-      advanced: { D: 25, C: 25, T: 25, G: 25 },
-    };
-  }, [initialTrack]);
-
-
-	
-	const [validations] = useState<Record<string, { isValid: boolean; errors: string[]; warnings: string[] }>>({});
+  const [validations] = useState<Record<string, { isValid: boolean; errors: string[]; warnings: string[] }>>({});
 	const [submitting, setSubmitting] = useState(false);
 	const [showPreview, setShowPreview] = useState(false);
 	const [previewData, setPreviewData] = useState<{ examples: string[]; warning?: string } | null>(null);
@@ -66,13 +53,14 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
     if (!formData.seedTier1.trim()) return false;
     if (!formData.seedTier2.trim()) return false;
     
-    // Check budgets (validate sum and floor)
+    // Check budgets (validate sum, floor, and step of 5)
     const values = Object.values(baselineBudget);
     const sum = values.reduce((acc, val) => acc + val, 0);
     const isValidSum = Math.abs(sum - 100) < 0.1;
     const isValidFloor = values.every((value) => value >= 10);
+    const isValidStep = values.every((value) => value % 5 === 0);
     
-    return isValidSum && isValidFloor;
+    return isValidSum && isValidFloor && isValidStep;
   };
 
 	const handleSubmit = async () => {
@@ -80,24 +68,25 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 		
 		setSubmitting(true);
 		try {
-			const currentBudgets = {
-				basic: baselineBudget,
-				intermediate: baselineBudget,
-				advanced: baselineBudget,
+			const payload = {
+				name: formData.name,
+				job_description: formData.jobDescription,
+				baseline: baselineBudget,
+				g_skill_description: formData.gSkillDefinition,
+				seed_tier_1: formData.seedTier1,
+				seed_tier_2: formData.seedTier2,
+				example_question: (formData.exampleQuestion1 || formData.exampleQuestion2)
+					? [formData.exampleQuestion1, formData.exampleQuestion2].filter(Boolean)
+					: [],
 			};
 			let result: CareerTrack;
 			if (isEdit && initialTrack) {
 				result = await updateTrack(initialTrack.id, {
-					...formData,
-					budgets: currentBudgets
+					...payload,
+					is_active: true,
 				});
 			} else {
-				result = await createTrack({
-					...formData,
-					budgets: currentBudgets,
-					isActive: true,
-					createdBy: 'admin@tma.com.vn'
-				});
+				result = await createTrack(payload);
 			}
 			onSuccess?.(result);
 		} catch (error) {
@@ -223,7 +212,7 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 				{/* Budget Tab */}
 				<TabsContent value="budget" className="space-y-6 p-4 pt-0">
         <BudgetSlidersGroup
-          initialBudgets={initialBudgetsForSlider}
+          initialBudget={baselineBudget}
           onChange={handleBudgetChange}
           disabled={submitting}
         />
@@ -255,6 +244,26 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 							/>
 							<p className="text-xs text-gray-500 mt-1">Used for Intermediate/Advanced level lessons (Troubleshooting, Negotiation, Advanced topics).</p>
 						</div>
+
+						<div>
+							<Label className="block text-sm font-medium text-gray-700 mb-1">Example Question 1</Label>
+							<Input
+								placeholder="e.g., How would you explain a project delay to a client?"
+								value={formData.exampleQuestion1}
+								onChange={e => setFormData(prev => ({ ...prev, exampleQuestion1: e.target.value }))}
+							/>
+							<p className="text-xs text-gray-500 mt-1">Shown on learner role selection cards. Optional.</p>
+						</div>
+
+						<div>
+							<Label className="block text-sm font-medium text-gray-700 mb-1">Example Question 2</Label>
+							<Input
+								placeholder="e.g., How do you negotiate a scope change?"
+								value={formData.exampleQuestion2}
+								onChange={e => setFormData(prev => ({ ...prev, exampleQuestion2: e.target.value }))}
+							/>
+							<p className="text-xs text-gray-500 mt-1">Shown on learner role selection cards. Optional.</p>
+						</div>
 					</div>
 				</TabsContent>
 			</Tabs>
@@ -269,8 +278,9 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 									{!formData.name.trim() && <li>Role name not entered</li>}
 									{!formData.jobDescription.trim() && <li>Job description not entered</li>}
 									{!formData.gSkillDefinition.trim() && <li>G-skill definition not entered</li>}
-									{!formData.seedTier1.trim() && <li>Seed Tier 1 not entered</li>}
-									{!formData.seedTier2.trim() && <li>Seed Tier 2 not entered</li>}
+								{!formData.seedTier1.trim() && <li>Seed Tier 1 not entered</li>}
+								{!formData.seedTier2.trim() && <li>Seed Tier 2 not entered</li>}
+							{Object.values(baselineBudget).some(v => v % 5 !== 0) && <li>Each skill budget must be a multiple of 5</li>}
 							{Object.entries(validations).filter(([, v]) => !v.isValid).map(([k, v]) => (
 								<li key={k}>{k}: {v.errors.join(', ')}</li>
 							))}
@@ -281,7 +291,7 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 
 			{/* Action Buttons */}
 			<div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-<Button variant="outline" onClick={() => window.history.back()} disabled={submitting}>
+<Button variant="outline" onClick={() => onSuccess?.()} disabled={submitting}>
 							Cancel
 						</Button>
 				<Button 

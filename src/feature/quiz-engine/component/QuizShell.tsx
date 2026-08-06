@@ -5,10 +5,10 @@ import { Button } from '@/shadcn/component/ui/button';
 import { Progress } from '@/shadcn/component/ui/progress';
 import { Toaster, toast } from 'sonner';
 import { cn } from '@/shadcn/lib/util';
-import type { QuizSession, UserAnswerRecord, QuizResult, FillBlankQuestionData, MatchingQuestionData, OrderingQuestionData } from '../type/Quiz';
+import type { QuizSession, UserAnswerRecord, QuizResult, FillBlankQuestionData, MultiSelectQuestionData, OrderingQuestionData } from '../type/Quiz';
 import { fetchQuiz, autoSaveAnswers, submitQuiz, resumeQuiz } from '../api/quizApi';
 import { FillBlankQuestion } from './FillBlankQuestion';
-import { MatchingQuestion } from './MatchingQuestion';
+import { MultiSelectQuestion } from './MultiSelectQuestion';
 import { OrderingQuestion } from './OrderingQuestion';
 import { QuizResultAccordion } from './QuizResultAccordion';
 import { calculateConfidence } from '../util/implicitConfidence';
@@ -253,14 +253,30 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (showResult || loading || !sessionRef.current) return;
 
-			// Number keys 1-4 for options
-			if (e.key >= '1' && e.key <= '4') {
+			// Number keys for options
+			if (e.key >= '1' && e.key <= '9') {
 				const question = sessionRef.current?.questions[currentQuestionIndex];
-				if (question?.type === 'fill_blank' || question?.type === 'matching') {
+				if (question?.type === 'fill_blank' && e.key <= '4') {
 					const options = question.data[1].split('|');
 					const index = parseInt(e.key) - 1;
 					if (options[index]) {
 						handleAnswer(options[index]);
+					}
+				} else if (question?.type === 'multi_select') {
+					const options = question.data[1].split('|');
+					const index = parseInt(e.key) - 1;
+					if (options[index]) {
+						const current = (answersRef.current[currentQuestionIndex]?.answer || '')
+							.split('|')
+							.map(s => parseInt(s.trim(), 10))
+							.filter(n => !isNaN(n));
+						const selected = new Set(current);
+						if (selected.has(index)) {
+							selected.delete(index);
+						} else {
+							selected.add(index);
+						}
+						handleAnswer([...selected].sort((a, b) => a - b).join('|'));
 					}
 				}
 			}
@@ -375,10 +391,10 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 							userAnswer={answers[currentQuestionIndex]?.answer}
 						/>
 					)}
-					{currentQuestion.type === 'matching' && (
-						<MatchingQuestion
+					{currentQuestion.type === 'multi_select' && (
+						<MultiSelectQuestion
 							key={currentQuestionIndex}
-							data={currentQuestion.data as MatchingQuestionData}
+							data={currentQuestion.data as MultiSelectQuestionData}
 							questionNumber={currentQuestionIndex + 1}
 							totalQuestions={session.questions.length}
 							userAnswer={answers[currentQuestionIndex]?.answer || null}

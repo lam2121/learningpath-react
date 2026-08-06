@@ -13,12 +13,12 @@ export type FillBlankQuestionData = [
 	remD: number, remC: number, remT: number, remG: number // Running remaining budget
 ];
 
-export type MatchingQuestionData = [
-	prompt: string,                  // Vague/Demanding Client Statement
-	idealResponse: string,           // The Ideal Diplomatic Response
-	distractors: string,             // 2 blunt or overly compliant responses separated by |
+export type MultiSelectQuestionData = [
+	stem: string,                    // Professional scenario with a selection instruction
+	options: string,                 // "OptionA|OptionB|OptionC|OptionD|OptionE"
+	answer: string,                  // Correct option indices (e.g., "0|2")
 	explanation: string,             // Vietnamese detailed explanation
-	wD: number, wC: number, wT: number, wG: number, // ONE-HOT weights
+	wD: number, wC: number, wT: number, wG: number, // ONE-HOT weights (one 10, three 0s)
 	remD: number, remC: number, remT: number, remG: number // Running remaining budget
 ];
 
@@ -31,15 +31,15 @@ export type OrderingQuestionData = [
 	remD: number, remC: number, remT: number, remG: number // Running remaining budget
 ];
 
-export type QuestionType = 'fill_blank' | 'matching' | 'ordering';
+export type QuestionType = 'fill_blank' | 'multi_select' | 'ordering';
 
 export interface QuizQuestion {
 	id: string;
 	type: QuestionType;
-	data: FillBlankQuestionData | MatchingQuestionData | OrderingQuestionData;
+	data: FillBlankQuestionData | MultiSelectQuestionData | OrderingQuestionData;
 }
 
-export type UserAnswer = string; // Option letter, ideal response, or index sequence e.g. "1|2|0"
+export type UserAnswer = string; // Option letter, selected indices, or index sequence e.g. "1|2|0"
 
 export interface UserAnswerRecord {
 	answer: UserAnswer;

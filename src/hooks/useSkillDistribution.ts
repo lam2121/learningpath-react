@@ -3,13 +3,19 @@ import { useState, useEffect } from 'react';
 type Skill = 'D_doc' | 'C_comm' | 'T_trouble' | 'G_custom';
 type SkillValues = Record<Skill, number>;
 
-const useSkillDistribution = () => {
-  const [skillValues, setSkillValues] = useState<SkillValues>({
-    D_doc: 25,
-    C_comm: 25,
-    T_trouble: 25,
-    G_custom: 25,
-  });
+interface UseSkillDistributionOptions {
+  initialValues?: SkillValues;
+}
+
+const useSkillDistribution = ({ initialValues }: UseSkillDistributionOptions = {}) => {
+  const [skillValues, setSkillValues] = useState<SkillValues>(() => 
+    initialValues ?? {
+      D_doc: 25,
+      C_comm: 25,
+      T_trouble: 25,
+      G_custom: 25,
+    }
+  );
   const [showWarning, setShowWarning] = useState<boolean>(false);
   const [warningMessage, setWarningMessage] = useState<string>('');
   const [isSumViolated, setIsSumViolated] = useState<boolean>(false);
