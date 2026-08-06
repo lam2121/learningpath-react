@@ -304,8 +304,9 @@ export function RoleSelectionGrid() {
 
   function handleConfirm() {
     if (!selectedRoleId) return
+    localStorage.removeItem('pending_survey_answers')
     localStorage.setItem('pending_role_id', selectedRoleId.toString())
-    navigate({ to: '/onboarding/survey' })
+    navigate({ to: '/placement-test' })
   }
 
   function handleLogout() {

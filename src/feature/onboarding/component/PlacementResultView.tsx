@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { LogOut } from 'lucide-react'
 import tmaLogo from '@/asset/image/tma_logo.png'
-import bannerBg from '@/asset/image/banner_background.png'
 import { useAuth } from '@/common/context/AuthContext'
 import type { QuestionResult, SkillAxis } from '../api/placementTestTypes'
 
@@ -15,219 +14,33 @@ interface AxisScore {
 
 type AxisMap = Record<SkillAxis, AxisScore>
 
-// ─── Radar Chart (pure SVG) ───────────────────────────────────────────────────
-
-const AXES: { key: SkillAxis; label: string; labelEn: string }[] = [
-  { key: 'D_doc',     label: 'Documentation',   labelEn: 'D' },
-  { key: 'C_comm',    label: 'Communication',    labelEn: 'C' },
-  { key: 'T_trouble', label: 'Troubleshooting',  labelEn: 'T' },
-  { key: 'G_biz',     label: 'Business',         labelEn: 'G' },
-]
-
-const AXIS_COLORS: Record<SkillAxis, string> = {
-  D_doc: '#60a5fa',  // blue-400
-  C_comm: '#34d399',  // emerald-400
-  T_trouble: '#f87171',  // rose-400
-  G_biz: '#fbbf24',  // amber-400
-}
-
-function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
-  const angleRad = ((angleDeg - 90) * Math.PI) / 180
-  return {
-    x: cx + r * Math.cos(angleRad),
-    y: cy + r * Math.sin(angleRad),
-  }
-}
-
-function buildPolygonPoints(cx: number, cy: number, maxR: number, values: number[], total: number) {
-  return values
-    .map((v, i) => {
-      const angle = (360 / total) * i
-      const r = (v / 100) * maxR
-      const p = polarToCartesian(cx, cy, r, angle)
-      return `${p.x},${p.y}`
-    })
-    .join(' ')
-}
-
-interface RadarChartProps {
-  axisMap: AxisMap
-  animated: boolean
-}
-
-function RadarChart({ axisMap, animated }: RadarChartProps) {
-  const size = 280
-  const cx = size / 2
-  const cy = size / 2
-  const maxR = size * 0.38
-  const total = AXES.length
-
-  const actualValues = AXES.map((a) => axisMap[a.key]?.actual ?? 0)
-  const targetValues = AXES.map((a) => axisMap[a.key]?.target ?? 0)
-
-  const [displayValues, setDisplayValues] = useState(AXES.map(() => 0))
-  const [displayTarget, setDisplayTarget] = useState(AXES.map(() => 0))
-
-  useEffect(() => {
-    if (!animated) {
-      setDisplayValues(actualValues)
-      setDisplayTarget(targetValues)
-      return
-    }
-    const duration = 900
-    const start = performance.now()
-    const tick = (now: number) => {
-      const t = Math.min((now - start) / duration, 1)
-      const ease = 1 - Math.pow(1 - t, 3)
-      setDisplayValues(actualValues.map((v) => v * ease))
-      setDisplayTarget(targetValues.map((v) => v * ease))
-      if (t < 1) requestAnimationFrame(tick)
-    }
-    requestAnimationFrame(tick)
-  }, [animated, JSON.stringify(actualValues)])
-
-  // Grid rings
-  const rings = [20, 40, 60, 80, 100]
-
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="drop-shadow-2xl">
-      {/* Grid rings */}
-      {rings.map((pct) => {
-        const pts = Array.from({ length: total }, (_, i) => {
-          const angle = (360 / total) * i
-          const r = (pct / 100) * maxR
-          return polarToCartesian(cx, cy, r, angle)
-        })
-        const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ') + 'Z'
-        return (
-          <path key={pct} d={d} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
-        )
-      })}
-
-      {/* Axis lines */}
-      {AXES.map((_, i) => {
-        const angle = (360 / total) * i
-        const end = polarToCartesian(cx, cy, maxR, angle)
-        return (
-          <line
-            key={i}
-            x1={cx} y1={cy}
-            x2={end.x} y2={end.y}
-            stroke="rgba(255,255,255,0.12)"
-            strokeWidth={1}
-          />
-        )
-      })}
-
-      {/* Target polygon */}
-      <polygon
-        points={buildPolygonPoints(cx, cy, maxR, displayTarget, total)}
-        fill="rgba(99,102,241,0.15)"
-        stroke="rgba(129,140,248,0.7)"
-        strokeWidth={1.5}
-        strokeDasharray="5,3"
-      />
-
-      {/* Actual polygon */}
-      <polygon
-        points={buildPolygonPoints(cx, cy, maxR, displayValues, total)}
-        fill="rgba(59,130,246,0.25)"
-        stroke="rgba(96,165,250,0.9)"
-        strokeWidth={2.5}
-      />
-
-      {/* Axis dots + labels */}
-      {AXES.map((axis, i) => {
-        const angle = (360 / total) * i
-        const dotPt = polarToCartesian(cx, cy, (displayValues[i] / 100) * maxR, angle)
-        const labelPt = polarToCartesian(cx, cy, maxR + 20, angle)
-
-        return (
-          <g key={axis.key}>
-            {/* Dot on actual */}
-            <circle cx={dotPt.x} cy={dotPt.y} r={4} fill={AXIS_COLORS[axis.key]} />
-            {/* Label */}
-            <text
-              x={labelPt.x}
-              y={labelPt.y}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill={AXIS_COLORS[axis.key]}
-              fontSize={11}
-              fontWeight={700}
-              fontFamily="Inter, sans-serif"
-            >
-              {axis.labelEn}
-            </text>
-          </g>
-        )
-      })}
-
-      {/* Center dot */}
-      <circle cx={cx} cy={cy} r={3} fill="rgba(255,255,255,0.3)" />
-    </svg>
-  )
-}
-
 // ─── Score computation ────────────────────────────────────────────────────────
 
-/**
- * Final score per axis = the difficulty level of the LAST question answered
- * for that axis (the adaptive endpoint after 6 questions per axis).
- *
- * Rule (US-06c):
- *  - Each axis starts at level 5/10
- *  - Correct → +1, Wrong → -1 (clamped 1–10)
- *  - After 6 questions the level reached IS the score for that axis
- *  - Final vector stored as level (1-10); displayed as level / 10 * 100 for radar
- */
-function computeAxisScores(results: QuestionResult[]): Record<SkillAxis, number> {
+// Tính điểm các trục dựa trên tỷ lệ câu trả lời đúng
+function computeAxisScores(results: QuestionResult[], totalPerAxis: number = 12): Record<SkillAxis, number> {
   const axes: SkillAxis[] = ['D_doc', 'C_comm', 'T_trouble', 'G_biz']
   const scores: Record<SkillAxis, number> = { D_doc: 0, C_comm: 0, T_trouble: 0, G_biz: 0 }
 
   axes.forEach((axis) => {
     const relevant = results.filter((r) => r.axis === axis)
-    if (relevant.length === 0) return
-    // The LAST question's difficulty = the adaptive level reached for this axis
-    const lastLevel = relevant[relevant.length - 1].difficulty  // 1–10
-    // Normalize to 0-100 for radar display
-    scores[axis] = Math.round((lastLevel / 10) * 100)
+    const correct = relevant.filter((r) => r.isCorrect).length
+    scores[axis] = Math.round((correct / totalPerAxis) * 100)
   })
 
   return scores
 }
 
-/**
- * Raw level vector (1-10) per axis, stored in test_session.final_vector.
- * Used for backend submission and display labels.
- */
-function computeLevelVector(results: QuestionResult[]): Record<SkillAxis, number> {
-  const axes: SkillAxis[] = ['D_doc', 'C_comm', 'T_trouble', 'G_biz']
-  const levels: Record<SkillAxis, number> = { D_doc: 0, C_comm: 0, T_trouble: 0, G_biz: 0 }
-  axes.forEach((axis) => {
-    const relevant = results.filter((r) => r.axis === axis)
-    if (relevant.length === 0) return
-    levels[axis] = relevant[relevant.length - 1].difficulty  // 1–10
-  })
-  return levels
-}
-
-// Demo target (Intermediate level for PM — shown when no session data)
 const DEMO_TARGETS: Record<SkillAxis, number> = {
-  D_doc: (20 / 100) * 78,  // 78 = intermediate total budget, then normalize to 100
+  D_doc: (20 / 100) * 78,
   C_comm: (50 / 100) * 78,
   T_trouble: (10 / 100) * 78,
   G_biz: (20 / 100) * 78,
 }
 
-// Normalize targets to 0-100 scale for radar
 function normalizeTarget(t: number): number {
   return Math.round(Math.min(Math.max(t, 0), 100))
 }
 
-/**
- * Generate a personalized AI summary based on actual axis scores (0-100 scale).
- */
 function generateAISummary(scores: Record<SkillAxis, number>): string {
   const axisNames: Record<SkillAxis, string> = {
     D_doc: 'technical documentation',
@@ -255,10 +68,10 @@ function generateAISummary(scores: Record<SkillAxis, number>): string {
 // ─── Result Breakdown ─────────────────────────────────────────────────────────
 
 const AXIS_META_DISPLAY = [
-  { key: 'D_doc'     as SkillAxis, label: 'Documentation',  color: 'text-blue-300',    bar: 'bg-blue-400',    track: 'bg-blue-400/20' },
-  { key: 'C_comm'    as SkillAxis, label: 'Communication',  color: 'text-emerald-300', bar: 'bg-emerald-400', track: 'bg-emerald-400/20' },
-  { key: 'T_trouble' as SkillAxis, label: 'Troubleshooting', color: 'text-rose-300',   bar: 'bg-rose-400',    track: 'bg-rose-400/20' },
-  { key: 'G_biz'     as SkillAxis, label: 'Business',       color: 'text-amber-300',   bar: 'bg-amber-400',   track: 'bg-amber-400/20' },
+  { key: 'D_doc' as SkillAxis, label: 'Documentation', color: 'text-blue-500', bar: 'bg-blue-400', track: 'bg-blue-50' },
+  { key: 'C_comm' as SkillAxis, label: 'Communication', color: 'text-emerald-500', bar: 'bg-emerald-400', track: 'bg-emerald-50' },
+  { key: 'T_trouble' as SkillAxis, label: 'Troubleshooting', color: 'text-rose-500', bar: 'bg-rose-400', track: 'bg-rose-50' },
+  { key: 'G_biz' as SkillAxis, label: 'Business', color: 'text-amber-500', bar: 'bg-amber-400', track: 'bg-amber-50' },
 ]
 
 // ─── Main Result View ─────────────────────────────────────────────────────────
@@ -272,57 +85,74 @@ export function PlacementResultView() {
     navigate({ to: '/login' })
   }
 
-  // Pull results from router state, or use demo data
   const results: QuestionResult[] = (routerState as { results?: QuestionResult[] })?.results ?? []
   const hasDemoData = results.length === 0
 
-  // Demo results for testing without going through the test
-  // Simulates the T-axis example from the spec:
-  // Q1 lvl5(✓)→Q2 lvl6(✓)→Q3 lvl7(✗)→Q4 lvl6(✓)→Q5 lvl7(✓)→Q6 lvl8  → T score = lvl 8
   const demoResults: QuestionResult[] = hasDemoData
     ? [
-      // D_doc: 5→6→7→8→9→10 (all correct) → final level 10
-      { questionId: 'd1', axis: 'D_doc',     difficulty: 5,  selectedId: 'b', isCorrect: true },
-      { questionId: 'd2', axis: 'D_doc',     difficulty: 6,  selectedId: 'c', isCorrect: true },
-      { questionId: 'd3', axis: 'D_doc',     difficulty: 7,  selectedId: 'b', isCorrect: true },
-      { questionId: 'd4', axis: 'D_doc',     difficulty: 8,  selectedId: 'b', isCorrect: true },
-      { questionId: 'd5', axis: 'D_doc',     difficulty: 9,  selectedId: 'b', isCorrect: true },
-      { questionId: 'd6', axis: 'D_doc',     difficulty: 10, selectedId: 'b', isCorrect: true },
-      // C_comm: 5→6→5→6→5→6 (alternating) → final level 6
-      { questionId: 'c1', axis: 'C_comm',    difficulty: 5,  selectedId: 'b', isCorrect: true },
-      { questionId: 'c2', axis: 'C_comm',    difficulty: 6,  selectedId: 'b', isCorrect: false },
-      { questionId: 'c3', axis: 'C_comm',    difficulty: 5,  selectedId: 'c', isCorrect: true },
-      { questionId: 'c4', axis: 'C_comm',    difficulty: 6,  selectedId: 'a', isCorrect: false },
-      { questionId: 'c5', axis: 'C_comm',    difficulty: 5,  selectedId: 'a', isCorrect: true },
-      { questionId: 'c6', axis: 'C_comm',    difficulty: 6,  selectedId: 'b', isCorrect: false },
-      // T_trouble: spec example 5→6→7→6→7→8 → final level 8
-      { questionId: 't1', axis: 'T_trouble', difficulty: 5,  selectedId: 'b', isCorrect: true },
-      { questionId: 't2', axis: 'T_trouble', difficulty: 6,  selectedId: 'b', isCorrect: true },
-      { questionId: 't3', axis: 'T_trouble', difficulty: 7,  selectedId: 'c', isCorrect: false },
-      { questionId: 't4', axis: 'T_trouble', difficulty: 6,  selectedId: 'a', isCorrect: true },
-      { questionId: 't5', axis: 'T_trouble', difficulty: 7,  selectedId: 'c', isCorrect: true },
-      { questionId: 't6', axis: 'T_trouble', difficulty: 8,  selectedId: 'b', isCorrect: true },
-      // G_biz: 5→4→3→4→3→4 (mostly wrong) → final level 4
-      { questionId: 'g1', axis: 'G_biz',     difficulty: 5,  selectedId: 'c', isCorrect: false },
-      { questionId: 'g2', axis: 'G_biz',     difficulty: 4,  selectedId: 'c', isCorrect: false },
-      { questionId: 'g3', axis: 'G_biz',     difficulty: 3,  selectedId: 'b', isCorrect: true },
-      { questionId: 'g4', axis: 'G_biz',     difficulty: 4,  selectedId: 'a', isCorrect: false },
-      { questionId: 'g5', axis: 'G_biz',     difficulty: 3,  selectedId: 'c', isCorrect: true },
-      { questionId: 'g6', axis: 'G_biz',     difficulty: 4,  selectedId: 'b', isCorrect: false },
+      { questionId: 'd1', axis: 'D_doc', difficulty: 5, selectedId: 'b', isCorrect: true },
+      { questionId: 'd2', axis: 'D_doc', difficulty: 6, selectedId: 'c', isCorrect: true },
+      { questionId: 'd3', axis: 'D_doc', difficulty: 7, selectedId: 'b', isCorrect: true },
+      { questionId: 'd4', axis: 'D_doc', difficulty: 8, selectedId: 'b', isCorrect: true },
+      { questionId: 'd5', axis: 'D_doc', difficulty: 9, selectedId: 'b', isCorrect: true },
+      { questionId: 'd6', axis: 'D_doc', difficulty: 10, selectedId: 'b', isCorrect: true },
+      { questionId: 'd7', axis: 'D_doc', difficulty: 5, selectedId: 'a', isCorrect: false },
+      { questionId: 'd8', axis: 'D_doc', difficulty: 6, selectedId: 'c', isCorrect: true },
+      { questionId: 'd9', axis: 'D_doc', difficulty: 7, selectedId: 'b', isCorrect: true },
+      { questionId: 'd10', axis: 'D_doc', difficulty: 8, selectedId: 'b', isCorrect: true },
+      { questionId: 'd11', axis: 'D_doc', difficulty: 9, selectedId: 'b', isCorrect: true },
+      { questionId: 'd12', axis: 'D_doc', difficulty: 10, selectedId: 'b', isCorrect: true },
+
+      { questionId: 'c1', axis: 'C_comm', difficulty: 5, selectedId: 'b', isCorrect: true },
+      { questionId: 'c2', axis: 'C_comm', difficulty: 6, selectedId: 'b', isCorrect: false },
+      { questionId: 'c3', axis: 'C_comm', difficulty: 5, selectedId: 'c', isCorrect: true },
+      { questionId: 'c4', axis: 'C_comm', difficulty: 6, selectedId: 'a', isCorrect: false },
+      { questionId: 'c5', axis: 'C_comm', difficulty: 5, selectedId: 'a', isCorrect: true },
+      { questionId: 'c6', axis: 'C_comm', difficulty: 6, selectedId: 'b', isCorrect: false },
+      { questionId: 'c7', axis: 'C_comm', difficulty: 5, selectedId: 'b', isCorrect: true },
+      { questionId: 'c8', axis: 'C_comm', difficulty: 6, selectedId: 'b', isCorrect: false },
+      { questionId: 'c9', axis: 'C_comm', difficulty: 5, selectedId: 'c', isCorrect: true },
+      { questionId: 'c10', axis: 'C_comm', difficulty: 6, selectedId: 'a', isCorrect: false },
+      { questionId: 'c11', axis: 'C_comm', difficulty: 5, selectedId: 'a', isCorrect: true },
+      { questionId: 'c12', axis: 'C_comm', difficulty: 6, selectedId: 'b', isCorrect: false },
+
+      { questionId: 't1', axis: 'T_trouble', difficulty: 5, selectedId: 'b', isCorrect: true },
+      { questionId: 't2', axis: 'T_trouble', difficulty: 6, selectedId: 'b', isCorrect: true },
+      { questionId: 't3', axis: 'T_trouble', difficulty: 7, selectedId: 'c', isCorrect: false },
+      { questionId: 't4', axis: 'T_trouble', difficulty: 6, selectedId: 'a', isCorrect: true },
+      { questionId: 't5', axis: 'T_trouble', difficulty: 7, selectedId: 'c', isCorrect: true },
+      { questionId: 't6', axis: 'T_trouble', difficulty: 8, selectedId: 'b', isCorrect: true },
+      { questionId: 't7', axis: 'T_trouble', difficulty: 5, selectedId: 'b', isCorrect: true },
+      { questionId: 't8', axis: 'T_trouble', difficulty: 6, selectedId: 'b', isCorrect: true },
+      { questionId: 't9', axis: 'T_trouble', difficulty: 7, selectedId: 'c', isCorrect: false },
+      { questionId: 't10', axis: 'T_trouble', difficulty: 6, selectedId: 'a', isCorrect: true },
+      { questionId: 't11', axis: 'T_trouble', difficulty: 7, selectedId: 'c', isCorrect: true },
+      { questionId: 't12', axis: 'T_trouble', difficulty: 8, selectedId: 'b', isCorrect: true },
+
+      { questionId: 'g1', axis: 'G_biz', difficulty: 5, selectedId: 'c', isCorrect: false },
+      { questionId: 'g2', axis: 'G_biz', difficulty: 4, selectedId: 'c', isCorrect: false },
+      { questionId: 'g3', axis: 'G_biz', difficulty: 3, selectedId: 'b', isCorrect: true },
+      { questionId: 'g4', axis: 'G_biz', difficulty: 4, selectedId: 'a', isCorrect: false },
+      { questionId: 'g5', axis: 'G_biz', difficulty: 3, selectedId: 'c', isCorrect: true },
+      { questionId: 'g6', axis: 'G_biz', difficulty: 4, selectedId: 'b', isCorrect: false },
+      { questionId: 'g7', axis: 'G_biz', difficulty: 5, selectedId: 'c', isCorrect: false },
+      { questionId: 'g8', axis: 'G_biz', difficulty: 4, selectedId: 'c', isCorrect: false },
+      { questionId: 'g9', axis: 'G_biz', difficulty: 3, selectedId: 'b', isCorrect: true },
+      { questionId: 'g10', axis: 'G_biz', difficulty: 4, selectedId: 'a', isCorrect: false },
+      { questionId: 'g11', axis: 'G_biz', difficulty: 3, selectedId: 'c', isCorrect: true },
+      { questionId: 'g12', axis: 'G_biz', difficulty: 4, selectedId: 'b', isCorrect: false },
     ]
     : results
 
-  const actualScores = computeAxisScores(demoResults)   // 0–100 for radar
-  const levelVector  = computeLevelVector(demoResults)   // 1–10 final_vector
-  const totalCorrect = demoResults.filter((r) => r.isCorrect).length
-  const totalQuestions = demoResults.length || 24
-  // Overall level = average of the 4 axis final levels (1-10 scale)
-  const avgLevel = Math.round(
-    Object.values(levelVector).reduce((a, b) => a + b, 0) / 4
-  )
-  // Normalized to 0-100 for the score ring
-  const overallPct = Math.round((avgLevel / 10) * 100)
+  const totalQuestions = 48 // Tổng số câu hỏi cố định theo yêu cầu
+  const questionsPerAxis = totalQuestions / 4 // 12 câu mỗi trục
 
+  const totalCorrect = demoResults.filter((r) => r.isCorrect).length
+  // Tính điểm hệ 10 và làm tròn 1 chữ số thập phân
+  const scoreOutOf10 = ((totalCorrect / totalQuestions) * 10).toFixed(1)
+  const overallPct = Math.round((totalCorrect / totalQuestions) * 100)
+
+  const actualScores = computeAxisScores(demoResults, questionsPerAxis)
   const axisMap: AxisMap = {
     D_doc: { actual: actualScores.D_doc, target: normalizeTarget(DEMO_TARGETS.D_doc) },
     C_comm: { actual: actualScores.C_comm, target: normalizeTarget(DEMO_TARGETS.C_comm) },
@@ -330,8 +160,48 @@ export function PlacementResultView() {
     G_biz: { actual: actualScores.G_biz, target: normalizeTarget(DEMO_TARGETS.G_biz) },
   }
 
+  // Hàm tính toán số câu đúng / tổng số câu (cố định mỗi trục 12 câu)
+  const getAxisStats = (axis: SkillAxis) => {
+    const relevant = demoResults.filter((r) => r.axis === axis)
+    const correct = relevant.filter((r) => r.isCorrect).length
+    const percentage = Math.round((correct / questionsPerAxis) * 100)
+    return { correct, total: questionsPerAxis, percentage }
+  }
+
   const aiSummary = generateAISummary(actualScores)
   const [showContent, setShowContent] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
+  const [activeTab, setActiveTab] = useState<SkillAxis>('D_doc')
+  const [hoursPerWeek, setHoursPerWeek] = useState(8)
+
+  const totalHours = 96 // Assume Intermediate level for default ETA
+  const weeks = Math.ceil(totalHours / hoursPerWeek)
+  const months = (weeks / 4.33).toFixed(1)
+
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (e.state?.popup === 'details') {
+        setShowDetails(true)
+      } else {
+        setShowDetails(false)
+      }
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  const openDetails = () => {
+    window.history.pushState({ popup: 'details' }, '')
+    setShowDetails(true)
+  }
+
+  const closeDetails = () => {
+    if (window.history.state?.popup === 'details') {
+      window.history.back()
+    } else {
+      setShowDetails(false)
+    }
+  }
 
   useEffect(() => {
     const t = setTimeout(() => setShowContent(true), 200)
@@ -339,63 +209,50 @@ export function PlacementResultView() {
   }, [])
 
   function gradeLabel(pct: number): { label: string; color: string } {
-    if (pct >= 80) return { label: 'Excellent',    color: 'text-emerald-300' }
-    if (pct >= 60) return { label: 'Good',          color: 'text-blue-300' }
-    if (pct >= 40) return { label: 'Needs Work',    color: 'text-amber-300' }
-    return           { label: 'Keep Practicing', color: 'text-rose-300' }
+    if (pct >= 80) return { label: 'Excellent', color: 'text-emerald-600' }
+    if (pct >= 60) return { label: 'Good', color: 'text-blue-600' }
+    if (pct >= 40) return { label: 'Needs Work', color: 'text-amber-600' }
+    return { label: 'Keep Practicing', color: 'text-rose-600' }
   }
 
   return (
-    <div
-      className="min-h-screen relative"
-      style={{ backgroundImage: `url(${bannerBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-    >
-      {/* Overlay */}
-      <div className="fixed inset-0 bg-blue-700/80" />
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-indigo-400/10 rounded-full blur-3xl" />
-      </div>
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
 
-      {/* TMA Logo */}
-      <img src={tmaLogo} alt="TMA Solutions" className="absolute top-6 left-6 w-45 h-auto z-20" />
-
-      {/* Sign out */}
-      <button
-        onClick={handleSignOut}
-        className="absolute top-6 right-6 z-20 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/70 hover:text-white transition-colors text-xs font-medium flex items-center gap-1.5 backdrop-blur-md"
-      >
-        <LogOut className="w-4 h-4" />
-        <span>Đăng xuất</span>
-      </button>
+      {/* Header */}
+      <header className="w-full bg-[#007aff] px-6 py-4 flex items-center justify-between shadow-sm z-20">
+        <img src={tmaLogo} alt="TMA Solutions" className="w-36 h-auto" />
+        <button
+          onClick={handleSignOut}
+          className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors text-sm font-medium flex items-center gap-2"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Logout</span>
+        </button>
+      </header>
 
       {/* Content */}
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-start px-4 pt-24 pb-16">
-        <div className={`w-full max-w-2xl transition-all duration-700 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-start px-4 pt-10 pb-16">
+        <div className={`w-full max-w-4xl transition-all duration-700 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
 
-          {/* ── Celebration header ──────────────────────────────────────── */}
-          <div className="text-center mb-8">
+          {/* Celebration header */}
+          <div className="text-center mb-10">
             <div className="text-6xl mb-4 animate-in zoom-in-50 duration-500">🎉</div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 drop-shadow-md">
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 mb-3">
               Placement Test Complete!
             </h1>
-            <p className="text-blue-100/60 text-sm">
-              This is your IT communication skill profile — measured across 24 real-world questions.
+            <p className="text-slate-600 text-base font-medium">
+              This is your IT communication skill profile — measured across {totalQuestions} real-world questions.
             </p>
-            {hasDemoData && (
-              <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-xs font-medium">
-                ⚡ Demo data — go to /placement-test to take the real test
-              </div>
-            )}
+
           </div>
 
-          {/* ── Overall score (level 1-10 scale) ────────────────────────── */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-6 mb-5 text-center">
-            <div className="flex items-center justify-center gap-6">
-              {/* Big score circle — shows average level / 10 */}
-              <div className="relative w-28 h-28">
+          {/* ── Overall score (Căn giữa, mở rộng size) ─────────────── */}
+          <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-10 mb-6 text-center">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-14">
+              {/* Score circle */}
+              <div className="relative w-44 h-44">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="#f1f5f9" strokeWidth="8" />
                   <circle
                     cx="50" cy="50" r="42"
                     fill="none"
@@ -413,133 +270,333 @@ export function PlacementResultView() {
                   </defs>
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-black text-white">{avgLevel}</span>
-                  <span className="text-xs text-white/40">/10</span>
+                  <span className="text-6xl font-black text-slate-800">{scoreOutOf10}</span>
+                  <span className="text-lg font-bold text-slate-400 mt-1">/10</span>
                 </div>
               </div>
 
               {/* Score details */}
-              <div className="text-left">
-                <div className={`text-xl font-bold mb-1 ${gradeLabel(overallPct).color}`}>
+              <div className="text-center md:text-left flex flex-col justify-center">
+                <div className={`text-5xl font-extrabold mb-4 ${gradeLabel(overallPct).color}`}>
                   {gradeLabel(overallPct).label}
                 </div>
-                <div className="text-white/60 text-sm">
-                  {totalCorrect} / {totalQuestions} correct
-                </div>
-                <div className="mt-1 text-white/40 text-xs">
-                  Avg level: {avgLevel}/10
-                </div>
-                <div className="mt-2 flex gap-2 flex-wrap">
-                  {AXIS_META_DISPLAY.map((ax) => (
-                    <div key={ax.key} className={`text-[10px] font-bold ${ax.color}`}>
-                      {ax.label}: Lv {levelVector[ax.key]}
-                    </div>
-                  ))}
+                <div className="text-slate-600 text-xl font-bold bg-slate-50 inline-block px-5 py-2.5 rounded-2xl border border-slate-100">
+                  {totalCorrect} / {totalQuestions} correct overall
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ── Radar Chart + Legend ─────────────────────────────────────── */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-6 mb-5">
-            <p className="text-xs text-white/40 uppercase tracking-widest mb-5 text-center">
-              Radar Chart D/C/T/G — Actual vs Target
+          {/* ── Vertical Bar Chart ─────────────────────────────────────── */}
+          <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-8 mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
+              <p className="text-sm text-slate-500 font-bold uppercase tracking-widest">
+                SKILL BREAKDOWN — ACTUAL VS TARGET
+              </p>
+              {/* Legend */}
+              <div className="flex gap-5 mt-4 sm:mt-0">
+                <div className="flex items-center gap-2 text-sm text-slate-600 font-semibold">
+                  <div className="w-5 h-4 bg-blue-400 rounded-sm" />
+                  Actual Score
+                </div>
+                <div className="flex items-center gap-2 text-sm text-slate-600 font-semibold">
+                  <div className="w-5 h-0.5 bg-slate-400 border-0" style={{ borderTop: '2px dashed #94a3b8' }} />
+                  Target Level
+                </div>
+              </div>
+            </div>
+
+            {/* Các cột dọc thể hiện điểm số */}
+            <div className="flex justify-around items-end h-72 w-full pt-4">
+              {AXIS_META_DISPLAY.map((ax) => {
+                const stats = getAxisStats(ax.key)
+                const target = axisMap[ax.key].target
+
+                return (
+                  <div key={ax.key} className="flex flex-col items-center flex-1">
+
+                    {/* Phần hiển thị điểm số ở trên đầu cột */}
+                    <div className="mb-3 text-center">
+                      <span className={`text-3xl font-black ${ax.color}`}>
+                        {stats.correct}
+                      </span>
+                      <span className="text-xl font-bold text-slate-400">
+                        /{stats.total}
+                      </span>
+                    </div>
+
+                    {/* Cột biểu đồ dọc */}
+                    <div className={`relative w-28 h-48 rounded-t-xl ${ax.track} overflow-hidden border border-slate-100 flex items-end justify-center group`}>
+                      {/* Đường chỉ tiêu (Target) */}
+                      <div
+                        className="absolute left-0 right-0 h-[2px] bg-slate-400/90 z-10 border-t-2 border-dashed border-slate-400"
+                        style={{ bottom: `${target}%` }}
+                      >
+                        <span className="absolute -top-5 left-1 text-[10px] font-bold text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                          Target
+                        </span>
+                      </div>
+
+                      {/* Cột màu thể hiện tiến độ */}
+                      <div
+                        className={`w-full ${ax.bar} rounded-t-xl transition-all duration-1000 ease-out`}
+                        style={{ height: `${showContent ? stats.percentage : 0}%` }}
+                      />
+                    </div>
+
+                    {/* Nhãn (Label) ở dưới đáy cột (Đã xóa text Level) */}
+                    <div className="mt-5 text-center">
+                      <span className={`block text-lg font-bold ${ax.color}`}>
+                        {ax.label}
+                      </span>
+                    </div>
+
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Nút View Lại Kết Quả */}
+            <div className="mt-8 flex justify-end">
+              <button
+                onClick={openDetails}
+                className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-sm rounded-xl border border-slate-200 transition-colors"
+              >
+                View Detailed Results
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* ── AI Summary ─────────────────────────────────────────────── */}
+          <div className="bg-blue-50/60 border border-blue-100 shadow-sm rounded-3xl p-8 mb-8">
+            <p className="text-sm text-blue-600 font-bold uppercase tracking-wider mb-3">
+              ADVISOR · PERSONAL FEEDBACK
             </p>
+            <p className="text-base text-slate-700 font-medium leading-relaxed italic">
+              "{aiSummary}"
+            </p>
+          </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-6">
-              {/* Chart */}
-              <div className="flex-shrink-0">
-                <RadarChart axisMap={axisMap} animated={showContent} />
-              </div>
-
-              {/* Legend + axis scores */}
-              <div className="flex-1 space-y-4 w-full">
-                {/* Legend */}
-                <div className="flex gap-4 justify-center sm:justify-start">
-                  <div className="flex items-center gap-2 text-xs text-white/60">
-                    <div className="w-6 h-0.5 bg-blue-400 rounded" />
-                    Actual
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-white/60">
-                    <div className="w-6 h-0.5 bg-indigo-400 rounded border-0" style={{ borderTop: '1.5px dashed #818cf8' }} />
-                    Target
-                  </div>
+          {/* ── Weekly Study Hours & ETA ───────────────────────────────── */}
+          <div className="flex flex-col gap-6 mb-8">
+            {/* Weekly Study Hours Card */}
+            <div className="bg-white border border-slate-200/80 shadow-sm rounded-3xl p-8">
+              <div className="flex items-center justify-between mb-8">
+                <p className="text-sm text-slate-700 font-bold uppercase tracking-wider">
+                  WEEKLY STUDY HOURS
+                </p>
+                <div className="px-4 py-1.5 rounded-xl text-sm font-black bg-blue-50 text-[#007aff] border border-blue-200">
+                  {hoursPerWeek}h / week
                 </div>
+              </div>
 
-                {/* Axis bars */}
-                {AXIS_META_DISPLAY.map((ax) => {
-                  const actual = axisMap[ax.key].actual
-                  const target = axisMap[ax.key].target
-                  const delta = actual - target
-                  const lvl = levelVector[ax.key]  // 1–10
-                  return (
-                    <div key={ax.key}>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className={`text-xs font-semibold ${ax.color}`}>{ax.label}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-white/40 text-[10px]">Target: {target}%</span>
-                          <span className={`text-xs font-bold tabular-nums ${actual >= target ? 'text-emerald-300' : 'text-rose-300'}`}>
-                            Lv {lvl}/10
-                          </span>
-                          <span className={`text-[10px] ${delta >= 0 ? 'text-emerald-300/60' : 'text-rose-300/60'}`}>
-                            ({delta >= 0 ? '+' : ''}{delta}%)
-                          </span>
-                        </div>
-                      </div>
-                      {/* Actual bar */}
-                      <div className={`h-2.5 ${ax.track} rounded-full overflow-hidden relative`}>
-                        <div
-                          className={`h-full ${ax.bar} rounded-full transition-all duration-700`}
-                          style={{ width: `${actual}%` }}
-                        />
-                        {/* Target marker */}
-                        <div
-                          className="absolute top-0 bottom-0 w-0.5 bg-white/50"
-                          style={{ left: `${target}%` }}
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
+              <div className="relative mb-2">
+                <div className="absolute top-1/2 left-0 right-0 h-2 -mt-1 bg-slate-100 rounded-full" />
+                <div
+                  className="absolute top-1/2 left-0 h-2 -mt-1 bg-gradient-to-r from-blue-400 to-[#007aff] rounded-full pointer-events-none"
+                  style={{ width: `${((hoursPerWeek - 1) / 19) * 100}%` }}
+                />
+                <input
+                  type="range"
+                  min={1}
+                  max={20}
+                  value={hoursPerWeek}
+                  onChange={(e) => setHoursPerWeek(Number(e.target.value))}
+                  className="w-full h-2 rounded-full appearance-none bg-transparent cursor-pointer relative z-10 
+                             [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 
+                             [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#007aff] 
+                             [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-md"
+                />
+              </div>
+              <div className="flex justify-between text-[11px] text-slate-500 font-bold mt-3">
+                <span>1h (Relaxed)</span>
+                <span>10h (Balanced)</span>
+                <span>20h (Intensive)</span>
+              </div>
+            </div>
+
+            {/* Estimated Completion Time Card */}
+            <div className="bg-white border border-slate-200/80 shadow-sm rounded-3xl p-8 text-center">
+              <p className="text-sm text-slate-500 font-bold uppercase tracking-wider mb-4">
+                ESTIMATED COMPLETION TIME
+              </p>
+
+              <div className="flex items-end justify-center gap-2 mb-2">
+                <span className="text-5xl font-black text-indigo-700">
+                  {weeks}
+                </span>
+                <span className="text-slate-500 text-lg font-bold mb-1">weeks</span>
+              </div>
+
+              <p className="text-slate-600 text-sm mb-6 font-semibold">
+                ≈ <span className="text-slate-900 font-black">{months}</span> months at{' '}
+                <span className="text-slate-900 font-black">{hoursPerWeek}h/week</span>
+              </p>
+
+              <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-slate-100 border border-slate-200/60 mb-3">
+                <div
+                  className="h-full rounded-full bg-[#007aff] transition-all duration-500"
+                  style={{ width: `${Math.min((hoursPerWeek / 20) * 100, 100)}%` }}
+                />
+              </div>
+
+              <div className="flex justify-between text-[10px] text-slate-400 font-bold px-1 mb-4">
+                <span>1h</span>
+                <span>10h</span>
+                <span>20h</span>
+              </div>
+
+              <div className="text-sm text-slate-600 font-semibold">
+                {hoursPerWeek >= 14
+                  ? 'Great learning pace!'
+                  : hoursPerWeek >= 8
+                    ? 'Steady progress, on the right track.'
+                    : 'Adding a few more hours/week will get you to your goal much faster.'}
               </div>
             </div>
           </div>
 
-          {/* ── AI Summary ──────────────────────────────────────────────── */}
-          <div className="bg-gradient-to-br from-indigo-500/20 to-blue-500/10 border border-indigo-400/30 rounded-3xl p-6 mb-6">
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-xl bg-indigo-500/30 border border-indigo-400/40 flex items-center justify-center text-lg flex-shrink-0 mt-0.5">
-                🤖
-              </div>
-              <div>
-                <p className="text-xs text-indigo-300 font-semibold uppercase tracking-wider mb-2">
-                  AI Advisor · Personal Feedback
-                </p>
-                <p className="text-sm text-white/80 leading-relaxed italic">
-                  "{aiSummary}"
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* ── CTA Button ──────────────────────────────────────────────── */}
+          {/* ── CTA Button ─────────────────────────────────────────────── */}
           <button
             id="btn-create-course"
             type="button"
-            onClick={() => navigate({ to: '/milestone' })}
-            className="w-full py-5 px-6 rounded-2xl bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 hover:from-blue-600 hover:via-indigo-600 hover:to-violet-600 text-white font-extrabold text-lg shadow-2xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-3"
+            onClick={() => navigate({ to: '/dashboard' })}
+            className="w-full py-5 px-6 rounded-2xl bg-[#007aff] hover:bg-blue-600 text-white font-extrabold text-xl shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-3"
           >
-            <span>✨ Create My Course</span>
+            <span>Create My Course</span>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
           </button>
 
-          <p className="text-center text-xs text-white/30 mt-3">
+          <p className="text-center text-sm font-semibold text-slate-400 mt-5">
             AI will generate 24 fully personalized lessons for your career track
           </p>
         </div>
       </div>
+
+      {/* ── Details Popup ─────────────────────────────────────────────── */}
+      {showDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={closeDetails} />
+          <div className="relative z-10 bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl animate-in zoom-in-95 fade-in duration-200">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100">
+              <h2 className="text-2xl font-extrabold text-slate-800">Detailed Results ({totalCorrect}/{totalQuestions})</h2>
+              <button onClick={closeDetails} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* ── Tabs ──────────────────────────────────────────────────────── */}
+            <div className="flex px-6 pt-2 space-x-2 border-b border-slate-100 overflow-x-auto shrink-0 bg-white">
+              {AXIS_META_DISPLAY.map(ax => {
+                const isActive = activeTab === ax.key
+                const axisResults = demoResults.filter(r => r.axis === ax.key)
+                const axisCorrect = axisResults.filter(r => r.isCorrect).length
+                return (
+                  <button
+                    key={ax.key}
+                    onClick={() => setActiveTab(ax.key)}
+                    className={`px-4 py-3 font-bold text-sm border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${isActive ? `border-blue-600 text-blue-600` : `border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300`
+                      }`}
+                  >
+                    <span className={isActive ? ax.color : ''}>{ax.label}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {axisCorrect}/{questionsPerAxis}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1 bg-slate-50/50">
+              {AXIS_META_DISPLAY.filter(ax => ax.key === activeTab).map((ax) => {
+                const axisResults = demoResults.filter(r => r.axis === ax.key)
+                return (
+                  <div key={ax.key} className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="space-y-6">
+                      {axisResults.map((r, idx) => {
+                        const qText = r.questionText || `This is a sample question about ${ax.label} (Question ${idx + 1}). How would you handle this scenario?`
+                        const options = r.options || [
+                          { id: 'a', text: 'The correct approach for the situation.' },
+                          { id: 'b', text: 'An incorrect, less optimal option.' },
+                          { id: 'c', text: 'Another wrong choice that might seem right.' },
+                          { id: 'd', text: 'Completely off topic.' }
+                        ]
+                        const correctId = r.correctId || (r.isCorrect ? (r.selectedId || 'a') : (r.selectedId === 'a' ? 'b' : 'a'))
+
+                        return (
+                          <div key={idx} className="bg-white rounded-2xl p-5 md:p-6 border border-slate-200 shadow-sm">
+                            <div className="flex items-start gap-4 mb-5">
+                              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-sm ${r.isCorrect ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                                {idx + 1}
+                              </div>
+                              <p className="text-slate-800 font-semibold leading-relaxed mt-1 flex-1">
+                                {qText}
+                              </p>
+                              <div className="flex-shrink-0">
+                                {r.isCorrect ? (
+                                  <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-100">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                    Correct
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-1.5 text-rose-600 text-xs font-bold bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-100">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                                    Incorrect
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col gap-2.5 md:pl-12">
+                              {options.map(opt => {
+                                const isSelected = r.selectedId === opt.id
+                                const isCorrectAnswer = correctId === opt.id
+
+                                let containerClass = "flex items-center gap-3 p-3.5 rounded-xl border transition-colors "
+                                let icon = null
+
+                                if (isSelected && isCorrectAnswer) {
+                                  containerClass += "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold"
+                                  icon = <svg className="w-5 h-5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                                } else if (isSelected && !isCorrectAnswer) {
+                                  containerClass += "bg-rose-50 border-rose-300 text-rose-900 font-bold"
+                                  icon = <svg className="w-5 h-5 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                                } else if (!isSelected && isCorrectAnswer) {
+                                  containerClass += "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold"
+                                  icon = <svg className="w-5 h-5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                                } else {
+                                  containerClass += "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600 font-medium"
+                                  icon = <div className="w-5 h-5 rounded-full border-2 border-slate-300 shrink-0" />
+                                }
+
+                                return (
+                                  <div key={opt.id} className={containerClass}>
+                                    {icon}
+                                    <span className={`text-sm ${isSelected && !isCorrectAnswer ? 'line-through opacity-70' : ''}`}>
+                                      {opt.text}
+                                    </span>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

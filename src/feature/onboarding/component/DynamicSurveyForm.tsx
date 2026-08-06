@@ -16,6 +16,25 @@ interface Answer {
   subAnswer: string | null // option id
 }
 
+function buildSurveyPayload(
+  questions: SurveyQuestion[],
+  answers: Record<string, Answer>,
+) {
+  return questions.map((q) => {
+    const a = answers[q.id]
+    let subAnswerText: string | null = null
+    if (a?.subAnswer) {
+      const opt = q.subQuestion?.options.find((o) => o.id === a.subAnswer || o.label === a.subAnswer)
+      subAnswerText = opt ? opt.label : a.subAnswer
+    }
+    return {
+      survey_id: parseInt(q.id, 10) || 1,
+      rating: a?.rating ?? 0,
+      sub_answer: subAnswerText,
+    }
+  })
+}
+
 // ─── Fallback Survey Data ──────────────────────────────────────────────────
 
 const FALLBACK_QUESTIONS: SurveyQuestion[] = [
@@ -222,13 +241,13 @@ function SubQuestionPanel({
 
 function SurveyResult({
   questions,
-  answers
+  answers,
+  onStartPlacementTest,
 }: {
   questions: SurveyQuestion[]
   answers: Record<string, Answer>
+  onStartPlacementTest: () => void
 }) {
-  const navigate = useNavigate()
-
   // Compute axis averages
   const axisScores: Record<SkillAxis, { total: number; count: number }> = {
     D_doc: { total: 0, count: 0 },
@@ -308,7 +327,7 @@ function SurveyResult({
 
       <button
         id="btn-go-to-placement"
-        onClick={() => navigate({ to: '/placement-test' })}
+        onClick={onStartPlacementTest}
         className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-bold text-base shadow-lg shadow-blue-500/20 hover:shadow-xl hover:scale-[1.01] transition-all duration-300 flex items-center justify-center gap-2"
       >
         <span>Start Placement Test</span>
@@ -412,27 +431,20 @@ export function DynamicSurveyForm() {
     animateTransition(() => setCurrentIndex((i) => i - 1))
   }
 
-  // Save results temporarily on complete (do not persist to DB until placement test is done)
+  function persistSurveyAnswers() {
+    if (questions.length === 0) return
+    localStorage.setItem('pending_survey_answers', JSON.stringify(buildSurveyPayload(questions, answers)))
+  }
+
+  function handleStartPlacementTest() {
+    persistSurveyAnswers()
+    navigate({ to: '/placement-test' })
+  }
+
+  // Keep survey answers synced locally so placement test can safely consume them.
   useEffect(() => {
-    if (isDone && questions.length > 0) {
-      const payload = questions.map((q) => {
-        const a = answers[q.id]
-        let subAnswerText: string | null = null
-        if (a?.subAnswer) {
-          const opt = q.subQuestion?.options.find((o) => o.id === a.subAnswer || o.label === a.subAnswer)
-          subAnswerText = opt ? opt.label : a.subAnswer
-        }
-        return {
-          survey_id: parseInt(q.id, 10) || 1,
-          rating: a?.rating ?? 0,
-          sub_answer: subAnswerText,
-        }
-      })
-      localStorage.setItem('pending_survey_answers', JSON.stringify(payload))
-    }
-  }, [isDone, questions, answers])
-
-
+    persistSurveyAnswers()
+  }, [questions, answers])
 
   // Keyboard shortcut: Enter to proceed
   useEffect(() => {
@@ -524,7 +536,11 @@ export function DynamicSurveyForm() {
               <p className="text-white font-medium text-sm">Loading survey questions...</p>
             </div>
           ) : isDone ? (
-            <SurveyResult questions={questions} answers={answers} />
+            <SurveyResult
+              questions={questions}
+              answers={answers}
+              onStartPlacementTest={handleStartPlacementTest}
+            />
           ) : current ? (
             <>
               {/* Step counter */}

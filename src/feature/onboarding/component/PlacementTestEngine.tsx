@@ -12,12 +12,19 @@ import type { RawPlacementQuestionApi } from '../api/onboardingApi'
 
 // DB: 4 skills × 10 difficulty levels × 5 questions = 200 questions/role
 // Test session: 24 questions (6 per axis), adaptive ±1 per answer
-const TOTAL_QUESTIONS = 24        // 6 per axis × 4 axes
+const TOTAL_QUESTIONS = 48       // 6 per axis × 4 axes
 const QUESTIONS_PER_AXIS = 6
 const MIN_LEVEL: DifficultyLevel = 1
-const MAX_LEVEL: DifficultyLevel = 10
-const START_LEVEL: DifficultyLevel = 5  // start at middle of 1-10 range
+const MAX_LEVEL: DifficultyLevel = 8
+const START_LEVEL: DifficultyLevel = 4  // start at middle of 1-10 range
+const TEST_DURATION_SECONDS = 30 * 60
 const AXIS_SEQUENCE: Array<'D' | 'C' | 'T' | 'G'> = [
+  'D', 'C', 'T', 'G',
+  'D', 'C', 'T', 'G',
+  'D', 'C', 'T', 'G',
+  'D', 'C', 'T', 'G',
+  'D', 'C', 'T', 'G',
+  'D', 'C', 'T', 'G',
   'D', 'C', 'T', 'G',
   'D', 'C', 'T', 'G',
   'D', 'C', 'T', 'G',
@@ -203,6 +210,29 @@ export function PlacementTestEngine() {
   const [visible, setVisible] = useState(true)
   const [showQuit, setShowQuit] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [remainingSeconds, setRemainingSeconds] = useState(TEST_DURATION_SECONDS)
+  const timerDeadlineRef = useRef<number | null>(null)
+
+  // ── 30-minute countdown timer ───────────────────────────────────────────────
+  useEffect(() => {
+    if (loadState !== 'ready' || isSubmitting) return
+
+    if (timerDeadlineRef.current === null) {
+      timerDeadlineRef.current = Date.now() + TEST_DURATION_SECONDS * 1000
+    }
+
+    const timerId = window.setInterval(() => {
+      const secondsLeft = Math.max(
+        0,
+        Math.ceil((timerDeadlineRef.current! - Date.now()) / 1000),
+      )
+      setRemainingSeconds(secondsLeft)
+
+      if (secondsLeft === 0) window.clearInterval(timerId)
+    }, 1000)
+
+    return () => window.clearInterval(timerId)
+  }, [loadState, isSubmitting])
 
   // ── Fetch questions on mount ─────────────────────────────────────────────────
   useEffect(() => {
@@ -273,6 +303,9 @@ export function PlacementTestEngine() {
       difficulty: currentQuestion.difficulty,
       selectedId,
       isCorrect,
+      questionText: currentQuestion.question,
+      options: currentQuestion.options,
+      correctId: currentQuestion.correctId,
     }
     const updatedResults = [...results, newResult]
 
@@ -291,12 +324,25 @@ export function PlacementTestEngine() {
     if (isLastQuestion) {
       setIsSubmitting(true)
 
-      const rawAnswers = localStorage.getItem('pending_survey_answers')
       const rawRoleId = localStorage.getItem('pending_role_id')
-      const surveyAnswers = rawAnswers ? JSON.parse(rawAnswers) : null
       const roleId = rawRoleId ? parseInt(rawRoleId, 10) : null
 
-      completePlacementTest({ role_id: roleId, survey_answers: surveyAnswers })
+      if (!roleId) {
+        setIsSubmitting(false)
+        setFetchError('No role selected. Please go back and choose a role.')
+        navigate({ to: '/onboarding/role-selection' })
+        return
+      }
+
+      const formattedResults = updatedResults.map((r) => ({
+        question_id: parseInt(r.questionId, 10),
+        selected_id: r.selectedId,
+        is_correct: r.isCorrect,
+        axis: r.axis,
+        difficulty: r.difficulty,
+      }))
+
+      completePlacementTest({ role_id: roleId, placement_test_answers: formattedResults })
         .catch((err) => console.warn('Failed to commit placement test:', err))
         .finally(() => {
           localStorage.removeItem('pending_survey_answers')
@@ -340,6 +386,9 @@ export function PlacementTestEngine() {
   const progress = (currentIndex / TOTAL_QUESTIONS) * 100
   const isLastQuestion = currentIndex === TOTAL_QUESTIONS - 1
   const current = currentQuestion!
+  const timerMinutes = Math.floor(remainingSeconds / 60)
+  const timerSeconds = remainingSeconds % 60
+  const isTimeRunningLow = remainingSeconds <= 5 * 60
 
   return (
     <div className="min-h-screen relative bg-slate-50">
@@ -355,7 +404,7 @@ export function PlacementTestEngine() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          <span>Back to Survey</span>
+          <span>Back to Role Selection</span>
         </button>
       </div>
 
@@ -367,6 +416,35 @@ export function PlacementTestEngine() {
         />
       </div>
 
+      {/* Countdown timer — fixed to the right side in normal and F11 modes */}
+      <aside
+        aria-live="polite"
+        aria-label="Placement test time remaining"
+        className={`fixed right-8 top-24 z-30 w-[280px] rounded-2xl border bg-white/95 p-4 shadow-lg backdrop-blur-sm
+          sm:right-6 lg:right-7 lg:top-5/14 lg:-translate-y-1/2
+          ${isTimeRunningLow ? 'border-rose-200' : 'border-blue-100'}
+        `}
+      >
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <svg className={`h-4 w-4 ${isTimeRunningLow ? 'text-rose-500' : 'text-blue-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Time left
+        </div>
+        <div className={`mt-2 font-mono text-3xl font-bold tabular-nums ${isTimeRunningLow ? 'text-rose-600' : 'text-slate-800'}`}>
+          {String(timerMinutes).padStart(2, '0')}:{String(timerSeconds).padStart(2, '0')}
+        </div>
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-gray-100">
+          <div
+            className={`h-full rounded-full transition-[width] duration-1000 ${isTimeRunningLow ? 'bg-rose-500' : 'bg-blue-600'}`}
+            style={{ width: `${(remainingSeconds / TEST_DURATION_SECONDS) * 100}%` }}
+          />
+        </div>
+        {remainingSeconds === 0 && (
+          <p className="mt-2 text-xs font-semibold text-rose-600">Time is up</p>
+        )}
+      </aside>
+
       {/* ── Main content ────────────────────────────────────────────────────── */}
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-20 pt-24">
         <div className="w-full max-w-xl">
@@ -377,11 +455,10 @@ export function PlacementTestEngine() {
               {[1, 2, 3, 4].map((step) => (
                 <div key={step} className="flex items-center">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                      step <= 3
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'bg-gray-200 text-gray-500'
-                    }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${step <= 3
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-200 text-gray-500'
+                      }`}
                   >
                     {step < 3 ? '✓' : step}
                   </div>
@@ -395,7 +472,7 @@ export function PlacementTestEngine() {
             <div className="flex justify-center w-full">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-sm font-medium">
                 <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-                Step 3 / 4 — Placement Test
+                Step 2 / 3 — Placement Test
               </div>
             </div>
           </div>
@@ -403,17 +480,16 @@ export function PlacementTestEngine() {
           {/* Sub-step dots progress & counter */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2 overflow-hidden">
-              <div className="flex gap-1.5 flex-wrap max-w-[280px] sm:max-w-none">
+              <div className="flex gap-1.5 w-86 flex-wrap max-w-[280px] sm:max-w-none">
                 {AXIS_SEQUENCE.map((_, i) => (
                   <div
                     key={i}
-                    className={`rounded-full transition-all duration-300 ${
-                      i === currentIndex
-                        ? 'w-5 h-2 bg-blue-600'
-                        : i < currentIndex
+                    className={`rounded-full transition-all duration-300 ${i === currentIndex
+                      ? 'w-5 h-2 bg-blue-600'
+                      : i < currentIndex
                         ? 'w-2 h-2 bg-blue-300'
                         : 'w-2 h-2 bg-gray-200'
-                    }`}
+                      }`}
                   />
                 ))}
               </div>
@@ -487,7 +563,7 @@ export function PlacementTestEngine() {
       {showQuit && (
         <QuitModal
           onStay={() => setShowQuit(false)}
-          onQuit={() => navigate({ to: '/onboarding/survey' })}
+          onQuit={() => navigate({ to: '/onboarding/role-selection' })}
         />
       )}
     </div>

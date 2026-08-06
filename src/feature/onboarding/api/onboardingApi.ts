@@ -90,13 +90,21 @@ export async function fetchOnboardingStatus(): Promise<OnboardingStatus> {
   return handleResponse<OnboardingStatus>(res)
 }
 
+export interface PlacementTestResultPayload {
+  question_id: number;
+  selected_id: string;
+  is_correct: boolean;
+  axis: string;
+  difficulty: number;
+}
+
 export interface CompletePlacementTestPayload {
   user_id?: number
   role_id?: number | null
-  survey_answers?: SurveyAnswerPayload[] | null
+  placement_test_answers?: PlacementTestResultPayload[] | null
 }
 
-/** Finalize onboarding by committing survey answers, role_id, and setting is_finished_placement_test = True. */
+/** Finalize onboarding by committing role_id and placement test answers. */
 export async function completePlacementTest(
   payload: CompletePlacementTestPayload,
 ): Promise<{ message: string; is_finished_placement_test: boolean }> {

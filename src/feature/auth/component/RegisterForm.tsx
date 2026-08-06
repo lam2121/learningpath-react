@@ -44,21 +44,21 @@ export function RegisterForm() {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 
-		if (form.password !== form.confirmPassword) {
-			setError('Passwords do not match.')
-			return
-		}
-		if (form.password.length < 6) {
-			setError('Mật khẩu phải dài từ 6 ký tự')
-			return
-		}
-		const passwordRegex =
-			/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
+		// if (form.password !== form.confirmPassword) {
+		// 	setError('Passwords do not match.')
+		// 	return
+		// }
+		// if (form.password.length < 6) {
+		// 	setError('Mật khẩu phải dài từ 6 ký tự')
+		// 	return
+		// }
+		// const passwordRegex =
+		// 	/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
 
-		if (!passwordRegex.test(form.password)) {
-			setError('Mật khẩu cần có ít nhất 1 chữ hoa, chữ thường và kí tự đặc biệt.')
-			return
-		}
+		// if (!passwordRegex.test(form.password)) {
+		// 	setError('Mật khẩu cần có ít nhất 1 chữ hoa, chữ thường và kí tự đặc biệt.')
+		// 	return
+		// }
 
 		setIsLoading(true)
 		setError(null)
