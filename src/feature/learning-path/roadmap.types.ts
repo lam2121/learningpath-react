@@ -14,18 +14,14 @@ export type TopicIcon =
 
 export interface RoadmapTopic {
     id: number;
-
     title: string;
-
     subtitle: string;
-
+    description: string;
+    lessonsCount: number;
+    duration: string;
     status: TopicStatus;
-
     icon: TopicIcon;
-
     color: string;
-
     x: number;
-
     y: number;
 }

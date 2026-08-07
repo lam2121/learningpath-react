@@ -52,7 +52,7 @@ export function CourseLoading() {
     if (progress >= 100) {
       const timer = setTimeout(() => {
         navigate({
-          to: "/learning-path"
+          to: "/lessons/learning-path"
         });
       }, 1000);
 

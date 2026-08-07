@@ -1,43 +1,45 @@
-import { RoadPath } from "./RoadPath";
-import { TopicNode } from "./TopicNode";
 import { roadmap } from "@/feature/learning-path/data";
-import { useNavigate } from "@tanstack/react-router";
-export function CurriculumRoadmap() {
-    const navigate = useNavigate();
-    return (
-        <div
-            className="
-        relative
-        mx-auto
-        w-full
-        max-w-6xl
-        h-[2600px]
-    "
-        >
-            <RoadPath
-                points={roadmap.map((topic) => ({
-                    x: topic.x + 64,
-                    y: topic.y + 64,
-                }))}
-            />
+import { TopicNode } from "./TopicNode";
 
-            {roadmap.map((topic) => (
-                <div
-                    key={topic.id}
-                    className="absolute"
-                    style={{
-                        left: topic.x,
-                        top: topic.y,
-                    }}
-                >
-                    <TopicNode {...topic}
-                        onClick={
-                            topic.status === "current"
-                                ? () => navigate({ to: "/lesson" })
-                                : undefined
-                        } />
+export function CurriculumRoadmap() {
+    const handleSelectTopic = (topicId: number) => {
+        console.log("Selected topic:", topicId);
+
+        // Có thể điều hướng hoặc mở Dialog/Drawer danh sách lesson tại đây.
+    };
+
+    return (
+        <section className="w-full min-w-0">
+            <div className="mb-4 flex items-end justify-between gap-4">
+                <div className="min-w-0">
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                        Nội dung chương trình
+                    </h2>
+
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Chọn một chương để xem danh sách bài học.
+                    </p>
                 </div>
-            ))}
-        </div>
+
+                <span className="hidden shrink-0 text-sm text-slate-500 sm:block">
+                    {roadmap.length} chương
+                </span>
+            </div>
+
+            <div
+                className="
+                    grid w-full grid-cols-1 gap-4
+                    sm:grid-cols-[repeat(auto-fit,minmax(240px,1fr))]
+                "
+            >
+                {roadmap.map((topic) => (
+                    <TopicNode
+                        key={topic.id}
+                        {...topic}
+                        onClick={() => handleSelectTopic(topic.id)}
+                    />
+                ))}
+            </div>
+        </section>
     );
 }

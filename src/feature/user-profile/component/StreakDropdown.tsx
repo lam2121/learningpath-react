@@ -1,141 +1,62 @@
+import { useMemo } from "react";
+import { Button } from "@/shadcn/component/ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/shadcn/component/ui/dropdown-menu";
+import { Flame } from "lucide-react";
 
-import { Button } from "@/shadcn/component/ui/button";
-
-import {
-    Flame,
-} from "lucide-react";
-
-const calendar = [
-    true, true, true, false, true, true, true,
-    true, false, true, true, true, true, true,
-    false, true, true, true, true, false, true,
-    true, true, true, false, true, true, true,
-    true, false
-];
+import { LearningCalendar, calculateLongestStreak } from "./LearningCalendar";
+import { useAuth } from "@/common/context/AuthContext";
+import { getLoginDays } from "@/feature/user-profile/utils/StudyActivity";
 
 export function StreakDropdown() {
+    const auth = useAuth();
+    const userId = Number(auth.user?.id);
+
+    const longestStreak = useMemo(() => {
+        const loginDays = getLoginDays(userId);
+        return calculateLongestStreak(loginDays);
+    }, [userId]);
 
     return (
-
         <DropdownMenu>
-
             <DropdownMenuTrigger asChild>
-
                 <Button
+                    type="button"
                     variant="ghost"
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1.5 px-2.5"
                 >
+                    <Flame className="h-5 w-5 fill-orange-200 text-orange-500" />
 
-                    <Flame className="size-5 fill-yellow-200 text-orange-500" />
-
-                    <span className="font-semibold">
-                        8
+                    <span className="font-semibold text-slate-800">
+                        {longestStreak}
                     </span>
 
+                    <span className="hidden text-sm text-slate-600 sm:inline">
+                        day streak
+                    </span>
                 </Button>
-
             </DropdownMenuTrigger>
 
             <DropdownMenuContent
                 align="end"
-                className="w-80"
+                sideOffset={8}
+                className="
+                    max-h-[85vh]
+                    w-[calc(100vw-2rem)]
+                    max-w-[420px]
+                    overflow-y-auto
+                    rounded-2xl
+                    border-slate-200
+                    bg-white
+                    p-4
+                    shadow-[0_20px_50px_rgba(15,23,42,0.15)]
+                "
             >
-
-                <DropdownMenuLabel>
-
-                    🔥 Learning Streak
-
-                </DropdownMenuLabel>
-
-                <DropdownMenuSeparator />
-
-                <div className="space-y-4 p-3">
-
-                    <div className="grid grid-cols-2 gap-3">
-
-                        <div className="rounded-lg bg-orange-50 p-3 text-center">
-
-                            <p className="text-sm text-slate-500">
-                                Current
-                            </p>
-
-                            <p className="text-2xl font-bold text-orange-600">
-                                8 Days
-                            </p>
-
-                        </div>
-
-                        <div className="rounded-lg bg-blue-50 p-3 text-center">
-
-                            <p className="text-sm text-slate-500">
-                                Longest
-                            </p>
-
-                            <p className="text-2xl font-bold text-blue-600">
-                                15 Days
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                    <div>
-
-                        <p className="font-medium mb-3">
-                            July 2026
-                        </p>
-
-                        <div className="grid grid-cols-7 gap-2">
-
-                            {calendar.map((done, index) => (
-
-                                <div
-                                    key={index}
-                                    className={`
-                                    h-8
-                                    rounded-md
-                                    flex
-                                    items-center
-                                    justify-center
-                                    text-xs
-                                    ${done
-                                            ? "bg-blue-500 text-white"
-                                            : "bg-slate-100"
-                                        }
-                                `}
-                                >
-
-                                    {index + 1}
-
-                                </div>
-
-                            ))}
-
-                        </div>
-
-                    </div>
-
-                    <div className="rounded-lg bg-slate-50 p-3">
-
-                        <p className="text-sm">
-                            🎯 Keep learning tomorrow to reach a 9-day streak.
-                        </p>
-
-                    </div>
-
-                </div>
-
+                <LearningCalendar embedded userId={userId} />
             </DropdownMenuContent>
-
         </DropdownMenu>
-
     );
-
 }
