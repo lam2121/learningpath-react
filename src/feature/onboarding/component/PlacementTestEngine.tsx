@@ -40,7 +40,7 @@ const ALL_LEVELS: DifficultyLevel[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 type Pool = Record<'D' | 'C' | 'T' | 'G', Partial<Record<DifficultyLevel, TestQuestion[]>>>
 
-/** Fisher-Yates shuffle — returns a new shuffled array */
+//Fisher-Yates shuffle — returns a new shuffled array */
 function shuffleArray<T>(arr: T[]): T[] {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
@@ -48,7 +48,7 @@ function shuffleArray<T>(arr: T[]): T[] {
     ;[a[i], a[j]] = [a[j], a[i]]
   }
   return a
-}
+ }
 
 /** Transform raw API questions into the frontend TestQuestion shape */
 function normalise(raw: RawPlacementQuestionApi): TestQuestion {
@@ -56,6 +56,7 @@ function normalise(raw: RawPlacementQuestionApi): TestQuestion {
   // Shuffle the plain-text options so the correct answer is not always at position 'a'
   const shuffledTexts = shuffleArray(raw.options)
   const options = shuffledTexts.map((text, i) => ({ id: optionIds[i] ?? String(i), text }))
+  // const options = raw.options.map((text, i) => ({ id: optionIds[i] ?? String(i), text }))
   const correctOption = options.find((o) => o.text === raw.correct_answer)
   return {
     id: String(raw.id),
@@ -432,8 +433,8 @@ export function PlacementTestEngine() {
       <aside
         aria-live="polite"
         aria-label="Placement test time remaining"
-        className={`fixed right-8 top-24 z-30 w-[280px] rounded-2xl border bg-white/95 p-4 shadow-lg backdrop-blur-sm
-          sm:right-6 lg:right-7 lg:top-5/14 lg:-translate-y-1/2
+        className={`fixed right-16 top-24 z-30 w-[220px] rounded-2xl border bg-white/95 p-4 shadow-lg backdrop-blur-sm
+          sm:right-6 lg:right-11 lg:top-9/23 lg:-translate-y-1/2
           ${isTimeRunningLow ? 'border-rose-200' : 'border-blue-100'}
         `}
       >
@@ -464,7 +465,7 @@ export function PlacementTestEngine() {
           {/* Header Stepper & Badge */}
           <div className="flex flex-col items-center mb-8">
             <div className="flex items-center justify-center mb-6">
-              {[1, 2, 3, 4].map((step) => (
+              {[1, 2, 3].map((step) => (
                 <div key={step} className="flex items-center">
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${step <= 3
@@ -472,9 +473,9 @@ export function PlacementTestEngine() {
                       : 'bg-gray-200 text-gray-500'
                       }`}
                   >
-                    {step < 3 ? '✓' : step}
+                    {step < 2 ? '✓' : step}
                   </div>
-                  {step < 4 && (
+                  {step < 3 && (
                     <div className="w-10 h-0.5 bg-gray-200 mx-2 rounded-full" />
                   )}
                 </div>
