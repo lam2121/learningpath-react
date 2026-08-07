@@ -49,7 +49,7 @@ export function StudySettingsDialog({
 
                             <div>
                                 <p className="font-semibold">
-                                    Career Track
+                                    Change Career Track
                                 </p>
 
                                 <p className="text-sm text-slate-500">
