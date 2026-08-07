@@ -6,11 +6,11 @@ import { Label } from '@/shadcn/component/ui/label';
 import { Alert, AlertDescription } from '@/shadcn/component/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shadcn/component/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shadcn/component/ui/dialog';
-import { AlertCircle, Loader2, Eye, Save, Trash2 } from 'lucide-react';
+import { AlertCircle, Loader2, Eye, Save, Trash2, RotateCcw } from 'lucide-react';
 import { BudgetSlidersGroup } from './BudgetSlider';
 import { AiPreviewModal } from './AiPreviewModal';
 import { type CareerTrack, type BudgetVector, DEFAULT_BASELINE } from '../api/adminApi';
-import { createTrack, updateTrack, deactivateTrack, getDeactivationWarning } from '../api/adminApi';
+import { createTrack, updateTrack, deactivateTrack, activateTrack, getDeactivationWarning } from '../api/adminApi';
 
 interface RoleCreationFormProps {
 	initialTrack?: CareerTrack;
@@ -83,7 +83,7 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 			if (isEdit && initialTrack) {
 				result = await updateTrack(initialTrack.id, {
 					...payload,
-					is_active: true,
+					is_active: initialTrack.isActive,
 				});
 			} else {
 				result = await createTrack(payload);
@@ -116,6 +116,20 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 		setShowDeactivateConfirm(true);
 		const warning = await getDeactivationWarning(initialTrack.id);
 		setDeactivateWarning(warning);
+	};
+
+	const handleActivate = async () => {
+		if (!initialTrack) return;
+		setSubmitting(true);
+		try {
+			await activateTrack(initialTrack.id);
+			onSuccess?.({ ...initialTrack, isActive: true });
+		} catch (error) {
+			console.error('Activate failed:', error);
+			alert('Activate track failed.');
+		} finally {
+			setSubmitting(false);
+		}
 	};
 
 	const confirmDeactivate = async () => {
@@ -158,6 +172,12 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 								<Trash2 className="w-4 h-4 mr-2" />
 								Deactivate Track
 							</Button>
+					)}
+					{isEdit && !initialTrack?.isActive && (
+						<Button variant="outline" className="text-green-600 border-green-300 hover:bg-green-50" onClick={handleActivate} disabled={submitting}>
+							<RotateCcw className="w-4 h-4 mr-2" />
+							Reactivate Track
+						</Button>
 					)}
 				</div>
 			</div>

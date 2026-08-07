@@ -42,6 +42,7 @@ export async function fetchOnboardingStatus(): Promise<OnboardingStatus> {
 export interface PlacementTestResultPayload {
   question_id: number;
   selected_id: string;
+  selected_text?: string;
   is_correct: boolean;
   axis: string;
   difficulty: number;
@@ -82,6 +83,7 @@ export interface JobRole {
   baseline: JobRoleBaseline
   g_skill_description?: string | null
   example_question: string[] | null
+  is_active?: boolean
 }
 
 /** Fetch all job roles from database. No auth required. */
@@ -102,6 +104,43 @@ export interface RawPlacementQuestionApi {
   statement: string
   options: string[]
   correct_answer: string
+}
+
+/** Placement test result detail for a single question */
+export interface PlacementAnswerDetail {
+  question_id: number
+  axis: string            // v2.1 tag: D_doc | C_comm | T_trouble | G_custom
+  level: number           // 1–8
+  statement: string
+  options: string[]       // 4 plain-text options
+  correct_answer: string  // exact text of the correct option
+  selected_id: string     // letter: 'a' | 'b' | 'c' | 'd'
+  selected_text?: string  // exact text of the option the user picked
+  is_correct: boolean
+}
+
+/** Placement test result response */
+export interface PlacementResult {
+  is_finished_placement_test: boolean
+  total_questions: number
+  total_correct: number
+  overall_percent: number
+  skill_scores: Record<string, number>  // {D_doc: 75, C_comm: 80, T_trouble: 60, G_custom: 50}
+  starting_level: string               // 'basic' | 'intermediate' | 'advanced'
+  weak_skills: string[]               // list of skill tags where score < 0.5, weakest first
+  role_id: number | null
+  role_name: string | null
+  baseline: Record<string, number> | null  // {D_doc: 20, C_comm: 20, T_trouble: 50, G_custom: 10}
+  answers: PlacementAnswerDetail[]
+}
+
+/** Fetch the current user's placement test result (scores, starting level, per-question detail) */
+export async function fetchPlacementTestResult(): Promise<PlacementResult> {
+  const res = await fetch(`${BASE_URL}/onboarding/placement-test/result`, {
+    method: 'GET',
+    headers: authHeaders(),
+  })
+  return handleResponse<PlacementResult>(res)
 }
 
 /**

@@ -4,7 +4,7 @@ const AXIS_META: Record<string, { label: string; color: string; bg: string; dot:
   D_doc: { label: 'Documentation', color: 'text-blue-700', bg: 'bg-blue-50', dot: 'bg-blue-500' },
   C_comm: { label: 'Communication', color: 'text-emerald-700', bg: 'bg-emerald-50', dot: 'bg-emerald-500' },
   T_trouble: { label: 'Troubleshooting', color: 'text-rose-700', bg: 'bg-rose-50', dot: 'bg-rose-500' },
-  G_biz: { label: 'Business', color: 'text-amber-700', bg: 'bg-amber-50', dot: 'bg-amber-500' },
+  G_custom: { label: 'Business', color: 'text-amber-700', bg: 'bg-amber-50', dot: 'bg-amber-500' },
 }
 
 /** Map level 1-10 to a visible tier (1, 2, or 3 dots) */

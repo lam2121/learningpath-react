@@ -150,6 +150,11 @@ export interface GenerationStatus {
 	errorMessage: string | null;
 }
 
+export interface ResetLearnersResult {
+	resetLearners: number;
+	clearedAnswers: number;
+}
+
 export interface DashboardData {
 	totalTracks: number;
 	activeTracks: number;

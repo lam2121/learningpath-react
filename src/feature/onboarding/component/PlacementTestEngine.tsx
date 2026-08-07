@@ -298,6 +298,31 @@ export function PlacementTestEngine() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [currentIndex])
 
+  // ── Enter key advances / submits (only when an answer is selected) ───────────
+  const handleNextRef = useRef(handleNext)
+  useEffect(() => {
+    handleNextRef.current = handleNext
+  })
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter' || event.repeat) return
+      if (isSubmitting || showQuit) return
+
+      const target = event.target as HTMLElement | null
+      // Let the Next/Submit button's own Enter activation fire once (avoid double-advance).
+      if (target && target.id === 'btn-next-question') return
+
+      // Only intercept when an answer is ready to be confirmed.
+      if (!selectedId || !currentQuestion || !poolRef.current) return
+
+      event.preventDefault()
+      handleNextRef.current()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isSubmitting, showQuit, selectedId, currentQuestion])
+
   // ─────────────────────────────────────────────────────────────────────────────
 
   function handleSelect(optionId: string) {
@@ -352,6 +377,7 @@ export function PlacementTestEngine() {
       const formattedResults = answeredResults.map((r) => ({
         question_id: parseInt(r.questionId, 10),
         selected_id: r.selectedId,
+        selected_text: r.options?.find((o) => o.id === r.selectedId)?.text ?? '',
         is_correct: r.isCorrect,
         axis: r.axis,
         difficulty: r.difficulty,

@@ -185,6 +185,7 @@ interface RoleCardItemProps {
 function RoleCardItem({ role, paletteIdx, isSelected, isHovered, onSelect, onHover, onLeave }: RoleCardItemProps) {
   const palette = ROLE_PALETTE[paletteIdx % ROLE_PALETTE.length]
   const description = getRoleDescription(role)
+  const isInactive = role.is_active === false
 
   return (
     <div
@@ -194,11 +195,14 @@ function RoleCardItem({ role, paletteIdx, isSelected, isHovered, onSelect, onHov
       onMouseLeave={onLeave}
       className={`
         relative cursor-pointer rounded-2xl border-2 p-5 transition-all duration-300 select-none bg-white
+        ${isInactive ? 'opacity-70 border-gray-200' : ''}
         ${isSelected
           ? 'border-indigo-500 shadow-lg shadow-indigo-100 scale-[1.02]'
           : isHovered
             ? 'border-gray-300 shadow-md scale-[1.01]'
-            : 'border-gray-200 shadow-sm hover:border-gray-300'
+            : isInactive
+              ? 'hover:border-gray-300'
+              : 'border-gray-200 shadow-sm hover:border-gray-300'
         }
       `}
     >
@@ -218,12 +222,21 @@ function RoleCardItem({ role, paletteIdx, isSelected, isHovered, onSelect, onHov
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="font-bold text-gray-900 text-sm leading-tight">{role.name}</h3>
-          <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-semibold">
-            <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-            </svg>
-            Career Track
-          </span>
+          {isInactive ? (
+            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 text-[10px] font-semibold">
+              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+              </svg>
+              Deactivated
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-semibold">
+              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+              </svg>
+              Career Track
+            </span>
+          )}
         </div>
       </div>
 
@@ -357,6 +370,80 @@ function ConfirmRoleModal({
   )
 }
 
+// ─── Deactivated Track Warning Modal ───────────────────────────────────────────
+
+function InactiveRoleModal({
+  roleName,
+  onClose,
+}: {
+  roleName: string
+  onClose: () => void
+}) {
+  return (
+    <div
+      id="modal-inactive-role-overlay"
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ backgroundColor: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div
+        id="modal-inactive-role-dialog"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in zoom-in-95 fade-in duration-200"
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-r from-slate-500 to-slate-700 px-6 pt-6 pb-5">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center text-2xl flex-shrink-0">
+              🚫
+            </div>
+            <div>
+              <h2 className="text-white font-bold text-lg leading-tight">Track Not Available</h2>
+              <p className="text-white/80 text-xs mt-0.5">This career track is deactivated</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5 space-y-3">
+          <p className="text-gray-800 text-sm leading-relaxed">
+            <span className="font-bold text-gray-900">{roleName}</span> is currently
+            <span className="font-bold text-slate-600"> deactivated</span> and is not accepting new learners.
+          </p>
+          <ul className="space-y-2">
+            {[
+              { icon: '📚', text: 'Existing learners already on this track can continue their course.' },
+              { icon: '👥', text: 'New learners should pick a different active career track.' },
+              { icon: '🛠️', text: 'Contact your administrator if you believe this is a mistake.' },
+            ].map(({ icon, text }) => (
+              <li key={text} className="flex items-start gap-2.5 text-xs text-gray-600 leading-relaxed">
+                <span className="text-base flex-shrink-0 mt-0.5">{icon}</span>
+                <span>{text}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="rounded-xl bg-slate-100 border border-slate-200 px-4 py-3">
+            <p className="text-slate-700 text-xs font-medium leading-relaxed">
+              Please select an active track to start your placement test.
+            </p>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="px-6 pb-6 flex gap-3">
+          <button
+            id="modal-inactive-btn-close"
+            type="button"
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 cursor-pointer"
+          >
+            Got it
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function RoleSelectionGrid() {
   const [roles, setRoles] = useState<JobRole[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -364,6 +451,7 @@ export function RoleSelectionGrid() {
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)
   const [hoveredRoleId, setHoveredRoleId] = useState<number | null>(null)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [showInactiveModal, setShowInactiveModal] = useState(false)
   const navigate = useNavigate()
   const { logout } = useAuth()
 
@@ -378,6 +466,10 @@ export function RoleSelectionGrid() {
 
   function handleContinueClick() {
     if (!selectedRoleId) return
+    if (selectedRole && selectedRole.is_active === false) {
+      setShowInactiveModal(true)
+      return
+    }
     setShowConfirmModal(true)
   }
 
@@ -401,6 +493,14 @@ export function RoleSelectionGrid() {
           roleName={selectedRole.name}
           onConfirm={handleConfirm}
           onCancel={() => setShowConfirmModal(false)}
+        />
+      )}
+
+      {/* Deactivated Track Modal */}
+      {showInactiveModal && selectedRole && (
+        <InactiveRoleModal
+          roleName={selectedRole.name}
+          onClose={() => setShowInactiveModal(false)}
         />
       )}
       {/* Top Header Bar */}

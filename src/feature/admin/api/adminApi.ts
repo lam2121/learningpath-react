@@ -19,6 +19,7 @@ import type {
 	DashboardData,
 	ValidatorCheck,
 	SkillKey,
+	ResetLearnersResult,
 } from '../type/Admin';
 
 // Re-export types for consumers
@@ -38,6 +39,7 @@ export type {
 	GenerationStatus,
 	DashboardData,
 	SkillKey,
+	ResetLearnersResult,
 };
 
 export { DEFAULT_BASELINE } from '../type/Admin';
@@ -92,8 +94,22 @@ export async function deactivateTrack(id: number): Promise<CareerTrack> {
 	return res.data;
 }
 
-export async function generatePlacement(roleId: number): Promise<GenerateResponse> {
-	const res = await axiosJWT.post<GenerateResponse>(`/admin/roles/${roleId}/generate`);
+export async function activateTrack(id: number): Promise<CareerTrack> {
+	const res = await axiosJWT.post<CareerTrack>(`/admin/roles/${id}/activate`);
+	return res.data;
+}
+
+export async function deleteTrack(id: number): Promise<void> {
+	await axiosJWT.delete(`/admin/roles/${id}`);
+}
+
+export async function generatePlacement(roleId: number, force = false): Promise<GenerateResponse> {
+	const res = await axiosJWT.post<GenerateResponse>(`/admin/roles/${roleId}/generate${force ? '?force=true' : ''}`);
+	return res.data;
+}
+
+export async function resetTrackLearners(roleId: number): Promise<ResetLearnersResult> {
+	const res = await axiosJWT.post<ResetLearnersResult>(`/admin/roles/${roleId}/reset-learners`);
 	return res.data;
 }
 
