@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, type HistoryState } from '@tanstack/react-router'
 import tmaLogo from '@/asset/image/tma_logo.png'
 import bannerBg from '@/asset/image/banner_background.png'
 import { TestQuestionCard } from './TestQuestionCard'
-import type { TestQuestion, QuestionResult, SkillAxis, DifficultyLevel } from '../api/placementTestTypes'
+import type { TestQuestion, QuestionResult, DifficultyLevel } from '../api/placementTestTypes'
 import { SKILL_TO_AXIS } from '../api/placementTestTypes'
 import { completePlacementTest, fetchPlacementTestQuestions } from '../api/onboardingApi'
 import type { RawPlacementQuestionApi } from '../api/onboardingApi'
@@ -13,7 +13,6 @@ import type { RawPlacementQuestionApi } from '../api/onboardingApi'
 // DB: 4 skills × 10 difficulty levels × 5 questions = 200 questions/role
 // Test session: 24 questions (6 per axis), adaptive ±1 per answer
 const TOTAL_QUESTIONS = 48       // 6 per axis × 4 axes
-const QUESTIONS_PER_AXIS = 6
 const MIN_LEVEL: DifficultyLevel = 1
 const MAX_LEVEL: DifficultyLevel = 8
 const START_LEVEL: DifficultyLevel = 4  // start at middle of 1-10 range
@@ -300,6 +299,31 @@ export function PlacementTestEngine() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [currentIndex])
 
+  // ── Enter key advances / submits (only when an answer is selected) ───────────
+  const handleNextRef = useRef(handleNext)
+  useEffect(() => {
+    handleNextRef.current = handleNext
+  })
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter' || event.repeat) return
+      if (isSubmitting || showQuit) return
+
+      const target = event.target as HTMLElement | null
+      // Let the Next/Submit button's own Enter activation fire once (avoid double-advance).
+      if (target && target.id === 'btn-next-question') return
+
+      // Only intercept when an answer is ready to be confirmed.
+      if (!selectedId || !currentQuestion || !poolRef.current) return
+
+      event.preventDefault()
+      handleNextRef.current()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isSubmitting, showQuit, selectedId, currentQuestion])
+
   // ─────────────────────────────────────────────────────────────────────────────
 
   function handleSelect(optionId: string) {
@@ -347,9 +371,14 @@ export function PlacementTestEngine() {
         return
       }
 
-      const formattedResults = updatedResults.map((r) => ({
+      type AnsweredResult = QuestionResult & { selectedId: string }
+      const answeredResults = updatedResults.filter(
+        (r): r is AnsweredResult => r.selectedId !== null,
+      )
+      const formattedResults = answeredResults.map((r) => ({
         question_id: parseInt(r.questionId, 10),
         selected_id: r.selectedId,
+        selected_text: r.options?.find((o) => o.id === r.selectedId)?.text ?? '',
         is_correct: r.isCorrect,
         axis: r.axis,
         difficulty: r.difficulty,
@@ -360,7 +389,7 @@ export function PlacementTestEngine() {
         .finally(() => {
           localStorage.removeItem('pending_survey_answers')
           localStorage.removeItem('pending_role_id')
-          navigate({ to: '/placement-result', state: { results: updatedResults } as any })
+          navigate({ to: '/placement-result', state: { results: updatedResults } as HistoryState })
         })
       return
     }

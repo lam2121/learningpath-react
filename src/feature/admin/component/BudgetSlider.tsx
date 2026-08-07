@@ -1,244 +1,249 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/shadcn/lib/util';
-import { Slider } from '@/shadcn/component/ui/slider';
 import { Label } from '@/shadcn/component/ui/label';
 import { Alert, AlertDescription } from '@/shadcn/component/ui/alert';
-import { AlertCircle } from 'lucide-react';
-import { validateBudget, type BudgetVector, type BudgetValidationResult } from '../api/adminApi';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shadcn/component/ui/tooltip';
+import { AlertCircle, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
+import useSkillDistribution from '@/hooks/useSkillDistribution';
+import { DEFAULT_BASELINE, type BudgetVector, type SkillKey } from '../api/adminApi';
 
-interface BudgetSliderProps {
-	value: number;
-	onChange: (value: number) => void;
-	skillKey: 'D' | 'C' | 'T' | 'G';
-	allValues: BudgetVector;
-	validation: BudgetValidationResult | null;
-	disabled?: boolean;
-}
-
-const skillInfo: Record<'D' | 'C' | 'T' | 'G', { label: string; color: string; bgColor: string; icon: string }> = {
-	D: { label: 'Văn bản (D)', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: '📄' },
-	C: { label: 'Giao tiếp (C)', color: 'bg-green-500', bgColor: 'bg-green-50', icon: '💬' },
-	T: { label: 'Xử lý rủi ro (T)', color: 'bg-orange-500', bgColor: 'bg-orange-50', icon: '⚠️' },
-	G: { label: 'Thương mại (G)', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: '💰' }
+const skillInfo = {
+  D_doc: { label: 'Documentation (D)', color: '#3b82f6', icon: '📄' },
+  C_comm: { label: 'Communication (C)', color: '#10b981', icon: '💬' },
+  T_trouble: { label: 'Troubleshooting (T)', color: '#f97316', icon: '⚠️' },
+  G_custom: { label: 'Growth (G)', color: '#8b5cf6', icon: '💰' },
 };
 
-export function BudgetSlider({ value, onChange, skillKey, allValues, validation, disabled }: BudgetSliderProps) {
-	const info = skillInfo[skillKey];
-	const sum = allValues.D + allValues.C + allValues.T + allValues.G;
-	const isValid = validation?.isValid ?? true;
-	const hasError = !isValid && (validation?.errors.length ?? 0) > 0;
-	
-	return (
-		<div className="space-y-3 p-4 rounded-xl border bg-white" style={{ borderColor: hasError ? 'rgb(239,68,68)' : 'rgb(226,232,240)' }}>
-			<div className="flex items-center justify-between">
-				<div className="flex items-center gap-2">
-					<span className="text-lg">{info.icon}</span>
-					<Label className="font-medium text-gray-900">{info.label}</Label>
-				</div>
-				<div className={cn(
-					'px-3 py-1 rounded-full text-sm font-bold tabular-nums',
-					hasError ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
-				)}>
-					{value}%
-				</div>
-			</div>
-			
-			<div className="relative">
-				<Slider
-					value={[value]}
-					onValueChange={([v]) => onChange(v)}
-					max={100}
-					step={5}
-					disabled={disabled}
-					className={cn(
-						hasError && 'bg-red-200'
-					)}
-				/>
-				
-				{hasError && (
-					<div className="mt-2 text-xs text-red-600">
-						Tổng phải = 100% (hiện tại: {sum}%)
-					</div>
-				)}
-			</div>
-		</div>
-	);
+
+
+interface SkillDistributionVisualizerProps {
+  skillValues: Record<keyof typeof skillInfo, number>;
+  onSegmentClick: (skill: keyof typeof skillInfo) => void;
 }
+
+const SkillDistributionVisualizer = ({
+  skillValues,
+  onSegmentClick,
+}: SkillDistributionVisualizerProps) => {
+  const data = Object.entries(skillValues).map(([skill, value]) => ({
+    name: skill,
+    value,
+    label: skillInfo[skill as keyof typeof skillInfo].label.split(' ')[0],
+  }));
+
+  return (
+    <div className="p-4 rounded-xl border bg-white">
+      <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+        Skill Distribution
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Info className="w-4 h-4 text-gray-500 cursor-help" />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>This distribution is used to generate topics and lesson shells for the role.</p>
+            <p className="mt-2"><strong>Note:</strong> User milestones are determined by the placement test, not this distribution.</p>
+          </TooltipContent>
+        </Tooltip>
+      </h4>
+      <ResponsiveContainer width="100%" height={300}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            labelLine={false}
+            outerRadius={80}
+            fill="#8884d8"
+            dataKey="value"
+            onClick={(e) => onSegmentClick(e.name as keyof typeof skillInfo)}
+            label={({ name, percent }) => `
+              ${skillInfo[name as keyof typeof skillInfo].icon} 
+              ${Math.round((percent ?? 0) * 100)}%`
+            }
+          >
+            {data.map((entry, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={skillInfo[entry.name as keyof typeof skillInfo].color}
+              />
+            ))}
+          </Pie>
+          <RechartsTooltip
+            formatter={(value, name) => [
+              `${value}%`,
+              skillInfo[name as keyof typeof skillInfo].label,
+            ]}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+interface SkillInputsProps {
+  skillValues: Record<keyof typeof skillInfo, number>;
+  updateSkillValue: (skill: keyof typeof skillInfo, value: number) => void;
+  disabled?: boolean;
+}
+
+const SkillInputs = ({ skillValues, updateSkillValue, disabled }: SkillInputsProps) => {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-xl border bg-gray-50">
+      {Object.entries(skillValues).map(([skill, value]) => (
+        <div key={skill} className="space-y-2">
+          <Label className="font-medium text-gray-700 flex items-center gap-2">
+            {skillInfo[skill as keyof typeof skillInfo].icon}
+            {skillInfo[skill as keyof typeof skillInfo].label}
+          </Label>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            step="5"
+            value={value}
+            onChange={(e) => updateSkillValue(skill as keyof typeof skillInfo, Number(e.target.value))}
+            onBlur={(e) => {
+              let val = Number(e.target.value);
+              val = Math.round(val / 5) * 5;
+              val = Math.max(0, Math.min(100, val));
+              updateSkillValue(skill as keyof typeof skillInfo, val);
+            }}
+            disabled={disabled}
+            className="w-full p-2 border rounded text-center"
+          />
+        </div>
+      ))}
+    </div>
+  );
+};
+
+interface SkillDistributionTableProps {
+  skillValues: Record<keyof typeof skillInfo, number>;
+  isCollapsed: boolean;
+  toggleCollapse: () => void;
+}
+
+const SkillDistributionTable = ({ skillValues, isCollapsed, toggleCollapse }: SkillDistributionTableProps) => {
+  return (
+    <div className="p-4 rounded-xl border bg-white mt-4">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="font-medium text-gray-900">Skill Distribution Table</h4>
+        <button onClick={toggleCollapse} className="text-gray-500 hover:text-gray-700">
+          {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+        </button>
+      </div>
+      {!isCollapsed && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-gray-500 border-b border-gray-100">
+                <th className="pb-2">Skill</th>
+                <th className="pb-2 text-center">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(skillValues).map(([skill, value]) => {
+                const isBelowFloor = value < 10;
+                return (
+                  <tr key={skill} className="border-b border-gray-50">
+                    <td className="py-2 font-medium flex items-center gap-2">
+                      {skillInfo[skill as keyof typeof skillInfo].icon}
+                      {skillInfo[skill as keyof typeof skillInfo].label}
+                    </td>
+                    <td className={cn('py-2 text-center', isBelowFloor ? 'text-red-600' : 'text-gray-700')}>{value}%</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+interface WarningMessageProps {
+  message: string;
+  isBlocking: boolean;
+}
+
+const WarningMessage = ({ message, isBlocking }: WarningMessageProps) => {
+  return (
+    <Alert className="mt-3 border-red-200 bg-red-50">
+      <AlertCircle className="h-4 w-4 text-red-600" />
+      <AlertDescription className="text-red-800">
+        {message}
+        {isBlocking && <span className="font-bold ml-1">(Form submission blocked until resolved)</span>}
+      </AlertDescription>
+    </Alert>
+  );
+};
 
 interface BudgetSlidersGroupProps {
-	initialBudgets?: {
-		basic: BudgetVector;
-		intermediate: BudgetVector;
-		advanced: BudgetVector;
-	};
-	onChange: (milestone: string, budget: BudgetVector) => void;
-	disabled?: boolean;
+  initialBudget?: BudgetVector;
+  onChange: (budget: BudgetVector) => void;
+  disabled?: boolean;
 }
 
-const milestoneLabels = ['Basic', 'Intermediate', 'Advanced'];
-const milestoneKeys = ['basic', 'intermediate', 'advanced'] as const;
+export function BudgetSlidersGroup({ initialBudget, onChange, disabled }: BudgetSlidersGroupProps) {
+  const {
+    skillValues,
+    updateSkillValue,
+    showWarning,
+    warningMessage,
+    isFloorViolated,
+    isSumViolated,
+  } = useSkillDistribution({ initialValues: initialBudget ?? DEFAULT_BASELINE });
 
-export function BudgetSlidersGroup({ initialBudgets, onChange, disabled }: BudgetSlidersGroupProps) {
-	const [budgets, setBudgets] = useState<Record<string, BudgetVector>>({
-		basic: initialBudgets?.basic || { D: 25, C: 25, T: 25, G: 25 },
-		intermediate: initialBudgets?.intermediate || { D: 25, C: 25, T: 25, G: 25 },
-		advanced: initialBudgets?.advanced || { D: 25, C: 25, T: 25, G: 25 }
-	});
-	
-	const [validations, setValidations] = useState<Record<string, BudgetValidationResult>>({});
-	const [linkedMode, setLinkedMode] = useState(false);
+  const [isTableCollapsed, setIsTableCollapsed] = useState<boolean>(true);
 
-	useEffect(() => {
-		if (initialBudgets) {
-			setBudgets({
-				basic: initialBudgets.basic,
-				intermediate: initialBudgets.intermediate,
-				advanced: initialBudgets.advanced
-			});
-		}
-	}, [initialBudgets]);
 
-	const validateAll = useCallback(async () => {
-		const results: Record<string, BudgetValidationResult> = {};
-		for (const [milestone, budget] of Object.entries(budgets)) {
-			results[milestone] = await validateBudget(budget);
-		}
-		setValidations(results);
-	}, [budgets]);
+  // Sync skillValues back to the v2.1 BudgetVector
+  useEffect(() => {
+    const budget: BudgetVector = { ...DEFAULT_BASELINE };
+    (Object.keys(skillInfo) as SkillKey[]).forEach((skill) => {
+      budget[skill] = skillValues[skill];
+    });
+    onChange(budget);
+  }, [skillValues, onChange]);
 
-	useEffect(() => {
-		validateAll();
-	}, [validateAll]);
+  return (
+    <div className="space-y-6">
 
-	const handleChange = (milestone: string, skill: keyof BudgetVector, value: number) => {
-		const newBudgets = { ...budgets };
-		const currentBudget = { ...newBudgets[milestone] };
-		
-		if (linkedMode) {
-			// Auto-balance other skills proportionally
-			const otherSkills = (['D', 'C', 'T', 'G'] as const).filter(s => s !== skill);
-			const oldValue = currentBudget[skill];
-			const diff = value - oldValue;
-			
-			// Distribute diff proportionally among other skills
-			const totalOther = otherSkills.reduce((sum, s) => sum + currentBudget[s], 0);
-			if (totalOther > 0) {
-				otherSkills.forEach(s => {
-					const proportion = currentBudget[s] / totalOther;
-					const adjustment = Math.round(-diff * proportion);
-					currentBudget[s] = Math.max(0, Math.min(100, currentBudget[s] + adjustment));
-				});
-			}
-		}
-		
-		currentBudget[skill] = value;
-		newBudgets[milestone] = currentBudget;
-		setBudgets(newBudgets);
-		onChange(milestone, currentBudget);
-	};
 
-	const isAllValid = Object.values(validations).every(v => v.isValid);
+      {/* Interactive Visual Breakdown (Pie Chart) */}
+      <SkillDistributionVisualizer
+        skillValues={skillValues}
+        onSegmentClick={(skill) => {
+          alert(`${skillInfo[skill].label}: ${skillValues[skill]}%`);
+        }}
+      />
 
-	return (
-		<div className="space-y-6">
-			{/* Linked Mode Toggle */}
-			<div className="flex items-center gap-3">
-				<label className="flex items-center gap-2 cursor-pointer">
-					<input
-						type="checkbox"
-						checked={linkedMode}
-						onChange={e => setLinkedMode(e.target.checked)}
-						disabled={disabled}
-						className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-					/>
-					<span className="text-sm text-gray-700">Chế độ liên kết (tự động cân bằng các kỹ năng khác khi kéo)</span>
-				</label>
-			</div>
+      {/* Skill Distribution Table (Collapsible) */}
+      <SkillDistributionTable
+        skillValues={skillValues}
+        isCollapsed={isTableCollapsed}
+        toggleCollapse={() => setIsTableCollapsed(!isTableCollapsed)}
+      />
 
-			{/* Milestone Tabs */}
-			<div className="space-y-6">
-				{milestoneLabels.map((label, idx) => {
-					const milestone = milestoneKeys[idx];
-					const budget = budgets[milestone] || { D: 25, C: 25, T: 25, G: 25 };
-					const validation = validations[milestone] || null;
-					
-					return (
-						<div key={milestone} className="space-y-4 p-4 rounded-xl border bg-gray-50">
-							<h4 className="font-semibold text-gray-900 flex items-center gap-2">
-								<span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded">{label}</span>
-								Ngân sách D/C/T/G
-							</h4>
-							
-							<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-								{(['D', 'C', 'T', 'G'] as const).map(skill => (
-									<BudgetSlider
-										key={skill}
-										value={budget[skill]}
-										onChange={v => handleChange(milestone, skill, v)}
-										skillKey={skill}
-										allValues={budget}
-										validation={validation}
-										disabled={disabled}
-									/>
-								))}
-							</div>
-						</div>
-					);
-				})}
-			</div>
 
-			{/* Summary */}
-			<div className="p-4 rounded-xl bg-white border">
-				<h4 className="font-medium text-gray-900 mb-3">Tóm tắt ngân sách</h4>
-				<div className="overflow-x-auto">
-					<table className="w-full text-sm">
-						<thead>
-							<tr className="text-left text-gray-500 border-b border-gray-100">
-								<th className="pb-2">Milestone</th>
-								<th className="pb-2 text-center">D</th>
-								<th className="pb-2 text-center">C</th>
-								<th className="pb-2 text-center">T</th>
-								<th className="pb-2 text-center">G</th>
-								<th className="pb-2 text-center">Tổng</th>
-								<th className="pb-2 text-center">Trạng thái</th>
-							</tr>
-						</thead>
-						<tbody>
-							{milestoneKeys.map((milestone, idx) => {
-								const budget = budgets[milestone] || { D: 25, C: 25, T: 25, G: 25 };
-								const sum = budget.D + budget.C + budget.T + budget.G;
-								const validation = validations[milestone];
-								return (
-									<tr key={milestone} className="border-b border-gray-50">
-										<td className="py-2 font-medium">{milestoneLabels[idx]}</td>
-										<td className="py-2 text-center text-blue-600">{budget.D}</td>
-										<td className="py-2 text-center text-green-600">{budget.C}</td>
-										<td className="py-2 text-center text-orange-600">{budget.T}</td>
-										<td className="py-2 text-center text-purple-600">{budget.G}</td>
-										<td className={cn('py-2 text-center font-bold', sum === 100 ? 'text-green-600' : 'text-red-600')}>{sum}</td>
-										<td className="py-2 text-center">
-											{validation?.isValid ? (
-												<span className="text-green-600 text-xs">✓ Hợp lệ</span>
-											) : (
-												<span className="text-red-600 text-xs">✗ Lỗi</span>
-											)}
-										</td>
-									</tr>
-								);
-							})}
-						</tbody>
-					</table>
-				</div>
-				
-				{!isAllValid && (
-					<Alert className="mt-3" variant="destructive">
-						<AlertCircle className="h-4 w-4" />
-						<AlertDescription>
-							Có {Object.values(validations).filter(v => !v.isValid).length} milestone bị lỗi ngân sách. Không thể lưu cho đến khi sửa.
-						</AlertDescription>
-					</Alert>
-				)}
-			</div>
-		</div>
-	);
+
+      {/* Skill Inputs */}
+      <SkillInputs
+        skillValues={skillValues}
+        updateSkillValue={updateSkillValue}
+        disabled={disabled}
+      />
+
+      {/* Warning Message (Blocking) */}
+      {showWarning && (
+        <WarningMessage
+          message={warningMessage}
+          isBlocking={isFloorViolated || isSumViolated}
+        />
+      )}
+    </div>
+  );
 }

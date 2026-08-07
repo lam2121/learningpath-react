@@ -86,10 +86,10 @@ export function getSkillLabel(vector: VectorArray): 'D' | 'C' | 'T' | 'G' | '-' 
 }
 
 export const skillLabels: Record<'D' | 'C' | 'T' | 'G', string> = {
-	D: 'Văn bản kỹ thuật (D)',
-	C: 'Giao tiếp (C)',
-	T: 'Xử lý rủi ro (T)',
-	G: 'Thương mại (G)'
+	D: 'Technical Document (D)',
+	C: 'Communication (C)',
+	T: 'Troubleshooting (T)',
+	G: 'Growth/Economics (G)'
 };
 
 export const skillColors: Record<'D' | 'C' | 'T' | 'G', string> = {

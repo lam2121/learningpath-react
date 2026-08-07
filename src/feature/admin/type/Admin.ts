@@ -1,29 +1,51 @@
-// Admin Module Types
+// Admin Module Types (v2.1)
+
+export type SkillKey = 'D_doc' | 'C_comm' | 'T_trouble' | 'G_custom';
+
+export interface BudgetVector {
+	D_doc: number;
+	C_comm: number;
+	T_trouble: number;
+	G_custom: number;
+}
+
+export const DEFAULT_BASELINE: BudgetVector = {
+	D_doc: 25,
+	C_comm: 25,
+	T_trouble: 25,
+	G_custom: 25,
+};
 
 export interface CareerTrack {
-	id: string;
+	id: number;
 	name: string;
 	jobDescription: string;
+	baseline: BudgetVector;
 	gSkillDefinition: string;
 	seedTier1: string;
 	seedTier2: string;
-	budgets: {
-		basic: BudgetVector;
-		intermediate: BudgetVector;
-		advanced: BudgetVector;
-	};
+	exampleQuestion: string[] | null;
 	isActive: boolean;
-	createdAt: string;
-	createdBy: string;
-	updatedAt?: string;
+	createdBy: number | null;
 	activeLearnerCount: number;
+	topicsCount: number;
+	lessonsCount: number;
+	generationStatus: string | null;
 }
 
-export interface BudgetVector {
-	D: number;
-	C: number;
-	T: number;
-	G: number;
+// Request payloads (backend uses snake_case for these)
+export interface TrackCreatePayload {
+	name: string;
+	job_description: string;
+	baseline: BudgetVector;
+	g_skill_description: string;
+	seed_tier_1: string;
+	seed_tier_2: string;
+	example_question?: string[] | null;
+}
+
+export interface TrackUpdatePayload extends Partial<TrackCreatePayload> {
+	is_active?: boolean;
 }
 
 export interface BudgetValidationResult {
@@ -35,7 +57,7 @@ export interface BudgetValidationResult {
 export interface CostRecord {
 	id: string;
 	date: string; // ISO date string
-	generator: 'A' | 'B1' | 'B2' | 'C1' | 'C2' | 'D1' | 'D2';
+	generator: string;
 	inputTokens: number;
 	outputTokens: number;
 	costUsd: number;
@@ -66,14 +88,14 @@ export interface CostDashboardData {
 }
 
 export interface RejectedContent {
-	id: string;
-	generator: 'A' | 'B1' | 'B2' | 'C1' | 'C2' | 'D1' | 'D2';
+	id: number;
+	generator: string;
 	role: string;
 	inputPreview: string;
 	error: string;
 	rawResponse: string;
 	timestamp: string;
-	validatorChecks: ValidatorCheck[];
+	validatorChecks: ValidatorCheck[] | null;
 	status: 'pending' | 'fixed' | 'ignored';
 }
 
@@ -86,7 +108,7 @@ export interface ValidatorCheck {
 export interface KillSwitchState {
 	enabled: boolean;
 	enabledAt?: string;
-	enabledBy?: string;
+	enabledBy?: number | string;
 	reason?: string;
 }
 
@@ -110,4 +132,34 @@ export interface TrackDeactivationWarning {
 		progress: number;
 	}>;
 	message: string;
+}
+
+export interface GenerateResponse {
+	message: string;
+	roleId: number;
+}
+
+export interface GenerationStatus {
+	roleId: number;
+	status: string;
+	step: string;
+	stepACount: number;
+	stepAErrors: number;
+	startedAt: string | null;
+	finishedAt: string | null;
+	errorMessage: string | null;
+}
+
+export interface ResetLearnersResult {
+	resetLearners: number;
+	clearedAnswers: number;
+}
+
+export interface DashboardData {
+	totalTracks: number;
+	activeTracks: number;
+	activeLearners: number;
+	aiCalls30d: number;
+	aiCost30d: number;
+	pendingRejected: number;
 }

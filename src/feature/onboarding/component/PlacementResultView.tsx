@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
-import { LogOut } from 'lucide-react'
+import { LogOut, Loader2 } from 'lucide-react'
 import tmaLogo from '@/asset/image/tma_logo.png'
 import { useAuth } from '@/common/context/AuthContext'
 import type { QuestionResult, SkillAxis } from '../api/placementTestTypes'
+import { fetchPlacementTestResult, type PlacementResult, type PlacementAnswerDetail } from '../api/onboardingApi'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -18,8 +19,8 @@ type AxisMap = Record<SkillAxis, AxisScore>
 
 // Tính điểm các trục dựa trên tỷ lệ câu trả lời đúng
 function computeAxisScores(results: QuestionResult[], totalPerAxis: number = 12): Record<SkillAxis, number> {
-  const axes: SkillAxis[] = ['D_doc', 'C_comm', 'T_trouble', 'G_biz']
-  const scores: Record<SkillAxis, number> = { D_doc: 0, C_comm: 0, T_trouble: 0, G_biz: 0 }
+  const axes: SkillAxis[] = ['D_doc', 'C_comm', 'T_trouble', 'G_custom']
+  const scores: Record<SkillAxis, number> = { D_doc: 0, C_comm: 0, T_trouble: 0, G_custom: 0 }
 
   axes.forEach((axis) => {
     const relevant = results.filter((r) => r.axis === axis)
@@ -34,7 +35,7 @@ const DEMO_TARGETS: Record<SkillAxis, number> = {
   D_doc: (20 / 100) * 78,
   C_comm: (50 / 100) * 78,
   T_trouble: (10 / 100) * 78,
-  G_biz: (20 / 100) * 78,
+  G_custom: (20 / 100) * 78,
 }
 
 function normalizeTarget(t: number): number {
@@ -46,7 +47,7 @@ function generateAISummary(scores: Record<SkillAxis, number>): string {
     D_doc: 'technical documentation',
     C_comm: 'communication & presentation',
     T_trouble: 'troubleshooting',
-    G_biz: 'business negotiation',
+    G_custom: 'business negotiation',
   }
 
   const entries = Object.entries(scores) as [SkillAxis, number][]
@@ -111,7 +112,7 @@ const AXIS_META_DISPLAY = [
   { key: 'D_doc' as SkillAxis, label: 'Documentation', color: 'text-blue-500', bar: 'bg-blue-400', track: 'bg-blue-50' },
   { key: 'C_comm' as SkillAxis, label: 'Communication', color: 'text-emerald-500', bar: 'bg-emerald-400', track: 'bg-emerald-50' },
   { key: 'T_trouble' as SkillAxis, label: 'Troubleshooting', color: 'text-rose-500', bar: 'bg-rose-400', track: 'bg-rose-50' },
-  { key: 'G_biz' as SkillAxis, label: 'Business', color: 'text-amber-500', bar: 'bg-amber-400', track: 'bg-amber-50' },
+  { key: 'G_custom' as SkillAxis, label: 'Business', color: 'text-amber-500', bar: 'bg-amber-400', track: 'bg-amber-50' },
 ]
 
 // ─── Main Result View ─────────────────────────────────────────────────────────
@@ -125,100 +126,32 @@ export function PlacementResultView() {
     navigate({ to: '/login' })
   }
 
-  const results: QuestionResult[] = (routerState as { results?: QuestionResult[] })?.results ?? []
-  const hasDemoData = results.length === 0
-
-  const demoResults: QuestionResult[] = hasDemoData
-    ? [
-      { questionId: 'd1', axis: 'D_doc', difficulty: 5, selectedId: 'a', isCorrect: false },
-      { questionId: 'd2', axis: 'D_doc', difficulty: 6, selectedId: 'a', isCorrect: false },
-      { questionId: 'd3', axis: 'D_doc', difficulty: 7, selectedId: 'a', isCorrect: false },
-      { questionId: 'd4', axis: 'D_doc', difficulty: 8, selectedId: 'a', isCorrect: false },
-      { questionId: 'd5', axis: 'D_doc', difficulty: 9, selectedId: 'b', isCorrect: true },
-      { questionId: 'd6', axis: 'D_doc', difficulty: 10, selectedId: 'b', isCorrect: true },
-      { questionId: 'd7', axis: 'D_doc', difficulty: 5, selectedId: 'a', isCorrect: false },
-      { questionId: 'd8', axis: 'D_doc', difficulty: 6, selectedId: 'c', isCorrect: true },
-      { questionId: 'd9', axis: 'D_doc', difficulty: 7, selectedId: 'b', isCorrect: true },
-      { questionId: 'd10', axis: 'D_doc', difficulty: 8, selectedId: 'b', isCorrect: true },
-      { questionId: 'd11', axis: 'D_doc', difficulty: 9, selectedId: 'b', isCorrect: true },
-      { questionId: 'd12', axis: 'D_doc', difficulty: 10, selectedId: 'b', isCorrect: true },
-
-      { questionId: 'c1', axis: 'C_comm', difficulty: 5, selectedId: 'b', isCorrect: true },
-      { questionId: 'c2', axis: 'C_comm', difficulty: 6, selectedId: 'b', isCorrect: true },
-      { questionId: 'c3', axis: 'C_comm', difficulty: 5, selectedId: 'c', isCorrect: true },
-      { questionId: 'c4', axis: 'C_comm', difficulty: 6, selectedId: 'a', isCorrect: true },
-      { questionId: 'c5', axis: 'C_comm', difficulty: 5, selectedId: 'a', isCorrect: true },
-      { questionId: 'c6', axis: 'C_comm', difficulty: 6, selectedId: 'b', isCorrect: true },
-      { questionId: 'c7', axis: 'C_comm', difficulty: 5, selectedId: 'b', isCorrect: true },
-      { questionId: 'c8', axis: 'C_comm', difficulty: 6, selectedId: 'b', isCorrect: true },
-      { questionId: 'c9', axis: 'C_comm', difficulty: 5, selectedId: 'c', isCorrect: true },
-      { questionId: 'c10', axis: 'C_comm', difficulty: 6, selectedId: 'a', isCorrect: true },
-      { questionId: 'c11', axis: 'C_comm', difficulty: 5, selectedId: 'a', isCorrect: true },
-      { questionId: 'c12', axis: 'C_comm', difficulty: 6, selectedId: 'b', isCorrect: true },
-
-      { questionId: 't1', axis: 'T_trouble', difficulty: 5, selectedId: 'b', isCorrect: true },
-      { questionId: 't2', axis: 'T_trouble', difficulty: 6, selectedId: 'b', isCorrect: true },
-      { questionId: 't3', axis: 'T_trouble', difficulty: 7, selectedId: 'c', isCorrect: true },
-      { questionId: 't4', axis: 'T_trouble', difficulty: 6, selectedId: 'a', isCorrect: true },
-      { questionId: 't5', axis: 'T_trouble', difficulty: 7, selectedId: 'c', isCorrect: true },
-      { questionId: 't6', axis: 'T_trouble', difficulty: 8, selectedId: 'b', isCorrect: true },
-      { questionId: 't7', axis: 'T_trouble', difficulty: 5, selectedId: 'b', isCorrect: true },
-      { questionId: 't8', axis: 'T_trouble', difficulty: 6, selectedId: 'b', isCorrect: true },
-      { questionId: 't9', axis: 'T_trouble', difficulty: 7, selectedId: 'c', isCorrect: true },
-      { questionId: 't10', axis: 'T_trouble', difficulty: 6, selectedId: 'a', isCorrect: true },
-      { questionId: 't11', axis: 'T_trouble', difficulty: 7, selectedId: 'c', isCorrect: true },
-      { questionId: 't12', axis: 'T_trouble', difficulty: 8, selectedId: 'b', isCorrect: true },
-
-      { questionId: 'g1', axis: 'G_biz', difficulty: 5, selectedId: 'c', isCorrect: true },
-      { questionId: 'g2', axis: 'G_biz', difficulty: 4, selectedId: 'c', isCorrect: true },
-      { questionId: 'g3', axis: 'G_biz', difficulty: 3, selectedId: 'b', isCorrect: true },
-      { questionId: 'g4', axis: 'G_biz', difficulty: 4, selectedId: 'a', isCorrect: true },
-      { questionId: 'g5', axis: 'G_biz', difficulty: 3, selectedId: 'c', isCorrect: true },
-      { questionId: 'g6', axis: 'G_biz', difficulty: 4, selectedId: 'b', isCorrect: true },
-      { questionId: 'g7', axis: 'G_biz', difficulty: 5, selectedId: 'c', isCorrect: true },
-      { questionId: 'g8', axis: 'G_biz', difficulty: 4, selectedId: 'c', isCorrect: true },
-      { questionId: 'g9', axis: 'G_biz', difficulty: 3, selectedId: 'b', isCorrect: true },
-      { questionId: 'g10', axis: 'G_biz', difficulty: 4, selectedId: 'a', isCorrect: true },
-      { questionId: 'g11', axis: 'G_biz', difficulty: 3, selectedId: 'c', isCorrect: true },
-      { questionId: 'g12', axis: 'G_biz', difficulty: 4, selectedId: 'b', isCorrect: true },
-    ]
-    : results
-
-  const totalQuestions = 48 // Tổng số câu hỏi cố định theo yêu cầu
-  const questionsPerAxis = totalQuestions / 4 // 12 câu mỗi trục
-
-  const totalCorrect = demoResults.filter((r) => r.isCorrect).length
-  // Tính điểm hệ 10 và làm tròn 1 chữ số thập phân
-  const scoreOutOf10 = ((totalCorrect / totalQuestions) * 10).toFixed(1)
-  const overallPct = Math.round((totalCorrect / totalQuestions) * 100)
-
-  const actualScores = computeAxisScores(demoResults, questionsPerAxis)
-  const axisMap: AxisMap = {
-    D_doc: { actual: actualScores.D_doc, target: normalizeTarget(DEMO_TARGETS.D_doc) },
-    C_comm: { actual: actualScores.C_comm, target: normalizeTarget(DEMO_TARGETS.C_comm) },
-    T_trouble: { actual: actualScores.T_trouble, target: normalizeTarget(DEMO_TARGETS.T_trouble) },
-    G_biz: { actual: actualScores.G_biz, target: normalizeTarget(DEMO_TARGETS.G_biz) },
-  }
-
-  // Hàm tính toán số câu đúng / tổng số câu (cố định mỗi trục 12 câu)
-  const getAxisStats = (axis: SkillAxis) => {
-    const relevant = demoResults.filter((r) => r.axis === axis)
-    const correct = relevant.filter((r) => r.isCorrect).length
-    const percentage = Math.round((correct / questionsPerAxis) * 100)
-    return { correct, total: questionsPerAxis, percentage }
-  }
-
-  const aiSummary = generateAISummary(actualScores)
-  const startingLevel = determineStartingLevel(actualScores)
-  
+  // State for backend result
+  const [result, setResult] = useState<PlacementResult | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [showContent, setShowContent] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [activeTab, setActiveTab] = useState<SkillAxis>('D_doc')
   const [hoursPerWeek, setHoursPerWeek] = useState(8)
 
-  const totalHours = LEVEL_CONFIG[startingLevel].hours
-  const weeks = Math.ceil(totalHours / hoursPerWeek)
-  const months = (weeks / 4.33).toFixed(1)
+  // Use router state as instant paint fallback, but fetch from backend as source of truth
+  const routerResults: QuestionResult[] = (routerState as { results?: QuestionResult[] })?.results ?? []
+
+  useEffect(() => {
+    const fetchResult = async () => {
+      try {
+        const data = await fetchPlacementTestResult()
+        setResult(data)
+      } catch (err) {
+        console.error('Failed to fetch placement test result:', err)
+        setError('Failed to load your results. Please try again.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchResult()
+  }, [])
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
@@ -232,6 +165,119 @@ export function PlacementResultView() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
+  useEffect(() => {
+    const t = setTimeout(() => setShowContent(true), 200)
+    return () => clearTimeout(t)
+  }, [])
+
+  // While loading, show spinner
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
+        <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+        <p className="mt-4 text-lg font-medium text-slate-600">Loading your results...</p>
+      </div>
+    )
+  }
+
+  // If no result from backend and no router fallback, show empty state
+  if (!result && routerResults.length === 0) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-4xl text-center">
+          <div className="text-6xl mb-4 animate-in zoom-in-50 duration-500">📊</div>
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 mb-3">
+            No Results Yet
+          </h1>
+          <p className="text-slate-600 text-base font-medium mb-8">
+            Complete the placement test to see your personalized IT communication skill profile.
+          </p>
+          <button
+            onClick={() => navigate({ to: '/onboarding/role-selection' })}
+            className="py-4 px-8 rounded-2xl bg-[#007aff] hover:bg-blue-600 text-white font-extrabold text-lg shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+          >
+            Start Placement Test
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Use backend result if available, otherwise fall back to router state
+  const useBackend = result && result.is_finished_placement_test
+  const resultsToUse = useBackend ? result.answers.map((a: PlacementAnswerDetail) => {
+    // Options come back in DB order; the user's pick is matched by TEXT so the
+    // letter the frontend shuffled at test time never needs to line up again.
+    const opts = a.options.map((text: string, i: number) => ({ id: ['a', 'b', 'c', 'd'][i] ?? String(i), text }))
+    const correctId = opts.find((o) => o.text === a.correct_answer)?.id ?? 'a'
+    const selectedId = a.selected_text
+      ? (opts.find((o) => o.text === a.selected_text)?.id ?? null)
+      : null
+    return {
+      questionId: String(a.question_id),
+      axis: a.axis as SkillAxis,
+      difficulty: a.level as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10,
+      selectedId,
+      isCorrect: a.is_correct,
+      questionText: a.statement,
+      options: opts,
+      correctId,
+    }
+  }) : routerResults
+
+  const totalQuestions = useBackend ? result.total_questions : 48
+  const totalCorrect = useBackend ? result.total_correct : resultsToUse.filter((r: QuestionResult) => r.isCorrect).length
+  const overallPct = useBackend ? result.overall_percent : Math.round((totalCorrect / totalQuestions) * 100)
+  const scoreOutOf10 = ((totalCorrect / totalQuestions) * 10).toFixed(1)
+
+  // Compute axis scores from backend or fallback
+  const actualScores = useBackend ? {
+    D_doc: result.skill_scores.D_doc || 0,
+    C_comm: result.skill_scores.C_comm || 0,
+    T_trouble: result.skill_scores.T_trouble || 0,
+    G_custom: result.skill_scores.G_custom || 0,
+  } : computeAxisScores(resultsToUse, totalQuestions / 4)
+
+  // Target bars: use role baseline if available, otherwise fallback to demo targets
+  const roleBaseline = useBackend && result.baseline ? {
+    D_doc: result.baseline.D_doc || 0,
+    C_comm: result.baseline.C_comm || 0,
+    T_trouble: result.baseline.T_trouble || 0,
+    G_custom: result.baseline.G_custom || 0,
+  } : DEMO_TARGETS
+
+  const axisMap: AxisMap = {
+    D_doc: { actual: actualScores.D_doc, target: normalizeTarget(roleBaseline.D_doc) },
+    C_comm: { actual: actualScores.C_comm, target: normalizeTarget(roleBaseline.C_comm) },
+    T_trouble: { actual: actualScores.T_trouble, target: normalizeTarget(roleBaseline.T_trouble) },
+    G_custom: { actual: actualScores.G_custom, target: normalizeTarget(roleBaseline.G_custom) },
+  }
+
+  // Hàm tính toán số câu đúng / tổng số câu (cố định mỗi trục 12 câu)
+  const getAxisStats = (axis: SkillAxis) => {
+    if (useBackend) {
+      // Backend: compute from answers (group by axis)
+      const relevant = resultsToUse.filter((r: QuestionResult) => r.axis === axis)
+      const correct = relevant.filter((r: QuestionResult) => r.isCorrect).length
+      const total = relevant.length
+      const percentage = total > 0 ? Math.round((correct / total) * 100) : 0
+      return { correct, total, percentage }
+    } else {
+      // Fallback: fixed 12 per axis
+      const relevant = resultsToUse.filter((r: QuestionResult) => r.axis === axis)
+      const correct = relevant.filter((r: QuestionResult) => r.isCorrect).length
+      const percentage = Math.round((correct / (totalQuestions / 4)) * 100)
+      return { correct, total: totalQuestions / 4, percentage }
+    }
+  }
+
+   const aiSummary = generateAISummary(actualScores)
+   const startingLevel = useBackend ? result.starting_level as StartingLevel : determineStartingLevel(actualScores)
+  
+  const totalHours = LEVEL_CONFIG[startingLevel].hours
+  const weeks = Math.ceil(totalHours / hoursPerWeek)
+  const months = (weeks / 4.33).toFixed(1)
+
   const openDetails = () => {
     window.history.pushState({ popup: 'details' }, '')
     setShowDetails(true)
@@ -244,11 +290,6 @@ export function PlacementResultView() {
       setShowDetails(false)
     }
   }
-
-  useEffect(() => {
-    const t = setTimeout(() => setShowContent(true), 200)
-    return () => clearTimeout(t)
-  }, [])
 
   function gradeLabel(pct: number): { label: string; color: string } {
     if (pct >= 80) return { label: 'Excellent', color: 'text-emerald-600' }
@@ -533,11 +574,14 @@ export function PlacementResultView() {
             </svg>
           </button>
 
-          <p className="text-center text-sm font-semibold text-slate-400 mt-5">
-            AI will generate 24 fully personalized lessons for your career track
-          </p>
-        </div>
-      </div>
+           <p className="text-center text-sm font-semibold text-slate-400 mt-5">
+             AI will generate 24 fully personalized lessons for your career track
+           </p>
+           {error && (
+             <p className="mt-4 text-center text-sm text-red-500">{error}</p>
+           )}
+         </div>
+       </div>
 
       {/* ── Details Popup ─────────────────────────────────────────────── */}
       {showDetails && (
@@ -557,8 +601,9 @@ export function PlacementResultView() {
             <div className="flex px-6 pt-2 space-x-2 border-b border-slate-100 overflow-x-auto shrink-0 bg-white">
               {AXIS_META_DISPLAY.map(ax => {
                 const isActive = activeTab === ax.key
-                const axisResults = demoResults.filter(r => r.axis === ax.key)
-                const axisCorrect = axisResults.filter(r => r.isCorrect).length
+                const axisResults = resultsToUse.filter((r: QuestionResult) => r.axis === ax.key)
+                const axisCorrect = axisResults.filter((r: QuestionResult) => r.isCorrect).length
+                const axisTotal = useBackend ? axisResults.length : totalQuestions / 4
                 return (
                   <button
                     key={ax.key}
@@ -568,7 +613,7 @@ export function PlacementResultView() {
                   >
                     <span className={isActive ? ax.color : ''}>{ax.label}</span>
                     <span className={`text-[10px] px-2 py-0.5 rounded-full ${isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
-                      {axisCorrect}/{questionsPerAxis}
+                      {axisCorrect}/{axisTotal}
                     </span>
                   </button>
                 )
@@ -576,18 +621,18 @@ export function PlacementResultView() {
             </div>
 
             <div className="p-6 overflow-y-auto flex-1 bg-slate-50/50">
-              {AXIS_META_DISPLAY.filter(ax => ax.key === activeTab).map((ax) => {
-                const axisResults = demoResults.filter(r => r.axis === ax.key)
+            {AXIS_META_DISPLAY.filter(ax => ax.key === activeTab).map((ax) => {
+                const axisResults = resultsToUse.filter((r: QuestionResult) => r.axis === ax.key)
                 return (
                   <div key={ax.key} className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <div className="space-y-6">
-                      {axisResults.map((r, idx) => {
+                      {axisResults.map((r: QuestionResult, idx: number) => {
                         const qText = r.questionText || `This is a sample question about ${ax.label} (Question ${idx + 1}). How would you handle this scenario?`
                         const options = r.options || [
                           { id: 'a', text: 'The correct approach for the situation.' },
                           { id: 'b', text: 'An incorrect, less optimal option.' },
                           { id: 'c', text: 'Another wrong choice that might seem right.' },
-                          { id: 'd', text: 'Completely off topic.' }
+                          { id: 'd', text: 'Completely off topic.' },
                         ]
                         const correctId = r.correctId || (r.isCorrect ? (r.selectedId || 'a') : (r.selectedId === 'a' ? 'b' : 'a'))
 

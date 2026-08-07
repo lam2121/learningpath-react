@@ -13,10 +13,10 @@ interface QuizResultAccordionProps {
 }
 
 const skillLabels: Record<string, string> = {
-	D: 'Văn bản (D)',
-	C: 'Giao tiếp (C)',
-	T: 'Xử lý rủi ro (T)',
-	G: 'Thương mại (G)'
+	D: 'Document (D)',
+	C: 'Communication (C)',
+	T: 'Troubleshooting (T)',
+	G: 'Growth/Economics (G)'
 };
 
 const skillColors: Record<string, string> = {
@@ -49,8 +49,8 @@ export function QuizResultAccordion({
 					'inline-flex items-center gap-2 px-6 py-3 rounded-full text-lg font-semibold',
 					passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
 				)}>
-					{passed ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
-					{passed ? 'ĐẠT' : 'CHƯA ĐẠT'}
+{passed ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
+						{passed ? 'PASSED' : 'FAILED'}
 				</div>
 				
 				<div className="text-4xl font-bold text-gray-900">
@@ -58,7 +58,7 @@ export function QuizResultAccordion({
 				</div>
 				
 				<p className="text-gray-600">
-					Điểm: {result.score.toFixed(1)} / {result.maxScore} · {result.type === 'final' ? 'Final Test' : result.type === 'topic' ? 'Topic Quiz' : 'Lesson Quiz'}
+					Score: {result.score.toFixed(1)} / {result.maxScore} · {result.type === 'final' ? 'Final Test' : result.type === 'topic' ? 'Topic Quiz' : 'Lesson Quiz'}
 				</p>
 
 				{/* Skill Breakdown */}
@@ -86,7 +86,7 @@ export function QuizResultAccordion({
 						<Brain className="w-4 h-4 text-blue-600" />
 					</div>
 					<div className="flex-1">
-						<p className="font-medium text-blue-900">Nhận xét AI:</p>
+						<p className="font-medium text-blue-900">AI Feedback:</p>
 						<p className="text-blue-700 text-sm mt-1">{result.aiSummary}</p>
 					</div>
 				</div>
@@ -94,7 +94,7 @@ export function QuizResultAccordion({
 
 			{/* Question Accordion List */}
 			<div className="space-y-3">
-				<h3 className="text-lg font-semibold text-gray-900">Chi tiết câu hỏi</h3>
+				<h3 className="text-lg font-semibold text-gray-900">Question Details</h3>
 				<Accordion type="multiple" className="space-y-2">
 					{result.questionResults.map((qr) => (
 						<AccordionItem key={qr.index} value={String(qr.index)}>
@@ -112,9 +112,9 @@ export function QuizResultAccordion({
 								
 								{/* Question Text */}
 								<div className="flex-1 min-w-0">
-									<p className="font-medium text-gray-900 truncate">
-										Câu {qr.index + 1}: {qr.questionText}
-									</p>
+<p className="font-medium text-gray-900 truncate">
+									Question {qr.index + 1}: {qr.questionText}
+								</p>
 									<div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
 										<Badge variant="outline" className={skillColors[getSkillVectorLabel(qr.skillVector)]}>
 											{getSkillVectorLabel(qr.skillVector)}
@@ -134,7 +134,7 @@ export function QuizResultAccordion({
 										size="icon"
 										onClick={() => onBookmark(qr.index)}
 										className="h-8 w-8 text-gray-400 hover:text-amber-500"
-										aria-label="Đánh dấu ôn tập"
+										aria-label="Bookmark for Review"
 									>
 										<Bookmark className="w-4 h-4" />
 									</Button>
@@ -147,18 +147,18 @@ export function QuizResultAccordion({
 								<div className="grid gap-4">
 									{/* User Answer vs Correct Answer */}
 									<div className="p-4 rounded-xl bg-gray-50">
-										<h4 className="text-sm font-medium text-gray-600 mb-2">Đáp án của bạn:</h4>
+										<h4 className="text-sm font-medium text-gray-600 mb-2">Your Answer:</h4>
 										<p className={cn(
 											'font-mono text-base',
 											qr.isCorrect ? 'text-green-700' : 'text-red-700'
 										)}>
-											{qr.userAnswer || '(Chưa trả lời)'}
+											{qr.userAnswer || '(Not answered)'}
 										</p>
 									</div>
 									
 									{!qr.isCorrect && (
 										<div className="p-4 rounded-xl bg-green-50">
-											<h4 className="text-sm font-medium text-gray-600 mb-2">Đáp án đúng:</h4>
+											<h4 className="text-sm font-medium text-gray-600 mb-2">Correct Answer:</h4>
 											<p className="font-mono text-base text-green-700">
 												{qr.correctAnswer}
 											</p>
@@ -167,10 +167,10 @@ export function QuizResultAccordion({
 
 									{/* Explanation */}
 									<div className="p-4 rounded-xl bg-blue-50 border border-blue-100">
-										<h4 className="text-sm font-medium text-blue-900 mb-2 flex items-center gap-2">
-											<Brain className="w-4 h-4" />
-											Giải thích:
-										</h4>
+<h4 className="text-sm font-medium text-blue-900 mb-2 flex items-center gap-2">
+									<Brain className="w-4 h-4" />
+									Explanation:
+								</h4>
 										<p className="text-blue-700 text-sm leading-relaxed">{qr.explanation}</p>
 									</div>
 
@@ -178,12 +178,12 @@ export function QuizResultAccordion({
 									{qr.confidenceFlag !== 'confident' && (
 										<div className="p-3 rounded-lg bg-amber-50 border border-amber-100 flex items-center gap-2">
 											<Flag className="w-4 h-4 text-amber-600" />
-											<span className="text-sm text-amber-800">
-												{qr.confidenceFlag === 'warning' 
-													? '⚠️ Câu này đúng nhưng có dấu hiệu đoán/nhìn tài liệu (thời gian hoặc mất tập trung). Chỉ được tính 50% trọng số.'
-													: '❌ Câu này sai.'
-												}
-											</span>
+<span className="text-sm text-amber-800">
+										{qr.confidenceFlag === 'warning' 
+											? '⚠️ This answer is correct but shows signs of guessing/referring to materials (time or lack of focus). Only counted at 50% weight.'
+											: '❌ This answer is incorrect.'
+										}
+									</span>
 										</div>
 									)}
 								</div>
@@ -196,28 +196,28 @@ export function QuizResultAccordion({
 			{/* Action Buttons */}
 			<div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100">
 				{onReviewTheory && !passed && (
-					<Button 
-						variant="outline" 
-						className="flex-1"
-						onClick={onReviewTheory}
-					>
-						<BookOpen className="w-4 h-4 mr-2" />
-						Đọc lại lý thuyết
-					</Button>
+<Button 
+							variant="outline" 
+							className="flex-1"
+							onClick={onReviewTheory}
+						>
+							<BookOpen className="w-4 h-4 mr-2" />
+							Review Theory Again
+						</Button>
 				)}
 				{onRetry && !passed && (
-					<Button 
-						className="flex-1 bg-orange-600 hover:bg-orange-700"
-						onClick={onRetry}
-					>
-						<RotateCcw className="w-4 h-4 mr-2" />
-						Làm lại quiz
-					</Button>
+<Button 
+							className="flex-1 bg-orange-600 hover:bg-orange-700"
+							onClick={onRetry}
+						>
+							<RotateCcw className="w-4 h-4 mr-2" />
+							Retake Quiz
+						</Button>
 				)}
 				{passed && onRetry && (
-					<Button variant="outline" className="flex-1" onClick={onRetry}>
-						Làm lại để tăng điểm
-					</Button>
+<Button variant="outline" className="flex-1" onClick={onRetry}>
+							Retake to Increase Score
+						</Button>
 				)}
 			</div>
 		</div>

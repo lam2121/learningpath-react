@@ -2,7 +2,6 @@ import { Card, CardContent } from "@/shadcn/component/ui/card";
 import { Button } from "@/shadcn/component/ui/button";
 import {
     BookOpen,
-    Lightbulb,
     TriangleAlert,
     Briefcase,
     Code2,

@@ -4,7 +4,7 @@ export * from './util/implicitConfidence';
 export * from './util/skillVector';
 export * from './component/QuizShell';
 export * from './component/FillBlankQuestion';
-export * from './component/MatchingQuestion';
+export * from './component/MultiSelectQuestion';
 export * from './component/OrderingQuestion';
 export * from './component/QuizResultAccordion';
 export * from './component/FailureRoutingModal';

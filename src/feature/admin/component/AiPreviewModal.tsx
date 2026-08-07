@@ -19,8 +19,7 @@ export function AiPreviewModal({ isOpen, onClose, data }: AiPreviewModalProps) {
 						Preview AI Generation
 					</DialogTitle>
 					<DialogDescription>
-						Cách AI hiểu Job Description + G-Skill Definition của bạn. 
-						Nếu ví dụ quá chung chung → cần viết rõ ràng hơn G-Skill Definition.
+						How AI interprets your Job Description + G-Skill Definition. If examples are too generic → need to write G-Skill Definition more clearly.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -56,11 +55,11 @@ export function AiPreviewModal({ isOpen, onClose, data }: AiPreviewModalProps) {
 
 				<DialogFooter className="flex-row justify-end gap-3">
 					<Button variant="outline" onClick={onClose}>
-						Đóng
+						Close
 					</Button>
 					<Button onClick={onClose} className="bg-green-600 hover:bg-green-700">
 						<CheckCircle className="h-4 w-4 mr-2" />
-						Đã hiểu, tiếp tục lưu
+						Understood, continue saving
 					</Button>
 				</DialogFooter>
 			</DialogContent>

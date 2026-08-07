@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Button } from '@/shadcn/component/ui/button';
 import { Input } from '@/shadcn/component/ui/input';
 import { Textarea } from '@/shadcn/component/ui/textarea';
@@ -6,15 +6,15 @@ import { Label } from '@/shadcn/component/ui/label';
 import { Alert, AlertDescription } from '@/shadcn/component/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shadcn/component/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shadcn/component/ui/dialog';
-import { AlertCircle, Loader2, Eye, Save, Trash2 } from 'lucide-react';
+import { AlertCircle, Loader2, Eye, Save, Trash2, RotateCcw } from 'lucide-react';
 import { BudgetSlidersGroup } from './BudgetSlider';
 import { AiPreviewModal } from './AiPreviewModal';
-import { validateBudget, type CareerTrack, type BudgetVector } from '../api/adminApi';
-import { createTrack, updateTrack, deactivateTrack, getDeactivationWarning } from '../api/adminApi';
+import { type CareerTrack, type BudgetVector, DEFAULT_BASELINE } from '../api/adminApi';
+import { createTrack, updateTrack, deactivateTrack, activateTrack, getDeactivationWarning } from '../api/adminApi';
 
 interface RoleCreationFormProps {
 	initialTrack?: CareerTrack;
-	onSuccess?: (track: CareerTrack) => void;
+	onSuccess?: (track?: CareerTrack) => void;
 }
 
 export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormProps) {
@@ -24,20 +24,16 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 		jobDescription: initialTrack?.jobDescription || '',
 		gSkillDefinition: initialTrack?.gSkillDefinition || '',
 		seedTier1: initialTrack?.seedTier1 || '',
-		seedTier2: initialTrack?.seedTier2 || ''
+		seedTier2: initialTrack?.seedTier2 || '',
+		exampleQuestion1: initialTrack?.exampleQuestion?.[0] || '',
+		exampleQuestion2: initialTrack?.exampleQuestion?.[1] || ''
 	});
 	
-	const [budgets, setBudgets] = useState<{
-		basic: BudgetVector;
-		intermediate: BudgetVector;
-		advanced: BudgetVector;
-	}>({
-		basic: initialTrack?.budgets.basic || { D: 25, C: 25, T: 25, G: 25 },
-		intermediate: initialTrack?.budgets.intermediate || { D: 25, C: 25, T: 25, G: 25 },
-		advanced: initialTrack?.budgets.advanced || { D: 25, C: 25, T: 25, G: 25 }
-	});
-	
-	const [validations, setValidations] = useState<Record<string, { isValid: boolean; errors: string[]; warnings: string[] }>>({});
+  const [baselineBudget, setBaselineBudget] = useState<BudgetVector>(() => {
+    return initialTrack?.baseline ? { ...initialTrack.baseline } : { ...DEFAULT_BASELINE };
+  });
+
+  const [validations] = useState<Record<string, { isValid: boolean; errors: string[]; warnings: string[] }>>({});
 	const [submitting, setSubmitting] = useState(false);
 	const [showPreview, setShowPreview] = useState(false);
 	const [previewData, setPreviewData] = useState<{ examples: string[]; warning?: string } | null>(null);
@@ -45,47 +41,57 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 	const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
 
 	// Validate budgets on change
-const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
-		setBudgets(prev => ({ ...prev, [milestone]: budget }));
-		const validation = await validateBudget(budget);
-		setValidations(prev => ({ ...prev, [milestone]: validation }));
-	};
+  const handleBudgetChange = useCallback((budget: BudgetVector) => {
+    setBaselineBudget(budget);
+  }, []);
 
-	const isAllValid = () => {
-		// Check form fields
-		if (!formData.name.trim()) return false;
-		if (!formData.jobDescription.trim()) return false;
-		if (!formData.gSkillDefinition.trim()) return false;
-		if (!formData.seedTier1.trim()) return false;
-		if (!formData.seedTier2.trim()) return false;
-		
-		// Check budgets
-		return Object.values(validations).every(v => v.isValid);
-	};
+  const isAllValid = () => {
+    // Check form fields
+    if (!formData.name.trim()) return false;
+    if (!formData.jobDescription.trim()) return false;
+    if (!formData.gSkillDefinition.trim()) return false;
+    if (!formData.seedTier1.trim()) return false;
+    if (!formData.seedTier2.trim()) return false;
+    
+    // Check budgets (validate sum, floor, and step of 5)
+    const values = Object.values(baselineBudget);
+    const sum = values.reduce((acc, val) => acc + val, 0);
+    const isValidSum = Math.abs(sum - 100) < 0.1;
+    const isValidFloor = values.every((value) => value >= 10);
+    const isValidStep = values.every((value) => value % 5 === 0);
+    
+    return isValidSum && isValidFloor && isValidStep;
+  };
 
 	const handleSubmit = async () => {
 		if (!isAllValid()) return;
 		
 		setSubmitting(true);
 		try {
+			const payload = {
+				name: formData.name,
+				job_description: formData.jobDescription,
+				baseline: baselineBudget,
+				g_skill_description: formData.gSkillDefinition,
+				seed_tier_1: formData.seedTier1,
+				seed_tier_2: formData.seedTier2,
+				example_question: (formData.exampleQuestion1 || formData.exampleQuestion2)
+					? [formData.exampleQuestion1, formData.exampleQuestion2].filter(Boolean)
+					: [],
+			};
 			let result: CareerTrack;
 			if (isEdit && initialTrack) {
 				result = await updateTrack(initialTrack.id, {
-					...formData,
-					budgets
+					...payload,
+					is_active: initialTrack.isActive,
 				});
 			} else {
-				result = await createTrack({
-					...formData,
-					budgets,
-					isActive: true,
-					createdBy: 'admin@tma.com.vn'
-				});
+				result = await createTrack(payload);
 			}
 			onSuccess?.(result);
 		} catch (error) {
 			console.error('Save failed:', error);
-			alert('Lưu thất bại. Vui lòng thử lại.');
+			alert('Save failed. Please try again.');
 		} finally {
 			setSubmitting(false);
 		}
@@ -101,7 +107,7 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 			setPreviewData(result);
 		} catch (error) {
 			console.error('Preview failed:', error);
-			setPreviewData({ examples: ['Không thể tạo preview. Vui lòng thử lại.'] });
+			setPreviewData({ examples: ['Cannot generate preview. Please try again.'] });
 		}
 	};
 
@@ -112,6 +118,20 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 		setDeactivateWarning(warning);
 	};
 
+	const handleActivate = async () => {
+		if (!initialTrack) return;
+		setSubmitting(true);
+		try {
+			await activateTrack(initialTrack.id);
+			onSuccess?.({ ...initialTrack, isActive: true });
+		} catch (error) {
+			console.error('Activate failed:', error);
+			alert('Activate track failed.');
+		} finally {
+			setSubmitting(false);
+		}
+	};
+
 	const confirmDeactivate = async () => {
 		if (!initialTrack) return;
 		setSubmitting(true);
@@ -120,7 +140,7 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 			onSuccess?.({ ...initialTrack, isActive: false });
 		} catch (error) {
 			console.error('Deactivate failed:', error);
-			alert('Tắt track thất bại.');
+			alert('Deactivate track failed.');
 		} finally {
 			setSubmitting(false);
 			setShowDeactivateConfirm(false);
@@ -133,12 +153,12 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 			<div className="flex items-center justify-between">
 				<div>
 					<h2 className="text-2xl font-bold text-gray-900">
-						{isEdit ? 'Chỉnh sửa Career Track' : 'Tạo Career Track mới'}
+						{isEdit ? 'Edit Career Track' : 'Create New Career Track'}
 					</h2>
 					<p className="text-gray-500 mt-1">
 						{isEdit 
-							? `Đang chỉnh sửa: ${initialTrack?.name} (${initialTrack?.activeLearnerCount || 0} học viên đang học)`
-							: 'Điền thông tin role, ngân sách D/C/T/G, và preview AI trước khi lưu.'
+							? `Editing: ${initialTrack?.name} (${initialTrack?.activeLearnerCount || 0} learners active)`
+							: 'Enter role info, D/C/T/G budget, and AI preview before saving.'
 						}
 					</p>
 				</div>
@@ -148,9 +168,15 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 						Preview AI
 					</Button>
 					{isEdit && initialTrack?.isActive && (
-						<Button variant="destructive" onClick={handleDeactivate} disabled={submitting}>
-							<Trash2 className="w-4 h-4 mr-2" />
-							Tắt track
+<Button variant="destructive" onClick={handleDeactivate} disabled={submitting}>
+								<Trash2 className="w-4 h-4 mr-2" />
+								Deactivate Track
+							</Button>
+					)}
+					{isEdit && !initialTrack?.isActive && (
+						<Button variant="outline" className="text-green-600 border-green-300 hover:bg-green-50" onClick={handleActivate} disabled={submitting}>
+							<RotateCcw className="w-4 h-4 mr-2" />
+							Reactivate Track
 						</Button>
 					)}
 				</div>
@@ -159,8 +185,8 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 			{/* Form Tabs */}
 			<Tabs defaultValue="basic" className="space-y-6">
 				<TabsList className="grid w-full grid-cols-3">
-					<TabsTrigger value="basic">Thông tin cơ bản</TabsTrigger>
-					<TabsTrigger value="budget">Ngân sách D/C/T/G</TabsTrigger>
+					<TabsTrigger value="basic">Basic Info</TabsTrigger>
+					<TabsTrigger value="budget">D/C/T/G Budget</TabsTrigger>
 					<TabsTrigger value="seed">Seed Content</TabsTrigger>
 				</TabsList>
 
@@ -168,9 +194,9 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 				<TabsContent value="basic" className="space-y-6 p-4 pt-0">
 					<div className="space-y-4">
 						<div>
-							<Label className="block text-sm font-medium text-gray-700 mb-1">Tên Role *</Label>
+							<Label className="block text-sm font-medium text-gray-700 mb-1">Role Name *</Label>
 							<Input
-								placeholder="VD: Business Analyst, QA Engineer, DevOps..."
+								placeholder="e.g., Business Analyst, QA Engineer, DevOps..."
 								value={formData.name}
 								onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
 								className="text-lg"
@@ -180,36 +206,36 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 						<div>
 							<Label className="block text-sm font-medium text-gray-700 mb-1">Job Description *</Label>
 							<Textarea
-								placeholder="Mô tả công việc chi tiết..."
+								placeholder="Detailed job description..."
 								value={formData.jobDescription}
 								onChange={e => setFormData(prev => ({ ...prev, jobDescription: e.target.value }))}
 								rows={6}
 								className="resize-none"
 							/>
-							<p className="text-xs text-gray-500 mt-1">Mô tả sẽ được dùng để AI generate lesson content liên quan đến role này.</p>
+							<p className="text-xs text-gray-500 mt-1">Description will be used to AI generate lesson content related to this role.</p>
 						</div>
 						
 						<div>
-							<Label className="block text-sm font-medium text-gray-700 mb-1">G-Skill Definition (Kỹ năng chuyên ngành) *</Label>
+							<Label className="block text-sm font-medium text-gray-700 mb-1">G-Skill Definition (Professional Skill) *</Label>
 							<Textarea
-								placeholder="VD: Eliciting requirements, clarifying scope, stakeholder communication, writing BRD/FSD..."
+								placeholder="e.g., Eliciting requirements, clarifying scope, stakeholder communication, writing BRD/FSD..."
 								value={formData.gSkillDefinition}
 								onChange={e => setFormData(prev => ({ ...prev, gSkillDefinition: e.target.value }))}
 								rows={4}
 								className="resize-none"
 							/>
-							<p className="text-xs text-gray-500 mt-1">Định nghĩa kỹ năng trục G (chuyên ngành). Quan trọng để AI hiểu đúng context chuyên môn.</p>
+							<p className="text-xs text-gray-500 mt-1">Definition of G-skill (professional). Important for AI to understand correct professional context.</p>
 						</div>
 					</div>
 				</TabsContent>
 
 				{/* Budget Tab */}
 				<TabsContent value="budget" className="space-y-6 p-4 pt-0">
-					<BudgetSlidersGroup
-						initialBudgets={budgets}
-						onChange={handleBudgetChange}
-						disabled={submitting}
-					/>
+        <BudgetSlidersGroup
+          initialBudget={baselineBudget}
+          onChange={handleBudgetChange}
+          disabled={submitting}
+        />
 				</TabsContent>
 
 				{/* Seed Content Tab */}
@@ -218,25 +244,45 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 						<div>
 							<Label className="block text-sm font-medium text-gray-700 mb-1">Seed Tier 1 (Basic Vocabulary) *</Label>
 							<Textarea
-								placeholder="Từ vựng cơ bản, cấu trúc câu đơn giản... (cách nhau bằng dấu phẩy)"
+								placeholder="Basic vocabulary, simple sentence structures... (separated by commas)"
 								value={formData.seedTier1}
 								onChange={e => setFormData(prev => ({ ...prev, seedTier1: e.target.value }))}
 								rows={4}
 								className="resize-none"
 							/>
-							<p className="text-xs text-gray-500 mt-1">Dùng cho các bài học level Basic (Vocabulary, Grammar, Reading cơ bản).</p>
+							<p className="text-xs text-gray-500 mt-1">Used for Basic level lessons (Vocabulary, Grammar, Basic Reading).</p>
 						</div>
 						
 						<div>
 							<Label className="block text-sm font-medium text-gray-700 mb-1">Seed Tier 2 (Advanced Terminology) *</Label>
 							<Textarea
-								placeholder="Thuật ngữ nâng cao, cấu trúc phức tạp... (cách nhau bằng dấu phẩy)"
+								placeholder="Advanced terminology, complex structures... (separated by commas)"
 								value={formData.seedTier2}
 								onChange={e => setFormData(prev => ({ ...prev, seedTier2: e.target.value }))}
 								rows={4}
 								className="resize-none"
 							/>
-							<p className="text-xs text-gray-500 mt-1">Dùng cho các bài học level Intermediate/Advanced (Troubleshooting, Negotiation, Advanced topics).</p>
+							<p className="text-xs text-gray-500 mt-1">Used for Intermediate/Advanced level lessons (Troubleshooting, Negotiation, Advanced topics).</p>
+						</div>
+
+						<div>
+							<Label className="block text-sm font-medium text-gray-700 mb-1">Example Question 1</Label>
+							<Input
+								placeholder="e.g., How would you explain a project delay to a client?"
+								value={formData.exampleQuestion1}
+								onChange={e => setFormData(prev => ({ ...prev, exampleQuestion1: e.target.value }))}
+							/>
+							<p className="text-xs text-gray-500 mt-1">Shown on learner role selection cards. Optional.</p>
+						</div>
+
+						<div>
+							<Label className="block text-sm font-medium text-gray-700 mb-1">Example Question 2</Label>
+							<Input
+								placeholder="e.g., How do you negotiate a scope change?"
+								value={formData.exampleQuestion2}
+								onChange={e => setFormData(prev => ({ ...prev, exampleQuestion2: e.target.value }))}
+							/>
+							<p className="text-xs text-gray-500 mt-1">Shown on learner role selection cards. Optional.</p>
 						</div>
 					</div>
 				</TabsContent>
@@ -247,13 +293,14 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 				<Alert variant="destructive" className="border-red-200">
 					<AlertCircle className="h-4 w-4" />
 					<AlertDescription className="flex flex-col gap-1">
-						<span className="font-medium">Form chưa hợp lệ:</span>
-						<ul className="list-disc list-inside text-sm space-y-1">
-							{!formData.name.trim() && <li>Chưa nhập tên Role</li>}
-							{!formData.jobDescription.trim() && <li>Chưa nhập Job Description</li>}
-							{!formData.gSkillDefinition.trim() && <li>Chưa nhập G-Skill Definition</li>}
-							{!formData.seedTier1.trim() && <li>Chưa nhập Seed Tier 1</li>}
-							{!formData.seedTier2.trim() && <li>Chưa nhập Seed Tier 2</li>}
+						<span className="font-medium">Form invalid:</span>
+<ul className="list-disc list-inside text-sm space-y-1">
+									{!formData.name.trim() && <li>Role name not entered</li>}
+									{!formData.jobDescription.trim() && <li>Job description not entered</li>}
+									{!formData.gSkillDefinition.trim() && <li>G-skill definition not entered</li>}
+								{!formData.seedTier1.trim() && <li>Seed Tier 1 not entered</li>}
+								{!formData.seedTier2.trim() && <li>Seed Tier 2 not entered</li>}
+							{Object.values(baselineBudget).some(v => v % 5 !== 0) && <li>Each skill budget must be a multiple of 5</li>}
 							{Object.entries(validations).filter(([, v]) => !v.isValid).map(([k, v]) => (
 								<li key={k}>{k}: {v.errors.join(', ')}</li>
 							))}
@@ -264,9 +311,9 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 
 			{/* Action Buttons */}
 			<div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-				<Button variant="outline" onClick={() => window.history.back()} disabled={submitting}>
-					Hủy
-				</Button>
+<Button variant="outline" onClick={() => onSuccess?.()} disabled={submitting}>
+							Cancel
+						</Button>
 				<Button 
 					onClick={handleSubmit} 
 					disabled={submitting || !isAllValid()}
@@ -274,13 +321,13 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 				>
 					{submitting ? (
 						<>
-							<Loader2 className="w-4 h-4 animate-spin mr-2" />
-							Đang lưu...
+<Loader2 className="w-4 h-4 animate-spin mr-2" />
+									Saving...
 						</>
 					) : (
 						<>
 							<Save className="w-4 h-4 mr-2" />
-							{isEdit ? 'Cập nhật' : 'Tạo mới'}
+							{isEdit ? 'Update' : 'Create New'}
 						</>
 					)}
 				</Button>
@@ -299,10 +346,10 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 					<DialogHeader>
 						<DialogTitle className="flex items-center gap-2 text-red-600">
 							<AlertCircle className="h-5 w-5" />
-							Xác nhận tắt track
+							Confirm Track Deactivation
 						</DialogTitle>
 						<DialogDescription>
-							Bạn sắp tắt track <strong>{initialTrack?.name}</strong>. Hành động này không thể hoàn tác.
+							You are about to deactivate track <strong>{initialTrack?.name}</strong>. This action cannot be undone.
 						</DialogDescription>
 					</DialogHeader>
 					
@@ -317,11 +364,11 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 							
 							{deactivateWarning.activeLearnersPreview.length > 0 && (
 								<div className="text-sm">
-									<p className="font-medium mb-2">Một số học viên đang học:</p>
+									<p className="font-medium mb-2">Some active learners:</p>
 									<ul className="space-y-1">
 										{deactivateWarning.activeLearnersPreview.map(u => (
 											<li key={u.id} className="text-gray-600">
-												{u.name} ({u.email}) - {u.progress}% hoàn thành
+												{u.name} ({u.email}) - {u.progress}% completed
 											</li>
 										))}
 									</ul>
@@ -331,11 +378,11 @@ const handleBudgetChange = async (milestone: string, budget: BudgetVector) => {
 					)}
 					
 					<DialogFooter className="flex-col-reverse sm:flex-row gap-3">
-						<Button variant="outline" onClick={() => setShowDeactivateConfirm(false)}>
-							Hủy
-						</Button>
+<Button variant="outline" onClick={() => setShowDeactivateConfirm(false)}>
+								Cancel
+							</Button>
 						<Button variant="destructive" onClick={confirmDeactivate} disabled={submitting}>
-							{submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : 'Xác nhận tắt'}
+							{submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : 'Confirm Deactivate'}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

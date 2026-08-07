@@ -8,7 +8,7 @@ import type {
 	UserAnswerRecord,
 	QuestionResult,
 	FillBlankQuestionData,
-	MatchingQuestionData,
+	MultiSelectQuestionData,
 	OrderingQuestionData,
 } from '../type/Quiz';
 
@@ -23,7 +23,7 @@ function generateId(prefix: string): string {
 }
 
 // ============================================================================
-// MOCK QUESTION BANKS (matching Schema_C2/C3/C4 format exactly)
+// MOCK QUESTION BANKS (matching Schema C2/C3/C4 format exactly)
 // ============================================================================
 
 const MOCK_FILL_BLANK_QUESTIONS: FillBlankQuestionData[] = [
@@ -31,7 +31,7 @@ const MOCK_FILL_BLANK_QUESTIONS: FillBlankQuestionData[] = [
 		"The server crashed due to a memory ___.",
 		"lake|leak|lock|leakage",
 		"leak",
-		"Bộ nhớ bị rò rỉ gây crash",
+		"Memory leak causing crash",
 		10, 0, 0, 0,  // D=10 (ONE-HOT)
 		30, 20, 30, 20  // remaining budget
 	],
@@ -39,7 +39,7 @@ const MOCK_FILL_BLANK_QUESTIONS: FillBlankQuestionData[] = [
 		"We need to ___ the new release to production.",
 		"deploy|delete|delay|deny",
 		"deploy",
-		"Deploy là triển khai lên môi trường production",
+		"Deploy is deployment to production environment",
 		0, 10, 0, 0,  // C=10
 		30, 10, 30, 20
 	],
@@ -47,7 +47,7 @@ const MOCK_FILL_BLANK_QUESTIONS: FillBlankQuestionData[] = [
 		"The bug was ___ by the QA team on staging.",
 		"reproduced|produced|reduced|removed",
 		"reproduced",
-		"Reproduce là tái hiện lỗi",
+		"Reproduce is to reproduce the error",
 		0, 0, 10, 0,  // T=10
 		30, 10, 20, 20
 	],
@@ -55,7 +55,7 @@ const MOCK_FILL_BLANK_QUESTIONS: FillBlankQuestionData[] = [
 		"Our goal is to ___ the client's ROI by 20%.",
 		"increase|decrease|ignore|guess",
 		"increase",
-		"ROI là lợi nhuận đầu tư, cần tăng",
+		"ROI is return on investment, needs to increase",
 		0, 0, 0, 10,  // G=10
 		30, 10, 20, 10
 	],
@@ -63,7 +63,7 @@ const MOCK_FILL_BLANK_QUESTIONS: FillBlankQuestionData[] = [
 		"Please ___ the API documentation before integration.",
 		"review|delete|ignore|skip",
 		"review",
-		"Review tài liệu là xem xét kỹ",
+		"Review document is to examine carefully",
 		10, 0, 0, 0,
 		20, 10, 20, 10
 	],
@@ -71,7 +71,7 @@ const MOCK_FILL_BLANK_QUESTIONS: FillBlankQuestionData[] = [
 		"The team must ___ the scope change request.",
 		"evaluate|ignore|reject|accept",
 		"evaluate",
-		"Evaluate là đánh giá tác động",
+		"Evaluate is to assess impact",
 		0, 10, 0, 0,
 		20, 0, 20, 10
 	],
@@ -79,7 +79,7 @@ const MOCK_FILL_BLANK_QUESTIONS: FillBlankQuestionData[] = [
 		"Root cause analysis ___ the database deadlock.",
 		"identified|ignored|created|hidden",
 		"identified",
-		"Identified là xác định ra",
+		"Identified is to ascertain",
 		0, 0, 10, 0,
 		20, 0, 10, 10
 	],
@@ -87,7 +87,7 @@ const MOCK_FILL_BLANK_QUESTIONS: FillBlankQuestionData[] = [
 		"We should ___ the budget for Q4 infrastructure.",
 		"approve|reduce|increase|estimate",
 		"approve",
-		"Approve là phê duyệt ngân sách",
+		"Approve is to approve budget",
 		0, 0, 0, 10,
 		20, 0, 10, 0
 	],
@@ -95,7 +95,7 @@ const MOCK_FILL_BLANK_QUESTIONS: FillBlankQuestionData[] = [
 		"The developer needs to ___ the pull request.",
 		"review|merge|close|delete",
 		"review",
-		"Review PR là xem xét code",
+		"Review PR is to examine code",
 		10, 0, 0, 0,
 		10, 0, 10, 0
 	],
@@ -103,52 +103,92 @@ const MOCK_FILL_BLANK_QUESTIONS: FillBlankQuestionData[] = [
 		"Let's ___ the meeting for next Monday.",
 		"schedule|cancel|skip|forget",
 		"schedule",
-		"Schedule là lên lịch",
+		"Schedule is to schedule",
 		0, 10, 0, 0,
 		10, -10, 10, 0
 	]
 ];
 
-const MOCK_MATCHING_QUESTIONS: MatchingQuestionData[] = [
+const MOCK_MULTI_SELECT_QUESTIONS: MultiSelectQuestionData[] = [
 	[
-		"Just add this small feature",
-		"Let's add it to the backlog for the next sprint",
-		"No, we are busy|Okay, I will add it now",
-		"Đẩy feature vào backlog để quản lý scope",
+		"Select the appropriate responses when a client pushes scope creep",
+		"Let's add it to the backlog for next sprint|Sure, I will add it now|I need to check the impact on this sprint first|No, we are too busy|Let me review it after our current commitments",
+		"0|2|4",
+		"Push to backlog and assess impact to manage scope",
 		0, 10, 0, 0,
 		30, 20, 30, 20
 	],
 	[
-		"The system is down, fix it now!",
-		"We are investigating the root cause and will update you in 30 minutes",
-		"It's not my job|I'll fix it in 5 minutes",
-		"Cam kết thời gian phản hồi thực tế",
+		"Select the appropriate responses when production is down",
+		"We are investigating the root cause now|It's not my job|We will update you in 30 minutes|I'll fix it in 5 minutes",
+		"0|2",
+		"Commit to investigating and a real update time",
 		0, 10, 0, 0,
 		30, 10, 30, 20
 	],
 	[
-		"Why is this bug not fixed yet?",
-		"The bug is triaged as P2; we are working on P1 issues first",
-		"Because I'm lazy|It will fix itself",
-		"Giải thích quy trình triage ưu tiên",
+		"Select the appropriate steps when explaining a pending bug fix",
+		"The bug is triaged as P2, we work on P1 first|It will fix itself|Here is our priority list and timeline|I'm too lazy to fix it now",
+		"0|2",
+		"Explain the triage priority and show a timeline",
 		0, 0, 10, 0,
 		30, 10, 20, 20
 	],
 	[
-		"We need this feature by Friday",
-		"Let me check the impact on current sprint commitments",
-		"Impossible|No problem, done",
-		"Đánh giá tác động trước khi cam kết",
+		"Select the appropriate responses when asked for a Friday delivery",
+		"Let me check the impact on current sprint commitments|Impossible|No problem, done|I will confirm after reviewing the workload",
+		"0|3",
+		"Evaluate impact before making any commitment",
 		0, 10, 0, 0,
 		30, 0, 20, 20
 	],
 	[
-		"The client wants a discount",
-		"I can propose a phased approach to fit the budget",
-		"No discount|Sure, 50% off",
-		"Đàm phán giải pháp win-win",
+		"Select the appropriate responses when the client asks for a discount",
+		"I can propose a phased approach to fit the budget|No discount, ever|Sure, 50% off|Let me see what we can trade in scope",
+		"0|3",
+		"Negotiate a win-win solution within budget",
 		0, 0, 0, 10,
 		30, 0, 20, 10
+	],
+	[
+		"Select the details a bug report must include",
+		"Reproduction steps|The reporter's favorite food|Expected vs actual behavior|Environment and version",
+		"0|2|3",
+		"A bug report needs steps, expected/actual, and environment",
+		10, 0, 0, 0,
+		30, 0, 20, 10
+	],
+	[
+		"Select the appropriate ways to confirm understanding of a requirement",
+		"Repeat the requirement in your own words|Ask clarifying questions|Agree before verifying details|Assume and start coding",
+		"0|1|2",
+		"Confirm by paraphrasing, clarifying, and verifying",
+		0, 10, 0, 0,
+		30, 0, 10, 10
+	],
+	[
+		"Select the appropriate actions when a scope change request arrives",
+		"Assess the impact on timeline and budget|Accept it silently|Document the change request|Reject it without discussion",
+		"0|2",
+		"Assess and document the change before deciding",
+		0, 0, 10, 0,
+		20, 0, 10, 10
+	],
+	[
+		"Select the appropriate content for a daily standup update",
+		"What I did yesterday|What I will do today|Any blockers|Personal weekend plans",
+		"0|1|2",
+		"A standup covers yesterday, today, and blockers only",
+		0, 10, 0, 0,
+		20, 0, 10, 0
+	],
+	[
+		"Select the appropriate responses when a deadline cannot be met",
+		"Inform stakeholders early|Silently hope for the best|Propose a new timeline with reasons|Blame the QA team",
+		"0|2",
+		"Communicate early and propose a realistic timeline",
+		0, 0, 10, 0,
+		20, 0, 10, 0
 	]
 ];
 
@@ -157,7 +197,7 @@ const MOCK_ORDERING_QUESTIONS: OrderingQuestionData[] = [
 		"Order the deployment steps",
 		"Run tests|Merge PR|Deploy to staging|Monitor logs",
 		"1|0|2|3",
-		"Quy trình: Merge -> Test -> Deploy -> Monitor",
+		"Process: Merge -> Test -> Deploy -> Monitor",
 		0, 0, 10, 0,
 		30, 20, 20, 20
 	],
@@ -165,7 +205,7 @@ const MOCK_ORDERING_QUESTIONS: OrderingQuestionData[] = [
 		"Sequence the bug report workflow",
 		"Write reproduction steps|Assign to developer|Verify fix|Close ticket",
 		"0|1|2|3",
-		"Quy trình báo lỗi: Reproduce -> Assign -> Verify -> Close",
+		"Bug reporting process: Reproduce -> Assign -> Verify -> Close",
 		0, 0, 10, 0,
 		30, 20, 10, 20
 	],
@@ -198,10 +238,10 @@ const MOCK_ORDERING_QUESTIONS: OrderingQuestionData[] = [
 // Generate 10 questions of each type for a 30-question lesson quiz
 function getLessonQuizQuestions(): QuizQuestion[] {
 	const questions: QuizQuestion[] = [];
-	const types: Array<'fill_blank' | 'matching' | 'ordering'> = ['fill_blank', 'matching', 'ordering'];
+	const types: Array<'fill_blank' | 'multi_select' | 'ordering'> = ['fill_blank', 'multi_select', 'ordering'];
 	const banks = {
 		fill_blank: MOCK_FILL_BLANK_QUESTIONS,
-		matching: MOCK_MATCHING_QUESTIONS,
+		multi_select: MOCK_MULTI_SELECT_QUESTIONS,
 		ordering: MOCK_ORDERING_QUESTIONS
 	};
 
@@ -212,7 +252,7 @@ function getLessonQuizQuestions(): QuizQuestion[] {
 			questions.push({
 				id: generateId(`${type}_q`),
 				type,
-				data: [...data] as FillBlankQuestionData | MatchingQuestionData | OrderingQuestionData
+				data: [...data] as FillBlankQuestionData | MultiSelectQuestionData | OrderingQuestionData
 			});
 		}
 	}
@@ -225,11 +265,11 @@ function getTopicQuizQuestions(): QuizQuestion[] {
 	const questions: QuizQuestion[] = [];
 	const banks = {
 		fill_blank: MOCK_FILL_BLANK_QUESTIONS,
-		matching: MOCK_MATCHING_QUESTIONS,
+		multi_select: MOCK_MULTI_SELECT_QUESTIONS,
 		ordering: MOCK_ORDERING_QUESTIONS
 	};
 
-	// 10 fill_blank, 10 matching, 10 ordering
+	// 10 fill_blank, 10 multi_select, 10 ordering
 	for (let i = 0; i < 10; i++) {
 		questions.push({
 			id: generateId(`topic_fb_${i}`),
@@ -239,9 +279,9 @@ function getTopicQuizQuestions(): QuizQuestion[] {
 	}
 	for (let i = 0; i < 10; i++) {
 		questions.push({
-			id: generateId(`topic_ma_${i}`),
-			type: 'matching',
-			data: [...banks.matching[i % banks.matching.length]] as MatchingQuestionData
+			id: generateId(`topic_ms_${i}`),
+			type: 'multi_select',
+			data: [...banks.multi_select[i % banks.multi_select.length]] as MultiSelectQuestionData
 		});
 	}
 	for (let i = 0; i < 10; i++) {
@@ -260,24 +300,24 @@ function getFinalTestQuestions(): QuizQuestion[] {
 	const questions: QuizQuestion[] = [];
 	const banks = {
 		fill_blank: MOCK_FILL_BLANK_QUESTIONS,
-		matching: MOCK_MATCHING_QUESTIONS,
+		multi_select: MOCK_MULTI_SELECT_QUESTIONS,
 		ordering: MOCK_ORDERING_QUESTIONS
 	};
 
 	// Mix based on "weak skills" - mock distribution: 20 per type
 	const distribution = [
 		...Array(20).fill('fill_blank'),
-		...Array(20).fill('matching'),
+		...Array(20).fill('multi_select'),
 		...Array(20).fill('ordering')
 	];
 
 	for (let i = 0; i < 60; i++) {
-		const type = distribution[i] as 'fill_blank' | 'matching' | 'ordering';
+		const type = distribution[i] as 'fill_blank' | 'multi_select' | 'ordering';
 		const bank = banks[type];
 		questions.push({
 			id: generateId(`final_${type}_${i}`),
 			type,
-			data: [...bank[i % bank.length]] as FillBlankQuestionData | MatchingQuestionData | OrderingQuestionData
+			data: [...bank[i % bank.length]] as FillBlankQuestionData | MultiSelectQuestionData | OrderingQuestionData
 		});
 	}
 
@@ -427,19 +467,19 @@ export async function submitQuiz(sessionId: string): Promise<QuizResult> {
 		// Extract question text based on type
 		let questionText = '';
 		if (q.type === 'fill_blank') questionText = (q.data as FillBlankQuestionData)[0];
-		else if (q.type === 'matching') questionText = (q.data as MatchingQuestionData)[0];
+		else if (q.type === 'multi_select') questionText = (q.data as MultiSelectQuestionData)[0];
 		else if (q.type === 'ordering') questionText = (q.data as OrderingQuestionData)[0];
 
 		// Get correct answer
 		let correctAnswer = '';
 		if (q.type === 'fill_blank') correctAnswer = (q.data as FillBlankQuestionData)[2];
-		else if (q.type === 'matching') correctAnswer = (q.data as MatchingQuestionData)[1];
+		else if (q.type === 'multi_select') correctAnswer = (q.data as MultiSelectQuestionData)[2];
 		else if (q.type === 'ordering') correctAnswer = (q.data as OrderingQuestionData)[2];
 
 		// Get explanation
 		let explanation = '';
 		if (q.type === 'fill_blank') explanation = (q.data as FillBlankQuestionData)[3];
-		else if (q.type === 'matching') explanation = (q.data as MatchingQuestionData)[3];
+		else if (q.type === 'multi_select') explanation = (q.data as MultiSelectQuestionData)[3];
 		else if (q.type === 'ordering') explanation = (q.data as OrderingQuestionData)[3];
 
 		// Get skill vector (indices 4-7 are weights)
@@ -447,8 +487,8 @@ export async function submitQuiz(sessionId: string): Promise<QuizResult> {
 		if (q.type === 'fill_blank') {
 			const d = q.data as FillBlankQuestionData;
 			skillVector = [d[4], d[5], d[6], d[7]];
-		} else if (q.type === 'matching') {
-			const d = q.data as MatchingQuestionData;
+		} else if (q.type === 'multi_select') {
+			const d = q.data as MultiSelectQuestionData;
 			skillVector = [d[4], d[5], d[6], d[7]];
 		} else if (q.type === 'ordering') {
 			const d = q.data as OrderingQuestionData;
@@ -513,9 +553,24 @@ export async function submitQuiz(sessionId: string): Promise<QuizResult> {
 function checkAnswer(question: QuizQuestion, userAnswer: string): boolean {
 	if (!userAnswer) return false;
 	
+	if (question.type === 'multi_select') {
+		const correct = (question.data as MultiSelectQuestionData)[2]
+			.split('|')
+			.map(s => s.trim())
+			.filter(Boolean)
+			.sort()
+			.join('|');
+		const user = userAnswer
+			.split('|')
+			.map(s => s.trim())
+			.filter(Boolean)
+			.sort()
+			.join('|');
+		return user === correct;
+	}
+
 	let correct = '';
 	if (question.type === 'fill_blank') correct = (question.data as FillBlankQuestionData)[2];
-	else if (question.type === 'matching') correct = (question.data as MatchingQuestionData)[1];
 	else if (question.type === 'ordering') correct = (question.data as OrderingQuestionData)[2];
 
 	return userAnswer.trim().toLowerCase() === correct.trim().toLowerCase();
@@ -539,19 +594,19 @@ function generateAISummary(
 		.map(([k]) => k);
 
 	const skillNames: Record<string, string> = {
-		D: 'Văn bản kỹ thuật (D)',
-		C: 'Giao tiếp (C)',
-		T: 'Xử lý rủi ro (T)',
-		G: 'Thương mại (G)'
+		D: 'Technical Document (D)',
+		C: 'Communication (C)',
+		T: 'Troubleshooting (T)',
+		G: 'Growth/Economics (G)'
 	};
 
 	if (passed) {
 		if (type === 'final') {
-			return `Chúc mừng bạn đã tốt nghiệp khóa học! Bạn đạt ${percentages.D}% D, ${percentages.C}% C, ${percentages.T}% T, ${percentages.G}% G. Hãy tiếp tục duy trì thói quen học tập hàng ngày để nâng cao thêm nữa.`;
+			return `Congratulations on graduating the course! You achieved ${percentages.D}% D, ${percentages.C}% C, ${percentages.T}% T, ${percentages.G}% G. Please continue daily study habits to further improve.`;
 		}
-		return `Bạn đã vượt qua bài quiz ${type}! Điểm mạnh: ${Object.entries(percentages).filter(([,v])=>v>=70).map(([k])=>skillNames[k]).join(', ')}. ${weakSkills.length ? `Cần chú ý: ${weakSkills.map(k=>skillNames[k]).join(', ')}` : ''}`;
+		return `You passed the ${type} quiz! Strengths: ${Object.entries(percentages).filter(([,v])=>v>=70).map(([k])=>skillNames[k]).join(', ')}. ${weakSkills.length ? `Needs attention: ${weakSkills.map(k=>skillNames[k]).join(', ')}` : ''}`;
 	} else {
-		const focus = weakSkills.slice(0, 2).map(k => skillNames[k]).join(' và ');
-		return `Bạn chưa đạt điểm qua ${type}. Hệ thống khuyên bạn nên ôn lại ${focus} trước khi thử lại. Đừng nản lòng, đây là cơ hội để củng cố nền tảng vững chắc hơn!`;
+		const focus = weakSkills.slice(0, 2).map(k => skillNames[k]).join(' and ');
+		return `You did not pass the ${type} quiz. System recommends reviewing ${focus} before retrying. Don't get discouraged, this is an opportunity to strengthen your foundation!`;
 	}
 }

@@ -24,7 +24,7 @@ export function KillSwitchToggle({ enabled, onToggle, disabled, compact = false 
 			await onToggle(checked);
 		} catch (error) {
 			console.error('Failed to toggle kill switch:', error);
-			alert('Thay đổi trạng thái thất bại');
+			alert('Failed to change status');
 		} finally {
 			setToggling(false);
 		}
@@ -68,13 +68,13 @@ export function KillSwitchToggle({ enabled, onToggle, disabled, compact = false 
 					<AlertDescription className="flex flex-col gap-1">
 						<span className="font-medium">
 							{enabled 
-								? 'AI Generation ĐÃ BỊ TẮT - Chỉ phục vụ nội dung cache' 
-								: 'AI Generation ĐANG HOẠT ĐỘNG bình thường'}
+								? 'AI Generation DISABLED - Serving cache only' 
+								: 'AI Generation NORMALLY OPERATIONAL'}
 						</span>
 						<span className="text-sm text-gray-600">
 							{enabled 
-								? 'Tất cả các lệnh gọi AI (Placement Test, Course Generator, Quiz Generator, Evaluator) sẽ bị chặn. Hệ thống chỉ trả về nội dung đã cache sẵn trong DB. Learner vẫn học được nhưng không có nội dung mới được tạo.'
-								: 'Hệ thống hoạt động bình thường. AI sẽ được gọi khi cần thiết để tạo nội dung mới.'}
+								? 'All AI calls (Placement Test, Course Generator, Quiz Generator, Evaluator) will be blocked. System will only return cached content from DB. Learners can still study but no new content will be generated.'
+								: 'System operating normally. AI will be called when needed to generate new content.'}
 						</span>
 					</AlertDescription>
 				</Alert>
@@ -83,9 +83,9 @@ export function KillSwitchToggle({ enabled, onToggle, disabled, compact = false 
 					<Alert className="border-amber-200 bg-amber-50">
 						<AlertTriangle className="h-4 w-4" />
 						<AlertDescription className="flex flex-col gap-1">
-							<span className="font-medium">⚠️ CẢNH BÁO: Kill Switch đang BẬT</span>
+							<span className="font-medium">⚠️ WARNING: Kill Switch IS ON</span>
 							<span className="text-sm text-amber-800">
-								Điều này có nghĩa ngân sách AI đã cạn hoặc có sự cố. Hãy bật lại khi ngân sách được nạp lại hoặc sự cố được khắc phục.
+								This means AI budget is exhausted or there's an issue. Please re-enable when budget is replenished or issue is resolved.
 							</span>
 						</AlertDescription>
 					</Alert>
@@ -93,7 +93,7 @@ export function KillSwitchToggle({ enabled, onToggle, disabled, compact = false 
 
 				<div className="flex items-center justify-between p-4 rounded-lg bg-white border">
 					<div>
-						<p className="text-sm text-gray-500">Trạng thái hiện tại</p>
+						<p className="text-sm text-gray-500">Current Status</p>
 						<p className={cn(
 							'font-bold text-lg',
 							enabled ? 'text-red-600' : 'text-green-600'
@@ -107,22 +107,22 @@ export function KillSwitchToggle({ enabled, onToggle, disabled, compact = false 
 						disabled={disabled || toggling}
 						id="kill-switch-main"
 					/>
-					<Label htmlFor="kill-switch-main" className="text-sm text-gray-600">
-						{enabled ? 'Bật AI Generation' : 'Tắt AI Generation (Emergency)'}
-					</Label>
+<Label htmlFor="kill-switch-main" className="text-sm text-gray-600">
+							{enabled ? 'Enable AI Generation' : 'Disable AI Generation (Emergency)'}
+						</Label>
 					{toggling && <Loader2 className="h-5 w-5 animate-spin text-gray-400" />}
 				</div>
 
 				{enabled && (
-					<Button
-						variant="default"
-						className="w-full bg-red-600 hover:bg-red-700"
-						onClick={() => handleChange(false)}
-						disabled={toggling}
-					>
-						<Shield className="h-4 w-4 mr-2" />
-						BẬT LẠI AI GENERATION (Resolve Emergency)
-					</Button>
+<Button
+							variant="default"
+							className="w-full bg-red-600 hover:bg-red-700"
+							onClick={() => handleChange(false)}
+							disabled={toggling}
+						>
+							<Shield className="h-4 w-4 mr-2" />
+							RE-ENABLE AI GENERATION (Resolve Emergency)
+						</Button>
 				)}
 			</CardContent>
 		</Card>

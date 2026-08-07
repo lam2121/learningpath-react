@@ -5,10 +5,10 @@ import { Button } from '@/shadcn/component/ui/button';
 import { Progress } from '@/shadcn/component/ui/progress';
 import { Toaster, toast } from 'sonner';
 import { cn } from '@/shadcn/lib/util';
-import type { QuizSession, UserAnswerRecord, QuizResult, FillBlankQuestionData, MatchingQuestionData, OrderingQuestionData } from '../type/Quiz';
+import type { QuizSession, UserAnswerRecord, QuizResult, FillBlankQuestionData, MultiSelectQuestionData, OrderingQuestionData } from '../type/Quiz';
 import { fetchQuiz, autoSaveAnswers, submitQuiz, resumeQuiz } from '../api/quizApi';
 import { FillBlankQuestion } from './FillBlankQuestion';
-import { MatchingQuestion } from './MatchingQuestion';
+import { MultiSelectQuestion } from './MultiSelectQuestion';
 import { OrderingQuestion } from './OrderingQuestion';
 import { QuizResultAccordion } from './QuizResultAccordion';
 import { calculateConfidence } from '../util/implicitConfidence';
@@ -79,7 +79,7 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 				}
 			} catch (error) {
 				console.error('Failed to load quiz:', error);
-				toast.error('Không thể tải bài quiz. Vui lòng thử lại.');
+				toast.error('Cannot load quiz. Please try again.');
 				navigate({ to: '/dashboard' });
 			} finally {
 				if (mounted) {
@@ -114,7 +114,7 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 	useEffect(() => {
 		const handleOnline = () => {
 			setNetworkStatus('online');
-			toast.success('Đã kết nối lại. Đang khôi phục tiến độ...');
+			toast.success('Reconnected. Restoring progress...');
 			// Resume quiz - use the ref to get current session ID
 			if (sessionIdRef.current) {
 				resumeQuiz(sessionIdRef.current).then(saved => {
@@ -126,7 +126,7 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 		};
 		const handleOffline = () => {
 			setNetworkStatus('offline');
-			toast.error('Mất kết nối mạng. Đang lưu tiến độ cục bộ...');
+			toast.error('Network disconnected. Saving progress locally...');
 		};
 		window.addEventListener('online', handleOnline);
 		window.addEventListener('offline', handleOffline);
@@ -145,7 +145,7 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 				try {
 					await autoSaveAnswers(sessionIdRef.current, answers);
 					lastAutoSave.current = { ...answers };
-					toast.success('Đã tự động lưu', { duration: 1000 });
+					toast.success('Auto-saved', { duration: 1000 });
 				} catch (e) {
 					console.warn('Auto-save failed:', e);
 				}
@@ -223,7 +223,7 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 			onComplete?.(quizResult);
 		} catch (error) {
 			console.error('Submit failed:', error);
-			toast.error('Nộp bài thất bại. Vui lòng thử lại.');
+			toast.error('Submit failed. Please try again.');
 		} finally {
 			setSubmitting(false);
 		}
@@ -253,14 +253,30 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (showResult || loading || !sessionRef.current) return;
 
-			// Number keys 1-4 for options
-			if (e.key >= '1' && e.key <= '4') {
+			// Number keys for options
+			if (e.key >= '1' && e.key <= '9') {
 				const question = sessionRef.current?.questions[currentQuestionIndex];
-				if (question?.type === 'fill_blank' || question?.type === 'matching') {
+				if (question?.type === 'fill_blank' && e.key <= '4') {
 					const options = question.data[1].split('|');
 					const index = parseInt(e.key) - 1;
 					if (options[index]) {
 						handleAnswer(options[index]);
+					}
+				} else if (question?.type === 'multi_select') {
+					const options = question.data[1].split('|');
+					const index = parseInt(e.key) - 1;
+					if (options[index]) {
+						const current = (answersRef.current[currentQuestionIndex]?.answer || '')
+							.split('|')
+							.map(s => parseInt(s.trim(), 10))
+							.filter(n => !isNaN(n));
+						const selected = new Set(current);
+						if (selected.has(index)) {
+							selected.delete(index);
+						} else {
+							selected.add(index);
+						}
+						handleAnswer([...selected].sort((a, b) => a - b).join('|'));
 					}
 				}
 			}
@@ -289,7 +305,7 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 			<div className="min-h-screen flex items-center justify-center bg-gray-50">
 				<div className="text-center">
 					<Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-					<p className="text-gray-600">{resuming ? 'Đang khôi phục tiến độ...' : 'Đang tải bài quiz...'}</p>
+					<p className="text-gray-600">{resuming ? 'Restoring progress...' : 'Loading quiz...'}</p>
 				</div>
 			</div>
 		);
@@ -300,8 +316,8 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 			<div className="min-h-screen flex items-center justify-center bg-gray-50">
 				<div className="text-center">
 					<AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-					<p className="text-gray-600">Không thể tải bài quiz</p>
-					<Button onClick={() => navigate({ to: '/dashboard' })} className="mt-4">Về trang chủ</Button>
+<p className="text-gray-600">Cannot load quiz</p>
+							<Button onClick={() => navigate({ to: '/dashboard' })} className="mt-4">Go to Home</Button>
 				</div>
 			</div>
 		);
@@ -333,7 +349,7 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 								<span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-medium capitalize">{type}</span>
 							</div>
 							<h1 className="text-lg font-semibold text-gray-900 truncate">
-								Câu {currentQuestionIndex + 1} / {session.questions.length}
+								Question {currentQuestionIndex + 1} / {session.questions.length}
 							</h1>
 						</div>
 						{type === 'final' && timeRemaining !== null && (
@@ -354,7 +370,7 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 					{networkStatus === 'offline' && (
 						<div className="mt-2 flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg">
 							<WifiOff className="w-3 h-3" />
-							<span>Đang ngoại tuyến - Tự động lưu cục bộ</span>
+							<span>Offline - Saving locally</span>
 						</div>
 					)}
 				</div>
@@ -375,10 +391,10 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 							userAnswer={answers[currentQuestionIndex]?.answer}
 						/>
 					)}
-					{currentQuestion.type === 'matching' && (
-						<MatchingQuestion
+					{currentQuestion.type === 'multi_select' && (
+						<MultiSelectQuestion
 							key={currentQuestionIndex}
-							data={currentQuestion.data as MatchingQuestionData}
+							data={currentQuestion.data as MultiSelectQuestionData}
 							questionNumber={currentQuestionIndex + 1}
 							totalQuestions={session.questions.length}
 							userAnswer={answers[currentQuestionIndex]?.answer || null}
@@ -414,8 +430,8 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 							disabled={submitting || currentQuestionIndex === 0}
 							className="flex-shrink-0"
 						>
-							<ChevronLeft className="w-4 h-4 mr-2" />
-							Câu trước
+<ChevronLeft className="w-4 h-4 mr-2" />
+								Previous Question
 						</Button>
 
 						{/* Question Number Circles */}
@@ -445,7 +461,7 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 
 						{!isLastQuestion ? (
 							<Button onClick={handleNext} disabled={submitting} className="flex-shrink-0">
-								Câu tiếp
+								Next Question
 								<ChevronRight className="w-4 h-4 ml-2" />
 							</Button>
 						) : (
@@ -457,10 +473,10 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 								{submitting ? (
 									<>
 										<Loader2 className="w-4 h-4 animate-spin mr-2" />
-										Đang chấm...
+										Grading...
 									</>
 								) : (
-									'Nộp bài'
+									'Submit'
 								)}
 							</Button>
 						)}
@@ -473,7 +489,7 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 				<div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
 					<div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-slide-up relative">
 						<div className="absolute top-4 right-4 z-10">
-							<Button variant="ghost" size="sm" onClick={() => navigate({ to: '/dashboard' })}>Đóng</Button>
+							<Button variant="ghost" size="sm" onClick={() => navigate({ to: '/dashboard' })}>Close</Button>
 						</div>
 						<QuizResultAccordion
 							result={result}

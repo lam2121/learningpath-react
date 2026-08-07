@@ -40,11 +40,11 @@ export function calculateScore(isCorrect: boolean, confidence: ConfidenceFlag): 
 export function getConfidenceLabel(flag: ConfidenceFlag): string {
 	switch (flag) {
 		case 'confident':
-			return 'Tự tin & Đúng';
+			return 'Confident & Correct';
 		case 'warning':
-			return 'Đúng nhưng có dấu hiệu đoán/có tra cứu';
+			return 'Correct but shows signs of guessing/referring to materials';
 		case 'fail':
-			return 'Sai';
+			return 'Incorrect';
 	}
 }
 

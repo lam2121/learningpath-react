@@ -2,37 +2,6 @@ import { getStoredToken } from '@/common/context/AuthContext'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api'
 
-export type SkillAxis = 'D_doc' | 'C_comm' | 'T_trouble' | 'G_biz'
-
-export interface SubQuestionOption {
-  id: string
-  label: string
-}
-
-export interface SubQuestion {
-  question: string
-  options: SubQuestionOption[]
-}
-
-export interface SurveyQuestion {
-  id: string
-  axis: SkillAxis
-  question: string
-  context: string
-  subQuestion?: SubQuestion
-}
-
-export interface SurveyAnswerPayload {
-  survey_id: number
-  rating: number
-  sub_answer: string | null
-}
-
-export interface SubmitSurveyRequest {
-  user_id: number
-  answers: SurveyAnswerPayload[]
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Build headers with Authorization Bearer token when a session exists. */
@@ -52,36 +21,14 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>
 }
 
-// ─── Survey API ───────────────────────────────────────────────────────────────
-
-/** Fetch all active survey questions. Requires a valid session token. */
-export async function fetchSurveyQuestions(): Promise<SurveyQuestion[]> {
-  const res = await fetch(`${BASE_URL}/onboarding/surveys`, {
-    method: 'GET',
-    headers: authHeaders(),
-  })
-  return handleResponse<SurveyQuestion[]>(res)
-}
-
-/** Submit the user's survey answers. Requires a valid session token. */
-export async function submitSurveyAnswers(
-  payload: SubmitSurveyRequest,
-): Promise<{ message: string; recorded_count: number }> {
-  const res = await fetch(`${BASE_URL}/onboarding/surveys/submit`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(payload),
-  })
-  return handleResponse<{ message: string; recorded_count: number }>(res)
-}
+// ─── Onboarding status ─────────────────────────────────────────────────────────
 
 export interface OnboardingStatus {
   user_id: number
-  has_completed_survey: boolean
   is_finished_placement_test: boolean
 }
 
-/** Check if current user has completed onboarding survey and placement test. */
+/** Check if the current user has finished the placement test. */
 export async function fetchOnboardingStatus(): Promise<OnboardingStatus> {
   const res = await fetch(`${BASE_URL}/onboarding/status`, {
     method: 'GET',
@@ -90,9 +37,12 @@ export async function fetchOnboardingStatus(): Promise<OnboardingStatus> {
   return handleResponse<OnboardingStatus>(res)
 }
 
+// ─── Placement Test API ───────────────────────────────────────────────────────
+
 export interface PlacementTestResultPayload {
   question_id: number;
   selected_id: string;
+  selected_text?: string;
   is_correct: boolean;
   axis: string;
   difficulty: number;
@@ -119,41 +69,21 @@ export async function completePlacementTest(
 
 // ─── Job Role API ─────────────────────────────────────────────────────────────
 
-export interface JobRoleInitWeights {
-  // Flat keys used in toeic_learningpath schema
+export interface JobRoleBaseline {
   D_doc?: number
   C_comm?: number
   T_trouble?: number
-  G_biz?: number
-  // Alternative flat keys (toeic_learningpath1 schema)
-  D?: number
-  C?: number
-  T?: number
-  G?: number
-  // Nested by milestone (future-proof)
-  Basic?: { D?: number; C?: number; T?: number; G?: number; D_doc?: number; C_comm?: number; T_trouble?: number; G_biz?: number }
-  Intermediate?: { D?: number; C?: number; T?: number; G?: number }
-  Advanced?: { D?: number; C?: number; T?: number; G?: number }
-}
-
-export interface SeedTierItem {
-  tier: number
-  name: string
-}
-
-export interface WeightDescription {
-  name: string
-  description: string
+  G_custom?: number
 }
 
 export interface JobRole {
   id: number
   name: string
-  JD: string
-  seed_tier: SeedTierItem[]
-  init_weights: JobRoleInitWeights
-  example_question: string[]
-  weight_descriptions?: Record<string, WeightDescription>
+  job_description?: string | null
+  baseline: JobRoleBaseline
+  g_skill_description?: string | null
+  example_question: string[] | null
+  is_active?: boolean
 }
 
 /** Fetch all job roles from database. No auth required. */
@@ -176,9 +106,46 @@ export interface RawPlacementQuestionApi {
   correct_answer: string
 }
 
+/** Placement test result detail for a single question */
+export interface PlacementAnswerDetail {
+  question_id: number
+  axis: string            // v2.1 tag: D_doc | C_comm | T_trouble | G_custom
+  level: number           // 1–8
+  statement: string
+  options: string[]       // 4 plain-text options
+  correct_answer: string  // exact text of the correct option
+  selected_id: string     // letter: 'a' | 'b' | 'c' | 'd'
+  selected_text?: string  // exact text of the option the user picked
+  is_correct: boolean
+}
+
+/** Placement test result response */
+export interface PlacementResult {
+  is_finished_placement_test: boolean
+  total_questions: number
+  total_correct: number
+  overall_percent: number
+  skill_scores: Record<string, number>  // {D_doc: 75, C_comm: 80, T_trouble: 60, G_custom: 50}
+  starting_level: string               // 'basic' | 'intermediate' | 'advanced'
+  weak_skills: string[]               // list of skill tags where score < 0.5, weakest first
+  role_id: number | null
+  role_name: string | null
+  baseline: Record<string, number> | null  // {D_doc: 20, C_comm: 20, T_trouble: 50, G_custom: 10}
+  answers: PlacementAnswerDetail[]
+}
+
+/** Fetch the current user's placement test result (scores, starting level, per-question detail) */
+export async function fetchPlacementTestResult(): Promise<PlacementResult> {
+  const res = await fetch(`${BASE_URL}/onboarding/placement-test/result`, {
+    method: 'GET',
+    headers: authHeaders(),
+  })
+  return handleResponse<PlacementResult>(res)
+}
+
 /**
  * Fetch all placement test questions for a given job role from the database.
- * The frontend adaptive engine will select 24 questions from this pool.
+ * The frontend adaptive engine will select questions from this pool.
  */
 export async function fetchPlacementTestQuestions(
   roleId: number,

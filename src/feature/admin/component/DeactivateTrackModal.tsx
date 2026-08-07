@@ -11,7 +11,7 @@ import { deactivateTrack, getDeactivationWarning, type TrackDeactivationWarning 
 interface DeactivateTrackModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	trackId: string;
+	trackId: number;
 	trackName: string;
 	onSuccess: () => void;
 }
@@ -38,7 +38,7 @@ export function DeactivateTrackModal({ isOpen, onClose, trackId, trackName, onSu
 			}, 1500);
 		} catch (error) {
 			console.error('Deactivate failed:', error);
-			alert('Tắt track thất bại');
+			alert('Deactivate track failed');
 		} finally {
 			setLoading(false);
 		}
@@ -61,10 +61,10 @@ export function DeactivateTrackModal({ isOpen, onClose, trackId, trackName, onSu
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2 text-red-600">
 						<AlertTriangle className="h-5 w-5" />
-						Xác nhận tắt Career Track
+						Confirm Career Track Deactivation
 					</DialogTitle>
 					<DialogDescription>
-						Bạn sắp tắt track <strong>{trackName}</strong>. Hành động này không thể hoàn tác qua UI.
+						You are about to deactivate track <strong>{trackName}</strong>. This action cannot be undone via UI.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -82,7 +82,7 @@ export function DeactivateTrackModal({ isOpen, onClose, trackId, trackName, onSu
 
 						{warning.hasActiveLearners && warning.activeLearnersPreview.length > 0 && (
 							<div className="text-sm space-y-2">
-								<p className="font-medium text-gray-700">Học viên đang học (3/{warning.activeLearnerCount}):</p>
+								<p className="font-medium text-gray-700">Active learners (3/{warning.activeLearnerCount}):</p>
 								<ul className="space-y-1">
 									{warning.activeLearnersPreview.map(u => (
 										<li key={u.id} className="flex items-center justify-between text-gray-600">
@@ -92,14 +92,14 @@ export function DeactivateTrackModal({ isOpen, onClose, trackId, trackName, onSu
 									))}
 								</ul>
 								{warning.activeLearnerCount > 3 && (
-									<p className="text-xs text-gray-500">... và {warning.activeLearnerCount - 3} học viên khác</p>
+									<p className="text-xs text-gray-500">... and {warning.activeLearnerCount - 3} other learners</p>
 								)}
 							</div>
 						)}
 
 						{!warning.hasActiveLearners && (
 							<p className="text-sm text-green-700">
-								✓ Track này không có học viên đang học. Có thể tắt an toàn.
+								✓ This track has no active learners. Safe to deactivate.
 							</p>
 						)}
 					</div>
@@ -108,7 +108,7 @@ export function DeactivateTrackModal({ isOpen, onClose, trackId, trackName, onSu
 				{step === 'typing' && (
 					<div className="space-y-4 py-4">
 						<p className="text-sm text-gray-600">
-							Để xác nhận, vui lòng gõ chính xác tên track: <strong>{trackName}</strong>
+							To confirm, please type the exact track name: <strong>{trackName}</strong>
 						</p>
 						<Input
 							value={confirmText}
@@ -120,19 +120,19 @@ export function DeactivateTrackModal({ isOpen, onClose, trackId, trackName, onSu
 								confirmText.toLowerCase() === trackName.toLowerCase() ? 'border-green-400' : 'border-gray-200'
 							)}
 						/>
-						<p className="text-xs text-gray-500">
-							{confirmText.toLowerCase() === trackName.toLowerCase() 
-								? '✓ Đúng - Có thể xác nhận' 
-								: 'Cần gõ chính xác tên track'}
-						</p>
+<p className="text-xs text-gray-500">
+								{confirmText.toLowerCase() === trackName.toLowerCase() 
+									? '✓ Correct - Can confirm' 
+									: 'Need to type exact track name'}
+							</p>
 					</div>
 				)}
 
 				{step === 'success' && (
 					<div className="text-center py-8">
 						<CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
-						<h3 className="text-lg font-semibold text-gray-900">Đã tắt track thành công</h3>
-						<p className="text-gray-500 mt-1">Học viên hiện tại không bị ảnh hưởng. Học viên mới không thể chọn track này.</p>
+						<h3 className="text-lg font-semibold text-gray-900">Track deactivated successfully</h3>
+						<p className="text-gray-500 mt-1">Current learners are not affected. New learners cannot select this track.</p>
 					</div>
 				)}
 
@@ -143,13 +143,13 @@ export function DeactivateTrackModal({ isOpen, onClose, trackId, trackName, onSu
 							onClick={() => setStep('typing')}
 							className="w-full sm:flex-1 bg-red-600 hover:bg-red-700"
 						>
-							Tiếp tục xác nhận
+							Continue Confirmation
 						</Button>
 					)}
 					{step === 'typing' && (
 						<>
 							<Button variant="outline" onClick={() => setStep('confirm')} className="w-full sm:flex-1">
-								Quay lại
+								Back
 							</Button>
 							<Button 
 								variant="destructive" 
@@ -160,17 +160,17 @@ export function DeactivateTrackModal({ isOpen, onClose, trackId, trackName, onSu
 								{loading ? (
 									<>
 										<Loader2 className="h-4 w-4 animate-spin mr-2" />
-										Đang tắt...
+										Deactivating...
 									</>
 								) : (
-									'Xác nhận tắt track'
+									'Confirm Deactivate Track'
 								)}
 							</Button>
 						</>
 					)}
 					{step === 'success' && (
 						<Button variant="outline" onClick={onClose} className="w-full">
-							Đóng
+							Close
 						</Button>
 					)}
 				</DialogFooter>
