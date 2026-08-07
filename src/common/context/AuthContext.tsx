@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface AuthUser {
+  id: number;
   username: string;
   email: string;
   role?: string;

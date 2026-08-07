@@ -15,6 +15,7 @@ const GithubIcon = ({ className }: { className?: string }) => (
 		/>
 	</svg>
 )
+import { recordLoginDay } from "@/feature/user-profile/utils/StudyActivity";
 export function LoginForm() {
 	const navigate = useNavigate()
 	const { refreshAuth } = useAuth()
@@ -54,7 +55,7 @@ export function LoginForm() {
 
 			// Learner → check if placement test is finished
 			const status = await fetchOnboardingStatus().catch(() => ({ is_finished_placement_test: false }))
-
+			recordLoginDay(Number(data.user_id));
 			if (status.is_finished_placement_test) {
 				await navigate({ to: '/placement-result' })
 			} else {

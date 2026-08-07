@@ -1,12 +1,13 @@
 import { Badge } from "@/shadcn/component/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/component/ui/card";
-import { CalendarDays, Clock3, Flame } from "lucide-react";
-
-type StudyActivity = {
-    date: string;
-    minutes: number;
-    lessons: number;
-};
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from "@/shadcn/component/ui/card";
+import { CalendarDays, Flame } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { getLoginDays } from "@/feature/user-profile/utils/StudyActivity";
 
 const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -17,41 +18,49 @@ function formatDateKey(date: Date) {
     return `${year}-${month}-${day}`;
 }
 
-function parseDateKey(value: string) {
-    const [year, month, day] = value.split("-").map(Number);
-    return new Date(year, month - 1, day);
+type LearningCalendarProps = {
+    embedded?: boolean;
+    userId: number;
+};
+
+export function calculateLongestStreak(dateKeys: string[]) {
+    const uniqueDates = [...new Set(dateKeys)].sort();
+    let longestStreak = 0;
+    let currentStreak = 0;
+    let previousDate: Date | null = null;
+
+    uniqueDates.forEach((dateKey) => {
+        const [year, month, day] = dateKey.split("-").map(Number);
+        const currentDate = new Date(year, month - 1, day);
+
+        if (previousDate) {
+            const expectedDate = new Date(previousDate);
+            expectedDate.setDate(expectedDate.getDate() + 1);
+
+            currentStreak =
+                formatDateKey(expectedDate) === dateKey ? currentStreak + 1 : 1;
+        } else {
+            currentStreak = 1;
+        }
+
+        longestStreak = Math.max(longestStreak, currentStreak);
+        previousDate = currentDate;
+    });
+
+    return longestStreak;
 }
 
-function buildMockStudyActivities(today: Date): StudyActivity[] {
-    const year = today.getFullYear();
-    const month = today.getMonth();
+export function LearningCalendar({
+    embedded = false,
+    userId,
+}: LearningCalendarProps) {
+    const [loginDays, setLoginDays] = useState<string[]>([]);
 
-    const entries = [
-        { day: 1, minutes: 45, lessons: 1 },
-        { day: 2, minutes: 70, lessons: 2 },
-        { day: 3, minutes: 0, lessons: 0 },
-        { day: 4, minutes: 95, lessons: 2 },
-        { day: 5, minutes: 60, lessons: 1 },
-        { day: 6, minutes: 35, lessons: 1 },
-    ];
+    useEffect(() => {
+        setLoginDays(getLoginDays(userId));
+    }, [userId]);
 
-    return entries
-        .filter((entry) => entry.day <= today.getDate())
-        .map((entry) => ({
-            date: formatDateKey(new Date(year, month, entry.day)),
-            minutes: entry.minutes,
-            lessons: entry.lessons,
-        }));
-}
-
-function getIntensity(minutes: number) {
-    if (minutes >= 90) return "high";
-    if (minutes >= 60) return "medium";
-    if (minutes > 0) return "low";
-    return "none";
-}
-
-export function LearningCalendar({ embedded = false }: { embedded?: boolean }) {
+    const loginDaySet = useMemo(() => new Set(loginDays), [loginDays]);
     const today = new Date();
     const currentYear = today.getFullYear();
     const currentMonth = today.getMonth();
@@ -66,36 +75,11 @@ export function LearningCalendar({ embedded = false }: { embedded?: boolean }) {
         ...Array.from({ length: leadingEmptyDays }, () => null),
         ...Array.from({ length: daysInMonth }, (_, index) => index + 1),
     ];
-
-    const studyActivities = buildMockStudyActivities(today);
-    const activityByDate = new Map(
-        studyActivities.map((activity) => [activity.date, activity]),
-    );
-    const activeDays = studyActivities.filter((activity) => activity.minutes > 0).length;
-    const totalMinutes = studyActivities.reduce((sum, activity) => sum + activity.minutes, 0);
-    const totalLessons = studyActivities.reduce((sum, activity) => sum + activity.lessons, 0);
-    const longestStreak = studyActivities.reduce(
-        (state, activity) => {
-            if (activity.minutes > 0) {
-                const nextCurrent = state.current + 1;
-                return {
-                    current: nextCurrent,
-                    best: Math.max(state.best, nextCurrent),
-                };
-            }
-
-            return {
-                current: 0,
-                best: state.best,
-            };
-        },
-        { current: 0, best: 0 },
-    ).best;
-    const bestDay = studyActivities.reduce<StudyActivity | null>((best, activity) => {
-        if (activity.minutes === 0) return best;
-        if (!best || activity.minutes > best.minutes) return activity;
-        return best;
-    }, null);
+    const monthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-`;
+    const activeDays = loginDays.filter((dateKey) =>
+        dateKey.startsWith(monthPrefix),
+    ).length;
+    const longestStreak = calculateLongestStreak(loginDays);
 
     const content = (
         <>
@@ -110,12 +94,15 @@ export function LearningCalendar({ embedded = false }: { embedded?: boolean }) {
                     </CardTitle>
                 </div>
 
-                <Badge variant="secondary" className="rounded-full px-3 py-1 text-slate-700">
+                <Badge
+                    variant="secondary"
+                    className="rounded-full px-3 py-1 text-slate-700"
+                >
                     {currentMonthLabel}
                 </Badge>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
                 <div className="rounded-2xl border border-blue-100 bg-blue-50/80 p-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-700">
                         Active
@@ -129,17 +116,8 @@ export function LearningCalendar({ embedded = false }: { embedded?: boolean }) {
                             Streak
                         </p>
                     </div>
-                    <p className="mt-1 text-lg font-bold text-slate-900">{longestStreak}</p>
-                </div>
-                <div className="rounded-2xl border border-cyan-100 bg-cyan-50/80 p-3">
-                    <div className="flex items-center gap-1 text-cyan-700">
-                        <Clock3 className="h-3.5 w-3.5" />
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em]">
-                            Hours
-                        </p>
-                    </div>
                     <p className="mt-1 text-lg font-bold text-slate-900">
-                        {(totalMinutes / 60).toFixed(1)}
+                        {longestStreak}
                     </p>
                 </div>
             </div>
@@ -158,28 +136,20 @@ export function LearningCalendar({ embedded = false }: { embedded?: boolean }) {
 
                     const cellDate = new Date(currentYear, currentMonth, day);
                     const dateKey = formatDateKey(cellDate);
-                    const activity = activityByDate.get(dateKey);
-                    const intensity = getIntensity(activity?.minutes ?? 0);
+                    const loggedIn = loginDaySet.has(dateKey);
                     const isToday = day === today.getDate();
 
-                    const intensityClassName = {
-                        none: "border-slate-200 bg-slate-50 text-slate-400",
-                        low: "border-blue-100 bg-blue-100 text-blue-700",
-                        medium: "border-blue-200 bg-blue-300 text-blue-900",
-                        high: "border-blue-500 bg-blue-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.24)]",
-                    }[intensity];
+                    const dayClassName = loggedIn
+                        ? "border-blue-400 bg-blue-400 text-white shadow-[0_8px_20px_rgba(37,99,235,0.24)]"
+                        : "border-slate-200 bg-slate-50 text-slate-400";
 
                     return (
                         <div
                             key={dateKey}
-                            title={
-                                activity && activity.minutes > 0
-                                    ? `${day}: ${activity.minutes} min, ${activity.lessons} lesson${activity.lessons > 1 ? "s" : ""}`
-                                    : `${day}: no study activity`
-                            }
+                            title={loggedIn ? `${day}: logged in` : `${day}: no login`}
                             className={[
                                 "relative flex h-9 items-center justify-center rounded-xl border text-xs font-semibold transition",
-                                intensityClassName,
+                                dayClassName,
                                 isToday ? "ring-2 ring-slate-900/15 ring-offset-1" : "",
                             ].join(" ")}
                         >
@@ -189,31 +159,16 @@ export function LearningCalendar({ embedded = false }: { embedded?: boolean }) {
                 })}
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
                 <div className="flex items-center gap-2">
-                    <span>Less</span>
                     <span className="h-2.5 w-2.5 rounded-full bg-slate-200" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-blue-100" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-blue-300" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />
-                    <span>More</span>
+                    <span>No login</span>
                 </div>
-                <p>{totalLessons} lessons finished this month</p>
+                <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-blue-400" />
+                    <span>Logged in</span>
+                </div>
             </div>
-
-            {bestDay && (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                        Best Day
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">
-                        {parseDateKey(bestDay.date).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                        })} · {bestDay.minutes} min · {bestDay.lessons} lessons
-                    </p>
-                </div>
-            )}
         </>
     );
 
@@ -223,9 +178,7 @@ export function LearningCalendar({ embedded = false }: { embedded?: boolean }) {
 
     return (
         <Card className="overflow-hidden border-white/70 bg-white/90 shadow-[0_16px_40px_rgba(15,23,42,0.07)]">
-            <CardHeader className="space-y-4 pb-4">
-                {content}
-            </CardHeader>
+            <CardHeader className="space-y-4 pb-4">{content}</CardHeader>
             <CardContent className="hidden" />
         </Card>
     );

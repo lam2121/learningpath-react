@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Button } from "@/shadcn/component/ui/button";
 import {
     DropdownMenu,
@@ -6,9 +7,19 @@ import {
 } from "@/shadcn/component/ui/dropdown-menu";
 import { Flame } from "lucide-react";
 
-import { LearningCalendar } from "./LearningCalendar";
+import { LearningCalendar, calculateLongestStreak } from "./LearningCalendar";
+import { useAuth } from "@/common/context/AuthContext";
+import { getLoginDays } from "@/feature/user-profile/utils/StudyActivity";
 
 export function StreakDropdown() {
+    const auth = useAuth();
+    const userId = Number(auth.user?.id);
+
+    const longestStreak = useMemo(() => {
+        const loginDays = getLoginDays(userId);
+        return calculateLongestStreak(loginDays);
+    }, [userId]);
+
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -20,7 +31,7 @@ export function StreakDropdown() {
                     <Flame className="h-5 w-5 fill-orange-200 text-orange-500" />
 
                     <span className="font-semibold text-slate-800">
-                        8
+                        {longestStreak}
                     </span>
 
                     <span className="hidden text-sm text-slate-600 sm:inline">
@@ -44,7 +55,7 @@ export function StreakDropdown() {
                     shadow-[0_20px_50px_rgba(15,23,42,0.15)]
                 "
             >
-                <LearningCalendar embedded />
+                <LearningCalendar embedded userId={userId} />
             </DropdownMenuContent>
         </DropdownMenu>
     );
