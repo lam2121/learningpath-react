@@ -1,133 +1,128 @@
 import {
+    AlertDialogCancel,
     AlertDialogContent,
-    AlertDialogHeader,
-    AlertDialogTitle,
     AlertDialogDescription,
     AlertDialogFooter,
-    AlertDialogCancel,
-    AlertDialogAction,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from "@/shadcn/component/ui/alert-dialog";
-
+import { Button } from "@/shadcn/component/ui/button";
+import { Checkbox } from "@/shadcn/component/ui/checkbox";
+import { useNavigate } from "@tanstack/react-router";
 import {
     AlertTriangle,
-    BookOpen,
-    ArrowRight,
+    Check,
 } from "lucide-react";
+import { useState } from "react";
 
 type ChangeCareerAlertProps = {
-    currentCareer: string;
-    newCareer: string;
     onConfirm: () => void;
     onCancel: () => void;
 };
 
 export function ChangeCareerAlert({
-    currentCareer,
-    newCareer,
     onConfirm,
     onCancel,
 }: ChangeCareerAlertProps) {
+    const navigate = useNavigate();
+    const [confirmed, setConfirmed] = useState(false);
+
+    const handleChangeCareerTrack = () => {
+        if (!confirmed) return;
+
+        onConfirm();
+        navigate({ to: "/onboarding/role-selection" });
+    };
+
     return (
-        <AlertDialogContent className="sm:max-w-lg">
+        <AlertDialogContent className="w-[calc(100%-2rem)] max-w-[540px] rounded-2xl border-slate-200 p-0 shadow-2xl">
+            <div className="p-5 sm:p-6">
+                <AlertDialogHeader className="text-left">
+                    <AlertDialogTitle className="flex items-center gap-3 text-xl font-bold text-slate-900">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100">
+                            <AlertTriangle className="h-5 w-5 text-amber-700" />
+                        </span>
 
-            <AlertDialogHeader>
+                        Change career track?
+                    </AlertDialogTitle>
 
-                <AlertDialogTitle className="flex items-center gap-2 text-red-600">
-                    <AlertTriangle className="h-5 w-5" />
-                    Change Career Track
-                </AlertDialogTitle>
+                    <AlertDialogDescription className="pt-2 text-sm font-medium leading-6 text-slate-600">
+                        This will reset your current learning journey.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
 
-                <AlertDialogDescription className="space-y-5 pt-3">
-
-                    <p>
-                        You are about to change your AI learning roadmap.
+                <div className="mt-5 rounded-xl border border-amber-200/80 bg-amber-50/70 p-4">
+                    <p className="mb-3 font-semibold text-slate-900">
+                        Before you continue:
                     </p>
 
-                    {/* Current → New */}
+                    <ul className="space-y-3 text-sm font-medium leading-5 text-slate-700">
+                        <li className="flex items-start gap-2.5">
+                            <Check className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+                            <span>You must retake the placement test.</span>
+                        </li>
 
-                    <div className="rounded-xl border bg-slate-50 p-4">
+                        <li className="flex items-start gap-2.5">
+                            <Check className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+                            <span>
+                                Your roadmap and learning progress will be
+                                permanently deleted.
+                            </span>
+                        </li>
 
-                        <div className="flex items-center justify-center gap-4">
+                        <li className="flex items-start gap-2.5">
+                            <Check className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+                            <span>
+                                A new roadmap will be created from your new
+                                results.
+                            </span>
+                        </li>
+                    </ul>
 
-                            <div className="text-center">
-                                <BookOpen className="mx-auto mb-2 h-6 w-6 text-blue-600" />
+                    <p className="mt-4 border-t border-amber-200 pt-3 text-sm font-bold text-rose-700">
+                        This action cannot be undone.
+                    </p>
+                </div>
 
-                                <p className="text-xs text-slate-500">
-                                    Current
-                                </p>
+                <AlertDialogFooter className="mt-5 flex-col items-stretch gap-4 sm:flex-col">
+                    <label
+                        htmlFor="confirm-career-change"
+                        className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3"
+                    >
+                        <Checkbox
+                            id="confirm-career-change"
+                            checked={confirmed}
+                            onCheckedChange={(value) => {
+                                setConfirmed(value === true);
+                            }}
+                            className="shrink-0"
+                        />
 
-                                <p className="font-semibold">
-                                    {currentCareer}
-                                </p>
-                            </div>
+                        <span className="text-sm font-semibold leading-5 text-slate-700">
+                            I understand my current progress will be deleted.
+                        </span>
+                    </label>
 
-                            <ArrowRight className="text-slate-400" />
+                    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                        <AlertDialogCancel
+                            onClick={onCancel}
+                            className="mt-0 border-slate-200 text-slate-700"
+                        >
+                            Keep Current Track
+                        </AlertDialogCancel>
 
-                            <div className="text-center">
-                                <BookOpen className="mx-auto mb-2 h-6 w-6 text-green-600" />
-
-                                <p className="text-xs text-slate-500">
-                                    New
-                                </p>
-
-                                <p className="font-semibold text-green-600">
-                                    {newCareer}
-                                </p>
-                            </div>
-
-                        </div>
-
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            disabled={!confirmed}
+                            onClick={handleChangeCareerTrack}
+                            className="bg-rose-600 font-semibold hover:bg-rose-700 disabled:bg-slate-300"
+                        >
+                            Change Career Track
+                        </Button>
                     </div>
-
-                    {/* Warning */}
-
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-
-                        <p className="font-semibold mb-2">
-                            What will happen?
-                        </p>
-
-                        <ul className="space-y-2 text-sm">
-
-                            <li>
-                                ✅ Your completed lessons will be kept.
-                            </li>
-
-                            <li>
-                                ✅ Your learning history will remain.
-                            </li>
-
-                            <li>
-                                ⚠ Today's study plan will be regenerated.
-                            </li>
-
-                            <li>
-                                ⚠ AI will create a completely new roadmap.
-                            </li>
-
-                        </ul>
-
-                    </div>
-
-                </AlertDialogDescription>
-
-            </AlertDialogHeader>
-
-            <AlertDialogFooter>
-
-                <AlertDialogCancel onClick={onCancel}>
-                    Cancel
-                </AlertDialogCancel>
-
-                <AlertDialogAction
-                    onClick={onConfirm}
-                    className="bg-blue-600 hover:bg-blue-700"
-                >
-                    Regenerate Course
-                </AlertDialogAction>
-
-            </AlertDialogFooter>
-
+                </AlertDialogFooter>
+            </div>
         </AlertDialogContent>
     );
 }

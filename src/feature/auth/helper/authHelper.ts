@@ -11,6 +11,7 @@ export interface UserSessionData {
   access_token?: string;
   token?: string;
   user?: AuthUser;
+  id?: number;
   username?: string;
   email?: string;
   role?: string;
@@ -30,11 +31,12 @@ export function saveUserSession(data: UserSessionData): void {
   }
 
   const user: AuthUser = data.user ?? {
+    id: data.user_id ?? data.id ?? "",
     username: data.username ?? data.name ?? "",
     email: data.email ?? "",
     role: data.role,
     role_id: data.role_id,
-  };
+  } as AuthUser;
 
   localStorage.setItem(USER_KEY, JSON.stringify(user));
 }

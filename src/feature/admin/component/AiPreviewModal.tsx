@@ -1,12 +1,12 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shadcn/component/ui/dialog';
 import { Button } from '@/shadcn/component/ui/button';
 import { Badge } from '@/shadcn/component/ui/badge';
-import { Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Loader2, CheckCircle, AlertTriangle, Eye } from 'lucide-react';
 
 interface AiPreviewModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	data: { examples: string[]; warning?: string } | null;
+	data: { examples: string[]; warning?: string; error?: string } | null;
 }
 
 export function AiPreviewModal({ isOpen, onClose, data }: AiPreviewModalProps) {
@@ -30,6 +30,12 @@ export function AiPreviewModal({ isOpen, onClose, data }: AiPreviewModalProps) {
 						</div>
 					) : (
 						<>
+							{data.error && (
+								<div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+									{data.error}
+								</div>
+							)}
+
 							{data.warning && (
 								<Badge variant="destructive" className="text-sm px-3 py-1.5">
 									<AlertTriangle className="h-3 w-3 mr-1.5" />
@@ -66,5 +72,3 @@ export function AiPreviewModal({ isOpen, onClose, data }: AiPreviewModalProps) {
 		</Dialog>
 	);
 }
-
-import { Eye } from 'lucide-react';

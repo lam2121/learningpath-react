@@ -17,6 +17,11 @@ interface RoleCreationFormProps {
 	onSuccess?: (track?: CareerTrack) => void;
 }
 
+function getApiErrorMessage(error: unknown, fallback: string) {
+	const detail = (error as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+	return typeof detail === 'string' ? detail : fallback;
+}
+
 export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormProps) {
 	const isEdit = !!initialTrack;
 	const [formData, setFormData] = useState({
@@ -36,7 +41,7 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
   const [validations] = useState<Record<string, { isValid: boolean; errors: string[]; warnings: string[] }>>({});
 	const [submitting, setSubmitting] = useState(false);
 	const [showPreview, setShowPreview] = useState(false);
-	const [previewData, setPreviewData] = useState<{ examples: string[]; warning?: string } | null>(null);
+	const [previewData, setPreviewData] = useState<{ examples: string[]; warning?: string; error?: string } | null>(null);
 	const [deactivateWarning, setDeactivateWarning] = useState<Awaited<ReturnType<typeof getDeactivationWarning>> | null>(null);
 	const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
 
@@ -99,6 +104,7 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 
 	const handlePreview = async () => {
 		setShowPreview(true);
+		setPreviewData(null);
 		try {
 			const result = await (await import('../api/adminApi')).previewAiGeneration({
 				jobDescription: formData.jobDescription,
@@ -107,7 +113,13 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 			setPreviewData(result);
 		} catch (error) {
 			console.error('Preview failed:', error);
-			setPreviewData({ examples: ['Cannot generate preview. Please try again.'] });
+			setPreviewData({
+				examples: ['Cannot generate preview. Please try again.'],
+				error: getApiErrorMessage(
+					error,
+					'Preview request failed. If the frontend is in dev bypass mode, the UI may look like admin while the backend still rejects the token.'
+				),
+			});
 		}
 	};
 

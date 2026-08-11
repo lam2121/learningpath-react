@@ -40,7 +40,7 @@ export function RoadmapStats() {
     ];
 
     return (
-        <div className="mx-auto grid max-w-5xl grid-cols-4 gap-4">
+        <div className="mx-auto grid max-w-7xl grid-cols-2 lg:grid-cols-4 gap-6 px-8">
 
             {items.map((item) => {
 
@@ -50,19 +50,19 @@ export function RoadmapStats() {
 
                     <Card
                         key={item.title}
-                        className="transition hover:-translate-y-1 hover:shadow-lg"
+                        className="transition-all duration-300 hover:-translate-y-1 hover:shadow-xl border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm"
                     >
-                        <CardContent className="p-4">
+                        <CardContent className="p-6">
 
                             <Icon
-                                className={`mb-3 h-6 w-6 ${item.color}`}
+                                className={`mb-4 h-8 w-8 ${item.color}`}
                             />
 
-                            <p className="text-xs uppercase tracking-wide text-slate-500">
+                            <p className="text-xs uppercase font-semibold tracking-wider text-slate-500 dark:text-slate-400">
                                 {item.title}
                             </p>
 
-                            <h3 className="mt-1 text-base font-semibold">
+                            <h3 className="mt-2 text-xl font-bold text-slate-800 dark:text-slate-100">
                                 {item.value}
                             </h3>
 

@@ -1,5 +1,5 @@
 import { cn } from "@/shadcn/lib/util"
-import upskillsImg from "@/asset/image/Upskills.png"
+import careerPathImg from "@/asset/image/careerpath_logo.png"
 
 export const GoogleIcon = ({ className }: React.ComponentProps<"div">) => {
 	return (
@@ -67,12 +67,11 @@ export const YouTubeIcon = ({ className }: React.ComponentProps<"div">) => {
 	)
 }
 
-
-export const UpskillsIcon = ({ className }: React.ComponentProps<"div">) => {
+export const CareerpathIcon = ({ className }: React.ComponentProps<"div">) => {
 	return (
 		<img
-			src={upskillsImg}
-			alt="Upskills"
+			src={careerPathImg}
+			alt="CareerPath"
 			className={cn("w-4 h-4 object-contain", className)}
 		/>
 	)
