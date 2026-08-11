@@ -45,7 +45,6 @@ const ROLE_PALETTE = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Extract DCTG weights (0-100) from the baseline JSON blob. */
 function extractWeights(baseline: JobRole['baseline']): { D: number; C: number; T: number; G: number } {
   const src = baseline ?? {}
   return {
@@ -75,37 +74,17 @@ function getRoleDescription(role: JobRole): string {
   return descMap[role.name] ?? 'Responsible for technical deliverables, communication, and collaboration in software engineering projects.'
 }
 
-// ─── Skill descriptions ───────────────────────────────────────────────────────
-
-interface SkillDescription {
+export type WeightDescription = {
   name: string
   description: string
 }
 
-// D_doc / C_comm / T_trouble descriptions never change — hardcoded. Only the
-// G_custom skill is admin-defined per role (job_role.g_skill_description).
-const STATIC_SKILL_DESCRIPTIONS: Record<'D' | 'C' | 'T', SkillDescription> = {
-  D: {
-    name: 'Documentation (D_doc)',
-    description: 'Reading and writing technical documents: BRD, SRS, user stories, acceptance criteria, and meeting minutes.',
-  },
-  C: {
-    name: 'Communication (C_comm)',
-    description: 'Everyday English communication: vocabulary, phrasing, presentations, emails, and professional interactions.',
-  },
-  T: {
-    name: 'Troubleshooting (T_trouble)',
-    description: 'Problem solving and conflict resolution: scope creep, changing requirements, and pragmatic workarounds.',
-  },
-}
-
-function getSkillDescriptions(role: JobRole): Record<string, SkillDescription> {
+function getWeightDescriptions(role?: JobRole): Record<string, WeightDescription> {
   return {
-    ...STATIC_SKILL_DESCRIPTIONS,
-    G: {
-      name: 'Custom (G_custom)',
-      description: role.g_skill_description?.trim() || 'Role-specific business skill defined for this career track.',
-    },
+    D: { name: 'Documentation (D_doc)', description: 'Ability to read and write clear, concise, and structured technical documentation.' },
+    C: { name: 'Communication (C_comm)', description: 'Effective verbal and written communication in professional IT contexts.' },
+    T: { name: 'Troubleshooting (T_trouble)', description: 'Skills in identifying, analyzing, and resolving technical issues.' },
+    G: { name: 'Domain/Custom (G_custom)', description: role?.g_skill_description || 'Specific domain knowledge and expertise required for this role.' },
   }
 }
 
@@ -134,7 +113,7 @@ const SKILL_TEXT_COLOR: Record<string, string> = {
 
 // ─── Skill Tooltip ────────────────────────────────────────────────────────────
 
-function SkillTooltip({ axis, desc }: { axis: string; desc: SkillDescription }) {
+function SkillTooltip({ axis, desc }: { axis: string; desc: WeightDescription }) {
   return (
     <div
       className={`
@@ -158,14 +137,14 @@ function SkillTooltip({ axis, desc }: { axis: string; desc: SkillDescription }) 
 }
 
 function SkillBar({
-  axis, value, skillDescriptions
+  axis, value, weightDescriptions
 }: {
   axis: 'D' | 'C' | 'T' | 'G'
   value: number
-  skillDescriptions?: Record<string, SkillDescription>
+  weightDescriptions?: Record<string, WeightDescription>
 }) {
   const [hovered, setHovered] = useState(false)
-  const desc = skillDescriptions?.[axis]
+  const desc = weightDescriptions?.[axis]
 
   return (
     <div
@@ -176,9 +155,8 @@ function SkillBar({
     >
       {hovered && desc && <SkillTooltip axis={axis} desc={desc} />}
       <span
-        className={`text-[10px] font-bold w-3 flex-shrink-0 select-none transition-colors duration-150 ${
-          desc ? SKILL_TEXT_COLOR[axis] : 'text-gray-500'
-        }`}
+        className={`text-[10px] font-bold w-3 flex-shrink-0 select-none transition-colors duration-150 ${desc ? SKILL_TEXT_COLOR[axis] : 'text-gray-500'
+          }`}
       >
         {axis}
       </span>
@@ -208,8 +186,6 @@ interface RoleCardItemProps {
 
 function RoleCardItem({ role, paletteIdx, isSelected, isHovered, onSelect, onHover, onLeave }: RoleCardItemProps) {
   const palette = ROLE_PALETTE[paletteIdx % ROLE_PALETTE.length]
-  const description = getRoleDescription(role)
-  const isInactive = role.is_active === false
 
   return (
     <div
@@ -218,86 +194,65 @@ function RoleCardItem({ role, paletteIdx, isSelected, isHovered, onSelect, onHov
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
       className={`
-        relative cursor-pointer rounded-2xl border-2 p-5 transition-all duration-300 select-none bg-white
-        ${isInactive ? 'opacity-70 border-gray-200' : ''}
+        relative cursor-pointer rounded-xl border-2 p-3 sm:p-4 transition-all duration-200 select-none bg-white
         ${isSelected
-          ? 'border-indigo-500 shadow-lg shadow-indigo-100 scale-[1.02]'
+          ? 'border-indigo-500 bg-indigo-50/30 shadow-md scale-[1.02]'
           : isHovered
-            ? 'border-gray-300 shadow-md scale-[1.01]'
-            : isInactive
-              ? 'hover:border-gray-300'
-              : 'border-gray-200 shadow-sm hover:border-gray-300'
+            ? 'border-gray-300 shadow-sm scale-[1.01]'
+            : 'border-gray-100 hover:border-gray-300'
         }
       `}
     >
-      {/* Selection checkmark */}
-      {isSelected && (
-        <div className="absolute top-4 right-4 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center shadow-md animate-in zoom-in-50 duration-200">
-          <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-      )}
-
-      {/* Card Header */}
-      <div className="flex items-start gap-3 mb-3 pr-6">
-        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${palette.color} flex items-center justify-center text-2xl shadow-sm flex-shrink-0`}>
+      <div className="flex items-center gap-3 pr-4">
+        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${palette.color} flex items-center justify-center text-xl shadow-sm flex-shrink-0`}>
           {palette.icon}
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="font-bold text-gray-900 text-sm leading-tight">{role.name}</h3>
-          {isInactive ? (
-            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 text-[10px] font-semibold">
-              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-              </svg>
-              Deactivated
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-semibold">
-              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-              </svg>
-              Career Track
-            </span>
-          )}
+          <h3 className={`font-bold text-sm leading-tight truncate ${isSelected ? 'text-indigo-600' : 'text-gray-900'}`}>{role.name}</h3>
+          <span className={`inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${isSelected ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}>
+            Career Track
+          </span>
         </div>
       </div>
-
-      {/* Job Description */}
-      <p className="text-xs text-gray-600 leading-relaxed mb-3">
-        {description}
-      </p>
+      
+      {/* Selection indicator */}
+      {isSelected && (
+        <div className="absolute top-1/2 right-4 -translate-y-1/2">
+           <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+           </svg>
+        </div>
+      )}
     </div>
   )
 }
 
 // ─── Legend Component ─────────────────────────────────────────────────────────
 
-function SkillLegend({ skillDescriptions }: { skillDescriptions?: Record<string, SkillDescription> }) {
+function SkillLegend({ weightDescriptions }: { weightDescriptions?: Record<string, WeightDescription> }) {
   const items = [
     { key: 'D', label: 'Documentation (D_doc)', color: 'bg-blue-500' },
     { key: 'C', label: 'Communication (C_comm)', color: 'bg-emerald-500' },
     { key: 'T', label: 'Troubleshooting (T_trouble)', color: 'bg-rose-500' },
-    { key: 'G', label: 'Custom (G_custom)', color: 'bg-amber-500' },
+    { key: 'G', label: 'Domain/Custom (G_custom)', color: 'bg-amber-500' },
   ]
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
 
   return (
-    <div className="flex flex-wrap justify-center gap-4">
+    <div className="flex flex-col gap-3">
       {items.map(({ key, label, color }) => {
-        const desc = skillDescriptions?.[key]
+        const desc = weightDescriptions?.[key]
         const isHov = hoveredKey === key
         return (
           <div
             key={key}
-            className={`flex items-center gap-1.5 relative ${desc ? 'cursor-help' : ''}`}
+            className={`flex items-start gap-2.5 relative ${desc ? 'cursor-help' : ''}`}
             onMouseEnter={() => desc && setHoveredKey(key)}
             onMouseLeave={() => setHoveredKey(null)}
           >
             {isHov && desc && <SkillTooltip axis={key} desc={desc} />}
-            <div className={`w-2.5 h-2.5 rounded-full transition-transform duration-150 ${color} ${isHov && desc ? 'scale-125' : ''}`} />
-            <span className={`text-xs transition-colors duration-150 ${isHov && desc ? SKILL_TEXT_COLOR[key] + ' font-semibold' : 'text-gray-600'}`}>
+            <div className={`w-3 h-3 rounded-full flex-shrink-0 mt-0.5 transition-transform duration-150 ${color} ${isHov && desc ? 'scale-125' : ''}`} />
+            <span className={`text-sm leading-tight transition-colors duration-150 ${isHov && desc ? SKILL_TEXT_COLOR[key] + ' font-semibold' : 'text-gray-600'}`}>
               {label}
             </span>
           </div>
@@ -627,16 +582,13 @@ export function RoleSelectionGrid() {
 
   function handleContinueClick() {
     if (!selectedRoleId) return
-    if (selectedRole && selectedRole.is_active === false) {
-      setShowInactiveModal(true)
-      return
-    }
     setShowConfirmModal(true)
   }
 
   function handleConfirm() {
     if (!selectedRoleId) return
     setShowConfirmModal(false)
+    localStorage.removeItem('pending_survey_answers')
     localStorage.setItem('pending_role_id', selectedRoleId.toString())
     navigate({ to: '/placement-test' })
   }
@@ -716,25 +668,24 @@ export function RoleSelectionGrid() {
         <div className="text-center mb-10">
           {/* Step indicator */}
           <div className="flex items-center justify-center mb-6">
-            {[1, 2, 3, 4].map((step) => (
+            {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                    step === 1
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${step === 1
                       ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
                       : 'bg-gray-100 text-gray-400 border border-gray-200'
-                  }`}
+                    }`}
                 >
                   {step}
                 </div>
-                {step < 4 && <div className="w-10 h-0.5 bg-gray-200 mx-2 rounded-full" />}
+                {step < 3 && <div className="w-10 h-0.5 bg-gray-200 mx-2 rounded-full" />}
               </div>
             ))}
           </div>
 
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-sm font-medium mb-4">
             <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-            Step 1 / 4 — Choose Your Career Track
+            Step 1 / 3 — Choose Your Career Track
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight mb-3">
@@ -747,6 +698,7 @@ export function RoleSelectionGrid() {
             The system will build a personalized IT English learning path based on the
             <span className="font-semibold text-gray-900"> D/C/T/G skill weights</span> specific to each career track.
           </p>
+
 
         </div>
 
@@ -779,94 +731,123 @@ export function RoleSelectionGrid() {
           </div>
         )}
 
-        {/* Role Grid */}
+        {/* Main Content Split View */}
         {!isLoading && !error && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
-            {roles.map((role, idx) => (
-              <RoleCardItem
-                key={role.id}
-                role={role}
-                paletteIdx={idx}
-                isSelected={selectedRoleId === role.id}
-                isHovered={hoveredRoleId === role.id}
-                onSelect={() => setSelectedRoleId(prev => prev === role.id ? null : role.id)}
-                onHover={() => setHoveredRoleId(role.id)}
-                onLeave={() => setHoveredRoleId(null)}
-              />
-            ))}
-          </div>
-        )}
+          <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
+            
+            {/* Left Panel: Role List */}
+            <div className="w-full lg:w-1/3 flex flex-col gap-3 lg:max-h-[70vh] lg:overflow-y-auto pr-1">
+              {roles.map((role, idx) => (
+                <RoleCardItem
+                  key={role.id}
+                  role={role}
+                  paletteIdx={idx}
+                  isSelected={selectedRoleId === role.id}
+                  isHovered={hoveredRoleId === role.id}
+                  onSelect={() => setSelectedRoleId(role.id)}
+                  onHover={() => setHoveredRoleId(role.id)}
+                  onLeave={() => setHoveredRoleId(null)}
+                />
+              ))}
+            </div>
 
-        {/* Selection CTA — appears when a role is selected */}
-        {!isLoading && !error && (
-          <div
-            className={`transition-all duration-500 ${
-              selectedRole ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
-            }`}
-          >
-            <div className="max-w-3xl mx-auto">
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-xl shadow-indigo-100/50 p-6">
-                {/* Continue button */}
-                <button
-                  id="btn-confirm-role"
-                  onClick={handleContinueClick}
-                  disabled={!selectedRoleId}
-                  className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-base shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-200 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none active:scale-[0.98] flex items-center justify-center gap-2.5"
-                >
-                  <span>Continue with {selectedRole?.name ?? 'selected role'}</span>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </button>
+            {/* Right Panel: Role Details */}
+            <div className="w-full lg:w-2/3">
+              {selectedRole ? (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-6 sm:p-8 animate-in fade-in zoom-in-95 duration-200">
+                  {/* Header */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                    <h2 className="text-2xl font-bold text-gray-900">{selectedRole.name}</h2>
+                    <button
+                      id="btn-confirm-role"
+                      onClick={handleContinueClick}
+                      className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-semibold shadow-md transition-all duration-200 active:scale-[0.98] flex items-center gap-2 whitespace-nowrap"
+                    >
+                      <span>Continue with {selectedRole.name}</span>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  {/* Two column details layout */}
+                  <div className="flex flex-col md:flex-row gap-8">
+                     {/* Left column in details */}
+                     <div className="w-full md:w-1/2 space-y-6">
+                        <div>
+                           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">Job Description</h3>
+                           <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                             {getRoleDescription(selectedRole)}
+                           </p>
+                        </div>
+                        
+                        <div className="pt-2">
+                           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">Skill Overview</h3>
+                           <SkillLegend weightDescriptions={getWeightDescriptions(selectedRole)} />
+                           <p className="text-[11px] text-gray-400 mt-3 italic">
+                              You can change your Career Track later in Settings
+                           </p>
+                         </div>
 
-                <p className="text-center text-xs text-gray-400 mt-3 mb-5">
-                  You can change your Career Track later in Settings
-                </p>
-                <div className="mt-5">
-                  <SkillLegend skillDescriptions={selectedRole ? getSkillDescriptions(selectedRole) : undefined} />
-                </div>
-                {/* Skill Weights + Example Questions — below the button */}
-                {selectedRole && (() => {
-                  const paletteIdx = roles.findIndex(r => r.id === selectedRole.id)
-                  const palette = ROLE_PALETTE[paletteIdx % ROLE_PALETTE.length]
-                  const weights = extractWeights(selectedRole.baseline)
-                  const exampleQs = getExampleQuestions(selectedRole.example_question)
-                  const skillDescriptions = getSkillDescriptions(selectedRole)
-                  return (
-                    <div className="space-y-4 pt-4 border-t border-gray-100 animate-in fade-in duration-200">
-                      {/* Skill Weights */}
-                      <div className="space-y-1.5">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Skill Weights</p>
-                        <SkillBar axis="D" value={weights.D} skillDescriptions={skillDescriptions} />
-                        <SkillBar axis="C" value={weights.C} skillDescriptions={skillDescriptions} />
-                        <SkillBar axis="T" value={weights.T} skillDescriptions={skillDescriptions} />
-                        <SkillBar axis="G" value={weights.G} skillDescriptions={skillDescriptions} />
                       </div>
+                      
+                      {/* Right column in details */}
+                     <div className="w-full md:w-1/2 space-y-6">
+                        <div>
+                          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">Skill Weights</h3>
+                          <div className="space-y-3 mt-4">
+                            {(() => {
+                               const weights = extractWeights(selectedRole.baseline)
+                               const weightDescriptions = getWeightDescriptions(selectedRole)
+                               return (
+                                 <>
+                                   <SkillBar axis="D" value={weights.D} weightDescriptions={weightDescriptions} />
+                                   <SkillBar axis="C" value={weights.C} weightDescriptions={weightDescriptions} />
+                                   <SkillBar axis="T" value={weights.T} weightDescriptions={weightDescriptions} />
+                                   <SkillBar axis="G" value={weights.G} weightDescriptions={weightDescriptions} />
+                                 </>
+                               )
+                            })()}
+                          </div>
+                        </div>
 
-                      {/* Example Questions */}
-                      <div className={`rounded-xl p-3 bg-gradient-to-br ${palette.gradient} border border-white/60`}>
-                        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                          <span>💬</span>
-                          <span>Example Questions</span>
-                        </p>
-                        <ul className="space-y-1.5">
-                          {exampleQs.length > 0
-                            ? exampleQs.map((q, i) => (
-                                <li key={i} className="flex items-start gap-1.5 text-[11px] text-gray-700 leading-snug">
-                                  <span className="mt-0.5 text-[10px] font-bold text-indigo-500 flex-shrink-0">Q{i + 1}</span>
-                                  <span>{q}</span>
-                                </li>
-                              ))
-                            : (
-                                <li className="text-[11px] text-gray-500 italic">No example questions available.</li>
+                        <div>
+                           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">Example Questions</h3>
+                           {(() => {
+                              const exampleQs = getExampleQuestions(selectedRole.example_question)
+                              return (
+                                 <ul className="space-y-3 mt-4">
+                                   {exampleQs.length > 0
+                                     ? exampleQs.map((q, i) => (
+                                         <li key={i} className="flex items-start gap-2.5 text-sm text-gray-700 leading-snug bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                           <span className="font-bold text-indigo-500 flex-shrink-0 mt-0.5">Q{i + 1}.</span>
+                                           <span>{q}</span>
+                                         </li>
+                                       ))
+                                     : (
+                                         <li className="text-sm text-gray-500 italic">No example questions available.</li>
+                                       )
+                                   }
+                                 </ul>
                               )
-                          }
-                        </ul>
-                      </div>
-                    </div>
-                  )
-                })()}
-              </div>
+                           })()}
+                        </div>
+                     </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-gray-50/80 rounded-2xl border border-dashed border-gray-300 p-12 text-center h-full flex flex-col items-center justify-center min-h-[400px]">
+                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                     <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                     </svg>
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Select a Career Track</h3>
+                  <p className="text-gray-500 text-sm max-w-sm">
+                    Choose a role from the list on the left to view its detailed requirements and skill weights.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
