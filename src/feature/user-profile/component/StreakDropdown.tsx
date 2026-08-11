@@ -7,9 +7,9 @@ import {
 } from "@/shadcn/component/ui/dropdown-menu";
 import { Flame } from "lucide-react";
 
-import { LearningCalendar, calculateLongestStreak } from "./LearningCalendar";
+import { LearningCalendar } from "./LearningCalendar";
 import { useAuth } from "@/common/context/AuthContext";
-import { getLoginDays } from "@/feature/user-profile/utils/StudyActivity";
+import { calculateLongestStreak, getLoginDays } from "@/feature/user-profile/utils/StudyActivity";
 
 export function StreakDropdown() {
     const auth = useAuth();

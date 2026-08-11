@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/component/ui/card"
 import { Progress } from "@/shadcn/component/ui/progress"
-import { Award, Code2, Database, Layout, Server, Sparkles } from "lucide-react"
+import { Code2, Database, Layout, Server } from "lucide-react"
 
 export function SkillsOverview() {
     const skills = [

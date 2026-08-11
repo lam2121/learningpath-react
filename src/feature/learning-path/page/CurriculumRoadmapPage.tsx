@@ -109,7 +109,7 @@ const LEARNING_PATH = {
                 },
             ],
         },
-    ] satisfies readonly RoadmapLevel[],
+    ] as RoadmapLevel[],
 };
 
 function pluralize(

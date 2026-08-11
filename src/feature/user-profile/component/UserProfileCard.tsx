@@ -7,10 +7,10 @@ import {
     GraduationCap,
     BookOpen,
 } from "lucide-react";
-import { ChangeEvent, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import type { ChangeEvent } from "react";
 import { useAuth } from "@/common/context/AuthContext";
-import { getLoginDays } from "@/feature/user-profile/utils/StudyActivity";
-import { calculateLongestStreak } from "./LearningCalendar";
+import { getLoginDays, calculateLongestStreak } from "@/feature/user-profile/utils/StudyActivity";
 
 export function UserProfileCard() {
     const { user } = useAuth();

@@ -7,7 +7,7 @@ import {
 } from "@/shadcn/component/ui/card";
 import { CalendarDays, Flame } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { getLoginDays } from "@/feature/user-profile/utils/StudyActivity";
+import { getLoginDays, calculateLongestStreak } from "@/feature/user-profile/utils/StudyActivity";
 
 const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -22,33 +22,6 @@ type LearningCalendarProps = {
     embedded?: boolean;
     userId: number;
 };
-
-export function calculateLongestStreak(dateKeys: string[]) {
-    const uniqueDates = [...new Set(dateKeys)].sort();
-    let longestStreak = 0;
-    let currentStreak = 0;
-    let previousDate: Date | null = null;
-
-    uniqueDates.forEach((dateKey) => {
-        const [year, month, day] = dateKey.split("-").map(Number);
-        const currentDate = new Date(year, month - 1, day);
-
-        if (previousDate) {
-            const expectedDate = new Date(previousDate);
-            expectedDate.setDate(expectedDate.getDate() + 1);
-
-            currentStreak =
-                formatDateKey(expectedDate) === dateKey ? currentStreak + 1 : 1;
-        } else {
-            currentStreak = 1;
-        }
-
-        longestStreak = Math.max(longestStreak, currentStreak);
-        previousDate = currentDate;
-    });
-
-    return longestStreak;
-}
 
 export function LearningCalendar({
     embedded = false,

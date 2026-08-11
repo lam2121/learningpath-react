@@ -51,33 +51,6 @@ function formatDuration(totalMinutes: number) {
 
     return `${hours} giờ ${minutes} phút`;
 }
-export const roadmap = [
-    {
-        id: 1,
-        title: "Programming",
-        subtitle: "Getting Started",
-        description:
-            "Tìm hiểu nền tảng lập trình, thuật toán và tư duy logic.",
-        lessonsCount: 12,
-        durationMinutes: 360,
-        status: "completed",
-        color: "bg-blue-500",
-        icon: "code",
-    },
-    {
-        id: 2,
-        title: "HTML & CSS",
-        subtitle: "Build UI",
-        description:
-            "Xây dựng giao diện web có cấu trúc, responsive và dễ sử dụng.",
-        lessonsCount: 18,
-        durationMinutes: 540,
-        status: "current",
-        color: "bg-orange-500",
-        icon: "html",
-    },
-    // Các chương còn lại...
-] as const;
 export function TopicNode({
     id,
     onClick,

@@ -18,7 +18,7 @@ export interface RoadmapTopic {
     subtitle: string;
     description: string;
     lessonsCount: number;
-    duration: string;
+    durationMinutes: number;
     status: TopicStatus;
     icon: TopicIcon;
     color: string;

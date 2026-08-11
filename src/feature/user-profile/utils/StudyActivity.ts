@@ -53,3 +53,30 @@ export function getLoginDays(userId: number): string[] {
         return [];
     }
 }
+
+export function calculateLongestStreak(dateKeys: string[]): number {
+    const uniqueDates = [...new Set(dateKeys)].sort();
+    let longestStreak = 0;
+    let currentStreak = 0;
+    let previousDate: Date | null = null;
+
+    uniqueDates.forEach((dateKey) => {
+        const [year, month, day] = dateKey.split("-").map(Number);
+        const currentDate = new Date(year, month - 1, day);
+
+        if (previousDate) {
+            const expectedDate = new Date(previousDate);
+            expectedDate.setDate(expectedDate.getDate() + 1);
+
+            currentStreak =
+                formatDateKey(expectedDate) === dateKey ? currentStreak + 1 : 1;
+        } else {
+            currentStreak = 1;
+        }
+
+        longestStreak = Math.max(longestStreak, currentStreak);
+        previousDate = currentDate;
+    });
+
+    return longestStreak;
+}
