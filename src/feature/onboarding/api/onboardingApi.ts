@@ -25,7 +25,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 export interface OnboardingStatus {
   user_id: number
-  is_finished_placement_test: boolean
+  learning_status: 'none' | 'enrolled'
 }
 
 /** Check if the current user has finished the placement test. */
@@ -57,13 +57,13 @@ export interface CompletePlacementTestPayload {
 /** Finalize onboarding by committing role_id and placement test answers. */
 export async function completePlacementTest(
   payload: CompletePlacementTestPayload,
-): Promise<{ message: string; is_finished_placement_test: boolean }> {
+): Promise<{ message: string; learning_status: 'enrolled' }> {
   const res = await fetch(`${BASE_URL}/onboarding/placement-test/complete`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify(payload),
   })
-  return handleResponse<{ message: string; is_finished_placement_test: boolean }>(res)
+  return handleResponse<{ message: string; learning_status: 'enrolled' }>(res)
 }
 
 
@@ -121,7 +121,7 @@ export interface PlacementAnswerDetail {
 
 /** Placement test result response */
 export interface PlacementResult {
-  is_finished_placement_test: boolean
+  learning_status: 'none' | 'enrolled'
   total_questions: number
   total_correct: number
   overall_percent: number

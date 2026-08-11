@@ -44,9 +44,9 @@ export function LoginForm() {
 			}
 
 			// Learner → check if placement test is finished
-			const status = await fetchOnboardingStatus().catch(() => ({ is_finished_placement_test: false }))
+			const status = await fetchOnboardingStatus().catch(() => ({ learning_status: 'none' }))
 
-			if (status.is_finished_placement_test) {
+			if (status.learning_status === 'enrolled') {
 				await navigate({ to: '/profile' })
 			} else {
 				await navigate({ to: '/onboarding/role-selection' })

@@ -3,6 +3,30 @@ import { useNavigate } from '@tanstack/react-router'
 import tmaLogo from '@/asset/image/tma_logo.png'
 import { fetchJobRoles, type JobRole } from '../api/onboardingApi'
 import { useAuth } from '@/common/context/AuthContext'
+import { devGenerateCourse, type SkillScores } from '../../dev-mode/api/devModeApi'
+
+// ─── Dev-mode harness (docs/07 §12.9) ────────────────────────────────────────
+
+const DEV_MODE = import.meta.env.VITE_DEV_MODE === 'true'
+
+const SKILL_KEYS = ['D_doc', 'C_comm', 'T_trouble', 'G_custom'] as const
+const SKILL_LABELS: Record<(typeof SKILL_KEYS)[number], string> = {
+  D_doc: 'Documentation (D)',
+  C_comm: 'Communication (C)',
+  T_trouble: 'Troubleshooting (T)',
+  G_custom: 'Business (G)',
+}
+
+/** Replicate backend `classify_user` (placement_evaluator.py, spec §3) for the live track preview. */
+function classifyTrackPreview(skills: SkillScores): 'basic' | 'intermediate' | 'advanced' {
+  const scores = SKILL_KEYS.map((k) => skills[k] / 12)
+  const overall = scores.reduce((a, b) => a + b, 0) / scores.length
+  const min = Math.min(...scores)
+  if (overall >= 0.75 && min >= 0.5) return 'advanced'
+  if (overall >= 0.75 && min < 0.5) return 'intermediate'
+  if (overall >= 0.45 && overall < 0.75 && min >= 0.3) return 'intermediate'
+  return 'basic'
+}
 
 // ─── Visual palette — assigned per card index ─────────────────────────────────
 
@@ -290,11 +314,17 @@ function SkillLegend({ skillDescriptions }: { skillDescriptions?: Record<string,
 
 function ConfirmRoleModal({
   roleName,
+  devMode,
+  onDevModeChange,
   onConfirm,
+  onSetScores,
   onCancel,
 }: {
   roleName: string
+  devMode: boolean
+  onDevModeChange: (v: boolean) => void
   onConfirm: () => void
+  onSetScores: () => void
   onCancel: () => void
 }) {
   return (
@@ -344,6 +374,20 @@ function ConfirmRoleModal({
               Are you ready to proceed with <span className="font-bold">{roleName}</span>?
             </p>
           </div>
+          {DEV_MODE && (
+            <label className="flex items-start gap-2.5 rounded-xl border border-indigo-200 bg-indigo-50/60 px-4 py-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={devMode}
+                onChange={(e) => onDevModeChange(e.target.checked)}
+                className="mt-0.5 size-4 accent-indigo-600"
+              />
+              <span className="text-xs text-indigo-800 leading-relaxed">
+                <span className="font-bold">Developer mode</span> — skip the placement test and set
+                skill scores manually to build the course roadmap.
+              </span>
+            </label>
+          )}
         </div>
 
         {/* Actions */}
@@ -356,14 +400,25 @@ function ConfirmRoleModal({
           >
             Go Back
           </button>
-          <button
-            id="modal-btn-confirm"
-            type="button"
-            onClick={onConfirm}
-            className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-sm shadow-md shadow-indigo-200 hover:shadow-lg transition-all duration-200 active:scale-[0.98] cursor-pointer"
-          >
-            Yes, Proceed →
-          </button>
+          {devMode ? (
+            <button
+              id="modal-btn-set-scores"
+              type="button"
+              onClick={onSetScores}
+              className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-sm shadow-md shadow-indigo-200 hover:shadow-lg transition-all duration-200 active:scale-[0.98] cursor-pointer"
+            >
+              Set skill scores →
+            </button>
+          ) : (
+            <button
+              id="modal-btn-confirm"
+              type="button"
+              onClick={onConfirm}
+              className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-sm shadow-md shadow-indigo-200 hover:shadow-lg transition-all duration-200 active:scale-[0.98] cursor-pointer"
+            >
+              Yes, Proceed →
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -444,6 +499,103 @@ function InactiveRoleModal({
   )
 }
 
+// ─── Dev-mode Skill Score Panel (docs/07 §12.9) ─────────────────────────────
+
+function DevSkillPanel({
+  skills,
+  onSkillsChange,
+  onGenerate,
+  onCancel,
+  isGenerating,
+}: {
+  skills: SkillScores
+  onSkillsChange: (skills: SkillScores) => void
+  onGenerate: () => void
+  onCancel: () => void
+  isGenerating: boolean
+}) {
+  const track = classifyTrackPreview(skills)
+  const trackStyles: Record<string, { label: string; color: string; badge: string }> = {
+    basic: { label: 'Basic Track', color: 'text-emerald-700', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+    intermediate: { label: 'Intermediate Track', color: 'text-indigo-700', badge: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+    advanced: { label: 'Advanced Track', color: 'text-violet-700', badge: 'bg-violet-100 text-violet-700 border-violet-200' },
+  }
+  const style = trackStyles[track]
+
+  return (
+    <div
+      id="modal-dev-panel-overlay"
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ backgroundColor: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget && !isGenerating) onCancel() }}
+    >
+      <div
+        id="modal-dev-panel-dialog"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in zoom-in-95 fade-in duration-200"
+      >
+        <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-6 pt-6 pb-5">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center text-2xl flex-shrink-0">
+              🧪
+            </div>
+            <div>
+              <h2 className="text-white font-bold text-lg leading-tight">Developer Mode</h2>
+              <p className="text-white/80 text-xs mt-0.5">Set skill scores (0–12) to build the roadmap</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          {SKILL_KEYS.map((key) => (
+            <div key={key}>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-medium text-gray-700">{SKILL_LABELS[key]}</label>
+                <span className="text-sm font-bold text-indigo-700">{skills[key]}/12</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={12}
+                step={1}
+                value={skills[key]}
+                onChange={(e) => onSkillsChange({ ...skills, [key]: Number(e.target.value) })}
+                className="w-full accent-indigo-600 cursor-pointer"
+                disabled={isGenerating}
+              />
+            </div>
+          ))}
+
+          <div className={`rounded-xl border px-4 py-3 ${style.badge}`}>
+            <p className="text-xs font-bold uppercase tracking-wide">Track preview</p>
+            <p className={`text-sm font-bold mt-0.5 ${style.color}`}>{style.label}</p>
+          </div>
+        </div>
+
+        <div className="px-6 pb-6 flex gap-3">
+          <button
+            id="modal-dev-btn-cancel"
+            type="button"
+            onClick={onCancel}
+            disabled={isGenerating}
+            className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 cursor-pointer disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            id="modal-dev-btn-generate"
+            type="button"
+            onClick={onGenerate}
+            disabled={isGenerating}
+            className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-sm shadow-md shadow-indigo-200 hover:shadow-lg transition-all duration-200 active:scale-[0.98] cursor-pointer disabled:opacity-50"
+          >
+            {isGenerating ? 'Building course…' : 'Generate Course'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function RoleSelectionGrid() {
   const [roles, setRoles] = useState<JobRole[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -452,6 +604,15 @@ export function RoleSelectionGrid() {
   const [hoveredRoleId, setHoveredRoleId] = useState<number | null>(null)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [showInactiveModal, setShowInactiveModal] = useState(false)
+  const [devMode, setDevMode] = useState(false)
+  const [showDevPanel, setShowDevPanel] = useState(false)
+  const [devSkills, setDevSkills] = useState<SkillScores>({
+    D_doc: 6,
+    C_comm: 6,
+    T_trouble: 6,
+    G_custom: 6,
+  })
+  const [isGeneratingCourse, setIsGeneratingCourse] = useState(false)
   const navigate = useNavigate()
   const { logout } = useAuth()
 
@@ -480,6 +641,22 @@ export function RoleSelectionGrid() {
     navigate({ to: '/placement-test' })
   }
 
+  async function handleDevGenerate() {
+    if (!selectedRoleId) return
+    setIsGeneratingCourse(true)
+    try {
+      await devGenerateCourse(selectedRoleId, devSkills)
+      setShowDevPanel(false)
+      setShowConfirmModal(false)
+      navigate({ to: '/dev-course-demo' })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to build the course.'
+      alert(message)
+    } finally {
+      setIsGeneratingCourse(false)
+    }
+  }
+
   function handleLogout() {
     logout()
     navigate({ to: '/login' })
@@ -491,7 +668,10 @@ export function RoleSelectionGrid() {
       {showConfirmModal && selectedRole && (
         <ConfirmRoleModal
           roleName={selectedRole.name}
+          devMode={devMode}
+          onDevModeChange={setDevMode}
           onConfirm={handleConfirm}
+          onSetScores={() => { setShowConfirmModal(false); setShowDevPanel(true) }}
           onCancel={() => setShowConfirmModal(false)}
         />
       )}
@@ -501,6 +681,17 @@ export function RoleSelectionGrid() {
         <InactiveRoleModal
           roleName={selectedRole.name}
           onClose={() => setShowInactiveModal(false)}
+        />
+      )}
+
+      {/* Developer-mode Skill Score Panel */}
+      {showDevPanel && (
+        <DevSkillPanel
+          skills={devSkills}
+          onSkillsChange={setDevSkills}
+          onGenerate={handleDevGenerate}
+          onCancel={() => { setShowDevPanel(false); setShowConfirmModal(true) }}
+          isGenerating={isGeneratingCourse}
         />
       )}
       {/* Top Header Bar */}

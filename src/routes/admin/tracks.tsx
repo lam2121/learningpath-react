@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, Plus, Edit, Trash2, Play, RotateCcw, AlertCircle, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { Loader2, Plus, Edit, Trash2, Play, RotateCcw, AlertCircle, ShieldAlert, AlertTriangle, FileText } from 'lucide-react';
 import { Button } from '@/shadcn/component/ui/button';
 import { Badge } from '@/shadcn/component/ui/badge';
 import { Alert, AlertDescription } from '@/shadcn/component/ui/alert';
@@ -9,10 +9,12 @@ import { RoleCreationForm } from '@/feature/admin/component/RoleCreationForm';
 import {
 	RegenerateTrackModal,
 	ResetTrackLearnersModal,
+	GenerateCourseModal,
 } from '@/feature/admin/component/GenerationConfirmModals';
 import {
 	fetchTracks,
 	generatePlacement,
+	generateCourse,
 	fetchGenerationStatus,
 	resetTrackLearners,
 	activateTrack,
@@ -32,6 +34,7 @@ function TracksPage() {
 	const [generating, setGenerating] = useState<Record<number, boolean>>({});
 	const [confirmRegen, setConfirmRegen] = useState<CareerTrack | null>(null);
 	const [confirmReset, setConfirmReset] = useState<CareerTrack | null>(null);
+	const [confirmCourse, setConfirmCourse] = useState<CareerTrack | null>(null);
 	const [confirmDelete, setConfirmDelete] = useState<CareerTrack | null>(null);
 	const [mutating, setMutating] = useState(false);
 	const [killSwitchBlocked, setKillSwitchBlocked] = useState(false);
@@ -105,6 +108,54 @@ function TracksPage() {
 		}
 	};
 
+	const runGenerateCourse = async (track: CareerTrack, force: boolean) => {
+		setGenerating(prev => ({ ...prev, [track.id]: true }));
+		try {
+			await generateCourse(track.id, force);
+			const finalStatus = await pollGeneration(track.id);
+			await loadTracks();
+			if (finalStatus === 'timedout') {
+				alert('Course generation is still running on the server. Check back in a moment.');
+			} else if (finalStatus === 'failed') {
+				alert('Course generation failed. Check the AI Costs / Rejected Content pages for details.');
+			}
+		} catch (error) {
+			console.error('Course generation failed:', error);
+			const detail = (error as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+			alert(typeof detail === 'string' ? detail : 'Failed to start course generation.');
+		} finally {
+			setGenerating(prev => ({ ...prev, [track.id]: false }));
+		}
+	};
+
+	const handleGenerateCourseClick = async (track: CareerTrack) => {
+		try {
+			const ks = await fetchKillSwitchState();
+			if (ks.enabled) {
+				setKillSwitchReason(ks.reason ?? undefined);
+				setKillSwitchBlocked(true);
+				return;
+			}
+		} catch (error) {
+			console.error('Failed to check kill switch:', error);
+		}
+		// Regenerating the course outline replaces every topic/lesson, which would
+		// wipe each enrolled learner's roadmap (FK cascade). Mirror the placement
+		// flow: require a reset-learners step first (docs/07 deviation #23).
+		if ((track.activeLearnerCount ?? 0) > 0) {
+			setConfirmReset(track);
+		} else {
+			setConfirmCourse(track);
+		}
+	};
+
+	const handleCourseConfirm = () => {
+		if (!confirmCourse) return;
+		const track = confirmCourse;
+		setConfirmCourse(null);
+		runGenerateCourse(track, (track.topicsCount ?? 0) > 0);
+	};
+
 	const handleRegenConfirm = () => {
 		if (!confirmRegen) return;
 		const track = confirmRegen;
@@ -119,8 +170,9 @@ function TracksPage() {
 		try {
 			const result = await resetTrackLearners(track.id);
 			alert(
-				`Reset ${result.resetLearners} learner(s), cleared ${result.clearedAnswers} answer(s). ` +
-					'You can now regenerate the placement questions.'
+				`Reset ${result.resetLearners} learner(s), cleared ${result.clearedAnswers} answer(s) and ` +
+					`${result.clearedRoadmaps} roadmap(s). ` +
+					'You can now regenerate the placement questions or the course outline.'
 			);
 			setConfirmReset(null);
 			await loadTracks();
@@ -236,12 +288,28 @@ function TracksPage() {
 													Generate
 												</Button>
 											)}
+											<Button
+												variant="outline"
+												size="sm"
+												className="h-8 text-xs"
+												disabled={isLocallyGenerating || isRunning}
+												title={isRunning ? 'Generation already in progress' : 'Generate course outline (20 topics + 120 lessons)'}
+												onClick={() => handleGenerateCourseClick(track)}
+											>
+												<FileText className="h-3 w-3 mr-1" />
+												Generate Course
+											</Button>
 											{track.generationStatus && track.generationStatus !== 'pending' && (
 												<Badge variant="outline" className="text-xs">
 													{track.generationStatus}
 												</Badge>
 											)}
 										</div>
+										{(track.topicsCount ?? 0) > 0 && (
+											<div className="mt-1 text-xs text-gray-500">
+												{track.topicsCount} topics · {track.lessonsCount} lessons
+											</div>
+										)}
 									</td>
 									<td className='p-4'>
 										<div className="flex items-center gap-2">
@@ -305,6 +373,14 @@ function TracksPage() {
 				loading={mutating}
 				onConfirm={handleResetConfirm}
 				onClose={() => setConfirmReset(null)}
+			/>
+
+			{/* Generate Course (B1+B2) confirmation */}
+			<GenerateCourseModal
+				track={confirmCourse}
+				loading={Boolean(confirmCourse && generating[confirmCourse.id])}
+				onConfirm={handleCourseConfirm}
+				onClose={() => setConfirmCourse(null)}
 			/>
 
 			{/* Delete track confirmation */}

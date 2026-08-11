@@ -108,6 +108,11 @@ export async function generatePlacement(roleId: number, force = false): Promise<
 	return res.data;
 }
 
+export async function generateCourse(roleId: number, force = false): Promise<GenerateResponse> {
+	const res = await axiosJWT.post<GenerateResponse>(`/admin/roles/${roleId}/generate-course${force ? '?force=true' : ''}`);
+	return res.data;
+}
+
 export async function resetTrackLearners(roleId: number): Promise<ResetLearnersResult> {
 	const res = await axiosJWT.post<ResetLearnersResult>(`/admin/roles/${roleId}/reset-learners`);
 	return res.data;

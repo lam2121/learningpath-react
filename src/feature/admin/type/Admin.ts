@@ -145,6 +145,10 @@ export interface GenerationStatus {
 	step: string;
 	stepACount: number;
 	stepAErrors: number;
+	stepB1Count: number;
+	stepB1Errors: number;
+	stepB2Count: number;
+	stepB2Errors: number;
 	startedAt: string | null;
 	finishedAt: string | null;
 	errorMessage: string | null;
@@ -153,6 +157,7 @@ export interface GenerationStatus {
 export interface ResetLearnersResult {
 	resetLearners: number;
 	clearedAnswers: number;
+	clearedRoadmaps: number;
 }
 
 export interface DashboardData {

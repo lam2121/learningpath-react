@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Button } from '@/shadcn/component/ui/button';
 import { Input } from '@/shadcn/component/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shadcn/component/ui/select';
@@ -12,24 +12,37 @@ export function RejectedContentTable() {
 	const [items, setItems] = useState<RejectedContent[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [filters, setFilters] = useState({ generator: 'all', status: 'all', role: '' });
+	const [debouncedRole, setDebouncedRole] = useState('');
 	const [selectedItem, setSelectedItem] = useState<RejectedContent | null>(null);
 	const [updating, setUpdating] = useState<number | null>(null);
-
-	const loadItems = useCallback(async () => {
-		setLoading(true);
-		try {
-			const data = await fetchRejectedContent(filters);
-			setItems(data);
-		} catch (error) {
-			console.error('Failed to load rejected content:', error);
-		} finally {
-			setLoading(false);
-		}
-	}, [filters]);
+	const requestSeq = useRef(0);
 
 	useEffect(() => {
-		loadItems();
-	}, [filters, loadItems]);
+		const timer = setTimeout(() => setDebouncedRole(filters.role), 300);
+		return () => clearTimeout(timer);
+	}, [filters.role]);
+
+	const appliedFilters = useMemo(
+		() => ({ generator: filters.generator, status: filters.status, role: debouncedRole }),
+		[filters.generator, filters.status, debouncedRole],
+	);
+
+	const loadItems = useCallback(async (flt: { generator: string; status: string; role: string }) => {
+		setLoading(true);
+		const seq = ++requestSeq.current;
+		try {
+			const data = await fetchRejectedContent(flt);
+			if (seq === requestSeq.current) setItems(data);
+		} catch (error) {
+			if (seq === requestSeq.current) console.error('Failed to load rejected content:', error);
+		} finally {
+			if (seq === requestSeq.current) setLoading(false);
+		}
+	}, []);
+
+	useEffect(() => {
+		loadItems(appliedFilters);
+	}, [appliedFilters, loadItems]);
 
 	const handleStatusChange = async (id: number, status: 'fixed' | 'ignored') => {
 		setUpdating(id);
@@ -65,14 +78,6 @@ pending: { label: 'Pending', color: 'bg-amber-100 text-amber-800' },
 	ignored: { label: 'Ignored', color: 'bg-gray-100 text-gray-600' }
 	};
 
-	if (loading) {
-		return (
-			<div className="flex items-center justify-center h-64">
-				<Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-			</div>
-		);
-	}
-
 	return (
 		<div className="space-y-4">
 			{/* Filters */}
@@ -82,14 +87,12 @@ pending: { label: 'Pending', color: 'bg-amber-100 text-amber-800' },
 						<SelectValue placeholder="Generator" />
 					</SelectTrigger>
 					<SelectContent>
-						<SelectItem value="all">Tất cả</SelectItem>
+						<SelectItem value="all">All</SelectItem>
 						<SelectItem value="A">A - Placement Test</SelectItem>
 						<SelectItem value="B1">B1 - Topic Outline</SelectItem>
 						<SelectItem value="B2">B2 - Lesson Outline</SelectItem>
 						<SelectItem value="C1">C1 - Theory</SelectItem>
 						<SelectItem value="C2">C2 - Quiz</SelectItem>
-						<SelectItem value="D1">D1 - Evaluator</SelectItem>
-						<SelectItem value="D2">D2 - Advisor</SelectItem>
 					</SelectContent>
 				</Select>
 
@@ -98,7 +101,7 @@ pending: { label: 'Pending', color: 'bg-amber-100 text-amber-800' },
 						<SelectValue placeholder="Status" />
 					</SelectTrigger>
 					<SelectContent>
-						<SelectItem value="all">Tất cả</SelectItem>
+						<SelectItem value="all">All</SelectItem>
 						<SelectItem value="pending">Pending</SelectItem>
 						<SelectItem value="fixed">Fixed</SelectItem>
 						<SelectItem value="ignored">Ignored</SelectItem>
@@ -118,6 +121,11 @@ pending: { label: 'Pending', color: 'bg-amber-100 text-amber-800' },
 			</div>
 
 			{/* Table */}
+			{loading ? (
+				<div className="flex items-center justify-center h-64">
+					<Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+				</div>
+			) : (
 			<div className="overflow-x-auto rounded-lg border">
 				<Table>
 					<TableHeader>
@@ -207,6 +215,7 @@ Ignore
 					</TableBody>
 				</Table>
 			</div>
+			)}
 
 			{/* Detail Modal */}
 			<Dialog open={!!selectedItem} onOpenChange={open => !open && setSelectedItem(null)}>

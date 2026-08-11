@@ -204,7 +204,7 @@ export function PlacementResultView() {
   }
 
   // Use backend result if available, otherwise fall back to router state
-  const useBackend = result && result.is_finished_placement_test
+  const useBackend = result && result.learning_status === 'enrolled'
   const resultsToUse = useBackend ? result.answers.map((a: PlacementAnswerDetail) => {
     // Options come back in DB order; the user's pick is matched by TEXT so the
     // letter the frontend shuffled at test time never needs to line up again.

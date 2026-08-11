@@ -13,8 +13,8 @@ export const Route = createFileRoute('/(auth)/login')({
 			}
 
 			// Learner → check if placement test is finished
-			const status = await fetchOnboardingStatus().catch(() => ({ is_finished_placement_test: false }))
-			if (status.is_finished_placement_test) {
+			const status = await fetchOnboardingStatus().catch(() => ({ learning_status: 'none' }))
+			if (status.learning_status === 'enrolled') {
 				throw redirect({ to: '/profile' })
 			}
 			throw redirect({ to: '/onboarding/role-selection' })
