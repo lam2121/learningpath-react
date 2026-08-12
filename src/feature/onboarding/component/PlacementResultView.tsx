@@ -106,6 +106,15 @@ function determineStartingLevel(scores: Record<SkillAxis, number>): StartingLeve
   }
 }
 
+// ─── Difficulty Label ─────────────────────────────────────────────────────────
+
+function getDifficultyLabel(level: number): { label: string; color: string; bg: string; border: string } {
+  if (level <= 2) return { label: 'Easy',   color: 'text-emerald-700', bg: 'bg-emerald-50',  border: 'border-emerald-200' }
+  if (level <= 4) return { label: 'Medium', color: 'text-blue-700',    bg: 'bg-blue-50',     border: 'border-blue-200'    }
+  if (level <= 6) return { label: 'Hard',   color: 'text-orange-600',  bg: 'bg-orange-50',   border: 'border-orange-200'  }
+  return              { label: 'Expert', color: 'text-rose-700',    bg: 'bg-rose-50',     border: 'border-rose-200'    }
+}
+
 // ─── Result Breakdown ─────────────────────────────────────────────────────────
 
 const AXIS_META_DISPLAY = [
@@ -645,7 +654,18 @@ export function PlacementResultView() {
                               <p className="text-slate-800 font-semibold leading-relaxed mt-1 flex-1">
                                 {qText}
                               </p>
-                              <div className="flex-shrink-0">
+                              <div className="flex-shrink-0 flex flex-row items-center gap-2">
+                                {/* Difficulty badge */}
+                                {r.difficulty != null && (() => {
+                                  const diff = getDifficultyLabel(r.difficulty)
+                                  return (
+                                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border ${diff.bg} ${diff.color} ${diff.border}`}>
+                                      {diff.label}
+                                      <span className="font-normal opacity-60">Lv {r.difficulty}</span>
+                                    </span>
+                                  )
+                                })()}
+                                {/* Correct / Incorrect badge */}
                                 {r.isCorrect ? (
                                   <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-100">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
