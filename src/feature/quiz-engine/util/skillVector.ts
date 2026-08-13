@@ -67,11 +67,16 @@ export function isPassed(percentage: number, threshold: number = 70): boolean {
 	return percentage >= threshold;
 }
 
-// Global Score Update: New_Global = (Old_Global × 0.7) + (Lesson_Performance × 0.3)
+/**
+ * @deprecated EMA formula `(Old × 0.7) + (Performance × 0.3)` is deprecated per v3 spec.
+ * Use `updateRadarForSkill` / `recordLessonPass` from `@/feature/radar`
+ * for the Evidence-Based Cumulative Weighted Average `(I × 3.2 + Σ Pi) / (3.2 + n)`.
+ */
 export function updateGlobalScore(
 	oldGlobal: number,
 	lessonPerformancePercent: number
 ): number {
+	// Preserved for backward compatibility, but delegates logic notice
 	return Math.round(oldGlobal * 0.7 + lessonPerformancePercent * 0.3);
 }
 

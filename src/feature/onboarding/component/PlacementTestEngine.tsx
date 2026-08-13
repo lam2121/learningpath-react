@@ -5,6 +5,7 @@ import bannerBg from '@/asset/image/banner_background.png'
 import { TestQuestionCard } from './TestQuestionCard'
 import type { TestQuestion, QuestionResult, DifficultyLevel } from '../api/placementTestTypes'
 import { SKILL_TO_AXIS } from '../api/placementTestTypes'
+import { useRadar } from '@/feature/radar'
 import { completePlacementTest, fetchPlacementTestQuestions } from '../api/onboardingApi'
 import type { RawPlacementQuestionApi } from '../api/onboardingApi'
 
@@ -199,6 +200,7 @@ function NoQuestionsScreen({ onBack }: { onBack: () => void }) {
 
 export function PlacementTestEngine() {
   const navigate = useNavigate()
+  const { reinitialize: reinitializeRadar } = useRadar()
 
   // ── Fetch state ─────────────────────────────────────────────────────────────
   const [loadState, setLoadState] = useState<'loading' | 'empty' | 'ready'>('loading')
@@ -385,6 +387,7 @@ export function PlacementTestEngine() {
       }))
 
       completePlacementTest({ role_id: roleId, placement_test_answers: formattedResults })
+        .then(() => reinitializeRadar(true))
         .catch((err) => console.warn('Failed to commit placement test:', err))
         .finally(() => {
           localStorage.removeItem('pending_survey_answers')

@@ -10,6 +10,7 @@ import {
 import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useAuth } from "@/common/context/AuthContext";
+import { useRadar } from "@/feature/radar";
 import { getLoginDays, calculateLongestStreak } from "@/feature/user-profile/utils/StudyActivity";
 
 export function UserProfileCard() {
@@ -50,9 +51,9 @@ export function UserProfileCard() {
         return calculateLongestStreak(getLoginDays(user.id));
     }, [user?.id]);
 
-    // TODO: Replace with real API data when backend endpoints are ready
-    const lessonsCompleted = 0;   // fetch from API
-    const accuracy = 0;           // fetch from API
+    const { overallRadar, totalPassedLessons } = useRadar();
+    const lessonsCompleted = totalPassedLessons;
+    const accuracy = Math.round(overallRadar);
     const studyHours = 0;         // fetch from API
 
     return (

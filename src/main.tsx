@@ -6,6 +6,7 @@ import { routeTree } from '@/routeTree.gen'
 import './index.css'
 
 import { AuthProvider, type AuthContextValue } from './common/context/AuthContext'
+import { RadarProvider } from './feature/radar/RadarContext'
 import { GeminiGradientDefs } from './common/component/GeminiIcon'
 import { MainApp } from './common/component/MainApp'
 
@@ -59,8 +60,10 @@ if (!rootElement.innerHTML) {
 		<StrictMode>
 			<QueryClientProvider client={queryClient}>
 				<AuthProvider>
-					<GeminiGradientDefs />
-					<MainApp router={router} queryClient={queryClient} />
+					<RadarProvider>
+						<GeminiGradientDefs />
+						<MainApp router={router} queryClient={queryClient} />
+					</RadarProvider>
 				</AuthProvider>
 			</QueryClientProvider>
 		</StrictMode>,

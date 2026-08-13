@@ -3,6 +3,7 @@ import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { LogOut, Loader2 } from 'lucide-react'
 import tmaLogo from '@/asset/image/tma_logo.png'
 import { useAuth } from '@/common/context/AuthContext'
+import { useRadar } from '@/feature/radar'
 import type { QuestionResult, SkillAxis } from '../api/placementTestTypes'
 import { fetchPlacementTestResult, type PlacementResult, type PlacementAnswerDetail } from '../api/onboardingApi'
 
@@ -138,11 +139,16 @@ export function PlacementResultView() {
   // Use router state as instant paint fallback, but fetch from backend as source of truth
   const routerResults: QuestionResult[] = (routerState as { results?: QuestionResult[] })?.results ?? []
 
+  const { reinitialize: reinitializeRadar } = useRadar()
+
   useEffect(() => {
     const fetchResult = async () => {
       try {
         const data = await fetchPlacementTestResult()
         setResult(data)
+        if (data.learning_status === 'enrolled') {
+          reinitializeRadar(true)
+        }
       } catch (err) {
         console.error('Failed to fetch placement test result:', err)
         setError('Failed to load your results. Please try again.')
@@ -151,7 +157,7 @@ export function PlacementResultView() {
       }
     }
     fetchResult()
-  }, [])
+  }, [reinitializeRadar])
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
@@ -565,7 +571,10 @@ export function PlacementResultView() {
           <button
             id="btn-create-course"
             type="button"
-            onClick={() => navigate({ to: '/profile' })}
+            onClick={async () => {
+              await reinitializeRadar(true)
+              navigate({ to: '/profile' })
+            }}
             className="w-full py-5 px-6 rounded-2xl bg-[#007aff] hover:bg-blue-600 text-white font-extrabold text-xl shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-3"
           >
             <span>Create My Course</span>

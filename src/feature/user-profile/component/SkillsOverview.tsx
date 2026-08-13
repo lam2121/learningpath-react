@@ -1,21 +1,55 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/component/ui/card"
 import { Progress } from "@/shadcn/component/ui/progress"
 import { Code2, Database, Layout, Server } from "lucide-react"
+import { useRadar } from "@/feature/radar"
 
 export function SkillsOverview() {
+    const { radarState, isLoading } = useRadar()
+
     const skills = [
-        { name: "D", level: 85, icon: Layout, color: "text-blue-500", bg: "bg-blue-100", progressClass: "bg-blue-500" },
-        { name: "C", level: 60, icon: Server, color: "text-green-500", bg: "bg-green-100", progressClass: "bg-green-500" },
-        { name: "T", level: 75, icon: Database, color: "text-amber-500", bg: "bg-amber-100", progressClass: "bg-amber-500" },
-        { name: "G", level: 40, icon: Code2, color: "text-purple-500", bg: "bg-purple-100", progressClass: "bg-purple-500" },
+        {
+            name: "Documentation (D)",
+            level: Math.round(radarState.current_vector.D_doc),
+            icon: Layout,
+            color: "text-blue-500",
+            bg: "bg-blue-100",
+            progressClass: "bg-blue-500",
+        },
+        {
+            name: "Communication (C)",
+            level: Math.round(radarState.current_vector.C_comm),
+            icon: Server,
+            color: "text-green-500",
+            bg: "bg-green-100",
+            progressClass: "bg-green-500",
+        },
+        {
+            name: "Troubleshooting (T)",
+            level: Math.round(radarState.current_vector.T_trouble),
+            icon: Database,
+            color: "text-amber-500",
+            bg: "bg-amber-100",
+            progressClass: "bg-amber-500",
+        },
+        {
+            name: "Business (G)",
+            level: Math.round(radarState.current_vector.G_custom),
+            icon: Code2,
+            color: "text-purple-500",
+            bg: "bg-purple-100",
+            progressClass: "bg-purple-500",
+        },
     ]
 
     return (
         <Card className="w-full min-w-0 overflow-hidden border-white/70 bg-white/90 shadow-[0_16px_40px_rgba(15,23,42,0.07)]">
-            <CardHeader className="px-5 pb-3 pt-4">
+            <CardHeader className="px-5 pb-3 pt-4 flex flex-row items-center justify-between">
                 <CardTitle className="text-lg">
-                    Skills Overview
+                    Skills Radar Overview
                 </CardTitle>
+                {isLoading && (
+                    <span className="text-xs text-slate-400 font-medium">Updating...</span>
+                )}
             </CardHeader>
 
             <CardContent className="px-5 pb-5 pt-0">
@@ -37,7 +71,7 @@ export function SkillsOverview() {
                                         />
                                     </div>
 
-                                    <span className="min-w-0 flex-1 text-sm font-semibold leading-5 text-slate-700">
+                                    <span className="min-w-0 flex-1 text-sm font-semibold leading-5 text-slate-700 truncate" title={skill.name}>
                                         {skill.name}
                                     </span>
 
