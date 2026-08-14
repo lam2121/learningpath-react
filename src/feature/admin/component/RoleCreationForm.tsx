@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertCircle, Loader2, Eye, Save, Trash2, RotateCcw } from 'lucide-react';
 import { BudgetSlidersGroup } from './BudgetSlider';
 import { AiPreviewModal } from './AiPreviewModal';
-import { type CareerTrack, type BudgetVector, DEFAULT_BASELINE } from '../api/adminApi';
+import { type CareerTrack, type BudgetVector, type RoleSkillDefinitions, DEFAULT_BASELINE } from '../api/adminApi';
 import { createTrack, updateTrack, deactivateTrack, activateTrack, getDeactivationWarning } from '../api/adminApi';
 
 interface RoleCreationFormProps {
@@ -22,17 +22,56 @@ function getApiErrorMessage(error: unknown, fallback: string) {
 	return typeof detail === 'string' ? detail : fallback;
 }
 
+const DEFAULT_SKILL_DEFINITIONS: RoleSkillDefinitions = {
+	D_doc: {
+		description: 'Ability to read and write clear, concise, and structured technical documentation.',
+		example_questions: [],
+	},
+	C_comm: {
+		description: 'Effective verbal and written communication in professional IT contexts.',
+		example_questions: [],
+	},
+	T_trouble: {
+		description: 'Skills in identifying, analyzing, and resolving technical issues.',
+		example_questions: [],
+	},
+	G_custom: {
+		description: 'Specific domain knowledge and expertise required for this role.',
+		example_questions: [],
+	},
+};
+
+function buildInitialSkillDefinitions(initialTrack?: CareerTrack): RoleSkillDefinitions {
+	const defs = initialTrack?.skillDefinitions;
+	return {
+		D_doc: {
+			description: defs?.D_doc?.description || DEFAULT_SKILL_DEFINITIONS.D_doc.description,
+			example_questions: defs?.D_doc?.example_questions ?? [],
+		},
+		C_comm: {
+			description: defs?.C_comm?.description || DEFAULT_SKILL_DEFINITIONS.C_comm.description,
+			example_questions: defs?.C_comm?.example_questions ?? [],
+		},
+		T_trouble: {
+			description: defs?.T_trouble?.description || DEFAULT_SKILL_DEFINITIONS.T_trouble.description,
+			example_questions: defs?.T_trouble?.example_questions ?? [],
+		},
+		G_custom: {
+			description: defs?.G_custom?.description || DEFAULT_SKILL_DEFINITIONS.G_custom.description,
+			example_questions: defs?.G_custom?.example_questions ?? [],
+		},
+	};
+}
+
 export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormProps) {
 	const isEdit = !!initialTrack;
 	const [formData, setFormData] = useState({
 		name: initialTrack?.name || '',
 		jobDescription: initialTrack?.jobDescription || '',
-		gSkillDefinition: initialTrack?.gSkillDefinition || '',
 		seedTier1: initialTrack?.seedTier1 || '',
 		seedTier2: initialTrack?.seedTier2 || '',
-		exampleQuestion1: initialTrack?.exampleQuestion?.[0] || '',
-		exampleQuestion2: initialTrack?.exampleQuestion?.[1] || ''
 	});
+	const [skillDefinitions, setSkillDefinitions] = useState<RoleSkillDefinitions>(() => buildInitialSkillDefinitions(initialTrack));
 	
   const [baselineBudget, setBaselineBudget] = useState<BudgetVector>(() => {
     return initialTrack?.baseline ? { ...initialTrack.baseline } : { ...DEFAULT_BASELINE };
@@ -54,9 +93,9 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
     // Check form fields
     if (!formData.name.trim()) return false;
     if (!formData.jobDescription.trim()) return false;
-    if (!formData.gSkillDefinition.trim()) return false;
     if (!formData.seedTier1.trim()) return false;
     if (!formData.seedTier2.trim()) return false;
+    if (Object.values(skillDefinitions).some((definition) => !definition.description.trim())) return false;
     
     // Check budgets (validate sum, floor, and step of 5)
     const values = Object.values(baselineBudget);
@@ -77,12 +116,9 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 				name: formData.name,
 				job_description: formData.jobDescription,
 				baseline: baselineBudget,
-				g_skill_description: formData.gSkillDefinition,
+				skill_definitions: skillDefinitions,
 				seed_tier_1: formData.seedTier1,
 				seed_tier_2: formData.seedTier2,
-				example_question: (formData.exampleQuestion1 || formData.exampleQuestion2)
-					? [formData.exampleQuestion1, formData.exampleQuestion2].filter(Boolean)
-					: [],
 			};
 			let result: CareerTrack;
 			if (isEdit && initialTrack) {
@@ -108,7 +144,7 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 		try {
 			const result = await (await import('../api/adminApi')).previewAiGeneration({
 				jobDescription: formData.jobDescription,
-				gSkillDefinition: formData.gSkillDefinition
+				skillDefinitions,
 			});
 			setPreviewData(result);
 		} catch (error) {
@@ -168,9 +204,9 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 						{isEdit ? 'Edit Career Track' : 'Create New Career Track'}
 					</h2>
 					<p className="text-gray-500 mt-1">
-						{isEdit 
+				{isEdit 
 							? `Editing: ${initialTrack?.name} (${initialTrack?.activeLearnerCount || 0} learners active)`
-							: 'Enter role info, D/C/T/G budget, and AI preview before saving.'
+							: 'Enter role info, D/C/T/G budget, seeds, and skill definitions before saving.'
 						}
 					</p>
 				</div>
@@ -196,10 +232,11 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 
 			{/* Form Tabs */}
 			<Tabs defaultValue="basic" className="space-y-6">
-				<TabsList className="grid w-full grid-cols-3">
+				<TabsList className="grid w-full grid-cols-4">
 					<TabsTrigger value="basic">Basic Info</TabsTrigger>
 					<TabsTrigger value="budget">D/C/T/G Budget</TabsTrigger>
 					<TabsTrigger value="seed">Seed Content</TabsTrigger>
+					<TabsTrigger value="skills">Skill Definitions</TabsTrigger>
 				</TabsList>
 
 				{/* Basic Info Tab */}
@@ -227,17 +264,6 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 							<p className="text-xs text-gray-500 mt-1">Description will be used to AI generate lesson content related to this role.</p>
 						</div>
 						
-						<div>
-							<Label className="block text-sm font-medium text-gray-700 mb-1">G-Skill Definition (Professional Skill) *</Label>
-							<Textarea
-								placeholder="e.g., Eliciting requirements, clarifying scope, stakeholder communication, writing BRD/FSD..."
-								value={formData.gSkillDefinition}
-								onChange={e => setFormData(prev => ({ ...prev, gSkillDefinition: e.target.value }))}
-								rows={4}
-								className="resize-none"
-							/>
-							<p className="text-xs text-gray-500 mt-1">Definition of G-skill (professional). Important for AI to understand correct professional context.</p>
-						</div>
 					</div>
 				</TabsContent>
 
@@ -277,25 +303,65 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 							<p className="text-xs text-gray-500 mt-1">Used for Intermediate/Advanced level lessons (Troubleshooting, Negotiation, Advanced topics).</p>
 						</div>
 
-						<div>
-							<Label className="block text-sm font-medium text-gray-700 mb-1">Example Question 1</Label>
-							<Input
-								placeholder="e.g., How would you explain a project delay to a client?"
-								value={formData.exampleQuestion1}
-								onChange={e => setFormData(prev => ({ ...prev, exampleQuestion1: e.target.value }))}
-							/>
-							<p className="text-xs text-gray-500 mt-1">Shown on learner role selection cards. Optional.</p>
-						</div>
+					</div>
+				</TabsContent>
 
-						<div>
-							<Label className="block text-sm font-medium text-gray-700 mb-1">Example Question 2</Label>
-							<Input
-								placeholder="e.g., How do you negotiate a scope change?"
-								value={formData.exampleQuestion2}
-								onChange={e => setFormData(prev => ({ ...prev, exampleQuestion2: e.target.value }))}
-							/>
-							<p className="text-xs text-gray-500 mt-1">Shown on learner role selection cards. Optional.</p>
-						</div>
+				<TabsContent value="skills" className="space-y-6 p-4 pt-0">
+					<div className="grid gap-6">
+						{([
+							['D_doc', 'Documentation (D_doc)'],
+							['C_comm', 'Communication (C_comm)'],
+							['T_trouble', 'Troubleshooting (T_trouble)'],
+							['G_custom', 'Domain / Custom (G_custom)'],
+						] as const).map(([skillKey, skillLabel]) => (
+							<div key={skillKey} className="rounded-xl border border-gray-200 p-4 space-y-4">
+								<div>
+									<h3 className="text-sm font-bold text-gray-900">{skillLabel}</h3>
+									<p className="text-xs text-gray-500 mt-1">Role-specific description and optional learner-facing example questions.</p>
+								</div>
+								<div>
+									<Label className="block text-sm font-medium text-gray-700 mb-1">Description *</Label>
+									<Textarea
+										placeholder={`Describe the ${skillLabel} skill for this role...`}
+										value={skillDefinitions[skillKey].description}
+										onChange={e => setSkillDefinitions(prev => ({
+											...prev,
+											[skillKey]: {
+												...prev[skillKey],
+												description: e.target.value,
+											},
+										}))}
+										rows={3}
+										className="resize-none"
+									/>
+								</div>
+								<div className="grid gap-4 md:grid-cols-2">
+									{[0, 1].map((index) => (
+										<div key={index}>
+											<Label className="block text-sm font-medium text-gray-700 mb-1">Example Question {index + 1}</Label>
+										<Input
+												placeholder="Optional learner-facing example question"
+												value={skillDefinitions[skillKey].example_questions[index] || ''}
+												onChange={e => {
+													const value = e.target.value
+													setSkillDefinitions(prev => {
+														const nextQuestions = [...prev[skillKey].example_questions]
+														nextQuestions[index] = value
+														return {
+															...prev,
+															[skillKey]: {
+																...prev[skillKey],
+																example_questions: nextQuestions,
+															},
+														}
+													})
+												}}
+											/>
+										</div>
+									))}
+								</div>
+							</div>
+						))}
 					</div>
 				</TabsContent>
 			</Tabs>
@@ -309,9 +375,11 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 <ul className="list-disc list-inside text-sm space-y-1">
 									{!formData.name.trim() && <li>Role name not entered</li>}
 									{!formData.jobDescription.trim() && <li>Job description not entered</li>}
-									{!formData.gSkillDefinition.trim() && <li>G-skill definition not entered</li>}
 								{!formData.seedTier1.trim() && <li>Seed Tier 1 not entered</li>}
 								{!formData.seedTier2.trim() && <li>Seed Tier 2 not entered</li>}
+								{Object.entries(skillDefinitions).filter(([, value]) => !value.description.trim()).map(([key]) => (
+									<li key={key}>{key} description not entered</li>
+								))}
 							{Object.values(baselineBudget).some(v => v % 5 !== 0) && <li>Each skill budget must be a multiple of 5</li>}
 							{Object.entries(validations).filter(([, v]) => !v.isValid).map(([k, v]) => (
 								<li key={k}>{k}: {v.errors.join(', ')}</li>

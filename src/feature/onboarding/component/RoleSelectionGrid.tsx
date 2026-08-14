@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import tmaLogo from '@/asset/image/tma_logo.png'
-import { fetchJobRoles, type JobRole } from '../api/onboardingApi'
+import { fetchJobRoles, type JobRole, type JobRoleSkillDefinitions } from '../api/onboardingApi'
 import { useAuth } from '@/common/context/AuthContext'
 import { devGenerateCourse, type SkillScores } from '../../dev-mode/api/devModeApi'
 
@@ -10,12 +10,44 @@ import { devGenerateCourse, type SkillScores } from '../../dev-mode/api/devModeA
 const DEV_MODE = import.meta.env.VITE_DEV_MODE === 'true'
 
 const SKILL_KEYS = ['D_doc', 'C_comm', 'T_trouble', 'G_custom'] as const
+type SkillKey = (typeof SKILL_KEYS)[number]
+type AxisKey = 'D' | 'C' | 'T' | 'G'
 const SKILL_LABELS: Record<(typeof SKILL_KEYS)[number], string> = {
   D_doc: 'Documentation (D)',
   C_comm: 'Communication (C)',
   T_trouble: 'Troubleshooting (T)',
   G_custom: 'Business (G)',
 }
+const AXIS_TO_SKILL: Record<AxisKey, SkillKey> = {
+  D: 'D_doc',
+  C: 'C_comm',
+  T: 'T_trouble',
+  G: 'G_custom',
+}
+const SKILL_TO_AXIS: Record<SkillKey, AxisKey> = {
+  D_doc: 'D',
+  C_comm: 'C',
+  T_trouble: 'T',
+  G_custom: 'G',
+}
+const DEFAULT_SKILL_DEFINITIONS = {
+  D_doc: {
+    description: 'Ability to read and write clear, concise, and structured technical documentation.',
+    example_questions: [],
+  },
+  C_comm: {
+    description: 'Effective verbal and written communication in professional IT contexts.',
+    example_questions: [],
+  },
+  T_trouble: {
+    description: 'Skills in identifying, analyzing, and resolving technical issues.',
+    example_questions: [],
+  },
+  G_custom: {
+    description: 'Specific domain knowledge and expertise required for this role.',
+    example_questions: [],
+  },
+} as const
 
 /** Replicate backend `classify_user` (placement_evaluator.py, spec §3) for the live track preview. */
 function classifyTrackPreview(skills: SkillScores): 'basic' | 'intermediate' | 'advanced' {
@@ -55,10 +87,6 @@ function extractWeights(baseline: JobRole['baseline']): { D: number; C: number; 
   }
 }
 
-function getExampleQuestions(example_question: string[] | null): string[] {
-  return Array.isArray(example_question) ? example_question.slice(0, 2) : []
-}
-
 function getRoleDescription(role: JobRole): string {
   if (role.job_description && role.job_description.trim()) return role.job_description
   const descMap: Record<string, string> = {
@@ -79,13 +107,48 @@ export type WeightDescription = {
   description: string
 }
 
-function getWeightDescriptions(role?: JobRole): Record<string, WeightDescription> {
+function getSkillDefinitions(role?: JobRole) {
+  const defs: Partial<JobRoleSkillDefinitions> = role?.skill_definitions ?? {}
   return {
-    D: { name: 'Documentation (D_doc)', description: 'Ability to read and write clear, concise, and structured technical documentation.' },
-    C: { name: 'Communication (C_comm)', description: 'Effective verbal and written communication in professional IT contexts.' },
-    T: { name: 'Troubleshooting (T_trouble)', description: 'Skills in identifying, analyzing, and resolving technical issues.' },
-    G: { name: 'Domain/Custom (G_custom)', description: role?.g_skill_description || 'Specific domain knowledge and expertise required for this role.' },
+    D_doc: {
+      description: defs.D_doc?.description || DEFAULT_SKILL_DEFINITIONS.D_doc.description,
+      example_questions: defs.D_doc?.example_questions ?? [],
+    },
+    C_comm: {
+      description: defs.C_comm?.description || DEFAULT_SKILL_DEFINITIONS.C_comm.description,
+      example_questions: defs.C_comm?.example_questions ?? [],
+    },
+    T_trouble: {
+      description: defs.T_trouble?.description || DEFAULT_SKILL_DEFINITIONS.T_trouble.description,
+      example_questions: defs.T_trouble?.example_questions ?? [],
+    },
+    G_custom: {
+      description: defs.G_custom?.description || DEFAULT_SKILL_DEFINITIONS.G_custom.description,
+      example_questions: defs.G_custom?.example_questions ?? [],
+    },
   }
+}
+
+function getWeightDescriptions(role?: JobRole): Record<AxisKey, WeightDescription> {
+  const definitions = getSkillDefinitions(role)
+  return {
+    D: { name: 'Documentation (D_doc)', description: definitions.D_doc.description },
+    C: { name: 'Communication (C_comm)', description: definitions.C_comm.description },
+    T: { name: 'Troubleshooting (T_trouble)', description: definitions.T_trouble.description },
+    G: { name: 'Domain/Custom (G_custom)', description: definitions.G_custom.description },
+  }
+}
+
+function getDefaultActiveSkill(role: JobRole): SkillKey {
+  const baseline = role.baseline ?? {}
+  return [...SKILL_KEYS].sort((a, b) => {
+    const diff = Number(baseline[b] ?? 0) - Number(baseline[a] ?? 0)
+    return diff !== 0 ? diff : SKILL_KEYS.indexOf(a) - SKILL_KEYS.indexOf(b)
+  })[0]
+}
+
+function getExampleQuestions(role: JobRole, skill: SkillKey): string[] {
+  return getSkillDefinitions(role)[skill].example_questions.slice(0, 2)
 }
 
 // ─── Skill Weight Bar ─────────────────────────────────────────────────────────
@@ -137,11 +200,13 @@ function SkillTooltip({ axis, desc }: { axis: string; desc: WeightDescription })
 }
 
 function SkillBar({
-  axis, value, weightDescriptions
+  axis, value, weightDescriptions, isActive, onClick
 }: {
   axis: 'D' | 'C' | 'T' | 'G'
   value: number
-  weightDescriptions?: Record<string, WeightDescription>
+  weightDescriptions?: Record<AxisKey, WeightDescription>
+  isActive?: boolean
+  onClick?: () => void
 }) {
   const [hovered, setHovered] = useState(false)
   const desc = weightDescriptions?.[axis]
@@ -151,7 +216,8 @@ function SkillBar({
       className="flex items-center gap-1.5 relative group"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ cursor: desc ? 'help' : 'default' }}
+      style={{ cursor: onClick ? 'pointer' : desc ? 'help' : 'default' }}
+      onClick={onClick}
     >
       {hovered && desc && <SkillTooltip axis={axis} desc={desc} />}
       <span
@@ -160,13 +226,13 @@ function SkillBar({
       >
         {axis}
       </span>
-      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div className={`flex-1 h-1.5 rounded-full overflow-hidden ${isActive ? 'bg-indigo-100 ring-1 ring-indigo-200' : 'bg-gray-100'}`}>
         <div
           className={`h-full rounded-full transition-all duration-700 ${SKILL_COLOR[axis]}`}
           style={{ width: `${value}%` }}
         />
       </div>
-      <span className="text-[10px] font-semibold text-gray-600 w-7 text-right">{value}%</span>
+      <span className={`text-[10px] font-semibold w-7 text-right ${isActive ? 'text-indigo-600' : 'text-gray-600'}`}>{value}%</span>
     </div>
   )
 }
@@ -229,13 +295,21 @@ function RoleCardItem({ role, paletteIdx, isSelected, isHovered, onSelect, onHov
 
 // ─── Legend Component ─────────────────────────────────────────────────────────
 
-function SkillLegend({ weightDescriptions }: { weightDescriptions?: Record<string, WeightDescription> }) {
+function SkillLegend({
+  weightDescriptions,
+  activeSkill,
+  onSkillClick,
+}: {
+  weightDescriptions?: Record<AxisKey, WeightDescription>
+  activeSkill?: SkillKey
+  onSkillClick?: (skill: SkillKey) => void
+}) {
   const items = [
     { key: 'D', label: 'Documentation (D_doc)', color: 'bg-blue-500' },
     { key: 'C', label: 'Communication (C_comm)', color: 'bg-emerald-500' },
     { key: 'T', label: 'Troubleshooting (T_trouble)', color: 'bg-rose-500' },
     { key: 'G', label: 'Domain/Custom (G_custom)', color: 'bg-amber-500' },
-  ]
+  ] as const
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
 
   return (
@@ -243,16 +317,18 @@ function SkillLegend({ weightDescriptions }: { weightDescriptions?: Record<strin
       {items.map(({ key, label, color }) => {
         const desc = weightDescriptions?.[key]
         const isHov = hoveredKey === key
+        const isActive = activeSkill === AXIS_TO_SKILL[key as AxisKey]
         return (
           <div
             key={key}
-            className={`flex items-start gap-2.5 relative ${desc ? 'cursor-help' : ''}`}
+            className={`flex items-start gap-2.5 relative rounded-lg px-2 py-1.5 transition-colors ${desc ? 'cursor-pointer' : ''} ${isActive ? 'bg-indigo-50' : ''}`}
             onMouseEnter={() => desc && setHoveredKey(key)}
             onMouseLeave={() => setHoveredKey(null)}
+            onClick={() => onSkillClick?.(AXIS_TO_SKILL[key as AxisKey])}
           >
             {isHov && desc && <SkillTooltip axis={key} desc={desc} />}
             <div className={`w-3 h-3 rounded-full flex-shrink-0 mt-0.5 transition-transform duration-150 ${color} ${isHov && desc ? 'scale-125' : ''}`} />
-            <span className={`text-sm leading-tight transition-colors duration-150 ${isHov && desc ? SKILL_TEXT_COLOR[key] + ' font-semibold' : 'text-gray-600'}`}>
+            <span className={`text-sm leading-tight transition-colors duration-150 ${(isHov || isActive) && desc ? SKILL_TEXT_COLOR[key as AxisKey] + ' font-semibold' : 'text-gray-600'}`}>
               {label}
             </span>
           </div>
@@ -556,6 +632,7 @@ export function RoleSelectionGrid() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)
+  const [activeSkill, setActiveSkill] = useState<SkillKey>('D_doc')
   const [hoveredRoleId, setHoveredRoleId] = useState<number | null>(null)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [showInactiveModal, setShowInactiveModal] = useState(false)
@@ -580,8 +657,18 @@ export function RoleSelectionGrid() {
 
   const selectedRole = roles.find(r => r.id === selectedRoleId) ?? null
 
+  useEffect(() => {
+    if (selectedRole) {
+      setActiveSkill(getDefaultActiveSkill(selectedRole))
+    }
+  }, [selectedRoleId, selectedRole])
+
   function handleContinueClick() {
     if (!selectedRoleId) return
+    if (selectedRole?.is_active === false) {
+      setShowInactiveModal(true)
+      return
+    }
     setShowConfirmModal(true)
   }
 
@@ -783,9 +870,13 @@ export function RoleSelectionGrid() {
                         
                         <div className="pt-2">
                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">Skill Overview</h3>
-                           <SkillLegend weightDescriptions={getWeightDescriptions(selectedRole)} />
+                           <SkillLegend
+                             weightDescriptions={getWeightDescriptions(selectedRole)}
+                             activeSkill={activeSkill}
+                             onSkillClick={setActiveSkill}
+                           />
                            <p className="text-[11px] text-gray-400 mt-3 italic">
-                              You can change your Career Track later in Settings
+                              Click a skill to see its role-specific details and examples.
                            </p>
                          </div>
 
@@ -801,10 +892,10 @@ export function RoleSelectionGrid() {
                                const weightDescriptions = getWeightDescriptions(selectedRole)
                                return (
                                  <>
-                                   <SkillBar axis="D" value={weights.D} weightDescriptions={weightDescriptions} />
-                                   <SkillBar axis="C" value={weights.C} weightDescriptions={weightDescriptions} />
-                                   <SkillBar axis="T" value={weights.T} weightDescriptions={weightDescriptions} />
-                                   <SkillBar axis="G" value={weights.G} weightDescriptions={weightDescriptions} />
+                                   <SkillBar axis="D" value={weights.D} weightDescriptions={weightDescriptions} isActive={activeSkill === 'D_doc'} onClick={() => setActiveSkill('D_doc')} />
+                                   <SkillBar axis="C" value={weights.C} weightDescriptions={weightDescriptions} isActive={activeSkill === 'C_comm'} onClick={() => setActiveSkill('C_comm')} />
+                                   <SkillBar axis="T" value={weights.T} weightDescriptions={weightDescriptions} isActive={activeSkill === 'T_trouble'} onClick={() => setActiveSkill('T_trouble')} />
+                                   <SkillBar axis="G" value={weights.G} weightDescriptions={weightDescriptions} isActive={activeSkill === 'G_custom'} onClick={() => setActiveSkill('G_custom')} />
                                  </>
                                )
                             })()}
@@ -812,11 +903,17 @@ export function RoleSelectionGrid() {
                         </div>
 
                         <div>
-                           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">Example Questions</h3>
+                           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">
+                             Example Questions
+                           </h3>
                            {(() => {
-                              const exampleQs = getExampleQuestions(selectedRole.example_question)
+                              const exampleQs = getExampleQuestions(selectedRole, activeSkill)
+                              const activeDescription = getWeightDescriptions(selectedRole)[SKILL_TO_AXIS[activeSkill]]
                               return (
                                  <ul className="space-y-3 mt-4">
+                                   <li className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+                                     {activeDescription.name}
+                                   </li>
                                    {exampleQs.length > 0
                                      ? exampleQs.map((q, i) => (
                                          <li key={i} className="flex items-start gap-2.5 text-sm text-gray-700 leading-snug bg-gray-50 p-3 rounded-xl border border-gray-100">
@@ -825,7 +922,9 @@ export function RoleSelectionGrid() {
                                          </li>
                                        ))
                                      : (
-                                         <li className="text-sm text-gray-500 italic">No example questions available.</li>
+                                         <li className="text-sm text-gray-500 italic">
+                                           No example questions available for this skill yet.
+                                         </li>
                                        )
                                    }
                                  </ul>
