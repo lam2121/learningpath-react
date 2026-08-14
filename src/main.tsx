@@ -46,6 +46,7 @@ const queryClient = new QueryClient({
 // Create router from route tree with proper context type
 const router = createRouter({
   routeTree,
+  basepath: '/careerpath',
   context: {
     auth: undefined as unknown as AuthContextValue,
     queryClient

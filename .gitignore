@@ -16,6 +16,7 @@ misc
 node_modules
 dist
 dist-ssr
+dist-root-backup
 *.local
 
 # Auto-generated
