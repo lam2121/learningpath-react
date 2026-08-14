@@ -199,7 +199,7 @@ function splitPipe(value: string): string[] {
         .map((part) =>
             part
                 .trim()
-                .replace(/^\d+\s*[.):\-]\s*/, "")
+                .replace(/^\d+\s*[.):\\-]\s*/, "")
         )
         .filter(Boolean);
 }
@@ -532,7 +532,9 @@ function parseDialogueHighlights(
 function parseIndexedExplanation(value: string, prefix: "Do" | "Phrase") {
     return splitHash(value).map((item, index) => {
         if (prefix === "Do") {
-            const match = item.match(/Do:\s*(.*?)\s*\|\s*Don't:\s*(.*)$/i);
+            const match = item.match(
+                /^\s*do\s*:\s*(.*?)\s*\|\s*don['’]t\s*:\s*(.*?)\s*$/i,
+            );
             return {
                 id: `${index}-${item}`,
                 title: `Pair ${index + 1}`,
@@ -540,7 +542,7 @@ function parseIndexedExplanation(value: string, prefix: "Do" | "Phrase") {
                 right: match?.[2]?.trim() ?? "",
             };
         }
-
+ 
         const splitIndex = item.indexOf(" - ");
         return {
             id: `${index}-${item}`,
