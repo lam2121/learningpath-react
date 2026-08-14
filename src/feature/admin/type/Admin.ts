@@ -9,6 +9,18 @@ export interface BudgetVector {
 	G_custom: number;
 }
 
+export interface SkillDefinition {
+	description: string;
+	example_questions: string[];
+}
+
+export interface RoleSkillDefinitions {
+	D_doc: SkillDefinition;
+	C_comm: SkillDefinition;
+	T_trouble: SkillDefinition;
+	G_custom: SkillDefinition;
+}
+
 export const DEFAULT_BASELINE: BudgetVector = {
 	D_doc: 25,
 	C_comm: 25,
@@ -21,10 +33,9 @@ export interface CareerTrack {
 	name: string;
 	jobDescription: string;
 	baseline: BudgetVector;
-	gSkillDefinition: string;
+	skillDefinitions: RoleSkillDefinitions;
 	seedTier1: string;
 	seedTier2: string;
-	exampleQuestion: string[] | null;
 	isActive: boolean;
 	createdBy: number | null;
 	activeLearnerCount: number;
@@ -38,10 +49,9 @@ export interface TrackCreatePayload {
 	name: string;
 	job_description: string;
 	baseline: BudgetVector;
-	g_skill_description: string;
+	skill_definitions: RoleSkillDefinitions;
 	seed_tier_1: string;
 	seed_tier_2: string;
-	example_question?: string[] | null;
 }
 
 export interface TrackUpdatePayload extends Partial<TrackCreatePayload> {
@@ -114,7 +124,7 @@ export interface KillSwitchState {
 
 export interface AiPreviewRequest {
 	jobDescription: string;
-	gSkillDefinition: string;
+	skillDefinitions: RoleSkillDefinitions;
 }
 
 export interface AiPreviewResponse {

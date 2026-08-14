@@ -19,7 +19,7 @@ export function AiPreviewModal({ isOpen, onClose, data }: AiPreviewModalProps) {
 						Preview AI Generation
 					</DialogTitle>
 					<DialogDescription>
-						How AI interprets your Job Description + G-Skill Definition. If examples are too generic → need to write G-Skill Definition more clearly.
+						How AI interprets your Job Description and the four role-specific skill definitions. If examples are too generic, refine the skill descriptions before saving.
 					</DialogDescription>
 				</DialogHeader>
 
