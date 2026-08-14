@@ -260,7 +260,7 @@ function RoleCardItem({ role, paletteIdx, isSelected, isHovered, onSelect, onHov
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
       className={`
-        relative cursor-pointer rounded-xl border-2 p-3 sm:p-4 transition-all duration-200 select-none bg-white
+        relative cursor-pointer rounded-xl border-2 p-3 sm:p-4 2xl:p-5 transition-all duration-200 select-none bg-white
         ${isSelected
           ? 'border-indigo-500 bg-indigo-50/30 shadow-md scale-[1.02]'
           : isHovered
@@ -750,7 +750,7 @@ export function RoleSelectionGrid() {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="flex-1 w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-10">
         {/* Page Header */}
         <div className="text-center mb-10">
           {/* Step indicator */}
@@ -775,7 +775,7 @@ export function RoleSelectionGrid() {
             Step 1 / 3 — Choose Your Career Track
           </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight mb-3">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl 2xl:text-6xl font-extrabold text-gray-900 leading-tight mb-3">
             What role are you currently in
             <span className="block bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 bg-clip-text text-transparent mt-1">
               at TMA?
@@ -823,7 +823,7 @@ export function RoleSelectionGrid() {
           <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
             
             {/* Left Panel: Role List */}
-            <div className="w-full lg:w-1/3 flex flex-col gap-3 lg:max-h-[70vh] lg:overflow-y-auto pr-1">
+            <div className="w-full lg:w-1/3 2xl:w-2/5 flex flex-col gap-3 lg:max-h-[70vh] lg:overflow-y-auto pr-1">
               {roles.map((role, idx) => (
                 <RoleCardItem
                   key={role.id}
@@ -839,9 +839,9 @@ export function RoleSelectionGrid() {
             </div>
 
             {/* Right Panel: Role Details */}
-            <div className="w-full lg:w-2/3">
+            <div className="w-full lg:w-2/3 2xl:w-3/5">
               {selectedRole ? (
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-6 sm:p-8 animate-in fade-in zoom-in-95 duration-200">
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-6 sm:p-8 2xl:p-10 animate-in fade-in zoom-in-95 duration-200">
                   {/* Header */}
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                     <h2 className="text-2xl font-bold text-gray-900">{selectedRole.name}</h2>
@@ -858,7 +858,7 @@ export function RoleSelectionGrid() {
                   </div>
                   
                   {/* Two column details layout */}
-                  <div className="flex flex-col md:flex-row gap-8">
+                  <div className="flex flex-col md:flex-row gap-8 2xl:gap-12">
                      {/* Left column in details */}
                      <div className="w-full md:w-1/2 space-y-6">
                         <div>
