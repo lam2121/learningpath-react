@@ -12,7 +12,7 @@ export function AICoachSkeleton() {
 
             {/* AI Coach */}
 
-            <Card className="rounded-3xl">
+            <Card className="rounded-3xl border-slate-200">
 
                 <CardHeader>
 

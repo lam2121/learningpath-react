@@ -1,6 +1,22 @@
-import type { LoginRequest, LoginResponse, RegisterRequest, UserResponse } from '../type/Auth'
+import { getStoredToken } from '@/common/context/AuthContext'
+import type {
+	LoginRequest,
+	LoginResponse,
+	RegisterRequest,
+	StudySettingsUpdateRequest,
+	UserProfileResponse,
+	UserResponse,
+} from '../type/Auth'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api'
+
+function authHeaders(): HeadersInit {
+	const token = getStoredToken()
+	return {
+		'Content-Type': 'application/json',
+		...(token ? { Authorization: `Bearer ${token}` } : {}),
+	}
+}
 
 async function handleResponse<T>(res: Response): Promise<T> {
 	if (!res.ok) {
@@ -31,4 +47,23 @@ export async function loginUser(data: LoginRequest): Promise<LoginResponse> {
 		body: formBody.toString(),
 	})
 	return handleResponse<LoginResponse>(res)
+}
+
+export async function fetchCurrentUserProfile(): Promise<UserProfileResponse> {
+	const res = await fetch(`${BASE_URL}/auth/me`, {
+		method: 'GET',
+		headers: authHeaders(),
+	})
+	return handleResponse<UserProfileResponse>(res)
+}
+
+export async function updateStudySettings(
+	data: StudySettingsUpdateRequest,
+): Promise<UserProfileResponse> {
+	const res = await fetch(`${BASE_URL}/auth/me/study-settings`, {
+		method: 'PATCH',
+		headers: authHeaders(),
+		body: JSON.stringify(data),
+	})
+	return handleResponse<UserProfileResponse>(res)
 }

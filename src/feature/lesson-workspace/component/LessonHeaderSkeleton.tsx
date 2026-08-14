@@ -9,7 +9,7 @@ export function LessonHeaderSkeleton() {
     return (
         <Card className="rounded-3xl border-0 shadow-sm">
 
-            <CardContent className="p-8">
+            <CardContent className="p-5 sm:p-6 lg:p-8">
 
                 {/* Breadcrumb */}
 
@@ -29,19 +29,19 @@ export function LessonHeaderSkeleton() {
 
                 {/* Title */}
 
-                <div className="mt-6 flex justify-between">
+                <div className="mt-6 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
 
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
 
-                        <Skeleton className="h-10 w-72" />
+                        <Skeleton className="h-8 w-full max-w-xs sm:h-10 sm:max-w-sm" />
 
-                        <Skeleton className="mt-5 h-4 w-full max-w-3xl" />
+                        <Skeleton className="mt-5 h-4 w-full max-w-2xl" />
 
-                        <Skeleton className="mt-3 h-4 w-5/6" />
+                        <Skeleton className="mt-3 h-4 w-5/6 max-w-xl" />
 
                     </div>
 
-                    <Skeleton className="ml-8 h-11 w-32 rounded-lg" />
+                    <Skeleton className="h-10 w-28 rounded-lg self-start shrink-0 sm:w-32" />
 
                 </div>
 
@@ -75,11 +75,11 @@ export function LessonHeaderSkeleton() {
 
                 {/* Footer */}
 
-                <div className="mt-8 flex justify-between items-center">
+                <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
                     <Skeleton className="h-4 w-44" />
 
-                    <Skeleton className="h-11 w-48 rounded-lg" />
+                    <Skeleton className="h-10 w-full sm:w-48 rounded-lg" />
 
                 </div>
 

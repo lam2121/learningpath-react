@@ -7,19 +7,19 @@ export function TheorySkeleton() {
 
             {/* Hero Banner */}
 
-            <Card className="overflow-hidden rounded-3xl">
+            <Card className="overflow-hidden rounded-3xl border-0 shadow-sm">
 
-                <CardContent className="p-8">
+                <CardContent className="p-5 sm:p-8">
 
                     <div className="flex items-center gap-5">
 
                         <Skeleton className="h-16 w-16 rounded-full" />
 
-                        <div className="flex-1 space-y-3">
+                        <div className="flex-1 min-w-0 space-y-3">
 
-                            <Skeleton className="h-8 w-56" />
+                            <Skeleton className="h-8 w-full max-w-[14rem]" />
 
-                            <Skeleton className="h-4 w-80" />
+                            <Skeleton className="h-4 w-full max-w-xs" />
 
                         </div>
 
@@ -33,7 +33,7 @@ export function TheorySkeleton() {
 
             <Card className="rounded-2xl">
 
-                <CardContent className="p-8">
+                <CardContent className="p-5 sm:p-8">
 
                     <Skeleton className="h-6 w-48" />
 
@@ -57,7 +57,7 @@ export function TheorySkeleton() {
 
             <Card className="rounded-2xl">
 
-                <CardContent className="p-6">
+                <CardContent className="p-5 sm:p-8">
 
                     <div className="flex gap-4">
 
@@ -189,7 +189,7 @@ export function TheorySkeleton() {
 
             <Card className="rounded-2xl">
 
-                <CardContent className="p-8">
+                <CardContent className="p-5 sm:p-8">
 
                     <Skeleton className="h-6 w-52" />
 

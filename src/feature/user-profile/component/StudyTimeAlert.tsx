@@ -1,12 +1,11 @@
 import {
-    AlertDialogAction,
-    AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/shadcn/component/ui/alert-dialog";
+import { Button } from "@/shadcn/component/ui/button";
 
 import {
     TrendingUp,
@@ -17,6 +16,10 @@ import {
 type StudyTimeAlertProps = {
     currentHour: number;
     newHour: number;
+    currentDays: number | null;
+    newDays: number | null;
+    isSaving: boolean;
+    errorMessage: string | null;
     onCancel: () => void;
     onConfirm: () => void;
 };
@@ -24,15 +27,15 @@ type StudyTimeAlertProps = {
 export function StudyTimeAlert({
     currentHour,
     newHour,
+    currentDays,
+    newDays,
+    isSaving,
+    errorMessage,
     onCancel,
     onConfirm,
 }: StudyTimeAlertProps) {
 
     const isIncrease = newHour > currentHour;
-
-    // Demo
-    const currentDays = 60;
-    const newDays = Math.round(currentDays * currentHour / newHour);
 
     return (
         <AlertDialogContent className="sm:max-w-lg">
@@ -121,7 +124,7 @@ export function StudyTimeAlert({
                             <span>Current Plan</span>
 
                             <span className="font-semibold">
-                                {currentDays} Days
+                                {currentDays == null ? "Estimate pending" : `${currentDays} Days`}
                             </span>
 
                         </div>
@@ -136,7 +139,7 @@ export function StudyTimeAlert({
                                     : "text-orange-600"
                                     }`}
                             >
-                                {newDays} Days
+                                {newDays == null ? "Estimate pending" : `${newDays} Days`}
                             </span>
 
                         </div>
@@ -151,17 +154,28 @@ export function StudyTimeAlert({
 
                     </div>
 
+                    {errorMessage ? (
+                        <div className="text-sm font-medium text-red-600">
+                            {errorMessage}
+                        </div>
+                    ) : null}
+
                 </AlertDialogDescription>
 
             </AlertDialogHeader>
 
             <AlertDialogFooter>
 
-                <AlertDialogCancel onClick={onCancel}>
+                <Button
+                    variant="outline"
+                    onClick={onCancel}
+                    disabled={isSaving}
+                >
                     Cancel
-                </AlertDialogCancel>
+                </Button>
 
-                <AlertDialogAction
+                <Button
+                    disabled={isSaving}
                     onClick={onConfirm}
                     className={
                         isIncrease
@@ -169,8 +183,8 @@ export function StudyTimeAlert({
                             : "bg-orange-600 hover:bg-orange-700"
                     }
                 >
-                    Update Plan
-                </AlertDialogAction>
+                    {isSaving ? "Saving..." : "Update Plan"}
+                </Button>
 
             </AlertDialogFooter>
 
