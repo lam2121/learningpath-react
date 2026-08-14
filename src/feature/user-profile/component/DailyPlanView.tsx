@@ -2,13 +2,13 @@ import {
     BookOpen,
     Brain,
     ChevronRight,
-    Clock3,
     RotateCcw,
     Settings,
     Sparkles,
     Target,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
 
 import {
     fetchCurrentUserProfile,
@@ -255,7 +255,7 @@ export function DailyPlanView({ nextTopic, nextLesson }: DailyPlanViewProps) {
                         </div>
 
                         <Button asChild className="mt-5 h-11 w-full bg-blue-600 hover:bg-blue-700">
-                            <a href={lessonHref}>{lessonLabel}</a>
+                            <Link to={lessonHref}>{lessonLabel}</Link>
                         </Button>
                     </CardContent>
                 </Card>
