@@ -15,16 +15,63 @@ import {
     Brain,
     ChevronRight,
 } from "lucide-react";
-
+import { useState, useEffect } from "react";
+import {
+    fetchJobRoles,
+    fetchPlacementTestResult,
+} from "@/feature/onboarding/api/onboardingApi";
 type StudySettingsDialogProps = {
+    studyHours: number;
     onCareerClick: () => void;
     onStudyTimeClick: () => void;
 };
 
 export function StudySettingsDialog({
+    studyHours,
     onCareerClick,
     onStudyTimeClick,
 }: StudySettingsDialogProps) {
+    const [careerName, setCareerName] = useState<string>("Career Track");
+    useEffect(() => {
+        let isMounted = true;
+
+        const loadCareerName = async () => {
+            try {
+                const result = await fetchPlacementTestResult();
+                if (isMounted && result.role_name?.trim()) {
+                    setCareerName(result.role_name.trim());
+                    return;
+                }
+            } catch {
+            }
+
+            const pendingRoleId = Number(localStorage.getItem("pending_role_id"));
+            if (!pendingRoleId || Number.isNaN(pendingRoleId)) {
+                if (isMounted) {
+                    setCareerName("Career Track");
+                }
+                return;
+            }
+
+            try {
+                const roles = await fetchJobRoles();
+                const matchedRole = roles.find((role) => role.id === pendingRoleId);
+                if (isMounted) {
+                    setCareerName(matchedRole?.name?.trim() || "Career Track");
+                }
+            } catch {
+                if (isMounted) {
+                    setCareerName("Career Track");
+                }
+            }
+        };
+
+        void loadCareerName();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
     return (
         <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -53,7 +100,7 @@ export function StudySettingsDialog({
                                 </p>
 
                                 <p className="text-sm text-slate-500">
-                                    Full Stack Developer
+                                    {careerName}
                                 </p>
                             </div>
                         </div>
@@ -79,7 +126,7 @@ export function StudySettingsDialog({
                                 </p>
 
                                 <p className="text-sm text-slate-500">
-                                    2 Hours / Day
+                                    {studyHours} {studyHours === 1 ? "Hour" : "Hours"} / Day
                                 </p>
                             </div>
                         </div>
