@@ -19,6 +19,7 @@ import type {
 	DashboardData,
 	ValidatorCheck,
 	SkillKey,
+	RoleSkillDefinitions,
 	ResetLearnersResult,
 } from '../type/Admin';
 
@@ -39,6 +40,7 @@ export type {
 	GenerationStatus,
 	DashboardData,
 	SkillKey,
+	RoleSkillDefinitions,
 	ResetLearnersResult,
 };
 

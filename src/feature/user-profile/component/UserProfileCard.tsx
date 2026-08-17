@@ -1,31 +1,196 @@
-import { Card, CardContent } from "@/shadcn/component/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shadcn/component/ui/avatar";
 import { Badge } from "@/shadcn/component/ui/badge";
+import { Card, CardContent } from "@/shadcn/component/ui/card";
 import {
-    CalendarDays, Clock3, Target, Camera,
+    BookOpen,
+    CalendarDays,
+    Camera,
+    Clock3,
     Flame,
     GraduationCap,
-    BookOpen,
+    Target,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+
+import tmaLogo from "@/asset/image/tma_logo.png";
 import { useAuth } from "@/common/context/AuthContext";
-import { useRadar } from "@/feature/radar";
-import { getLoginDays, calculateLongestStreak } from "@/feature/user-profile/utils/StudyActivity";
+import { fetchCurrentUserProfile } from "@/feature/auth/api/authAPI";
+import type { UserProfileResponse } from "@/feature/auth/type/Auth";
+import {
+    fetchJobRoles,
+    fetchPlacementTestResult,
+} from "@/feature/onboarding/api/onboardingApi";
+import {
+    calculateLongestStreak,
+    getLoginDays,
+} from "@/feature/user-profile/utils/StudyActivity";
+
+const STATUS_BAR_ITEMS = [
+    {
+        key: "streak",
+        label: "Day Streak",
+        icon: Flame,
+        iconClassName: "text-orange-500",
+    },
+    {
+        key: "lessons",
+        label: "Lessons",
+        icon: BookOpen,
+        iconClassName: "text-blue-600",
+    },
+    {
+        key: "accuracy",
+        label: "Accuracy",
+        icon: GraduationCap,
+        iconClassName: "text-green-600",
+    },
+    {
+        key: "study",
+        label: "Study Time",
+        icon: Clock3,
+        iconClassName: "text-slate-500",
+    },
+] as const;
+
+const profileDateFormatter = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+});
+const profileMonthFormatter = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+});
+
+function formatProfileDate(value: string | null | undefined) {
+    if (!value) return null;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return null;
+    }
+    return profileDateFormatter.format(parsed);
+}
+
+function formatProfileMonth(value: string | null | undefined) {
+    if (!value) return null;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return null;
+    }
+    return profileMonthFormatter.format(parsed);
+}
+
+function applyProfileTimeline(
+    profile: UserProfileResponse,
+    setStartedAtLabel: (value: string) => void,
+    setEstimatedFinishLabel: (value: string) => void,
+    setFinishBadgeLabel: (value: string) => void,
+) {
+    const startedAt =
+        formatProfileDate(profile.started_at) ?? formatProfileDate(profile.created_at);
+    const estimatedFinish = formatProfileDate(profile.estimated_finish);
+    const finishMonth = formatProfileMonth(profile.estimated_finish);
+
+    setStartedAtLabel(startedAt ?? "Not started yet");
+    setEstimatedFinishLabel(estimatedFinish ?? "Estimate pending");
+    setFinishBadgeLabel(
+        finishMonth ? `On track for ${finishMonth}` : "Estimate pending",
+    );
+}
 
 export function UserProfileCard() {
     const { user } = useAuth();
-
-    // ── Avatar ──────────────────────────────────────────────────────────────
+    const [careerName, setCareerName] = useState<string>("Career Track");
+    const [startedAtLabel, setStartedAtLabel] = useState<string>("Not started yet");
+    const [estimatedFinishLabel, setEstimatedFinishLabel] = useState<string>("Estimate pending");
+    const [finishBadgeLabel, setFinishBadgeLabel] = useState<string>("Estimate pending");
     const [avatarUrl, setAvatarUrl] = useState(() => {
         const savedAvatar = localStorage.getItem("user_avatar");
         return savedAvatar || "/avatar.png";
     });
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const displayName = user?.username ?? user?.email ?? "Anonymous";
+    const initials = displayName
+        .split(" ")
+        .map((part) => part[0]?.toUpperCase() ?? "")
+        .slice(0, 2)
+        .join("");
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const loadCareerName = async () => {
+            const [placementResult, profileResult] = await Promise.allSettled([
+                fetchPlacementTestResult(),
+                fetchCurrentUserProfile(),
+            ]);
+
+            if (profileResult.status === "fulfilled" && isMounted) {
+                applyProfileTimeline(
+                    profileResult.value,
+                    setStartedAtLabel,
+                    setEstimatedFinishLabel,
+                    setFinishBadgeLabel,
+                );
+            }
+
+            if (
+                placementResult.status === "fulfilled" &&
+                placementResult.value.role_name?.trim()
+            ) {
+                setCareerName(placementResult.value.role_name.trim());
+                return;
+            }
+
+            const pendingRoleId = Number(localStorage.getItem("pending_role_id"));
+            if (!pendingRoleId || Number.isNaN(pendingRoleId)) {
+                if (isMounted) {
+                    setCareerName("Career Track");
+                }
+                return;
+            }
+
+            try {
+                const roles = await fetchJobRoles();
+                const matchedRole = roles.find((role) => role.id === pendingRoleId);
+                if (isMounted) {
+                    setCareerName(matchedRole?.name?.trim() || "Career Track");
+                }
+            } catch {
+                if (isMounted) {
+                    setCareerName("Career Track");
+                }
+            }
+        };
+
+        void loadCareerName();
+
+        const handleProfileUpdated = (event: Event) => {
+            const customEvent = event as CustomEvent<UserProfileResponse>;
+            applyProfileTimeline(
+                customEvent.detail,
+                setStartedAtLabel,
+                setEstimatedFinishLabel,
+                setFinishBadgeLabel,
+            );
+        };
+        window.addEventListener("careerpath:profile-updated", handleProfileUpdated);
+
+        return () => {
+            isMounted = false;
+            window.removeEventListener(
+                "careerpath:profile-updated",
+                handleProfileUpdated,
+            );
+        };
+    }, []);
+
     const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file || !file.type.startsWith("image/")) return;
+
         const reader = new FileReader();
         reader.onload = () => {
             if (typeof reader.result === "string") {
@@ -37,156 +202,184 @@ export function UserProfileCard() {
         event.target.value = "";
     };
 
-    // ── User info ────────────────────────────────────────────────────────────
-    const displayName = user?.username ?? user?.email ?? "Anonymous";
-    const initials = displayName
-        .split(" ")
-        .map((w) => w[0]?.toUpperCase() ?? "")
-        .slice(0, 2)
-        .join("");
-
-    // ── Streak from localStorage ─────────────────────────────────────────────
     const longestStreak = useMemo(() => {
         if (!user?.id) return 0;
         return calculateLongestStreak(getLoginDays(user.id));
     }, [user?.id]);
 
-    const { overallRadar, totalPassedLessons } = useRadar();
-    const lessonsCompleted = totalPassedLessons;
-    const accuracy = Math.round(overallRadar);
-    const studyHours = 0;         // fetch from API
+    const lessonsCompleted = 0;
+    const accuracy = 0;
+    const studyHours = 0;
+
+    const values = {
+        streak: {
+            value: String(longestStreak),
+            helper: longestStreak > 0 ? "Keep it going" : "First day starts here",
+        },
+        lessons: {
+            value: String(lessonsCompleted),
+            helper: lessonsCompleted > 0 ? "Completed lessons" : "First lesson unlocks momentum",
+        },
+        accuracy: {
+            value: accuracy > 0 ? `${accuracy}%` : "No quiz yet",
+            helper: accuracy > 0 ? "Latest quiz accuracy" : "Appears after your first quiz",
+        },
+        study: {
+            value: studyHours > 0 ? `${studyHours}h` : "0h",
+            helper: studyHours > 0 ? "Tracked study time" : "Time appears after activity",
+        },
+    };
 
     return (
-        <Card className="overflow-hidden border-white/70 bg-white/90 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
-            <div className="h-28 bg-[linear-gradient(135deg,_rgba(37,99,235,0.95)_0%,_rgba(14,165,233,0.82)_46%,_rgba(226,232,240,0.55)_100%)]" />
+        <Card className="overflow-hidden border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+            <div className="relative h-24 overflow-hidden bg-[linear-gradient(135deg,#1550c9_0%,#0f8ed8_48%,#8ae1ff_100%)]">
+                <div className="pointer-events-none absolute inset-x-0 top-[-3.5rem] h-28 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.82)_0%,rgba(255,255,255,0.32)_44%,rgba(255,255,255,0)_82%)]" />
+                <svg
+                    aria-hidden="true"
+                    viewBox="0 0 1200 220"
+                    preserveAspectRatio="none"
+                    className="pointer-events-none absolute inset-0 h-full w-full opacity-75"
+                >
+                    <path
+                        d="M-24 130C116 50 244 186 382 126C520 66 666 70 804 138C952 212 1060 202 1232 102"
+                        fill="none"
+                        stroke="rgba(255,255,255,0.28)"
+                        strokeWidth="2.5"
+                        strokeDasharray="10 14"
+                        strokeLinecap="round"
+                    />
+                    <path
+                        d="M58 172C188 126 314 202 448 166C584 130 688 170 818 194C968 222 1082 202 1228 150"
+                        fill="none"
+                        stroke="rgba(186,230,253,0.42)"
+                        strokeWidth="2"
+                        strokeDasharray="8 16"
+                        strokeLinecap="round"
+                    />
+                    <circle cx="382" cy="126" r="7" fill="rgba(255,255,255,0.18)" />
+                    <circle cx="804" cy="138" r="8" fill="rgba(186,230,253,0.18)" />
+                    <circle cx="1006" cy="214" r="8" fill="rgba(255,255,255,0.12)" />
+                </svg>
+                <img
+                    src={tmaLogo}
+                    alt=""
+                    aria-hidden="true"
+                    className="pointer-events-none absolute bottom-1 left-28 h-18 w-auto opacity-[0.18] drop-shadow-[0_8px_18px_rgba(255,255,255,0.22)]"
+                />
+            </div>
 
-            <CardContent className="p-6">
-                <div className="-mt-16 flex flex-col gap-6">
-                    <div className="flex flex-col gap-5">
-                        <div className="flex flex-col gap-4">
-                            <div className="relative inline-flex w-fit">
-                                <Avatar className="h-20 w-20 border-4 border-white shadow-md">
-                                    <AvatarImage
-                                        src={avatarUrl}
-                                        alt={displayName}
-                                        className="object-cover"
-                                    />
-                                    <AvatarFallback>{initials || "?"}</AvatarFallback>
-                                </Avatar>
+            <CardContent className="px-6 pb-6 pt-0 sm:px-7">
+                <div className="-mt-12">
+                    <div className="flex min-w-0 gap-4">
+                        <div className="relative inline-flex h-fit shrink-0">
+                            <Avatar className="h-20 w-20 border-4 border-white shadow-md">
+                                <AvatarImage
+                                    src={avatarUrl}
+                                    alt={displayName}
+                                    className="object-cover"
+                                />
+                                <AvatarFallback>{initials || "?"}</AvatarFallback>
+                            </Avatar>
 
-                                <button
-                                    type="button"
-                                    aria-label="Change avatar"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-white shadow-md transition hover:bg-blue-700"
-                                >
-                                    <Camera className="h-4 w-4" />
-                                </button>
-                            </div>
+                            <button
+                                type="button"
+                                aria-label="Change avatar"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-white shadow-md transition hover:bg-blue-700"
+                            >
+                                <Camera className="h-4 w-4" />
+                            </button>
+                        </div>
 
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/png,image/jpeg,image/webp"
-                                onChange={handleAvatarChange}
-                                className="hidden"
-                            />
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            onChange={handleAvatarChange}
+                            className="hidden"
+                        />
 
-                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                {/* Name */}
-                                <div className="min-w-0 space-y-2">
-                                    <h2 className="text-2xl font-bold text-slate-900">
+                        <div className="min-w-0 flex-1 pt-12">
+                            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                                <div className="min-w-0">
+                                    <h2 className="break-words text-2xl font-bold text-slate-900">
                                         {displayName}
                                     </h2>
 
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="mt-3 flex flex-wrap gap-2">
                                         <Badge className="rounded-full bg-slate-900 px-3 py-1 text-white hover:bg-slate-900">
-                                            Full Stack Developer
+                                            {careerName}
                                         </Badge>
-
                                         <Badge
                                             variant="secondary"
                                             className="rounded-full px-3 py-1 text-slate-700"
                                         >
-                                            On track for October
+                                            {finishBadgeLabel}
                                         </Badge>
                                     </div>
                                 </div>
 
-                                {/* Dates next to name */}
-                                <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-auto lg:min-w-[390px]">
-                                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
+                                <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[330px]">
+                                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                                         <div className="flex items-center gap-2 text-slate-500">
                                             <CalendarDays className="h-4 w-4 shrink-0" />
-                                            <p className="text-[10px] font-semibold uppercase tracking-[0.14em]">
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em]">
                                                 Started
                                             </p>
                                         </div>
-                                        <p className="mt-1.5 text-sm font-semibold text-slate-900">
-                                            Jul 15, 2026
+                                        <p className="mt-2 text-sm font-semibold text-slate-900">
+                                            {startedAtLabel}
                                         </p>
                                     </div>
 
-                                    <div className="rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2.5">
+                                    <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
                                         <div className="flex items-center gap-2 text-blue-700">
                                             <Target className="h-4 w-4 shrink-0" />
-                                            <p className="text-[10px] font-semibold uppercase tracking-[0.14em]">
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em]">
                                                 Estimated Finish
                                             </p>
                                         </div>
-                                        <p className="mt-1.5 text-sm font-semibold text-slate-900">
-                                            Oct 18, 2026
+                                        <p className="mt-2 text-sm font-semibold text-slate-900">
+                                            {estimatedFinishLabel}
                                         </p>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                            <div className="flex items-center gap-3 rounded-xl border border-orange-100 bg-orange-50 p-3">
-                                <Flame className="h-5 w-5 shrink-0 text-orange-500" />
-                                <div>
-                                    <p className="text-xl font-bold leading-none text-slate-900">
-                                        {longestStreak}
-                                    </p>
-                                    <p className="mt-1 text-xs text-slate-500">Day Streak</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 p-3">
-                                <BookOpen className="h-5 w-5 shrink-0 text-blue-600" />
-                                <div>
-                                    <p className="text-xl font-bold leading-none text-slate-900">
-                                        {lessonsCompleted}
-                                    </p>
-                                    <p className="mt-1 text-xs text-slate-500">Lessons</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 rounded-xl border border-green-100 bg-green-50 p-3">
-                                <GraduationCap className="h-5 w-5 shrink-0 text-green-600" />
-                                <div>
-                                    <p className="text-xl font-bold leading-none text-slate-900">
-                                        {accuracy > 0 ? `${accuracy}%` : "—"}
-                                    </p>
-                                    <p className="mt-1 text-xs text-slate-500">Accuracy</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 rounded-xl border border-cyan-100 bg-cyan-50 p-3">
-                                <Clock3 className="h-5 w-5 shrink-0 text-cyan-600" />
-                                <div>
-                                    <p className="text-xl font-bold leading-none text-slate-900">
-                                        {studyHours > 0 ? `${studyHours}h` : "—"}
-                                    </p>
-                                    <p className="mt-1 text-xs text-slate-500">Study Time</p>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                        <div className="grid gap-px bg-slate-200 sm:grid-cols-2 xl:grid-cols-4">
+                            {STATUS_BAR_ITEMS.map((item) => {
+                                const Icon = item.icon;
+                                const payload = values[item.key];
+
+                                return (
+                                    <div
+                                        key={item.key}
+                                        className="flex items-start gap-3 bg-white px-4 py-4"
+                                    >
+                                        <div className="rounded-xl bg-slate-50 p-2">
+                                            <Icon className={`h-4 w-4 ${item.iconClassName}`} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                {item.label}
+                                            </p>
+                                            <p className="mt-1 text-base font-bold text-slate-900">
+                                                {payload.value}
+                                            </p>
+                                            <p className="mt-1 text-xs leading-5 text-slate-500">
+                                                {payload.helper}
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
                 </div>
             </CardContent>
-
         </Card>
     );
 }

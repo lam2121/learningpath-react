@@ -458,12 +458,13 @@ export function PlacementTestEngine() {
         />
       </div>
 
-      {/* Countdown timer — fixed to the right side in normal and F11 modes */}
       <aside
         aria-live="polite"
         aria-label="Placement test time remaining"
-        className={`fixed right-16 top-24 z-30 w-[220px] rounded-2xl border bg-white/95 p-4 shadow-lg backdrop-blur-sm
-          sm:right-6 lg:right-11 lg:top-9/23 lg:-translate-y-1/2
+        className={`fixed z-30 border bg-white/95 shadow-lg backdrop-blur-sm
+          bottom-0 left-0 right-0 w-full rounded-t-2xl p-3 flex items-center justify-between
+          sm:bottom-auto sm:left-auto sm:right-6 sm:top-24 sm:w-[220px] sm:rounded-2xl sm:flex-col sm:items-start sm:p-4
+          lg:right-11 lg:top-1/3 lg:-translate-y-1/2
           ${isTimeRunningLow ? 'border-rose-200' : 'border-blue-100'}
         `}
       >
@@ -471,12 +472,12 @@ export function PlacementTestEngine() {
           <svg className={`h-4 w-4 ${isTimeRunningLow ? 'text-rose-500' : 'text-blue-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Time left
+          <span className="hidden sm:inline">Time left</span>
         </div>
-        <div className={`mt-2 font-mono text-3xl font-bold tabular-nums ${isTimeRunningLow ? 'text-rose-600' : 'text-slate-800'}`}>
+        <div className={`font-mono text-xl sm:text-3xl sm:mt-2 font-bold tabular-nums ${isTimeRunningLow ? 'text-rose-600' : 'text-slate-800'}`}>
           {String(timerMinutes).padStart(2, '0')}:{String(timerSeconds).padStart(2, '0')}
         </div>
-        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-gray-100">
+        <div className="mt-0 sm:mt-3 h-1.5 w-1/2 sm:w-full overflow-hidden rounded-full bg-gray-100">
           <div
             className={`h-full rounded-full transition-[width] duration-1000 ${isTimeRunningLow ? 'bg-rose-500' : 'bg-blue-600'}`}
             style={{ width: `${(remainingSeconds / TEST_DURATION_SECONDS) * 100}%` }}

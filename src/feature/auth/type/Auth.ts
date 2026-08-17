@@ -19,6 +19,17 @@ export interface UserResponse {
 	created_at: string
 }
 
+export interface UserProfileResponse extends UserResponse {
+	started_at: string | null
+	estimated_finish: string | null
+	total_estimated_minutes: number
+	daily_study_minutes: number
+}
+
+export interface StudySettingsUpdateRequest {
+	daily_study_minutes: number
+}
+
 export interface LoginResponse {
 	access_token: string
 	token_type: string

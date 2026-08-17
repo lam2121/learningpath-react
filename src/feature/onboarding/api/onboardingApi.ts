@@ -76,13 +76,24 @@ export interface JobRoleBaseline {
   G_custom?: number
 }
 
+export interface JobRoleSkillDefinition {
+  description: string
+  example_questions: string[]
+}
+
+export interface JobRoleSkillDefinitions {
+  D_doc: JobRoleSkillDefinition
+  C_comm: JobRoleSkillDefinition
+  T_trouble: JobRoleSkillDefinition
+  G_custom: JobRoleSkillDefinition
+}
+
 export interface JobRole {
   id: number
   name: string
   job_description?: string | null
   baseline: JobRoleBaseline
-  g_skill_description?: string | null
-  example_question: string[] | null
+  skill_definitions?: JobRoleSkillDefinitions | null
   is_active?: boolean
 }
 

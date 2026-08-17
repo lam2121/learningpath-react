@@ -26,7 +26,6 @@ export function ChangeCareerAlert({
 }: ChangeCareerAlertProps) {
     const navigate = useNavigate();
     const [confirmed, setConfirmed] = useState(false);
-
     const handleChangeCareerTrack = () => {
         if (!confirmed) return;
 
