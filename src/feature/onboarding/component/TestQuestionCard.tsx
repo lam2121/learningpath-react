@@ -7,17 +7,15 @@ const AXIS_META: Record<string, { label: string; color: string; bg: string; dot:
   G_custom: { label: 'Business', color: 'text-amber-700', bg: 'bg-amber-50', dot: 'bg-amber-500' },
 }
 
-/** Map level 1-8 to a visible tier:
- *  1-2 → Easy (1 dot)
- *  3-4 → Medium (2 dots)
- *  5-6 → Hard (3 dots)
- *  7-8 → Expert (4 dots)
- */
-function getDifficultyTier(level: number): 1 | 2 | 3 | 4 {
-  if (level <= 2) return 1
-  if (level <= 4) return 2
-  if (level <= 6) return 3
-  return 4
+/** Map string level to a 1-4 tier index for dot display */
+function getDifficultyTier(level: string): 1 | 2 | 3 | 4 {
+  switch (level) {
+    case 'Easy': return 1
+    case 'Medium': return 2
+    case 'Hard': return 3
+    case 'Expert': return 4
+    default: return 1
+  }
 }
 
 const TIER_LABEL: Record<1 | 2 | 3 | 4, string> = {
@@ -69,7 +67,7 @@ export function TestQuestionCard({
             <span className={`text-xs font-semibold ${axis.color}`}>{axis.label}</span>
           </div>
 
-          {/* Difficulty dots — 1-2: Easy | 3-4: Medium | 5-6: Hard | 7-8: Expert */}
+          {/* Difficulty dots — Easy | Medium | Hard | Expert */}
           <div className="flex items-center gap-2">
             {Array.from({ length: 4 }, (_, i) => {
               const tier = getDifficultyTier(question.difficulty)
@@ -83,7 +81,6 @@ export function TestQuestionCard({
             })}
             <span className={`text-xs font-semibold ml-1 ${TIER_COLOR[getDifficultyTier(question.difficulty)]}`}>
               {TIER_LABEL[getDifficultyTier(question.difficulty)]}
-              <span className="text-gray-400 font-normal ml-1">Lv {question.difficulty}</span>
             </span>
           </div>
         </div>

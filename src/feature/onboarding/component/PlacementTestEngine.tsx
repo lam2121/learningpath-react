@@ -4,19 +4,18 @@ import tmaLogo from '@/asset/image/tma_logo.png'
 import bannerBg from '@/asset/image/banner_background.png'
 import { TestQuestionCard } from './TestQuestionCard'
 import type { TestQuestion, QuestionResult, DifficultyLevel } from '../api/placementTestTypes'
-import { SKILL_TO_AXIS } from '../api/placementTestTypes'
+import { SKILL_TO_AXIS, ORDERED_LEVELS } from '../api/placementTestTypes'
 import { useRadar } from '@/feature/radar'
 import { completePlacementTest, fetchPlacementTestQuestions } from '../api/onboardingApi'
 import type { RawPlacementQuestionApi } from '../api/onboardingApi'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// DB: 4 skills × 10 difficulty levels × 5 questions = 200 questions/role
-// Test session: 24 questions (6 per axis), adaptive ±1 per answer
-const TOTAL_QUESTIONS = 48       // 6 per axis × 4 axes
-const MIN_LEVEL: DifficultyLevel = 1
-const MAX_LEVEL: DifficultyLevel = 8
-const START_LEVEL: DifficultyLevel = 4  // start at middle of 1-10 range
+// DB: 4 skills × 4 difficulty levels (Easy/Medium/Hard/Expert) × 3 questions = 48/role
+// Test session: 48 questions (12 per axis), fixed progression from Easy to Expert
+const TOTAL_QUESTIONS = 48       // 12 per axis × 4 axes
+const MIN_LEVEL_INDEX = 0
+const MAX_LEVEL_INDEX = ORDERED_LEVELS.length - 1
 const TEST_DURATION_SECONDS = 30 * 60
 const AXIS_SEQUENCE: Array<'D' | 'C' | 'T' | 'G'> = [
   'D', 'C', 'T', 'G',
@@ -36,7 +35,7 @@ const AXIS_SEQUENCE: Array<'D' | 'C' | 'T' | 'G'> = [
 // ─── Pool Helpers ─────────────────────────────────────────────────────────────
 
 /** All valid difficulty levels */
-const ALL_LEVELS: DifficultyLevel[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+const ALL_LEVELS = ORDERED_LEVELS
 
 type Pool = Record<'D' | 'C' | 'T' | 'G', Partial<Record<DifficultyLevel, TestQuestion[]>>>
 
@@ -69,7 +68,7 @@ function normalise(raw: RawPlacementQuestionApi): TestQuestion {
   }
 }
 
-/** Build the pool structure from the raw API response (levels 1–10) */
+/** Build the pool structure from the raw API response (string levels) */
 function buildPool(rawList: RawPlacementQuestionApi[]): Pool {
   const pool: Pool = { D: {}, C: {}, T: {}, G: {} }
   for (const raw of rawList) {
@@ -98,12 +97,13 @@ function pickQuestion(
   level: DifficultyLevel,
 ): TestQuestion | null {
   // Try the exact level first, then expand outward (±1, ±2, …)
+  const levelIdx = ORDERED_LEVELS.indexOf(level)
   const candidates: DifficultyLevel[] = [level]
   for (let delta = 1; delta < ALL_LEVELS.length; delta++) {
-    const up = (level + delta) as DifficultyLevel
-    const down = (level - delta) as DifficultyLevel
-    if (up <= MAX_LEVEL) candidates.push(up)
-    if (down >= MIN_LEVEL) candidates.push(down)
+    const upIdx = levelIdx + delta
+    const downIdx = levelIdx - delta
+    if (upIdx <= MAX_LEVEL_INDEX) candidates.push(ORDERED_LEVELS[upIdx])
+    if (downIdx >= MIN_LEVEL_INDEX) candidates.push(ORDERED_LEVELS[downIdx])
   }
   for (const lvl of candidates) {
     const bucket = pool[axis][lvl]
@@ -209,13 +209,6 @@ export function PlacementTestEngine() {
   // ── Question pool (mutable ref so pickQuestion can splice without re-renders)
   const poolRef = useRef<Pool | null>(null)
 
-  // ── Adaptive per-axis current difficulty level (starts at 5 = midpoint of 1-10)
-  const [axisLevel, setAxisLevel] = useState<Record<'D' | 'C' | 'T' | 'G', DifficultyLevel>>({
-    D: START_LEVEL, C: START_LEVEL, T: START_LEVEL, G: START_LEVEL,
-  })
-  const axisLevelRef = useRef(axisLevel) // keep ref in sync for use inside pickQuestion
-  useEffect(() => { axisLevelRef.current = axisLevel }, [axisLevel])
-
   // ── Quiz state ───────────────────────────────────────────────────────────────
   const [currentIndex, setCurrentIndex] = useState(0)
   const [currentQuestion, setCurrentQuestion] = useState<TestQuestion | null>(null)
@@ -261,17 +254,21 @@ export function PlacementTestEngine() {
 
     fetchPlacementTestQuestions(roleId)
       .then((data) => {
+        console.log('Fetched questions:', data?.length)
         if (!data || data.length === 0) {
+          console.warn('Data is empty or null')
           setLoadState('empty')
           return
         }
         const pool = buildPool(data)
         poolRef.current = pool
+        console.log('Built pool:', pool)
 
-        // Pick the very first question (axis D, starting level 5 = midpoint)
+        // Pick the very first question (axis D, level Easy)
         const firstAxis = AXIS_SEQUENCE[0]
-        const firstQ = pickQuestion(pool, firstAxis, START_LEVEL)
+        const firstQ = pickQuestion(pool, firstAxis, ORDERED_LEVELS[0])
         if (!firstQ) {
+          console.warn('firstQ is null! Pool might not have a question for', firstAxis, ORDERED_LEVELS[0])
           setLoadState('empty')
           return
         }
@@ -332,6 +329,42 @@ export function PlacementTestEngine() {
     setSelectedId(optionId)
   }
 
+  function submitTest(finalResults: QuestionResult[]) {
+    setIsSubmitting(true)
+
+    const rawRoleId = localStorage.getItem('pending_role_id')
+    const roleId = rawRoleId ? parseInt(rawRoleId, 10) : null
+
+    if (!roleId) {
+      setIsSubmitting(false)
+      setFetchError('No role selected. Please go back and choose a role.')
+      navigate({ to: '/onboarding/role-selection' })
+      return
+    }
+
+    type AnsweredResult = QuestionResult & { selectedId: string }
+    const answeredResults = finalResults.filter(
+      (r): r is AnsweredResult => r.selectedId !== null,
+    )
+    const formattedResults = answeredResults.map((r) => ({
+      question_id: parseInt(r.questionId, 10),
+      selected_id: r.selectedId,
+      selected_text: r.options?.find((o) => o.id === r.selectedId)?.text ?? '',
+      is_correct: r.isCorrect,
+      axis: r.axis,
+      difficulty: r.difficulty,
+    }))
+
+    completePlacementTest({ role_id: roleId, placement_test_answers: formattedResults })
+      .then(() => reinitializeRadar(true))
+      .catch((err) => console.warn('Failed to commit placement test:', err))
+      .finally(() => {
+        localStorage.removeItem('pending_survey_answers')
+        localStorage.removeItem('pending_role_id')
+        navigate({ to: '/placement-result', state: { results: finalResults } as HistoryState })
+      })
+  }
+
   function handleNext() {
     if (!selectedId || !currentQuestion || isSubmitting || !poolRef.current) return
 
@@ -348,67 +381,31 @@ export function PlacementTestEngine() {
     }
     const updatedResults = [...results, newResult]
 
-    // ── Adaptive: update difficulty for this axis (+1 on correct, -1 on wrong) ──
-    const skill = AXIS_SEQUENCE[currentIndex]
-    const prevLevel = axisLevelRef.current[skill]
-    const nextLevel = (
-      isCorrect
-        ? Math.min(prevLevel + 1, MAX_LEVEL)
-        : Math.max(prevLevel - 1, MIN_LEVEL)
-    ) as DifficultyLevel
-    const updatedAxisLevel = { ...axisLevelRef.current, [skill]: nextLevel }
-
     const isLastQuestion = currentIndex === TOTAL_QUESTIONS - 1
 
     if (isLastQuestion) {
-      setIsSubmitting(true)
-
-      const rawRoleId = localStorage.getItem('pending_role_id')
-      const roleId = rawRoleId ? parseInt(rawRoleId, 10) : null
-
-      if (!roleId) {
-        setIsSubmitting(false)
-        setFetchError('No role selected. Please go back and choose a role.')
-        navigate({ to: '/onboarding/role-selection' })
-        return
-      }
-
-      type AnsweredResult = QuestionResult & { selectedId: string }
-      const answeredResults = updatedResults.filter(
-        (r): r is AnsweredResult => r.selectedId !== null,
-      )
-      const formattedResults = answeredResults.map((r) => ({
-        question_id: parseInt(r.questionId, 10),
-        selected_id: r.selectedId,
-        selected_text: r.options?.find((o) => o.id === r.selectedId)?.text ?? '',
-        is_correct: r.isCorrect,
-        axis: r.axis,
-        difficulty: r.difficulty,
-      }))
-
-      completePlacementTest({ role_id: roleId, placement_test_answers: formattedResults })
-        .then(() => reinitializeRadar(true))
-        .catch((err) => console.warn('Failed to commit placement test:', err))
-        .finally(() => {
-          localStorage.removeItem('pending_survey_answers')
-          localStorage.removeItem('pending_role_id')
-          navigate({ to: '/placement-result', state: { results: updatedResults } as HistoryState })
-        })
+      submitTest(updatedResults)
       return
     }
 
-    // ── Pick next question adaptively ────────────────────────────────────────
+    // ── Pick next question ───────────────────────────────────────────────────
     const nextIndex = currentIndex + 1
     const nextAxis = AXIS_SEQUENCE[nextIndex]
-    const nextLevelForAxis = nextAxis === skill ? nextLevel : updatedAxisLevel[nextAxis]
-    const nextQ = pickQuestion(poolRef.current, nextAxis, nextLevelForAxis)
+    const nextLevelIndex = Math.floor(nextIndex / 12)
+    const nextLevel = ORDERED_LEVELS[nextLevelIndex]
+    const nextQ = pickQuestion(poolRef.current, nextAxis, nextLevel)
+
+    // Safety fallback: If pool ran out of questions early, submit the test now
+    if (!nextQ) {
+      console.warn('Pool ran out of questions! Ending test early.')
+      submitTest(updatedResults)
+      return
+    }
 
     // Animate out → update state → animate in
     setVisible(false)
     setTimeout(() => {
       setResults(updatedResults)
-      setAxisLevel(updatedAxisLevel)
-      axisLevelRef.current = updatedAxisLevel
       setCurrentIndex(nextIndex)
       setCurrentQuestion(nextQ)
       setSelectedId(null)

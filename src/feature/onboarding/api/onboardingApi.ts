@@ -45,7 +45,7 @@ export interface PlacementTestResultPayload {
   selected_text?: string;
   is_correct: boolean;
   axis: string;
-  difficulty: number;
+  difficulty: string;
 }
 
 export interface CompletePlacementTestPayload {
@@ -100,7 +100,7 @@ export async function fetchJobRoles(): Promise<JobRole[]> {
 export interface RawPlacementQuestionApi {
   id: number
   skill: 'D' | 'C' | 'T' | 'G'
-  level: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
+  level: string  // Easy | Medium | Hard | Expert
   statement: string
   options: string[]
   correct_answer: string
@@ -110,7 +110,7 @@ export interface RawPlacementQuestionApi {
 export interface PlacementAnswerDetail {
   question_id: number
   axis: string            // v2.1 tag: D_doc | C_comm | T_trouble | G_custom
-  level: number           // 1–8
+  level: string           // Easy | Medium | Hard | Expert
   statement: string
   options: string[]       // 4 plain-text options
   correct_answer: string  // exact text of the correct option
@@ -132,6 +132,11 @@ export interface PlacementResult {
   role_name: string | null
   baseline: Record<string, number> | null  // {D_doc: 20, C_comm: 20, T_trouble: 50, G_custom: 10}
   answers: PlacementAnswerDetail[]
+  radar_score?: {
+    start_vector: Record<string, number>
+    current_vector: Record<string, number>
+    prev_stack: Record<string, number[]>
+  } | null
 }
 
 /** Fetch the current user's placement test result (scores, starting level, per-question detail) */

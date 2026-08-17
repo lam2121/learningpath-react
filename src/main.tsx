@@ -6,7 +6,7 @@ import { routeTree } from '@/routeTree.gen'
 import './index.css'
 
 import { AuthProvider, type AuthContextValue } from './common/context/AuthContext'
-import { RadarProvider } from './feature/radar/RadarContext'
+import { RadarProvider } from '@/feature/radar'
 import { GeminiGradientDefs } from './common/component/GeminiIcon'
 import { MainApp } from './common/component/MainApp'
 

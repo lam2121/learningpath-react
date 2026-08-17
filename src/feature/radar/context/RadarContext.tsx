@@ -24,14 +24,13 @@ import {
   createEmptyRadarState,
   getOverallRadar,
   getTotalPassedLessons,
-  initializeRadarFromScores,
   promoteToMastered,
   recordLessonPass,
   computeRadarForSkill,
   ALL_SKILL_AXES,
   type RadarState,
   type SkillAxis,
-} from './radarScore'
+} from '../utils/radarScore'
 
 // ─── Storage ────────────────────────────────────────────────────────────────────
 
@@ -109,14 +108,7 @@ export function RadarProvider({ children }: { children: ReactNode }) {
     try {
       const result = await fetchPlacementTestResult()
 
-      if (result.learning_status === 'enrolled' && result.skill_scores) {
-        const scores = {
-          D_doc: result.skill_scores.D_doc ?? 0,
-          C_comm: result.skill_scores.C_comm ?? 0,
-          T_trouble: result.skill_scores.T_trouble ?? 0,
-          G_custom: result.skill_scores.G_custom ?? 0,
-        }
-
+      if (result.learning_status === 'enrolled') {
         const cachedHasNoEvidence =
           !cached ||
           ALL_SKILL_AXES.every(
@@ -125,7 +117,15 @@ export function RadarProvider({ children }: { children: ReactNode }) {
 
         // Update state if forced or if no lesson evidence has been recorded yet
         if (force || cachedHasNoEvidence) {
-          const freshState = initializeRadarFromScores(scores)
+          let freshState: RadarState;
+          
+          if (result.radar_score) {
+            // Use the exact database values as single source of truth
+            freshState = result.radar_score as RadarState;
+          } else {
+            // Failsafe if backend radar_score is somehow missing
+            freshState = createEmptyRadarState()
+          }
           // Preserve any existing lesson evidence if this is a forced re-sync
           if (cached && !cachedHasNoEvidence) {
             for (const axis of ALL_SKILL_AXES) {

@@ -12,14 +12,17 @@ export const SKILL_TO_AXIS: Record<SkillLetter, SkillAxis> = {
   G: 'G_custom',
 }
 
-/** Difficulty level — DB stores levels 1-10 (5 questions each, 50 per skill) */
-export type DifficultyLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
+/** Difficulty level — DB stores string levels: Easy | Medium | Hard | Expert */
+export type DifficultyLevel = 'Easy' | 'Medium' | 'Hard' | 'Expert'
+
+/** Ordered levels for adaptive stepping */
+export const ORDERED_LEVELS: DifficultyLevel[] = ['Easy', 'Medium', 'Hard', 'Expert']
 
 /** Raw shape returned by the backend /placement-test/questions endpoint */
 export interface RawPlacementQuestion {
   id: number
   skill: SkillLetter   // 'D' | 'C' | 'T' | 'G'
-  level: DifficultyLevel  // 1–10
+  level: DifficultyLevel  // Easy | Medium | Hard | Expert
   statement: string
   options: string[]    // 4 plain-text options
   correct_answer: string
@@ -29,7 +32,7 @@ export interface RawPlacementQuestion {
 export interface TestQuestion {
   id: string
   axis: SkillAxis
-  difficulty: DifficultyLevel  // 1–10
+  difficulty: DifficultyLevel  // Easy | Medium | Hard | Expert
   question: string
   options: { id: string; text: string }[]
   correctId: string

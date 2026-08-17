@@ -18,8 +18,6 @@ export const ALL_SKILL_AXES: readonly SkillAxis[] = [
   'G_custom',
 ] as const
 
-export type StartingLevel = 'basic' | 'intermediate' | 'advanced'
-
 /** A vector representing scores across all skills. */
 export type RadarVector = Record<SkillAxis, number>
 
@@ -33,157 +31,13 @@ export interface RadarState {
   prev_stack: Record<SkillAxis, number[]>
 }
 
-/** Single placement test answer with difficulty metadata. */
-export interface PlacementAnswer {
-  axis: SkillAxis
-  /** Difficulty level 1–8 from the placement test question. */
-  level: number
-  isCorrect: boolean
-}
-
 // ─── Constants ──────────────────────────────────────────────────────────────────
-
-/**
- * Difficulty weight mapping.
- * Levels 1–2 → Easy (1), 3–4 → Medium (2), 5–6 → Hard (3), 7–8 → Expert (4).
- */
-export const DIFFICULTY_WEIGHT: Record<number, number> = {
-  1: 1, 2: 1,
-  3: 2, 4: 2,
-  5: 3, 6: 3,
-  7: 4, 8: 4,
-}
-
-/** Maximum possible weighted score per skill (3 Easy + 3 Medium + 3 Hard + 3 Expert). */
-export const MAX_WEIGHT_PER_SKILL = 30
 
 /** Evidence weight assigned to the initial placement result. */
 export const PLACEMENT_EVIDENCE_WEIGHT = 3.2
 
-/** Scale factor applied to weighted accuracy to produce the initial radar. */
-export const INITIAL_RADAR_SCALE = 0.85
-
 /** Lesson quiz pass threshold (percentage). */
 export const LESSON_PASS_THRESHOLD = 70
-
-// ─── Placement Scoring ──────────────────────────────────────────────────────────
-
-/**
- * Compute Difficulty-Weighted Accuracy per skill from placement answers.
- *
- * Each correct answer earns a weight determined by its difficulty level.
- * Result: `earnedWeight / 30 × 100` per skill.
- */
-export function computeWeightedAccuracy(
-  answers: PlacementAnswer[],
-): Record<SkillAxis, number> {
-  const earned: Record<SkillAxis, number> = {
-    D_doc: 0,
-    C_comm: 0,
-    T_trouble: 0,
-    G_custom: 0,
-  }
-
-  for (const answer of answers) {
-    if (answer.isCorrect) {
-      const weight = DIFFICULTY_WEIGHT[answer.level] ?? 1
-      earned[answer.axis] += weight
-    }
-  }
-
-  const result: Record<SkillAxis, number> = {
-    D_doc: 0,
-    C_comm: 0,
-    T_trouble: 0,
-    G_custom: 0,
-  }
-
-  for (const axis of ALL_SKILL_AXES) {
-    result[axis] = (earned[axis] / MAX_WEIGHT_PER_SKILL) * 100
-  }
-
-  return result
-}
-
-// ─── Level Classification ───────────────────────────────────────────────────────
-
-/**
- * Classify the learner's starting track from placement weighted accuracy scores.
- *
- * Guard conditions (evaluated in order):
- * 1. Any skill < 30% OR overall < 45% → Basic
- * 2. Overall ≥ 75% AND every skill ≥ 50% → Advanced
- * 3. Overall ≥ 75% but one skill 30–50% → Intermediate (Spiky Profile Cap)
- * 4. Otherwise (overall 45%–75%) → Intermediate
- */
-export function classifyLevel(
-  scores: Record<SkillAxis, number>,
-): StartingLevel {
-  const values = ALL_SKILL_AXES.map((axis) => scores[axis])
-  const overall = values.reduce((sum, v) => sum + v, 0) / values.length
-  const lowest = Math.min(...values)
-
-  // Guard: any skill below 30% or overall below 45% → Basic
-  if (lowest < 30 || overall < 45) {
-    return 'basic'
-  }
-
-  // High overall with all skills above 50% → Advanced
-  if (overall >= 75 && lowest >= 50) {
-    return 'advanced'
-  }
-
-  // Everything else (including spiky profile cap) → Intermediate
-  return 'intermediate'
-}
-
-// ─── Initial Radar ──────────────────────────────────────────────────────────────
-
-/**
- * Scale a single weighted accuracy value to produce the initial radar score.
- *
- * Formula: `weightedAccuracy × 0.85`
- */
-export function computeInitialRadar(weightedAccuracy: number): number {
-  return weightedAccuracy * INITIAL_RADAR_SCALE
-}
-
-/**
- * Full pipeline: placement answers → weighted accuracy → initial radar → RadarState.
- */
-export function initializeRadarFromPlacement(
-  answers: PlacementAnswer[],
-): RadarState {
-  const weightedAccuracy = computeWeightedAccuracy(answers)
-
-  const state = createEmptyRadarState()
-
-  for (const axis of ALL_SKILL_AXES) {
-    const initial = computeInitialRadar(weightedAccuracy[axis])
-    state.start_vector[axis] = initial
-    state.current_vector[axis] = initial
-  }
-
-  return state
-}
-
-/**
- * Create a RadarState directly from pre-computed weighted accuracy scores
- * (e.g., from a backend API response where scores are already calculated).
- */
-export function initializeRadarFromScores(
-  scores: Record<SkillAxis, number>,
-): RadarState {
-  const state = createEmptyRadarState()
-
-  for (const axis of ALL_SKILL_AXES) {
-    const initial = computeInitialRadar(scores[axis])
-    state.start_vector[axis] = initial
-    state.current_vector[axis] = initial
-  }
-
-  return state
-}
 
 // ─── Lesson Quiz Scoring ────────────────────────────────────────────────────────
 

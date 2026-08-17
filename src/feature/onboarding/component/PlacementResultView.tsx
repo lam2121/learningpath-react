@@ -4,7 +4,7 @@ import { LogOut, Loader2 } from 'lucide-react'
 import tmaLogo from '@/asset/image/tma_logo.png'
 import { useAuth } from '@/common/context/AuthContext'
 import { useRadar } from '@/feature/radar'
-import type { QuestionResult, SkillAxis } from '../api/placementTestTypes'
+import type { QuestionResult, SkillAxis, DifficultyLevel } from '../api/placementTestTypes'
 import { fetchPlacementTestResult, type PlacementResult, type PlacementAnswerDetail } from '../api/onboardingApi'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -109,11 +109,14 @@ function determineStartingLevel(scores: Record<SkillAxis, number>): StartingLeve
 
 // ─── Difficulty Label ─────────────────────────────────────────────────────────
 
-function getDifficultyLabel(level: number): { label: string; color: string; bg: string; border: string } {
-  if (level <= 2) return { label: 'Easy',   color: 'text-emerald-700', bg: 'bg-emerald-50',  border: 'border-emerald-200' }
-  if (level <= 4) return { label: 'Medium', color: 'text-blue-700',    bg: 'bg-blue-50',     border: 'border-blue-200'    }
-  if (level <= 6) return { label: 'Hard',   color: 'text-orange-600',  bg: 'bg-orange-50',   border: 'border-orange-200'  }
-  return              { label: 'Expert', color: 'text-rose-700',    bg: 'bg-rose-50',     border: 'border-rose-200'    }
+function getDifficultyLabel(level: string): { label: string; color: string; bg: string; border: string } {
+  switch (level) {
+    case 'Easy':   return { label: 'Easy',   color: 'text-emerald-700', bg: 'bg-emerald-50',  border: 'border-emerald-200' }
+    case 'Medium': return { label: 'Medium', color: 'text-blue-700',    bg: 'bg-blue-50',     border: 'border-blue-200'    }
+    case 'Hard':   return { label: 'Hard',   color: 'text-orange-600',  bg: 'bg-orange-50',   border: 'border-orange-200'  }
+    case 'Expert': return { label: 'Expert', color: 'text-rose-700',    bg: 'bg-rose-50',     border: 'border-rose-200'    }
+    default:       return { label: level,    color: 'text-gray-600',    bg: 'bg-gray-50',     border: 'border-gray-200'    }
+  }
 }
 
 // ─── Result Breakdown ─────────────────────────────────────────────────────────
@@ -231,7 +234,7 @@ export function PlacementResultView() {
     return {
       questionId: String(a.question_id),
       axis: a.axis as SkillAxis,
-      difficulty: a.level as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10,
+      difficulty: a.level as DifficultyLevel,
       selectedId,
       isCorrect: a.is_correct,
       questionText: a.statement,
@@ -670,7 +673,6 @@ export function PlacementResultView() {
                                   return (
                                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border ${diff.bg} ${diff.color} ${diff.border}`}>
                                       {diff.label}
-                                      <span className="font-normal opacity-60">Lv {r.difficulty}</span>
                                     </span>
                                   )
                                 })()}
