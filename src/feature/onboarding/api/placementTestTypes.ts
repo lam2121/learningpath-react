@@ -15,8 +15,8 @@ export const SKILL_TO_AXIS: Record<SkillLetter, SkillAxis> = {
 /** Difficulty level — DB stores string levels: Easy | Medium | Hard | Expert */
 export type DifficultyLevel = 'Easy' | 'Medium' | 'Hard' | 'Expert'
 
-/** Ordered levels for adaptive stepping */
-export const ORDERED_LEVELS: DifficultyLevel[] = ['Easy', 'Medium', 'Hard', 'Expert']
+/** Ordered levels for progression: Easy -> Medium -> Hard */
+export const ORDERED_LEVELS: DifficultyLevel[] = ['Easy', 'Medium', 'Hard']
 
 /** Raw shape returned by the backend /placement-test/questions endpoint */
 export interface RawPlacementQuestion {
@@ -26,6 +26,7 @@ export interface RawPlacementQuestion {
   statement: string
   options: string[]    // 4 plain-text options
   correct_answer: string
+  expanded_skill?: 'Context_layer' | 'Language_layer'
 }
 
 /** Normalised shape used by the engine and TestQuestionCard */
@@ -37,6 +38,7 @@ export interface TestQuestion {
   options: { id: string; text: string }[]
   correctId: string
   explanation: string
+  expanded_skill?: 'Context_layer' | 'Language_layer'
 }
 
 export interface QuestionResult {

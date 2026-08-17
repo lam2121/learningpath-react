@@ -115,6 +115,7 @@ export interface RawPlacementQuestionApi {
   statement: string
   options: string[]
   correct_answer: string
+  expanded_skill?: 'Context_layer' | 'Language_layer'
 }
 
 /** Placement test result detail for a single question */
@@ -128,6 +129,7 @@ export interface PlacementAnswerDetail {
   selected_id: string     // letter: 'a' | 'b' | 'c' | 'd'
   selected_text?: string  // exact text of the option the user picked
   is_correct: boolean
+  expanded_skill?: 'Context_layer' | 'Language_layer'
 }
 
 /** Placement test result response */

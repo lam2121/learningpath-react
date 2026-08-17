@@ -11,9 +11,10 @@ import type { RawPlacementQuestionApi } from '../api/onboardingApi'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// DB: 4 skills × 4 difficulty levels (Easy/Medium/Hard/Expert) × 3 questions = 48/role
-// Test session: 48 questions (12 per axis), fixed progression from Easy to Expert
+// DB: 4 skills × 3 difficulty levels (Easy/Medium/Hard) × 4 questions = 48/role
+// Test session: 48 questions (12 per axis), progression: Easy (0-15) -> Medium (16-31) -> Hard (32-47)
 const TOTAL_QUESTIONS = 48       // 12 per axis × 4 axes
+const QUESTIONS_PER_LEVEL = 16   // 4 questions per axis × 4 axes = 16 questions per level band
 const MIN_LEVEL_INDEX = 0
 const MAX_LEVEL_INDEX = ORDERED_LEVELS.length - 1
 const TEST_DURATION_SECONDS = 30 * 60
@@ -65,6 +66,7 @@ function normalise(raw: RawPlacementQuestionApi): TestQuestion {
     options,
     correctId: correctOption?.id ?? options[0]?.id ?? 'a',
     explanation: '',
+    expanded_skill: raw.expanded_skill,
   }
 }
 
@@ -391,8 +393,8 @@ export function PlacementTestEngine() {
     // ── Pick next question ───────────────────────────────────────────────────
     const nextIndex = currentIndex + 1
     const nextAxis = AXIS_SEQUENCE[nextIndex]
-    const nextLevelIndex = Math.floor(nextIndex / 12)
-    const nextLevel = ORDERED_LEVELS[nextLevelIndex]
+    const nextLevelIndex = Math.floor(nextIndex / QUESTIONS_PER_LEVEL)
+    const nextLevel = ORDERED_LEVELS[nextLevelIndex] ?? ORDERED_LEVELS[ORDERED_LEVELS.length - 1]
     const nextQ = pickQuestion(poolRef.current, nextAxis, nextLevel)
 
     // Safety fallback: If pool ran out of questions early, submit the test now

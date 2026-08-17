@@ -18,15 +18,27 @@ type AxisMap = Record<SkillAxis, AxisScore>
 
 // ─── Score computation ────────────────────────────────────────────────────────
 
-// Tính điểm các trục dựa trên tỷ lệ câu trả lời đúng
-function computeAxisScores(results: QuestionResult[], totalPerAxis: number = 12): Record<SkillAxis, number> {
+// Difficulty-weighted scoring (spec §3)
+// Each skill: 4×Easy (weight 1) + 4×Medium (weight 2) + 4×Hard (weight 3) = 4 + 8 + 12 = 24
+const DIFFICULTY_WEIGHT: Record<string, number> = {
+  Easy: 1,
+  Medium: 2,
+  Hard: 3,
+  Expert: 4,
+}
+const MAX_SKILL_WEIGHT = 24 // 4×1 + 4×2 + 4×3
+
+// Weighted accuracy per axis: Earned Weight / 24 × 100
+function computeAxisScores(results: QuestionResult[]): Record<SkillAxis, number> {
   const axes: SkillAxis[] = ['D_doc', 'C_comm', 'T_trouble', 'G_custom']
   const scores: Record<SkillAxis, number> = { D_doc: 0, C_comm: 0, T_trouble: 0, G_custom: 0 }
 
   axes.forEach((axis) => {
     const relevant = results.filter((r) => r.axis === axis)
-    const correct = relevant.filter((r) => r.isCorrect).length
-    scores[axis] = Math.round((correct / totalPerAxis) * 100)
+    const earnedWeight = relevant
+      .filter((r) => r.isCorrect)
+      .reduce((sum, r) => sum + (DIFFICULTY_WEIGHT[r.difficulty] ?? 1), 0)
+    scores[axis] = Math.round((earnedWeight / MAX_SKILL_WEIGHT) * 100)
   })
 
   return scores
@@ -254,7 +266,7 @@ export function PlacementResultView() {
     C_comm: result.skill_scores.C_comm || 0,
     T_trouble: result.skill_scores.T_trouble || 0,
     G_custom: result.skill_scores.G_custom || 0,
-  } : computeAxisScores(resultsToUse, totalQuestions / 4)
+  } : computeAxisScores(resultsToUse)
 
   // Target bars: use role baseline if available, otherwise fallback to demo targets
   const roleBaseline = useBackend && result.baseline ? {
@@ -271,22 +283,14 @@ export function PlacementResultView() {
     G_custom: { actual: actualScores.G_custom, target: normalizeTarget(roleBaseline.G_custom) },
   }
 
-  // Hàm tính toán số câu đúng / tổng số câu (cố định mỗi trục 12 câu)
+  // Hàm tính toán số câu đúng / tổng số câu và điểm phần trăm theo trọng số
   const getAxisStats = (axis: SkillAxis) => {
-    if (useBackend) {
-      // Backend: compute from answers (group by axis)
-      const relevant = resultsToUse.filter((r: QuestionResult) => r.axis === axis)
-      const correct = relevant.filter((r: QuestionResult) => r.isCorrect).length
-      const total = relevant.length
-      const percentage = total > 0 ? Math.round((correct / total) * 100) : 0
-      return { correct, total, percentage }
-    } else {
-      // Fallback: fixed 12 per axis
-      const relevant = resultsToUse.filter((r: QuestionResult) => r.axis === axis)
-      const correct = relevant.filter((r: QuestionResult) => r.isCorrect).length
-      const percentage = Math.round((correct / (totalQuestions / 4)) * 100)
-      return { correct, total: totalQuestions / 4, percentage }
-    }
+    const relevant = resultsToUse.filter((r: QuestionResult) => r.axis === axis)
+    const correct = relevant.filter((r: QuestionResult) => r.isCorrect).length
+    const total = useBackend ? relevant.length : (totalQuestions / 4)
+    // Percentage always uses the weighted accuracy (from backend or computeAxisScores)
+    const percentage = axisMap[axis].actual
+    return { correct, total, percentage }
   }
 
    const aiSummary = generateAISummary(actualScores)
