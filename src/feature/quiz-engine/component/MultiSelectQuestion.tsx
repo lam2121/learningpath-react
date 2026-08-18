@@ -60,14 +60,14 @@ export function MultiSelectQuestion({
 	}, [selectedIndices, onAnswerChange]);
 
 	return (
-		<div className="space-y-6 p-6 bg-white rounded-2xl border border-gray-100 shadow-sm">
-			<div className="flex items-center justify-between">
+		<div className="space-y-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
+			<div className="flex flex-wrap items-center justify-between gap-3">
 				<h3 className="text-lg font-semibold text-gray-900">
 					Question {questionNumber} / {totalQuestions} · <span className="text-gray-500 font-normal">Multi-Select</span>
 				</h3>
 				{isSubmitted && (
 					<div className={cn(
-						'px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1',
+						'flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium',
 						isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
 					)}>
 						{isCorrect ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
@@ -77,9 +77,9 @@ export function MultiSelectQuestion({
 			</div>
 
 			{/* Scenario */}
-			<div className="p-5 rounded-xl bg-purple-50 border border-purple-100">
+			<div className="rounded-xl border border-purple-100 bg-purple-50 p-4 sm:p-5">
 				<p className="font-medium text-purple-900 mb-2">Scenario:</p>
-				<p className="text-gray-800 text-lg">{stem}</p>
+				<p className="text-base text-gray-800 sm:text-lg">{stem}</p>
 				<p className="text-sm text-purple-700 mt-2">Select ALL that apply.</p>
 			</div>
 
@@ -94,7 +94,7 @@ export function MultiSelectQuestion({
 						<Label
 							key={index}
 							className={cn(
-								'relative flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer',
+								'relative flex items-start gap-3 rounded-xl border-2 p-4 transition-all cursor-pointer',
 								'hover:bg-gray-50',
 								isSubmitted
 									? isCorrectOption
@@ -119,12 +119,12 @@ export function MultiSelectQuestion({
 								)}
 							/>
 							<span className={cn(
-								'flex items-center gap-3 flex-1 text-gray-900',
+								'flex min-w-0 flex-1 items-start gap-3 text-gray-900',
 								showResult && isCorrectOption && 'font-medium',
 								showResult && isSelected && !isCorrectOption && 'line-through text-red-500'
 							)}>
 								<span className={cn(
-									'w-7 h-7 flex items-center justify-center rounded-full border-2 font-semibold text-sm',
+									'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-sm font-semibold',
 									isSubmitted
 										? isCorrectOption
 											? 'bg-green-500 border-green-500 text-white'
@@ -137,7 +137,7 @@ export function MultiSelectQuestion({
 								)}>
 									{String.fromCharCode(65 + index)}
 								</span>
-								{option}
+								<span className="min-w-0">{option}</span>
 							</span>
 							{showResult && isCorrectOption && (
 								<Check className="w-5 h-5 text-green-500" />

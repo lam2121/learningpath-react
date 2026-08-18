@@ -19,11 +19,20 @@ export interface UserResponse {
 	created_at: string
 }
 
+export interface StudyHistoryEntryResponse {
+	studied_on: string
+	minutes: number
+}
+
 export interface UserProfileResponse extends UserResponse {
 	started_at: string | null
 	estimated_finish: string | null
 	total_estimated_minutes: number
 	daily_study_minutes: number
+	total_studied_minutes: number
+	study_history: StudyHistoryEntryResponse[]
+	initial_skill_scores?: Record<string, number> | null
+	current_skill_scores?: Record<string, number> | null
 }
 
 export interface StudySettingsUpdateRequest {

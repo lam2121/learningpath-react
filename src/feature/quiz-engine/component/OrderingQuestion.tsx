@@ -103,18 +103,18 @@ export function OrderingQuestion({
 	}, [userAnswer, isSubmitted, originalSteps]);
 
 	return (
-		<div className="space-y-6 p-6 bg-white rounded-2xl border border-gray-100 shadow-sm">
-			<div className="flex items-center justify-between">
-<h3 className="text-lg font-semibold text-gray-900">
-				Question {questionNumber} / {totalQuestions} · <span className="text-gray-500 font-normal">Ordering</span>
-			</h3>
-				<div className="px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-medium">
+		<div className="space-y-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
+			<div className="flex flex-wrap items-center justify-between gap-3">
+				<h3 className="text-lg font-semibold text-gray-900">
+					Question {questionNumber} / {totalQuestions} · <span className="text-gray-500 font-normal">Ordering</span>
+				</h3>
+				<div className="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700">
 					T
 				</div>
 			</div>
 
 			{/* Instruction */}
-			<div className="p-4 rounded-xl bg-orange-50 border border-orange-100">
+			<div className="rounded-xl border border-orange-100 bg-orange-50 p-4">
 				<p className="font-medium text-orange-900 mb-2">📋 Instruction:</p>
 				<p className="text-gray-800">{instruction}</p>
 			</div>
@@ -130,7 +130,7 @@ export function OrderingQuestion({
 						onDragEnd={handleDragEnd}
 						onDrop={handleOrderChange}
 						className={cn(
-							'relative flex items-center gap-4 p-4 rounded-xl border-2 transition-all',
+							'relative flex items-start gap-3 rounded-xl border-2 p-4 transition-all sm:items-center sm:gap-4',
 							'bg-white hover:bg-gray-50',
 							isSubmitted
 								? orderedSteps.every((s, i) => s === correctOrder[i])
@@ -144,7 +144,7 @@ export function OrderingQuestion({
 					>
 						{/* Drag Handle */}
 						<div className={cn(
-							'flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg',
+							'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
 							'text-gray-400 hover:text-gray-600 active:text-gray-900',
 							isSubmitted && 'cursor-default opacity-50'
 						)}>
@@ -153,7 +153,7 @@ export function OrderingQuestion({
 
 						{/* Step Number */}
 						<div className={cn(
-							'flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg font-bold text-lg',
+							'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg font-bold',
 							isSubmitted
 								? step === correctOrder[index]
 									? 'bg-green-100 text-green-700'
@@ -164,11 +164,11 @@ export function OrderingQuestion({
 						</div>
 
 						{/* Step Content */}
-						<div className="flex-1 text-gray-900 font-medium">{step}</div>
+						<div className="min-w-0 flex-1 break-words font-medium text-gray-900">{step}</div>
 
 						{/* Result Indicators */}
 						{isSubmitted && (
-							<div className="flex items-center gap-2">
+							<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
 								{step === correctOrder[index] ? (
 									<Check className="w-5 h-5 text-green-500" />
 								) : (

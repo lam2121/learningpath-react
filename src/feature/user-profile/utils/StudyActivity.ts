@@ -1,5 +1,9 @@
 const getStorageKey = (userId: number) =>
     `learning-login-days:${userId}`;
+const getStudyMinutesStorageKey = (userId: number) =>
+    `learning-study-minutes:${userId}`;
+const getStudyRemainderStorageKey = (userId: number) =>
+    `learning-study-minutes-remainder:${userId}`;
 
 function formatDateKey(date: Date): string {
     const year = date.getFullYear();
@@ -51,6 +55,127 @@ export function getLoginDays(userId: number): string[] {
             : [];
     } catch {
         return [];
+    }
+}
+
+type StudyMinutesByDay = Record<string, number>;
+
+type StudyMinutesRemainder = {
+    dateKey: string;
+    milliseconds: number;
+};
+
+function isStudyMinutesByDay(value: unknown): value is StudyMinutesByDay {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+        return false;
+    }
+
+    return Object.entries(value).every(
+        ([key, minutes]) => typeof key === "string" && typeof minutes === "number",
+    );
+}
+
+function readStudyMinutesByDay(userId: number): StudyMinutesByDay {
+    try {
+        const savedData: unknown = JSON.parse(
+            localStorage.getItem(getStudyMinutesStorageKey(userId)) ?? "{}",
+        );
+
+        if (!isStudyMinutesByDay(savedData)) {
+            return {};
+        }
+
+        return Object.fromEntries(
+            Object.entries(savedData).filter(([, minutes]) => Number.isFinite(minutes) && minutes > 0),
+        );
+    } catch {
+        return {};
+    }
+}
+
+function readStudyMinutesRemainder(userId: number): StudyMinutesRemainder | null {
+    try {
+        const savedData: unknown = JSON.parse(
+            localStorage.getItem(getStudyRemainderStorageKey(userId)) ?? "null",
+        );
+
+        if (
+            !savedData
+            || typeof savedData !== "object"
+            || Array.isArray(savedData)
+            || typeof savedData.dateKey !== "string"
+            || typeof savedData.milliseconds !== "number"
+        ) {
+            return null;
+        }
+
+        return {
+            dateKey: savedData.dateKey,
+            milliseconds: Math.max(0, Math.floor(savedData.milliseconds)),
+        };
+    } catch {
+        return null;
+    }
+}
+
+function emitStudyActivityUpdated(userId: number): void {
+    window.dispatchEvent(
+        new CustomEvent("careerpath:study-activity-updated", {
+            detail: {
+                userId,
+                studyMinutesByDay: getTrackedStudyMinutesByDay(userId),
+            },
+        }),
+    );
+}
+
+export function getTrackedStudyMinutesByDay(userId: number): StudyMinutesByDay {
+    return readStudyMinutesByDay(userId);
+}
+
+export function getTrackedStudyMinutesTotal(userId: number): number {
+    return Object.values(readStudyMinutesByDay(userId)).reduce(
+        (total, minutes) => total + minutes,
+        0,
+    );
+}
+
+export function recordStudyTime(userId: number, elapsedMilliseconds: number): void {
+    if (!Number.isFinite(elapsedMilliseconds) || elapsedMilliseconds <= 0) {
+        return;
+    }
+
+    const todayKey = formatDateKey(new Date());
+    const studyMinutesByDay = readStudyMinutesByDay(userId);
+    const remainder = readStudyMinutesRemainder(userId);
+    const carriedMilliseconds =
+        remainder?.dateKey === todayKey ? remainder.milliseconds : 0;
+    const totalMilliseconds = carriedMilliseconds + Math.floor(elapsedMilliseconds);
+    const wholeMinutes = Math.floor(totalMilliseconds / 60_000);
+    const nextRemainder = totalMilliseconds % 60_000;
+
+    try {
+        if (wholeMinutes > 0) {
+            studyMinutesByDay[todayKey] = (studyMinutesByDay[todayKey] ?? 0) + wholeMinutes;
+            localStorage.setItem(
+                getStudyMinutesStorageKey(userId),
+                JSON.stringify(studyMinutesByDay),
+            );
+        }
+
+        localStorage.setItem(
+            getStudyRemainderStorageKey(userId),
+            JSON.stringify({
+                dateKey: todayKey,
+                milliseconds: nextRemainder,
+            } satisfies StudyMinutesRemainder),
+        );
+
+        if (wholeMinutes > 0) {
+            emitStudyActivityUpdated(userId);
+        }
+    } catch {
+        // Ignore storage failures and keep the app usable.
     }
 }
 

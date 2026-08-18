@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { BookOpenCheck, Code2, Database, FileText, MessageSquareText } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { fetchCurrentUserProfile } from "@/feature/auth/api/authAPI";
 import { Button } from "@/shadcn/component/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/component/ui/card";
 import { fetchPlacementTestResult } from "@/feature/onboarding/api/onboardingApi";
@@ -14,6 +15,7 @@ const SKILL_META = [
         icon: FileText,
         color: "text-blue-500",
         bar: "bg-blue-400",
+        barMuted: "bg-blue-200",
         track: "bg-blue-50",
     },
     {
@@ -23,6 +25,7 @@ const SKILL_META = [
         icon: MessageSquareText,
         color: "text-emerald-500",
         bar: "bg-emerald-400",
+        barMuted: "bg-emerald-200",
         track: "bg-emerald-50",
     },
     {
@@ -32,6 +35,7 @@ const SKILL_META = [
         icon: Database,
         color: "text-rose-500",
         bar: "bg-rose-400",
+        barMuted: "bg-rose-200",
         track: "bg-rose-50",
     },
     {
@@ -41,29 +45,50 @@ const SKILL_META = [
         icon: Code2,
         color: "text-amber-500",
         bar: "bg-amber-400",
+        barMuted: "bg-amber-200",
         track: "bg-amber-50",
     },
 ] as const;
 
 export function SkillsOverview() {
-    const [skillScores, setSkillScores] = useState<Record<string, number> | null>(null);
+    const [initialSkillScores, setInitialSkillScores] = useState<Record<string, number> | null>(null);
+    const [currentSkillScores, setCurrentSkillScores] = useState<Record<string, number> | null>(null);
 
     useEffect(() => {
         let isMounted = true;
 
         const loadScores = async () => {
             try {
-                const result = await fetchPlacementTestResult();
+                const [placementResult, profileResult] = await Promise.allSettled([
+                    fetchPlacementTestResult(),
+                    fetchCurrentUserProfile(),
+                ]);
+
                 if (isMounted) {
-                    setSkillScores(
-                        Object.keys(result.skill_scores ?? {}).length > 0
-                            ? result.skill_scores
-                            : null,
-                    );
+                    const placementScores =
+                        placementResult.status === "fulfilled"
+                        && Object.keys(placementResult.value.skill_scores ?? {}).length > 0
+                            ? placementResult.value.skill_scores
+                            : null;
+                    const profileInitialScores =
+                        profileResult.status === "fulfilled"
+                            ? profileResult.value.initial_skill_scores ?? null
+                            : null;
+                    const profileCurrentScores =
+                        profileResult.status === "fulfilled"
+                            ? profileResult.value.current_skill_scores ?? null
+                            : null;
+
+                    const nextInitialScores = profileInitialScores ?? placementScores;
+                    const nextCurrentScores = profileCurrentScores ?? nextInitialScores;
+
+                    setInitialSkillScores(nextInitialScores);
+                    setCurrentSkillScores(nextCurrentScores);
                 }
             } catch {
                 if (isMounted) {
-                    setSkillScores(null);
+                    setInitialSkillScores(null);
+                    setCurrentSkillScores(null);
                 }
             }
         };
@@ -76,11 +101,11 @@ export function SkillsOverview() {
     }, []);
 
     const averageScore = useMemo(() => {
-        if (!skillScores) return 0;
-        const values = Object.values(skillScores);
+        if (!currentSkillScores) return 0;
+        const values = Object.values(currentSkillScores);
         if (values.length === 0) return 0;
         return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
-    }, [skillScores]);
+    }, [currentSkillScores]);
 
     return (
         <Card className="border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.07)]">
@@ -91,7 +116,7 @@ export function SkillsOverview() {
                             Skills Overview
                         </CardTitle>
                         <p className="mt-1 text-sm text-slate-500">
-                            One placement result powers all four skill priorities.
+                            Compare your starting skill scores with your current progress.
                         </p>
                     </div>
 
@@ -110,7 +135,7 @@ export function SkillsOverview() {
                 <div className="rounded-3xl border border-slate-200 bg-slate-50/70 px-4 py-6 sm:px-6">
                     <div className="mb-5 flex items-center justify-between gap-4">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                            Placement Score By Skill
+                            Initial and Current Score By Skill
                         </p>
                         <div className="hidden items-center gap-4 sm:flex">
                             {SKILL_META.map((skill) => (
@@ -128,26 +153,47 @@ export function SkillsOverview() {
                     <div className="flex items-end justify-around gap-3 sm:gap-5">
                         {SKILL_META.map((skill) => {
                             const Icon = skill.icon;
-                            const score = skillScores?.[skill.key] ?? 0;
+                            const initialScore = initialSkillScores?.[skill.key] ?? 0;
+                            const currentScore = currentSkillScores?.[skill.key] ?? initialScore;
 
                             return (
                                 <div
                                     key={skill.key}
                                     className="flex min-w-0 flex-1 flex-col items-center"
                                 >
-                                    <div className="mb-3 text-center">
-                                        <p className={`text-2xl font-black sm:text-3xl ${skill.color}`}>
-                                            {score}%
-                                        </p>
-                                    </div>
-
-                                    <div
-                                        className={`relative flex h-44 w-full max-w-[5rem] items-end overflow-hidden rounded-t-2xl border border-slate-100 ${skill.track} sm:h-52 sm:max-w-[6rem]`}
-                                    >
-                                        <div
-                                            className={`w-full rounded-t-2xl transition-all duration-700 ease-out ${skill.bar}`}
-                                            style={{ height: `${score}%` }}
-                                        />
+                                    <div className="mb-3 grid w-full max-w-[7rem] grid-cols-2 gap-2 sm:max-w-[8.5rem]">
+                                        <div className="flex flex-col items-center">
+                                            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                Initial
+                                            </p>
+                                            <div
+                                                className={`relative flex h-44 w-full items-end overflow-hidden rounded-t-2xl border border-slate-100 ${skill.track} sm:h-52`}
+                                            >
+                                                <div
+                                                    className={`w-full rounded-t-2xl transition-all duration-700 ease-out ${skill.barMuted}`}
+                                                    style={{ height: `${initialScore}%` }}
+                                                />
+                                            </div>
+                                            <p className="mt-2 text-sm font-bold text-slate-500 sm:text-base">
+                                                {initialScore}%
+                                            </p>
+                                        </div>
+                                        <div className="flex flex-col items-center">
+                                            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                Current
+                                            </p>
+                                            <div
+                                                className={`relative flex h-44 w-full items-end overflow-hidden rounded-t-2xl border border-slate-100 ${skill.track} sm:h-52`}
+                                            >
+                                                <div
+                                                    className={`w-full rounded-t-2xl transition-all duration-700 ease-out ${skill.bar}`}
+                                                    style={{ height: `${currentScore}%` }}
+                                                />
+                                            </div>
+                                            <p className={`mt-2 text-base font-black sm:text-lg ${skill.color}`}>
+                                                {currentScore}%
+                                            </p>
+                                        </div>
                                     </div>
 
                                     <div className="mt-4 flex flex-col items-center text-center">
@@ -167,7 +213,7 @@ export function SkillsOverview() {
                     </div>
                 </div>
 
-                {!skillScores ? (
+                {!initialSkillScores ? (
                     <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
                         <div className="flex items-start gap-3">
                             <div className="rounded-xl bg-white p-2 shadow-sm">

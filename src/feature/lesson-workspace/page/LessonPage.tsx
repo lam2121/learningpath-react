@@ -22,12 +22,14 @@ import {
 } from "lucide-react";
 
 import { MainNavigationMenu } from "@/common/component/MainNavigationMenu";
+import { useAuth } from "@/common/context/AuthContext";
 import {
     fetchRoadmap,
     type RoadmapLesson,
     type RoadmapResponse,
     type RoadmapTopic,
 } from "@/feature/learning-path/roadmapApi";
+import { recordStudyTime } from "@/feature/user-profile/utils/StudyActivity";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -63,7 +65,7 @@ function DosDontsArticle({
     const explanation = parseMirroredExplanation(explanationString);
 
     return (
-        <article className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800">
+        <article className="rounded-2xl border border-slate-200 p-4 sm:p-5 dark:border-slate-800">
             <div className="grid gap-4 lg:grid-cols-2">
                 <div className="rounded-2xl bg-emerald-50 p-4 dark:bg-emerald-950/30">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
@@ -88,7 +90,7 @@ function DosDontsArticle({
                     variant="outline"
                     size="sm"
                     onClick={() => setShowTranslation(!showTranslation)}
-                    className="text-slate-600 dark:text-slate-300"
+                    className="h-auto max-w-full whitespace-normal text-center text-slate-600 dark:text-slate-300"
                 >
                     <Languages className="mr-2 h-4 w-4" />
                     {showTranslation ? "Ẩn bản dịch (Hide translation)" : "Dịch sang tiếng Việt (Vietnamese Support)"}
@@ -532,7 +534,9 @@ function parseDialogueHighlights(
 function parseIndexedExplanation(value: string, prefix: "Do" | "Phrase") {
     return splitHash(value).map((item, index) => {
         if (prefix === "Do") {
-            const match = item.match(/Do:\s*(.*?)\s*\|\s*Don't:\s*(.*)$/i);
+            const match = item.match(
+                /^\s*do\s*:\s*(.*?)\s*\|\s*don['’]t\s*:\s*(.*?)\s*$/i,
+            );
             return {
                 id: `${index}-${item}`,
                 title: `Pair ${index + 1}`,
@@ -631,7 +635,7 @@ function SectionButton({
             type="button"
             onClick={onClick}
             className={[
-                "w-full rounded-2xl border px-4 py-3 text-left transition-all",
+                "w-full rounded-2xl border px-3 py-3 text-left transition-all sm:px-4",
                 isActive
                     ? "border-blue-500 bg-blue-50 text-blue-900 shadow-sm dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-100"
                     : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-900 dark:hover:bg-slate-800/80",
@@ -673,11 +677,11 @@ function PanelShell({
 }) {
     return (
         <section className="rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <header className="border-b border-slate-200 bg-slate-50 px-6 py-5 dark:border-slate-800 dark:bg-slate-800/60">
+            <header className="border-b border-slate-200 bg-slate-50 px-4 py-4 sm:px-6 sm:py-5 dark:border-slate-800 dark:bg-slate-800/60">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-600 dark:text-blue-300">
                     {eyebrow}
                 </p>
-                <h2 className="mt-2 text-2xl font-bold text-slate-950 dark:text-white">
+                <h2 className="mt-2 text-xl font-bold text-slate-950 dark:text-white sm:text-2xl">
                     {title}
                 </h2>
                 {note ? (
@@ -686,7 +690,7 @@ function PanelShell({
                     </p>
                 ) : null}
             </header>
-            <div className="space-y-6 p-6">{children}</div>
+            <div className="space-y-6 p-4 sm:p-6">{children}</div>
         </section>
     );
 }
@@ -700,7 +704,7 @@ function EmptyPanel({
 }) {
     return (
         <PanelShell eyebrow="Unavailable" title={title}>
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400">
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500 sm:px-6 sm:py-10 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400">
                 {message}
             </div>
         </PanelShell>
@@ -719,13 +723,13 @@ function ReadingPracticeSection({
 
     return (
         <PanelShell eyebrow="Section 4" title={section.label} note={section.note}>
-            <article className="rounded-2xl border border-slate-200 p-6 dark:border-slate-800">
+            <article className="rounded-2xl border border-slate-200 p-4 sm:p-6 dark:border-slate-800">
                 <p className="text-sm leading-8 text-slate-700 dark:text-slate-200">
                     {section.primary}
                 </p>
             </article>
 
-            <div className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 text-sm text-slate-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-slate-200">
+            <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-slate-700 sm:px-5 dark:border-blue-900 dark:bg-blue-950/30 dark:text-slate-200">
                 <p className="font-semibold text-slate-950 dark:text-white">
                     Reading practice
                 </p>
@@ -743,7 +747,7 @@ function ReadingPracticeSection({
                     return (
                         <article
                             key={`${index}-${qa.question}`}
-                            className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
+                            className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900"
                         >
                             <p className="font-medium text-slate-950 dark:text-white">
                                 {qa.question}
@@ -810,13 +814,13 @@ function renderTheorySection(section: ParsedTheorySection) {
             return (
                 <PanelShell eyebrow="Section 1" title={section.label} note={section.note}>
                     <div className="grid gap-4 lg:grid-cols-2">
-                        <div className="rounded-2xl bg-slate-950 px-5 py-5 text-slate-50">
+                        <div className="rounded-2xl bg-slate-950 px-4 py-4 text-slate-50 sm:px-5 sm:py-5">
                             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">
                                 English scenario
                             </p>
                             <p className="mt-3 text-sm leading-7">{english}</p>
                         </div>
-                        <div className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-5 dark:border-blue-900 dark:bg-blue-950/30">
+                        <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4 sm:px-5 sm:py-5 dark:border-blue-900 dark:bg-blue-950/30">
                             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-300">
                                 Vietnamese support
                             </p>
@@ -826,7 +830,7 @@ function renderTheorySection(section: ParsedTheorySection) {
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800">
+                    <div className="rounded-2xl border border-slate-200 p-4 sm:p-5 dark:border-slate-800">
                         <p className="text-sm font-semibold text-slate-950 dark:text-white">
                             Decision points
                         </p>
@@ -866,7 +870,7 @@ function renderTheorySection(section: ParsedTheorySection) {
                         {items.map((item) => (
                             <article
                                 key={item.id}
-                                className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800"
+                                className="rounded-2xl border border-slate-200 p-4 sm:p-5 dark:border-slate-800"
                             >
                                 <div className="flex flex-wrap items-center gap-2">
                                     <h3 className="text-lg font-semibold text-slate-950 dark:text-white">
@@ -887,7 +891,7 @@ function renderTheorySection(section: ParsedTheorySection) {
                         ))}
                     </div>
                     {section.secondary ? (
-                        <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50 px-5 py-4 text-sm text-slate-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-slate-200">
+                        <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50 px-4 py-4 text-sm text-slate-700 sm:px-5 dark:border-blue-900 dark:bg-blue-950/30 dark:text-slate-200">
                             {section.secondary}
                         </div>
                     ) : null}
@@ -912,7 +916,7 @@ function renderTheorySection(section: ParsedTheorySection) {
                         {patterns.map((pattern) => (
                             <article
                                 key={pattern.id}
-                                className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800"
+                                className="rounded-2xl border border-slate-200 p-4 sm:p-5 dark:border-slate-800"
                             >
                                 <div className="flex items-center gap-2">
                                     <NotebookPen className="h-4 w-4 text-blue-600 dark:text-blue-300" />
@@ -930,7 +934,7 @@ function renderTheorySection(section: ParsedTheorySection) {
                         ))}
                     </div>
                     {section.secondary ? (
-                        <div className="rounded-2xl border border-dashed border-slate-200 px-5 py-4 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">
+                        <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-4 text-sm text-slate-600 sm:px-5 dark:border-slate-700 dark:text-slate-300">
                             {section.secondary}
                         </div>
                     ) : null}
@@ -953,7 +957,7 @@ function renderTheorySection(section: ParsedTheorySection) {
                             <div
                                 key={line.id}
                                 className={[
-                                    "max-w-3xl rounded-2xl px-5 py-4 text-sm leading-7",
+                                    "w-full max-w-full rounded-2xl px-4 py-4 text-sm leading-7 break-words sm:w-fit sm:max-w-3xl sm:px-5",
                                     index % 2 === 0
                                         ? "mr-auto bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
                                         : "ml-auto bg-blue-600 text-white",
@@ -970,7 +974,7 @@ function renderTheorySection(section: ParsedTheorySection) {
                         {highlights.map((highlight) => (
                             <article
                                 key={highlight.id}
-                                className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800"
+                                className="rounded-2xl border border-slate-200 p-4 sm:p-5 dark:border-slate-800"
                             >
                                 <p className="font-semibold text-slate-950 dark:text-white">
                                     {highlight.left}
@@ -994,12 +998,12 @@ function renderTheorySection(section: ParsedTheorySection) {
                         {steps.map((step, index) => (
                             <article
                                 key={`${index}-${step}`}
-                                className="grid gap-4 rounded-2xl border border-slate-200 p-5 dark:border-slate-800 lg:grid-cols-[auto_minmax(0,1fr)]"
+                                className="grid gap-4 rounded-2xl border border-slate-200 p-4 sm:p-5 dark:border-slate-800 sm:grid-cols-[auto_minmax(0,1fr)]"
                             >
                                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-lg font-bold text-white">
                                     {index + 1}
                                 </div>
-                                <div>
+                                <div className="min-w-0">
                                     <p className="font-semibold text-slate-950 dark:text-white">
                                         {step}
                                     </p>
@@ -1037,7 +1041,7 @@ function renderTheorySection(section: ParsedTheorySection) {
             return (
                 <PanelShell eyebrow="Section 8" title={section.label} note={section.note}>
                     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-                        <div className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800">
+                        <div className="rounded-2xl border border-slate-200 p-4 sm:p-5 dark:border-slate-800">
                             <div className="flex items-center gap-2">
                                 <ListChecks className="h-4 w-4 text-blue-600 dark:text-blue-300" />
                                 <p className="font-semibold text-slate-950 dark:text-white">
@@ -1056,13 +1060,13 @@ function renderTheorySection(section: ParsedTheorySection) {
                             </div>
                         </div>
                         <div className="space-y-4">
-                            <article className="rounded-2xl bg-blue-600 p-5 text-white">
+                            <article className="rounded-2xl bg-blue-600 p-4 text-white sm:p-5">
                                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100">
                                     Practice now
                                 </p>
                                 <p className="mt-3 text-sm leading-7">{section.secondary}</p>
                             </article>
-                            <article className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800">
+                            <article className="rounded-2xl border border-slate-200 p-4 sm:p-5 dark:border-slate-800">
                                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                                     Before moving on
                                 </p>
@@ -1143,7 +1147,7 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
     };
 
     const questionNavigator = (
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
             {questions.map((question, index) => {
                 const isActive = index === currentQuestionIndex;
                 const isAnswered = hasAnswer(answers[index]);
@@ -1184,7 +1188,7 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
             note="One question at a time, embedded directly in the lesson page."
         >
             <div className="space-y-6">
-                <div className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800/60 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                <div className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-800/60 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
                             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white">
@@ -1202,7 +1206,7 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                         <Progress value={progressValue} indicatorClassName="bg-blue-600" />
                     </div>
 
-                    <div className="grid gap-2 text-sm sm:grid-cols-3 lg:min-w-[320px]">
+                    <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3 xl:min-w-[320px]">
                         <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
                             <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Answered</p>
                             <p className="mt-1 font-semibold text-slate-950 dark:text-white">{answeredCount}</p>
@@ -1213,7 +1217,7 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                                 {submitted ? "Submitted" : "In progress"}
                             </p>
                         </div>
-                        <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
+                        <div className="col-span-2 rounded-2xl bg-white px-4 py-3 sm:col-span-1 dark:bg-slate-900">
                             <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Correct</p>
                             <p className="mt-1 font-semibold text-slate-950 dark:text-white">
                                 {submitted ? correctCount : "?"}
@@ -1226,8 +1230,8 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
 
                 {showSummary ? (
                     <section className="space-y-5">
-                        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                            <div className="flex items-center gap-3">
+                        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
                                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white">
                                     <CheckCircle2 className="h-6 w-6" />
                                 </div>
@@ -1245,8 +1249,9 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                                 to take the embedded lesson check again.
                             </p>
                             <div className="mt-5 flex flex-wrap gap-3">
-                                <Button onClick={handleRestart}>Restart quiz</Button>
+                                <Button className="w-full sm:w-auto" onClick={handleRestart}>Restart quiz</Button>
                                 <Button
+                                    className="w-full sm:w-auto"
                                     variant="outline"
                                     onClick={() => {
                                         setShowSummary(false);
@@ -1334,7 +1339,7 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                             />
                         )}
 
-                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-900">
+                        <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white px-4 py-4 sm:px-5 dark:border-slate-800 dark:bg-slate-900 lg:flex-row lg:items-center lg:justify-between">
                             <div className="text-sm text-slate-500 dark:text-slate-400">
                                 {submitted
                                     ? isEmbeddedAnswerCorrect(currentQuestion, currentAnswer)
@@ -1343,8 +1348,9 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                                     : "Move through the quiz with Next. Answers are revealed only after you submit on the last question."}
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center lg:justify-end">
                                 <Button
+                                    className="w-full sm:w-auto"
                                     variant="outline"
                                     onClick={() =>
                                         setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))
@@ -1356,17 +1362,18 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                                 </Button>
 
                                 {submitted && isLastQuestion ? (
-                                    <Button onClick={() => setShowSummary(true)}>
+                                    <Button className="w-full sm:w-auto" onClick={() => setShowSummary(true)}>
                                         View summary
                                         <Check className="ml-2 h-4 w-4" />
                                     </Button>
                                 ) : !submitted && isLastQuestion ? (
-                                    <Button onClick={handleSubmitQuiz}>
+                                    <Button className="w-full sm:w-auto" onClick={handleSubmitQuiz}>
                                         Submit quiz
                                         <Check className="ml-2 h-4 w-4" />
                                     </Button>
                                 ) : (
                                     <Button
+                                        className="w-full sm:w-auto"
                                         onClick={() =>
                                             setCurrentQuestionIndex((prev) =>
                                                 Math.min(totalQuestions - 1, prev + 1),
@@ -1420,6 +1427,8 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
 }
 
 export function LessonPage({ lessonId }: { lessonId: number }) {
+    const auth = useAuth();
+    const userId = Number(auth.user?.id);
     const [roadmap, setRoadmap] = useState<RoadmapResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -1480,6 +1489,77 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
             theorySections?.find((section) => section.key === activeSection) ?? null,
         [activeSection, theorySections],
     );
+
+    useEffect(() => {
+        if (
+            !Number.isFinite(userId)
+            || loading
+            || error
+            || !lessonLookup
+            || !lessonLookup.lesson.is_generated
+        ) {
+            return;
+        }
+
+        let activeSince =
+            document.visibilityState === "visible" && document.hasFocus()
+                ? Date.now()
+                : null;
+
+        const flushStudyTime = () => {
+            if (activeSince === null) {
+                return;
+            }
+
+            const elapsedMilliseconds = Date.now() - activeSince;
+            activeSince = Date.now();
+
+            if (elapsedMilliseconds > 0) {
+                recordStudyTime(userId, elapsedMilliseconds);
+            }
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === "hidden") {
+                flushStudyTime();
+                activeSince = null;
+                return;
+            }
+
+            if (document.hasFocus()) {
+                activeSince = Date.now();
+            }
+        };
+
+        const handleWindowBlur = () => {
+            flushStudyTime();
+            activeSince = null;
+        };
+
+        const handleWindowFocus = () => {
+            if (document.visibilityState === "visible") {
+                activeSince = Date.now();
+            }
+        };
+
+        const intervalId = window.setInterval(() => {
+            flushStudyTime();
+        }, 15_000);
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        window.addEventListener("blur", handleWindowBlur);
+        window.addEventListener("focus", handleWindowFocus);
+        window.addEventListener("beforeunload", flushStudyTime);
+
+        return () => {
+            window.clearInterval(intervalId);
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+            window.removeEventListener("blur", handleWindowBlur);
+            window.removeEventListener("focus", handleWindowFocus);
+            window.removeEventListener("beforeunload", flushStudyTime);
+            flushStudyTime();
+        };
+    }, [error, lessonLookup, loading, userId]);
 
     if (loading) {
         return <LessonSkeleton />;
@@ -1561,8 +1641,8 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
         <div className="min-h-screen bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_22%,#f8fafc_100%)] text-slate-950 dark:bg-slate-950 dark:text-white">
             <MainNavigationMenu />
 
-            <main className="mx-auto max-w-[1480px] px-4 py-6 sm:px-6 xl:px-8">
-                <header className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <main className="mx-auto max-w-[1480px] px-3 py-4 sm:px-6 sm:py-6 xl:px-8">
+                <header className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
                     <div className="flex flex-wrap items-center gap-3">
                         <Button asChild variant="outline" size="sm">
                             <Link to="/lessons/learning-path">
@@ -1577,12 +1657,12 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
                         <Badge variant="outline">{formatLabel(lesson.difficulty_tier)}</Badge>
                     </div>
 
-                    <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-end">
+                    <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-end">
                         <div className="min-w-0">
                             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-300">
                                 Topic {topic.sort_order} · {topic.name}
                             </p>
-                            <h1 className="mt-3 break-words text-3xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+                            <h1 className="mt-3 break-words text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
                                 {lesson.title}
                             </h1>
                             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
@@ -1591,7 +1671,7 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
                             </p>
                         </div>
 
-                        <div className="grid gap-3 rounded-3xl bg-slate-50 p-5 dark:bg-slate-800/60">
+                        <div className="grid gap-3 rounded-3xl bg-slate-50 p-4 sm:p-5 dark:bg-slate-800/60">
                             <div className="flex items-center gap-3">
                                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white">
                                     <BookOpen className="h-5 w-5" />
@@ -1615,7 +1695,7 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
 
                 <div className="mt-6 grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
                     <aside className="xl:sticky xl:top-24 xl:self-start">
-                        <div className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <div className="rounded-[28px] border border-slate-200 bg-white p-3 sm:p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                             <div className="mb-4 px-2">
                                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
                                     Lesson map
@@ -1625,9 +1705,9 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
                                 </p>
                             </div>
 
-                            <div className="flex gap-3 overflow-x-auto pb-2 xl:flex-col xl:overflow-visible xl:pb-0">
+                            <div className="grid gap-3 sm:grid-cols-2 xl:flex xl:flex-col">
                                 {SECTION_META.map((meta) => (
-                                    <div key={meta.key} className="min-w-[220px] xl:min-w-0">
+                                    <div key={meta.key} className="min-w-0">
                                         <SectionButton
                                             meta={meta}
                                             isActive={meta.key === activeSection}

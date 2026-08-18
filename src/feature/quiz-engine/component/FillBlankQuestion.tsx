@@ -39,7 +39,7 @@ export function FillBlankQuestion({
 		const parts = stem.split('___');
 		if (parts.length === 2) {
 			return (
-				<p className="text-lg leading-relaxed text-gray-900">
+				<p className="text-base leading-relaxed text-gray-900 sm:text-lg">
 					<span>{parts[0]}</span>
 					<span className="relative">
 						{isSubmitted ? (
@@ -58,27 +58,27 @@ export function FillBlankQuestion({
 								</>
 							)
 						) : (
-							<span className="bg-gray-100 border-b-2 border-gray-300 px-2 min-w-[120px] inline-block text-center">___</span>
+							<span className="inline-block min-w-[88px] border-b-2 border-gray-300 bg-gray-100 px-2 text-center sm:min-w-[120px]">___</span>
 						)}
 					</span>
 					<span>{parts[1]}</span>
 				</p>
 			);
 		}
-		return <p className="text-lg leading-relaxed text-gray-900">{stem}</p>;
+		return <p className="text-base leading-relaxed text-gray-900 sm:text-lg">{stem}</p>;
 	};
 
 	return (
-		<div className="space-y-6 p-6 bg-white rounded-2xl border border-gray-100 shadow-sm" data-question-type="fill_blank">
+		<div className="space-y-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6" data-question-type="fill_blank">
 			{/* Question Header */}
-			<div className="flex items-center justify-between">
-				<div className="flex items-center gap-2">
+			<div className="flex flex-wrap items-center justify-between gap-3">
+				<div className="flex flex-wrap items-center gap-2">
 					<span className="text-sm font-medium text-gray-500">Question {questionNumber} / {totalQuestions}</span>
-					<span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded">Fill-in-the-blank</span>
+					<span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">Fill-in-the-blank</span>
 				</div>
 				{isSubmitted && (
 					<div className={cn(
-						'px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1',
+						'flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium',
 						isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
 					)}>
 {isCorrect ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
@@ -109,7 +109,7 @@ export function FillBlankQuestion({
 							<Label
 								htmlFor={`fill-option-${questionNumber}-${index}`}
 								className={cn(
-									'flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer',
+									'flex items-start gap-3 rounded-xl border-2 p-4 transition-all cursor-pointer',
 									'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50',
 									isOptionSelected && !isSubmitted && 'border-blue-500 bg-blue-50',
 									isOptionCorrect && 'border-green-400 bg-green-50',
@@ -134,10 +134,10 @@ export function FillBlankQuestion({
 									) : null}
 								</div>
 
-								<span className="text-gray-900 font-medium text-base flex-1">{option}</span>
+								<span className="min-w-0 flex-1 text-base font-medium text-gray-900">{option}</span>
 
 								{isOptionCorrect && (
-<span className="ml-auto px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+<span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 sm:ml-auto">
 									Correct Answer
 								</span>
 								)}
