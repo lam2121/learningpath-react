@@ -3,7 +3,6 @@ import {
     ChevronDown,
     Brain,
     ChevronRight,
-    Clock3,
     RotateCcw,
     Settings,
     Sparkles,

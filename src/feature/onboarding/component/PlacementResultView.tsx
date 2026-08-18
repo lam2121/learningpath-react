@@ -3,7 +3,8 @@ import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { LogOut, Loader2 } from 'lucide-react'
 import tmaLogo from '@/asset/image/tma_logo.png'
 import { useAuth } from '@/common/context/AuthContext'
-import type { QuestionResult, SkillAxis } from '../api/placementTestTypes'
+import { useRadar } from '@/feature/radar'
+import type { QuestionResult, SkillAxis, DifficultyLevel } from '../api/placementTestTypes'
 import { fetchPlacementTestResult, type PlacementResult, type PlacementAnswerDetail } from '../api/onboardingApi'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -17,15 +18,27 @@ type AxisMap = Record<SkillAxis, AxisScore>
 
 // ─── Score computation ────────────────────────────────────────────────────────
 
-// Tính điểm các trục dựa trên tỷ lệ câu trả lời đúng
-function computeAxisScores(results: QuestionResult[], totalPerAxis: number = 12): Record<SkillAxis, number> {
+// Difficulty-weighted scoring (spec §3)
+// Each skill: 4×Easy (weight 1) + 4×Medium (weight 2) + 4×Hard (weight 3) = 4 + 8 + 12 = 24
+const DIFFICULTY_WEIGHT: Record<string, number> = {
+  Easy: 1,
+  Medium: 2,
+  Hard: 3,
+  Expert: 4,
+}
+const MAX_SKILL_WEIGHT = 24 // 4×1 + 4×2 + 4×3
+
+// Weighted accuracy per axis: Earned Weight / 24 × 100
+function computeAxisScores(results: QuestionResult[]): Record<SkillAxis, number> {
   const axes: SkillAxis[] = ['D_doc', 'C_comm', 'T_trouble', 'G_custom']
   const scores: Record<SkillAxis, number> = { D_doc: 0, C_comm: 0, T_trouble: 0, G_custom: 0 }
 
   axes.forEach((axis) => {
     const relevant = results.filter((r) => r.axis === axis)
-    const correct = relevant.filter((r) => r.isCorrect).length
-    scores[axis] = Math.round((correct / totalPerAxis) * 100)
+    const earnedWeight = relevant
+      .filter((r) => r.isCorrect)
+      .reduce((sum, r) => sum + (DIFFICULTY_WEIGHT[r.difficulty] ?? 1), 0)
+    scores[axis] = Math.round((earnedWeight / MAX_SKILL_WEIGHT) * 100)
   })
 
   return scores
@@ -106,6 +119,18 @@ function determineStartingLevel(scores: Record<SkillAxis, number>): StartingLeve
   }
 }
 
+// ─── Difficulty Label ─────────────────────────────────────────────────────────
+
+function getDifficultyLabel(level: string): { label: string; color: string; bg: string; border: string } {
+  switch (level) {
+    case 'Easy':   return { label: 'Easy',   color: 'text-emerald-700', bg: 'bg-emerald-50',  border: 'border-emerald-200' }
+    case 'Medium': return { label: 'Medium', color: 'text-blue-700',    bg: 'bg-blue-50',     border: 'border-blue-200'    }
+    case 'Hard':   return { label: 'Hard',   color: 'text-orange-600',  bg: 'bg-orange-50',   border: 'border-orange-200'  }
+    case 'Expert': return { label: 'Expert', color: 'text-rose-700',    bg: 'bg-rose-50',     border: 'border-rose-200'    }
+    default:       return { label: level,    color: 'text-gray-600',    bg: 'bg-gray-50',     border: 'border-gray-200'    }
+  }
+}
+
 // ─── Result Breakdown ─────────────────────────────────────────────────────────
 
 const AXIS_META_DISPLAY = [
@@ -138,11 +163,16 @@ export function PlacementResultView() {
   // Use router state as instant paint fallback, but fetch from backend as source of truth
   const routerResults: QuestionResult[] = (routerState as { results?: QuestionResult[] })?.results ?? []
 
+  const { reinitialize: reinitializeRadar } = useRadar()
+
   useEffect(() => {
     const fetchResult = async () => {
       try {
         const data = await fetchPlacementTestResult()
         setResult(data)
+        if (data.learning_status === 'enrolled') {
+          reinitializeRadar(true)
+        }
       } catch (err) {
         console.error('Failed to fetch placement test result:', err)
         setError('Failed to load your results. Please try again.')
@@ -151,7 +181,7 @@ export function PlacementResultView() {
       }
     }
     fetchResult()
-  }, [])
+  }, [reinitializeRadar])
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
@@ -216,7 +246,7 @@ export function PlacementResultView() {
     return {
       questionId: String(a.question_id),
       axis: a.axis as SkillAxis,
-      difficulty: a.level as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10,
+      difficulty: a.level as DifficultyLevel,
       selectedId,
       isCorrect: a.is_correct,
       questionText: a.statement,
@@ -236,7 +266,7 @@ export function PlacementResultView() {
     C_comm: result.skill_scores.C_comm || 0,
     T_trouble: result.skill_scores.T_trouble || 0,
     G_custom: result.skill_scores.G_custom || 0,
-  } : computeAxisScores(resultsToUse, totalQuestions / 4)
+  } : computeAxisScores(resultsToUse)
 
   // Target bars: use role baseline if available, otherwise fallback to demo targets
   const roleBaseline = useBackend && result.baseline ? {
@@ -253,22 +283,14 @@ export function PlacementResultView() {
     G_custom: { actual: actualScores.G_custom, target: normalizeTarget(roleBaseline.G_custom) },
   }
 
-  // Hàm tính toán số câu đúng / tổng số câu (cố định mỗi trục 12 câu)
+  // Hàm tính toán số câu đúng / tổng số câu và điểm phần trăm theo trọng số
   const getAxisStats = (axis: SkillAxis) => {
-    if (useBackend) {
-      // Backend: compute from answers (group by axis)
-      const relevant = resultsToUse.filter((r: QuestionResult) => r.axis === axis)
-      const correct = relevant.filter((r: QuestionResult) => r.isCorrect).length
-      const total = relevant.length
-      const percentage = total > 0 ? Math.round((correct / total) * 100) : 0
-      return { correct, total, percentage }
-    } else {
-      // Fallback: fixed 12 per axis
-      const relevant = resultsToUse.filter((r: QuestionResult) => r.axis === axis)
-      const correct = relevant.filter((r: QuestionResult) => r.isCorrect).length
-      const percentage = Math.round((correct / (totalQuestions / 4)) * 100)
-      return { correct, total: totalQuestions / 4, percentage }
-    }
+    const relevant = resultsToUse.filter((r: QuestionResult) => r.axis === axis)
+    const correct = relevant.filter((r: QuestionResult) => r.isCorrect).length
+    const total = useBackend ? relevant.length : (totalQuestions / 4)
+    // Percentage always uses the weighted accuracy (from backend or computeAxisScores)
+    const percentage = axisMap[axis].actual
+    return { correct, total, percentage }
   }
 
    const aiSummary = generateAISummary(actualScores)
@@ -565,7 +587,10 @@ export function PlacementResultView() {
           <button
             id="btn-create-course"
             type="button"
-            onClick={() => navigate({ to: '/profile' })}
+            onClick={async () => {
+              await reinitializeRadar(true)
+              navigate({ to: '/profile' })
+            }}
             className="w-full py-5 px-6 rounded-2xl bg-[#007aff] hover:bg-blue-600 text-white font-extrabold text-xl shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-3"
           >
             <span>Create My Course</span>
@@ -645,7 +670,17 @@ export function PlacementResultView() {
                               <p className="text-slate-800 font-semibold leading-relaxed mt-1 flex-1">
                                 {qText}
                               </p>
-                              <div className="flex-shrink-0">
+                              <div className="flex-shrink-0 flex flex-row items-center gap-2">
+                                {/* Difficulty badge */}
+                                {r.difficulty != null && (() => {
+                                  const diff = getDifficultyLabel(r.difficulty)
+                                  return (
+                                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border ${diff.bg} ${diff.color} ${diff.border}`}>
+                                      {diff.label}
+                                    </span>
+                                  )
+                                })()}
+                                {/* Correct / Incorrect badge */}
                                 {r.isCorrect ? (
                                   <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-100">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
