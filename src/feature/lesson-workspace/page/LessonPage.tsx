@@ -1145,7 +1145,7 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
     };
 
     const questionNavigator = (
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="flex gap-2 overflow-x-auto pb-5 pt-1 px-0.5">
             {questions.map((question, index) => {
                 const isActive = index === currentQuestionIndex;
                 const isAnswered = hasAnswer(answers[index]);
@@ -1160,7 +1160,7 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                             setShowSummary(false);
                         }}
                         className={[
-                            "flex h-10 min-w-10 items-center justify-center rounded-full border text-sm font-semibold transition-colors",
+                            "flex h-10 w-10 min-w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold transition-colors",
                             isActive
                                 ? "border-blue-600 bg-blue-600 text-white"
                                 : submitted && isCorrect
