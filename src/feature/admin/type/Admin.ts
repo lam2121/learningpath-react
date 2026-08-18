@@ -39,9 +39,12 @@ export interface CareerTrack {
 	isActive: boolean;
 	createdBy: number | null;
 	activeLearnerCount: number;
+	placementQuestionsCount: number;
 	topicsCount: number;
 	lessonsCount: number;
 	generationStatus: string | null;
+	placementGenerationStatus: string | null;
+	courseGenerationStatus: string | null;
 }
 
 // Request payloads (backend uses snake_case for these)
@@ -162,6 +165,55 @@ export interface GenerationStatus {
 	startedAt: string | null;
 	finishedAt: string | null;
 	errorMessage: string | null;
+}
+
+export interface GenerationActiveJob {
+	workflow: 'placement' | 'course' | null;
+	status: 'pending' | 'in_progress' | 'completed' | 'failed' | null;
+	step: 'a' | 'b1' | 'b2' | null;
+	startedAt: string | null;
+	finishedAt: string | null;
+}
+
+export interface PlacementGenerationSummary {
+	questionCount: number;
+	targetCount: number;
+	lastStatus: 'empty' | 'pending' | 'in_progress' | 'completed' | 'failed';
+	lastStartedAt: string | null;
+	lastFinishedAt: string | null;
+	lastErrorMessage: string | null;
+}
+
+export interface CourseGenerationSummary {
+	topicsCount: number;
+	targetTopics: number;
+	lessonsCount: number;
+	targetLessons: number;
+	currentStep: 'b1' | 'b2' | null;
+	lastStatus: 'empty' | 'pending' | 'in_progress' | 'completed' | 'failed';
+	lastStartedAt: string | null;
+	lastFinishedAt: string | null;
+	lastErrorMessage: string | null;
+	stepB1Count: number;
+	stepB1Errors: number;
+	stepB2Count: number;
+	stepB2Errors: number;
+}
+
+export interface GenerationBlockers {
+	killSwitchOn: boolean;
+	killSwitchReason: string | null;
+	activeLearnerCount: number;
+	requiresLearnerResetForPlacement: boolean;
+	requiresLearnerResetForCourse: boolean;
+}
+
+export interface GenerationSummary {
+	roleId: number;
+	activeJob: GenerationActiveJob;
+	placement: PlacementGenerationSummary;
+	course: CourseGenerationSummary;
+	blockers: GenerationBlockers;
 }
 
 export interface ResetLearnersResult {
