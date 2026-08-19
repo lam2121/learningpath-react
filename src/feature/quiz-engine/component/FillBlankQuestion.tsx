@@ -14,6 +14,7 @@ interface FillBlankQuestionProps {
 	onAnswer: (answer: string) => void;
 	isSubmitted?: boolean;
 	userAnswer?: string;
+	revealAnswer?: boolean;
 }
 
 export function FillBlankQuestion({
@@ -22,7 +23,8 @@ export function FillBlankQuestion({
 	totalQuestions,
 	onAnswer,
 	isSubmitted = false,
-	userAnswer
+	userAnswer,
+	revealAnswer = true,
 }: FillBlankQuestionProps) {
 	const [stem, optionsStr, correctAnswer, explanation] = data;
 	const options = optionsStr.split('|');
@@ -48,14 +50,20 @@ export function FillBlankQuestion({
 									{correctAnswer}
 								</span>
 							) : (
-								<>
-									<span className="bg-red-100 text-red-800 px-3 py-1 rounded font-medium border border-red-300 line-through">
+								revealAnswer ? (
+									<>
+										<span className="bg-red-100 text-red-800 px-3 py-1 rounded font-medium border border-red-300 line-through">
+											{userAnswer || '___'}
+										</span>
+										<span className="ml-2 bg-green-100 text-green-800 px-3 py-1 rounded font-medium border border-green-300">
+											{correctAnswer}
+										</span>
+									</>
+								) : (
+									<span className="bg-red-100 text-red-800 px-3 py-1 rounded font-medium border border-red-300">
 										{userAnswer || '___'}
 									</span>
-									<span className="ml-2 bg-green-100 text-green-800 px-3 py-1 rounded font-medium border border-green-300">
-										{correctAnswer}
-									</span>
-								</>
+								)
 							)
 						) : (
 							<span className="inline-block min-w-[88px] border-b-2 border-gray-300 bg-gray-100 px-2 text-center sm:min-w-[120px]">___</span>
@@ -101,7 +109,7 @@ export function FillBlankQuestion({
 			>
 				{options.map((option, index) => {
 					const isOptionSelected = userAnswer === option;
-					const isOptionCorrect = isSubmitted && option === correctAnswer;
+					const isOptionCorrect = isSubmitted && revealAnswer && option === correctAnswer;
 					const isOptionWrong = isSubmitted && isOptionSelected && !isCorrect;
 
 					return (
@@ -148,7 +156,7 @@ export function FillBlankQuestion({
 			</RadioGroup>
 
 			{/* Explanation */}
-			{isSubmitted && (
+			{isSubmitted && revealAnswer && (
 				<div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
 					<div className="flex items-start gap-3">
 						<div className={cn(

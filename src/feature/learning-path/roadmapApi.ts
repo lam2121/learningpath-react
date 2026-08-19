@@ -46,10 +46,28 @@ export interface RoadmapResponse {
 	total_estimated_minutes: number
 }
 
+export interface LessonGenerateResponse {
+	lesson_id: number
+	status: string
+	message: string
+}
+
 export async function fetchRoadmap(): Promise<RoadmapResponse> {
 	const res = await fetch(`${BASE_URL}/onboarding/roadmap`, {
 		method: 'GET',
 		headers: authHeaders(),
 	})
 	return handleResponse<RoadmapResponse>(res)
+}
+
+export async function kickoffRoadmapLessonGeneration(
+	lessonId: number,
+	force = false,
+): Promise<LessonGenerateResponse> {
+	const suffix = force ? '?force=true' : ''
+	const res = await fetch(`${BASE_URL}/onboarding/roadmap/lessons/${lessonId}/generate${suffix}`, {
+		method: 'POST',
+		headers: authHeaders(),
+	})
+	return handleResponse<LessonGenerateResponse>(res)
 }

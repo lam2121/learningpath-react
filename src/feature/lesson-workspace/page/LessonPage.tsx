@@ -10,6 +10,7 @@ import {
     ChevronLeft,
     ChevronRight,
     FileText,
+    Lightbulb,
     Languages,
     ListChecks,
     MessageSquareText,
@@ -17,6 +18,7 @@ import {
     Route,
     ScrollText,
     ShieldCheck,
+    Sparkles,
     Target,
     type LucideIcon,
 } from "lucide-react";
@@ -25,6 +27,7 @@ import { MainNavigationMenu } from "@/common/component/MainNavigationMenu";
 import { useAuth } from "@/common/context/AuthContext";
 import {
     fetchRoadmap,
+    kickoffRoadmapLessonGeneration,
     type RoadmapLesson,
     type RoadmapResponse,
     type RoadmapTopic,
@@ -175,6 +178,10 @@ type EmbeddedQuizQuestion = {
     type: EmbeddedQuestionType;
     data: FillBlankQuestionData | MultiSelectQuestionData | OrderingQuestionData;
 };
+
+const LESSON_PASS_THRESHOLD = 0.7;
+const HINT_UNLOCK_AFTER_FAILURES = 2;
+const HINT_CREDIT = 0.75;
 
 const SECTION_META: SectionMeta[] = [
     { key: "scenario", label: "Scenario", eyebrow: "Context", icon: ScrollText },
@@ -418,6 +425,10 @@ function isEmbeddedAnswerCorrect(question: EmbeddedQuizQuestion, answer: string 
     return answer === question.data[2];
 }
 
+function getEmbeddedCorrectAnswer(question: EmbeddedQuizQuestion) {
+    return question.data[2];
+}
+
 function parseReadingQuestions(value: string) {
     return value
         .split(/\s*(?:\|+|#)\s*(?=Q\d+\.)/)
@@ -617,6 +628,27 @@ function findLesson(roadmap: RoadmapResponse | null, lessonId: number): LessonLo
     }
 
     return null;
+}
+
+function findNextLesson(roadmap: RoadmapResponse | null, lessonId: number): LessonLookup | null {
+    if (!roadmap) {
+        return null;
+    }
+
+    const orderedLessons = roadmap.topics.flatMap((topic) =>
+        topic.lessons.map((lesson) => ({
+            track: roadmap.track,
+            topic,
+            lesson,
+        })),
+    );
+    const currentIndex = orderedLessons.findIndex((item) => item.lesson.id === lessonId);
+
+    if (currentIndex < 0 || currentIndex + 1 >= orderedLessons.length) {
+        return null;
+    }
+
+    return orderedLessons[currentIndex + 1] ?? null;
 }
 
 function SectionButton({
@@ -1082,7 +1114,13 @@ function renderTheorySection(section: ParsedTheorySection) {
     }
 }
 
-function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
+function EmbeddedLessonQuiz({
+    quiz,
+    nextLesson,
+}: {
+    quiz: ParsedQuiz | null;
+    nextLesson: LessonLookup | null;
+}) {
     const questions = useMemo(
         () => shuffleQuestions(buildEmbeddedQuizQuestions(quiz)),
         [quiz],
@@ -1092,6 +1130,11 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
     const [submitted, setSubmitted] = useState(false);
     const [showSummary, setShowSummary] = useState(false);
     const [showIncompleteWarning, setShowIncompleteWarning] = useState(false);
+    const [quizStarted, setQuizStarted] = useState(false);
+    const [failedAttempts, setFailedAttempts] = useState(0);
+    const [hintedQuestions, setHintedQuestions] = useState<Record<number, boolean>>({});
+    const [nextLessonStatus, setNextLessonStatus] = useState<"idle" | "preparing" | "ready" | "error">("idle");
+    const [nextLessonMessage, setNextLessonMessage] = useState<string | null>(null);
 
     useEffect(() => {
         setCurrentQuestionIndex(0);
@@ -1099,7 +1142,12 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
         setSubmitted(false);
         setShowSummary(false);
         setShowIncompleteWarning(false);
-    }, [quiz]);
+        setQuizStarted(false);
+        setFailedAttempts(0);
+        setHintedQuestions({});
+        setNextLessonStatus(nextLesson?.lesson.is_generated ? "ready" : "idle");
+        setNextLessonMessage(null);
+    }, [nextLesson?.lesson.id, nextLesson?.lesson.is_generated, quiz]);
 
     if (!quiz || questions.length === 0) {
         return (
@@ -1115,13 +1163,90 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
     const totalQuestions = questions.length;
     const answeredCount = Object.values(answers).filter((value) => hasAnswer(value)).length;
     const unansweredCount = totalQuestions - answeredCount;
-    const correctCount = questions.reduce(
+    const hintModeUnlocked = failedAttempts >= HINT_UNLOCK_AFTER_FAILURES;
+    const hintedCount = Object.values(hintedQuestions).filter(Boolean).length;
+    const currentQuestionHintUsed = Boolean(hintedQuestions[currentQuestionIndex]);
+    const correctNoHintCount = questions.reduce(
         (count, question, index) =>
-            count + (submitted && isEmbeddedAnswerCorrect(question, answers[index]) ? 1 : 0),
+            count
+            + (
+                submitted
+                && isEmbeddedAnswerCorrect(question, answers[index])
+                && !hintedQuestions[index]
+                    ? 1
+                    : 0
+            ),
         0,
     );
+    const correctWithHintCount = questions.reduce(
+        (count, question, index) =>
+            count
+            + (
+                submitted
+                && isEmbeddedAnswerCorrect(question, answers[index])
+                && hintedQuestions[index]
+                    ? 1
+                    : 0
+            ),
+        0,
+    );
+    const correctCount = correctNoHintCount + correctWithHintCount;
+    const weightedScore =
+        totalQuestions > 0
+            ? (correctNoHintCount + HINT_CREDIT * correctWithHintCount) / totalQuestions
+            : 0;
+    const passedQuiz = submitted && weightedScore >= LESSON_PASS_THRESHOLD;
     const progressValue = ((currentQuestionIndex + 1) / totalQuestions) * 100;
     const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
+    const nextLessonIsReady = nextLessonStatus === "ready" || Boolean(nextLesson?.lesson.is_generated);
+
+    const kickoffNextLessonPreparation = () => {
+        if (!nextLesson) {
+            setNextLessonStatus("idle");
+            setNextLessonMessage("This is the last assigned lesson in your current roadmap.");
+            return;
+        }
+
+        if (nextLesson.lesson.is_generated) {
+            setNextLessonStatus("ready");
+            setNextLessonMessage(
+                `${nextLesson.lesson.title} is already ready, so you can continue as soon as you finish this quiz.`,
+            );
+            return;
+        }
+
+        setNextLessonStatus("preparing");
+        setNextLessonMessage(
+            `Preparing ${nextLesson.lesson.title} in the background while you take this quiz.`,
+        );
+
+        void kickoffRoadmapLessonGeneration(nextLesson.lesson.id)
+            .then((result) => {
+                if (result.status === "completed") {
+                    setNextLessonStatus("ready");
+                    setNextLessonMessage(
+                        `${nextLesson.lesson.title} is ready for you to open next.`,
+                    );
+                    return;
+                }
+
+                setNextLessonStatus("preparing");
+                setNextLessonMessage(result.message);
+            })
+            .catch((generationError) => {
+                setNextLessonStatus("error");
+                setNextLessonMessage(
+                    generationError instanceof Error
+                        ? generationError.message
+                        : "Could not start next lesson generation.",
+                );
+            });
+    };
+
+    const handleStartQuiz = () => {
+        setQuizStarted(true);
+        kickoffNextLessonPreparation();
+    };
 
     const handleRestart = () => {
         setCurrentQuestionIndex(0);
@@ -1129,6 +1254,41 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
         setSubmitted(false);
         setShowSummary(false);
         setShowIncompleteWarning(false);
+        setHintedQuestions({});
+    };
+
+    const finalizeSubmission = () => {
+        setSubmitted(true);
+        setShowIncompleteWarning(false);
+
+        const rawCorrectNoHint = questions.reduce(
+            (count, question, index) =>
+                count
+                + (
+                    isEmbeddedAnswerCorrect(question, answers[index]) && !hintedQuestions[index]
+                        ? 1
+                        : 0
+                ),
+            0,
+        );
+        const rawCorrectWithHint = questions.reduce(
+            (count, question, index) =>
+                count
+                + (
+                    isEmbeddedAnswerCorrect(question, answers[index]) && hintedQuestions[index]
+                        ? 1
+                        : 0
+                ),
+            0,
+        );
+        const nextWeightedScore =
+            totalQuestions > 0
+                ? (rawCorrectNoHint + HINT_CREDIT * rawCorrectWithHint) / totalQuestions
+                : 0;
+
+        if (nextWeightedScore < LESSON_PASS_THRESHOLD) {
+            setFailedAttempts((prev) => prev + 1);
+        }
     };
 
     const handleSubmitQuiz = () => {
@@ -1137,14 +1297,66 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
             return;
         }
 
-        setSubmitted(true);
-        setShowIncompleteWarning(false);
+        finalizeSubmission();
     };
 
     const handleConfirmSubmitQuiz = () => {
-        setSubmitted(true);
-        setShowIncompleteWarning(false);
+        finalizeSubmission();
     };
+
+    const handleRevealHint = () => {
+        if (submitted || !hintModeUnlocked) {
+            return;
+        }
+
+        setHintedQuestions((prev) => ({ ...prev, [currentQuestionIndex]: true }));
+        setAnswers((prev) => ({
+            ...prev,
+            [currentQuestionIndex]: getEmbeddedCorrectAnswer(currentQuestion),
+        }));
+    };
+
+    useEffect(() => {
+        if (
+            !quizStarted
+            || !nextLesson
+            || nextLesson.lesson.is_generated
+            || nextLessonStatus !== "preparing"
+        ) {
+            return;
+        }
+
+        let cancelled = false;
+
+        const checkNextLesson = async () => {
+            try {
+                const updatedRoadmap = await fetchRoadmap();
+                if (cancelled) {
+                    return;
+                }
+
+                const updatedNextLesson = findLesson(updatedRoadmap, nextLesson.lesson.id);
+                if (updatedNextLesson?.lesson.is_generated) {
+                    setNextLessonStatus("ready");
+                    setNextLessonMessage(
+                        `${updatedNextLesson.lesson.title} is ready for you to continue immediately after the quiz.`,
+                    );
+                }
+            } catch {
+                // Keep the warmup status as-is; the user can still finish the quiz.
+            }
+        };
+
+        void checkNextLesson();
+        const intervalId = window.setInterval(() => {
+            void checkNextLesson();
+        }, 15000);
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(intervalId);
+        };
+    }, [nextLesson, nextLessonStatus, quizStarted]);
 
     const questionNavigator = (
         <div className="flex gap-2 overflow-x-auto pb-5 pt-1 px-0.5">
@@ -1152,6 +1364,7 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                 const isActive = index === currentQuestionIndex;
                 const isAnswered = hasAnswer(answers[index]);
                 const isCorrect = submitted && isEmbeddedAnswerCorrect(question, answers[index]);
+                const usedHint = Boolean(hintedQuestions[index]);
 
                 return (
                     <button
@@ -1165,10 +1378,14 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                             "flex h-10 w-10 min-w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold transition-colors",
                             isActive
                                 ? "border-blue-600 bg-blue-600 text-white"
-                                : submitted && isCorrect
+                                : submitted && isCorrect && usedHint
+                                    ? "border-amber-300 bg-amber-50 text-amber-700"
+                                    : submitted && isCorrect
                                     ? "border-emerald-300 bg-emerald-50 text-emerald-700"
                                     : submitted
                                         ? "border-rose-300 bg-rose-50 text-rose-700"
+                                        : usedHint
+                                            ? "border-amber-300 bg-amber-50 text-amber-700"
                                         : isAnswered
                                             ? "border-amber-300 bg-amber-50 text-amber-700"
                                             : "border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
@@ -1185,46 +1402,214 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
         <PanelShell
             eyebrow="Section 9"
             title="Quiz"
-            note="One question at a time, embedded directly in the lesson page."
+            note="Review the quiz regulations before you begin. Starting the quiz also prepares your next lesson in the background."
         >
             <div className="space-y-6">
-                <div className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-800/60 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white">
-                                <ClipboardList className="h-5 w-5" />
+                {!quizStarted ? (
+                    <div className="space-y-5">
+                        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex items-start gap-4">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                    <ClipboardList className="h-6 w-6" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                                        Before you start
+                                    </p>
+                                    <h3 className="mt-2 text-2xl font-bold text-slate-950 dark:text-white">
+                                        Quiz regulations
+                                    </h3>
+                                    <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                        Read these rules before entering the lesson check. Once you
+                                        start, the next lesson in your roadmap will also begin
+                                        preparing in the background.
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-                                    Embedded quiz
-                                </p>
-                                <p className="font-semibold text-slate-950 dark:text-white">
-                                    Question {currentQuestionIndex + 1} of {totalQuestions}
-                                </p>
-                            </div>
-                        </div>
-                        <Progress value={progressValue} indicatorClassName="bg-blue-600" />
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3 xl:min-w-[320px]">
-                        <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
-                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Answered</p>
-                            <p className="mt-1 font-semibold text-slate-950 dark:text-white">{answeredCount}</p>
-                        </div>
-                        <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
-                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Status</p>
-                            <p className="mt-1 font-semibold text-slate-950 dark:text-white">
-                                {submitted ? "Submitted" : "In progress"}
-                            </p>
-                        </div>
-                        <div className="col-span-2 rounded-2xl bg-white px-4 py-3 sm:col-span-1 dark:bg-slate-900">
-                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Correct</p>
-                            <p className="mt-1 font-semibold text-slate-950 dark:text-white">
-                                {submitted ? correctCount : "?"}
-                            </p>
+                            <div className="mt-5 rounded-3xl border border-slate-200 bg-slate-50/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/40 sm:px-5">
+                                <ol className="divide-y divide-slate-200 dark:divide-slate-800">
+                                    <li className="flex gap-4 py-3 first:pt-1 last:pb-1">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-lg font-bold text-slate-500 shadow-sm dark:bg-slate-900 dark:text-slate-300">
+                                            1
+                                        </div>
+                                        <p className="pt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                                            <strong className="font-semibold text-slate-950 dark:text-white">
+                                                Move one question at a time.
+                                            </strong>{" "}
+                                            You can move between questions before submission, but
+                                            <strong className="font-semibold text-slate-950 dark:text-white">
+                                                {" "}scoring is finalized only when you submit.
+                                            </strong>
+                                        </p>
+                                    </li>
+                                    <li className="flex gap-4 py-3">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-lg font-bold text-slate-500 shadow-sm dark:bg-slate-900 dark:text-slate-300">
+                                            2
+                                        </div>
+                                        <p className="pt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                                            <strong className="font-semibold text-slate-950 dark:text-white">
+                                                Pass requires a 70% lesson score.
+                                            </strong>{" "}
+                                            The next lesson can warm up in the background, but it
+                                            stays locked until this quiz is passed.
+                                        </p>
+                                    </li>
+                                    <li className="flex gap-4 py-3 first:pt-1 last:pb-1">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-lg font-bold text-slate-500 shadow-sm dark:bg-slate-900 dark:text-slate-300">
+                                            3
+                                        </div>
+                                        <p className="pt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                                            <strong className="font-semibold text-slate-950 dark:text-white">
+                                                Hint mode unlocks after 2 failed attempts.
+                                            </strong>{" "}
+                                            When hint mode is active, "Show hint" fills in the
+                                            correct answer and that question is worth{" "}
+                                            <strong className="font-semibold text-slate-950 dark:text-white">
+                                                0.75 credit
+                                            </strong>
+                                            .
+                                        </p>
+                                    </li>
+                                    <li className="flex gap-4 py-3 first:pt-1 last:pb-1">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-lg font-bold text-slate-500 shadow-sm dark:bg-slate-900 dark:text-slate-300">
+                                            4
+                                        </div>
+                                        <p className="pt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                                            <strong className="font-semibold text-slate-950 dark:text-white">
+                                                Wrong and hinted answers should be reviewed.
+                                            </strong>{" "}
+                                            Explanations appear after submission so you can check
+                                            weak spots before retrying or moving on.
+                                        </p>
+                                    </li>
+                                </ol>
+                            </div>
+
+                            <div className="mt-4 rounded-2xl border-l-4 border-l-sky-500 bg-sky-50 px-4 py-4 dark:bg-sky-950/20">
+                                <div className="flex items-start gap-3">
+                                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-sky-600 shadow-sm dark:bg-slate-900 dark:text-sky-300">
+                                        <ChevronRight className="h-4 w-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700 dark:text-sky-300">
+                                            Next lesson warmup
+                                        </p>
+                                        <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                                            {nextLesson
+                                                ? `When you click Start quiz, ${nextLesson.lesson.title} from Topic ${nextLesson.topic.sort_order} will be prepared in parallel.`
+                                                : "This is the last assigned lesson right now, so no additional lesson needs to be prepared."}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+                                <Button className="w-full sm:w-auto" onClick={handleStartQuiz}>
+                                    Start quiz
+                                </Button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                ) : null}
+
+                {quizStarted ? (
+                    <>
+                        <div className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-800/60 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white">
+                                            <ClipboardList className="h-5 w-5" />
+                                        </div>
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                                            Embedded quiz
+                                        </p>
+                                        <p className="font-semibold text-slate-950 dark:text-white">
+                                            Question {currentQuestionIndex + 1} of {totalQuestions}
+                                        </p>
+                                    </div>
+                                    </div>
+                                    <Progress value={progressValue} indicatorClassName="bg-blue-600" />
+                                </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4 xl:min-w-[420px]">
+                                <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
+                                    <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Answered</p>
+                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">{answeredCount}</p>
+                                </div>
+                                <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
+                                    <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Status</p>
+                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">
+                                        {submitted ? "Submitted" : "In progress"}
+                                    </p>
+                                </div>
+                                <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
+                                    <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Correct</p>
+                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">
+                                        {submitted ? correctCount : "?"}
+                                    </p>
+                                </div>
+                                <div className="col-span-2 rounded-2xl bg-white px-4 py-3 sm:col-span-1 dark:bg-slate-900">
+                                    <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Hint mode</p>
+                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">
+                                        {hintModeUnlocked
+                                            ? `Active · ${hintedCount} used`
+                                            : `${failedAttempts} / ${HINT_UNLOCK_AFTER_FAILURES}`}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {nextLesson ? (
+                            <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 dark:border-slate-800 dark:bg-slate-900">
+                                <div className="min-w-0">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
+                                        Next lesson warmup
+                                    </p>
+                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">
+                                        Topic {nextLesson.topic.sort_order} · {nextLesson.lesson.title}
+                                    </p>
+                                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                        {nextLessonMessage ??
+                                            (nextLessonIsReady
+                                                ? "Ready to continue when you finish the quiz."
+                                                : "Your next lesson will start preparing after you begin the quiz.")}
+                                    </p>
+                                </div>
+
+                                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                                    <Badge variant={nextLessonIsReady ? "default" : "secondary"}>
+                                        {nextLessonIsReady
+                                            ? "Ready"
+                                            : nextLessonStatus === "error"
+                                                ? "Needs retry"
+                                                : "Preparing"}
+                                    </Badge>
+                                    {nextLessonStatus === "error" ? (
+                                        <Button variant="outline" size="sm" onClick={kickoffNextLessonPreparation}>
+                                            Retry prep
+                                        </Button>
+                                    ) : null}
+                                </div>
+                            </div>
+                        ) : null}
+
+                        {hintModeUnlocked ? (
+                            <div className="rounded-3xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900 dark:bg-amber-950/30 sm:px-5">
+                                <div className="min-w-0">
+                                    <div className="flex items-center gap-2 text-amber-900 dark:text-amber-100">
+                                        <Lightbulb className="h-4 w-4" />
+                                        <p className="text-sm font-semibold">Hint mode is active</p>
+                                    </div>
+                                    <p className="mt-2 text-sm leading-6 text-amber-800 dark:text-amber-200">
+                                        Use a hint if you need it. The correct answer will be
+                                        filled in automatically, and that question will score{" "}
+                                        {Math.round(HINT_CREDIT * 100)}% credit instead of 100%.
+                                    </p>
+                                </div>
+                            </div>
+                        ) : null}
 
                 {questionNavigator}
 
@@ -1242,12 +1627,43 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                                     <h3 className="text-2xl font-bold text-slate-950 dark:text-white">
                                         {correctCount} / {totalQuestions} correct
                                     </h3>
+                                    <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+                                        Weighted score: {Math.round(weightedScore * 100)}%
+                                        {passedQuiz ? " · Passed" : " · Pass requires 70%"}
+                                    </p>
                                 </div>
                             </div>
                             <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                Review any question from the navigator above, or restart the quiz
-                                to take the embedded lesson check again.
+                                {passedQuiz
+                                    ? "You passed this lesson check. Review any question from the navigator above, restart if you want another attempt, or continue once the next lesson is ready."
+                                    : "Review any question from the navigator above, or restart the quiz to try again. You need a weighted 70% score to unlock the continue action for the next lesson."}
                             </p>
+                            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Correct without hint</p>
+                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">{correctNoHintCount}</p>
+                                </div>
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Correct with hint</p>
+                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">{correctWithHintCount}</p>
+                                </div>
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Failed attempts</p>
+                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">{failedAttempts}</p>
+                                </div>
+                            </div>
+                            {!passedQuiz && failedAttempts + 1 === HINT_UNLOCK_AFTER_FAILURES ? (
+                                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                                    One more failed attempt will unlock hint mode for this lesson.
+                                </div>
+                            ) : null}
+                            {!passedQuiz && hintModeUnlocked ? (
+                                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                                    Hint mode is now available on your next retry. Each hinted
+                                    answer auto-fills the correct response and counts as{" "}
+                                    {Math.round(HINT_CREDIT * 100)}% credit.
+                                </div>
+                            ) : null}
                             <div className="mt-5 flex flex-wrap gap-3">
                                 <Button className="w-full sm:w-auto" onClick={handleRestart}>Restart quiz</Button>
                                 <Button
@@ -1260,7 +1676,22 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                                 >
                                     Review from question 1
                                 </Button>
+                                {nextLesson && nextLessonIsReady && passedQuiz ? (
+                                    <Button asChild className="w-full sm:w-auto">
+                                        <Link
+                                            to="/lessons/$lessonId"
+                                            params={{ lessonId: String(nextLesson.lesson.id) }}
+                                        >
+                                            Continue to next lesson
+                                        </Link>
+                                    </Button>
+                                ) : null}
                             </div>
+                            {!passedQuiz && nextLesson && nextLessonIsReady ? (
+                                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                                    The next lesson is ready, but it stays locked until you pass this quiz with a weighted score of at least 70%.
+                                </div>
+                            ) : null}
                         </div>
 
                         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -1308,6 +1739,7 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                                 }
                                 isSubmitted={submitted}
                                 userAnswer={currentAnswer}
+                                revealAnswer={passedQuiz}
                             />
                         ) : currentQuestion.type === "multi_select" ? (
                             <MultiSelectQuestion
@@ -1322,6 +1754,7 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                                 isSubmitted={submitted}
                                 isCorrect={submitted ? isEmbeddedAnswerCorrect(currentQuestion, currentAnswer) : undefined}
                                 explanation={currentQuestion.data[3]}
+                                revealAnswer={passedQuiz}
                             />
                         ) : (
                             <OrderingQuestion
@@ -1336,19 +1769,40 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                                 isSubmitted={submitted}
                                 isCorrect={submitted ? isEmbeddedAnswerCorrect(currentQuestion, currentAnswer) : undefined}
                                 explanation={currentQuestion.data[3]}
+                                revealAnswer={passedQuiz}
                             />
                         )}
 
                         <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white px-4 py-4 sm:px-5 dark:border-slate-800 dark:bg-slate-900 lg:flex-row lg:items-center lg:justify-between">
                             <div className="text-sm text-slate-500 dark:text-slate-400">
                                 {submitted
-                                    ? isEmbeddedAnswerCorrect(currentQuestion, currentAnswer)
-                                        ? "Correct. You can move on to the next question."
-                                        : "Reviewed. You can revise the explanation and continue."
-                                    : "Move through the quiz with Next. Answers are revealed only after you submit on the last question."}
+                                    ? currentQuestionHintUsed
+                                        ? `Hint applied. This answer counted as ${Math.round(HINT_CREDIT * 100)}% credit.`
+                                        : isEmbeddedAnswerCorrect(currentQuestion, currentAnswer)
+                                            ? "Correct. You can move on to the next question."
+                                            : passedQuiz
+                                                ? "Reviewed. You can revise the explanation and continue."
+                                                : "Incorrect. Answers stay hidden on failed attempts. Review the lesson and try again."
+                                    : currentQuestionHintUsed
+                                        ? `Hint applied. This question will count as ${Math.round(HINT_CREDIT * 100)}% credit when you submit.`
+                                        : hintModeUnlocked
+                                            ? "Hint mode is active. Use Show hint only if you need the correct answer filled in."
+                                            : "Move through the quiz with Next. Failed attempts do not reveal the correct answers."
+                                }
                             </div>
 
                             <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center lg:justify-end">
+                                {!submitted && hintModeUnlocked ? (
+                                    <Button
+                                        className="w-full border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 sm:w-auto"
+                                        variant="outline"
+                                        onClick={handleRevealHint}
+                                        disabled={currentQuestionHintUsed}
+                                    >
+                                        <Sparkles className="mr-2 h-4 w-4" />
+                                        {currentQuestionHintUsed ? "Hint applied" : "Show hint"}
+                                    </Button>
+                                ) : null}
                                 <Button
                                     className="w-full sm:w-auto"
                                     variant="outline"
@@ -1403,7 +1857,7 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                                     You still have {unansweredCount} unanswered question
                                     {unansweredCount === 1 ? "" : "s"}. If you submit now,
                                     those questions will be graded as unanswered and the
-                                    answers will be revealed immediately.
+                                    answers will stay hidden unless you pass.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
 
@@ -1421,6 +1875,8 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                         </div>
                     </AlertDialogContent>
                 </AlertDialog>
+                    </>
+                ) : null}
             </div>
         </PanelShell>
     );
@@ -1474,6 +1930,10 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
 
     const lessonLookup = useMemo(
         () => (Number.isNaN(lessonId) ? null : findLesson(roadmap, lessonId)),
+        [lessonId, roadmap],
+    );
+    const nextLessonLookup = useMemo(
+        () => (Number.isNaN(lessonId) ? null : findNextLesson(roadmap, lessonId)),
         [lessonId, roadmap],
     );
     const theorySections = useMemo(
@@ -1721,7 +2181,7 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
 
                     <div className="min-w-0">
                         {activeSection === "quiz" ? (
-                            <EmbeddedLessonQuiz quiz={quiz} />
+                            <EmbeddedLessonQuiz quiz={quiz} nextLesson={nextLessonLookup} />
                         ) : activeTheorySection ? (
                             renderTheorySection(activeTheorySection)
                         ) : (

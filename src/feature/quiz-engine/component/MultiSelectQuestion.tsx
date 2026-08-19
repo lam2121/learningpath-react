@@ -24,6 +24,7 @@ interface MultiSelectQuestionProps {
 	isSubmitted: boolean;
 	isCorrect?: boolean;
 	explanation?: string;
+	revealAnswer?: boolean;
 }
 
 function parseIndices(value: string | null): number[] {
@@ -42,7 +43,8 @@ export function MultiSelectQuestion({
 	onAnswerChange,
 	isSubmitted,
 	isCorrect,
-	explanation
+	explanation,
+	revealAnswer = true,
 }: MultiSelectQuestionProps) {
 	const [stem, optionsStr, answerStr, expl] = data;
 	const options = optionsStr.split('|');
@@ -88,7 +90,7 @@ export function MultiSelectQuestion({
 				{options.map((option, index) => {
 					const isSelected = selectedIndices.includes(index);
 					const isCorrectOption = correctIndices.includes(index);
-					const showResult = isSubmitted && (isSelected || isCorrectOption);
+					const showResult = isSubmitted && (isSelected || (revealAnswer && isCorrectOption));
 
 					return (
 						<Label
@@ -97,7 +99,7 @@ export function MultiSelectQuestion({
 								'relative flex items-start gap-3 rounded-xl border-2 p-4 transition-all cursor-pointer',
 								'hover:bg-gray-50',
 								isSubmitted
-									? isCorrectOption
+									? revealAnswer && isCorrectOption
 										? 'border-green-400 bg-green-50'
 										: isSelected
 										? 'border-red-400 bg-red-50'
@@ -120,13 +122,13 @@ export function MultiSelectQuestion({
 							/>
 							<span className={cn(
 								'flex min-w-0 flex-1 items-start gap-3 text-gray-900',
-								showResult && isCorrectOption && 'font-medium',
+								showResult && revealAnswer && isCorrectOption && 'font-medium',
 								showResult && isSelected && !isCorrectOption && 'line-through text-red-500'
 							)}>
 								<span className={cn(
 									'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-sm font-semibold',
 									isSubmitted
-										? isCorrectOption
+										? revealAnswer && isCorrectOption
 											? 'bg-green-500 border-green-500 text-white'
 											: isSelected
 											? 'bg-red-500 border-red-500 text-white'
@@ -139,7 +141,7 @@ export function MultiSelectQuestion({
 								</span>
 								<span className="min-w-0">{option}</span>
 							</span>
-							{showResult && isCorrectOption && (
+							{showResult && revealAnswer && isCorrectOption && (
 								<Check className="w-5 h-5 text-green-500" />
 							)}
 							{showResult && isSelected && !isCorrectOption && (
@@ -151,7 +153,7 @@ export function MultiSelectQuestion({
 			</div>
 
 			{/* Explanation */}
-			{isSubmitted && (
+			{isSubmitted && revealAnswer && (
 				<div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
 					<div className="flex items-start gap-3">
 						<div className={cn(

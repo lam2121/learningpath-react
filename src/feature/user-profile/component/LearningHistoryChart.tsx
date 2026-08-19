@@ -211,6 +211,7 @@ export function LoginHistoryCard({
     const chartData = studyTimeData.slice(0, today);
     const activeDays = chartData.filter((item) => item.minutes > 0).length;
     const totalMinutes = chartData.reduce((sum, item) => sum + item.minutes, 0);
+    const todayMinutes = chartData[chartData.length - 1]?.minutes ?? 0;
     const hasActivity = totalMinutes > 0;
     const trackedStudyMinutes = Number.isFinite(userId)
         ? getTrackedStudyMinutesTotal(userId)
@@ -265,13 +266,15 @@ export function LoginHistoryCard({
                         <div className="flex items-start justify-between gap-3 sm:items-end sm:gap-4">
                             <div className="min-w-0">
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                                    Studied this month
+                                    Studied today
                                 </p>
                                 <p className={`mt-1.5 font-bold tracking-tight text-slate-950 sm:mt-2 ${compact ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl"}`}>
-                                    {formatStudyDuration(totalMinutes)}
+                                    {formatStudyDuration(todayMinutes)}
                                 </p>
                                 <p className="mt-1.5 text-xs text-slate-500 sm:mt-2 sm:text-sm">
-                                    across {activeDays} active day{activeDays === 1 ? "" : "s"}
+                                    {todayMinutes > 0
+                                        ? "Logged so far today"
+                                        : "No study time logged today yet"}
                                 </p>
                             </div>
 

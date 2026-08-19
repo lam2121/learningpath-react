@@ -18,6 +18,7 @@ interface OrderingQuestionProps {
 	isSubmitted: boolean;
 	isCorrect?: boolean;
 	explanation?: string;
+	revealAnswer?: boolean;
 }
 
 export function OrderingQuestion({
@@ -28,7 +29,8 @@ export function OrderingQuestion({
 	onAnswerChange,
 	isSubmitted,
 	isCorrect,
-	explanation
+	explanation,
+	revealAnswer = true,
 }: OrderingQuestionProps) {
 	const [instruction, stepsStr, correctAnswerStr, expl] = data;
 	// Memoize these so their array references are stable between renders.
@@ -37,6 +39,7 @@ export function OrderingQuestion({
 	const originalSteps = useMemo(() => stepsStr.split('|'), [stepsStr]);
 	const correctIndices = useMemo(() => correctAnswerStr.split('|').map(Number), [correctAnswerStr]);
 	const correctOrder = useMemo(() => correctIndices.map(i => originalSteps[i]), [correctIndices, originalSteps]);
+	const showFailedState = isSubmitted && !revealAnswer && isCorrect === false;
 
 	// Initialize state with user's answer or shuffled order
 	const [orderedSteps, setOrderedSteps] = useState(() => {
@@ -133,9 +136,11 @@ export function OrderingQuestion({
 							'relative flex items-start gap-3 rounded-xl border-2 p-4 transition-all sm:items-center sm:gap-4',
 							'bg-white hover:bg-gray-50',
 							isSubmitted
-								? orderedSteps.every((s, i) => s === correctOrder[i])
+								? revealAnswer && orderedSteps.every((s, i) => s === correctOrder[i])
 									? 'border-green-300 bg-green-50'
-									: 'border-red-300 bg-red-50'
+									: showFailedState
+										? 'border-red-300 bg-red-50'
+										: 'border-gray-200'
 								: draggedIndex === index
 								? 'border-blue-400 bg-blue-50 opacity-75 rotate-1 scale-105 shadow-lg'
 								: 'border-gray-200'
@@ -155,9 +160,11 @@ export function OrderingQuestion({
 						<div className={cn(
 							'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg font-bold',
 							isSubmitted
-								? step === correctOrder[index]
+								? revealAnswer && step === correctOrder[index]
 									? 'bg-green-100 text-green-700'
-									: 'bg-red-100 text-red-700'
+									: showFailedState
+										? 'bg-red-100 text-red-700'
+										: 'bg-gray-100 text-gray-600'
 								: 'bg-gray-100 text-gray-600'
 						)}>
 							{index + 1}
@@ -167,7 +174,7 @@ export function OrderingQuestion({
 						<div className="min-w-0 flex-1 break-words font-medium text-gray-900">{step}</div>
 
 						{/* Result Indicators */}
-						{isSubmitted && (
+						{isSubmitted && revealAnswer && (
 							<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
 								{step === correctOrder[index] ? (
 									<Check className="w-5 h-5 text-green-500" />
@@ -196,7 +203,7 @@ export function OrderingQuestion({
 			)}
 
 			{/* Explanation */}
-			{isSubmitted && (
+			{isSubmitted && revealAnswer && (
 				<div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
 					<div className="flex items-start gap-3">
 						<div className={cn(
