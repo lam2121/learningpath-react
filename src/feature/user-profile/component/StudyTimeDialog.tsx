@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
     DialogContent,
@@ -30,6 +30,10 @@ export function StudyTimeDialog({
 }: StudyTimeDialogProps) {
 
     const [hour, setHour] = useState([currentHour]);
+
+    useEffect(() => {
+        setHour([currentHour]);
+    }, [currentHour]);
 
     return (
         <DialogContent className="sm:max-w-lg">
@@ -69,8 +73,11 @@ export function StudyTimeDialog({
                     onValueChange={setHour}
                 />
 
-                <div className="flex justify-between text-xs text-slate-400">
+                <div className="flex items-center justify-between text-xs text-slate-400">
                     <span>1 Hour</span>
+                    <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                        Selected: {hour[0]} {hour[0] === 1 ? "Hour" : "Hours"}
+                    </span>
                     <span>6 Hours</span>
                 </div>
 

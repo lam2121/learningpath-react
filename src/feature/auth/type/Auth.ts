@@ -28,6 +28,7 @@ export interface LessonQuizHistoryEntryResponse {
 	lesson_id: number
 	lesson_title: string
 	topic_name: string | null
+	topic_sort_order?: number | null
 	skill: string
 	difficulty_tier: string
 	status: string

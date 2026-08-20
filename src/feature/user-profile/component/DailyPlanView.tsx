@@ -3,6 +3,7 @@ import {
     ChevronDown,
     Brain,
     ChevronRight,
+    CheckCircle2,
     RotateCcw,
     Settings,
     Sparkles,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { useAuth } from "@/common/context/AuthContext";
 import {
     fetchCurrentUserProfile,
     updateStudySettings,
@@ -21,6 +23,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/component/ui/
 import { Dialog } from "@/shadcn/component/ui/dialog";
 import { Progress } from "@/shadcn/component/ui/progress";
 import type { RoadmapLesson, RoadmapTopic } from "@/feature/learning-path/roadmapApi";
+import { getTrackedStudyMinutesByDay } from "@/feature/user-profile/utils/StudyActivity";
+import {
+    getStudyMinutesForDate,
+    getTodayDateKey,
+    readStudyGoalDecision,
+    type StudyGoalDecision,
+} from "@/feature/user-profile/utils/dailyStudyGoal";
 
 import { ChangeCareerAlert } from "./ChangeCareerAlert";
 import { StudySettingsDialog } from "./StudySettingsDialog";
@@ -50,6 +59,25 @@ function formatMinutes(minutes: number | null | undefined) {
     return minutes === 1 ? "1 minute" : `${minutes} minutes`;
 }
 
+function formatProgressMinutes(minutes: number) {
+    if (minutes <= 0) {
+        return "0 min";
+    }
+
+    if (minutes < 60) {
+        return `${minutes} min`;
+    }
+
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+
+    if (remainingMinutes === 0) {
+        return `${hours}h`;
+    }
+
+    return `${hours}h ${remainingMinutes}m`;
+}
+
 function estimateDays(totalMinutes: number, dailyStudyMinutes: number) {
     if (totalMinutes <= 0 || dailyStudyMinutes <= 0) {
         return null;
@@ -69,14 +97,24 @@ function formatProfileDate(value: string | null | undefined) {
 type DailyPlanViewProps = {
     nextTopic: RoadmapTopic | null;
     nextLesson: RoadmapLesson | null;
+    hasRoadmap: boolean;
+    completedLessonCount: number;
+    totalAssignedLessons: number;
+    allAssignedLessonsCompleted: boolean;
     onStudyPlanExpandedChange?: (expanded: boolean) => void;
 };
 
 export function DailyPlanView({
     nextTopic,
     nextLesson,
+    hasRoadmap,
+    completedLessonCount,
+    totalAssignedLessons,
+    allAssignedLessonsCompleted,
     onStudyPlanExpandedChange,
 }: DailyPlanViewProps) {
+    const auth = useAuth();
+    const userId = Number(auth.user?.id);
     const [isStudyPlanExpanded, setIsStudyPlanExpanded] = useState(false);
     const [openSetting, setOpenSetting] = useState(false);
     const [openStudyTime, setOpenStudyTime] = useState(false);
@@ -88,6 +126,12 @@ export function DailyPlanView({
     const [totalEstimatedMinutes, setTotalEstimatedMinutes] = useState(0);
     const [isSavingStudyTime, setIsSavingStudyTime] = useState(false);
     const [studyTimeError, setStudyTimeError] = useState<string | null>(null);
+    const [trackedStudyMinutesByDay, setTrackedStudyMinutesByDay] = useState<Record<string, number>>(
+        () => (Number.isFinite(userId) ? getTrackedStudyMinutesByDay(userId) : {}),
+    );
+    const [studyGoalDecision, setStudyGoalDecision] = useState<StudyGoalDecision | null>(
+        () => (Number.isFinite(userId) ? readStudyGoalDecision(userId, getTodayDateKey()) : null),
+    );
 
     useEffect(() => {
         let isMounted = true;
@@ -115,38 +159,102 @@ export function DailyPlanView({
 
         void loadProfile();
 
+        const handleProfileUpdated = (event: Event) => {
+            const customEvent = event as CustomEvent<UserProfileResponse>;
+            if (!isMounted) {
+                return;
+            }
+            const hours = Math.max(1, Math.round(customEvent.detail.daily_study_minutes / 60));
+            setProfile(customEvent.detail);
+            setCurrentHour(hours);
+            setNewHour(hours);
+            setTotalEstimatedMinutes(customEvent.detail.total_estimated_minutes);
+        };
+
+        const handleStudyActivityUpdated = (event: Event) => {
+            const customEvent = event as CustomEvent<{
+                userId?: number;
+                studyMinutesByDay?: Record<string, number>;
+            }>;
+            if (!isMounted || customEvent.detail.userId !== userId) {
+                return;
+            }
+            setTrackedStudyMinutesByDay(
+                customEvent.detail.studyMinutesByDay ?? getTrackedStudyMinutesByDay(userId),
+            );
+        };
+
+        window.addEventListener("careerpath:profile-updated", handleProfileUpdated);
+        window.addEventListener(
+            "careerpath:study-activity-updated",
+            handleStudyActivityUpdated,
+        );
+
         return () => {
             isMounted = false;
+            window.removeEventListener("careerpath:profile-updated", handleProfileUpdated);
+            window.removeEventListener(
+                "careerpath:study-activity-updated",
+                handleStudyActivityUpdated,
+            );
         };
-    }, []);
+    }, [userId]);
+
+    useEffect(() => {
+        if (!Number.isFinite(userId)) {
+            setTrackedStudyMinutesByDay({});
+            setStudyGoalDecision(null);
+            return;
+        }
+
+        setTrackedStudyMinutesByDay(getTrackedStudyMinutesByDay(userId));
+        setStudyGoalDecision(readStudyGoalDecision(userId, getTodayDateKey()));
+    }, [userId]);
 
     useEffect(() => {
         onStudyPlanExpandedChange?.(isStudyPlanExpanded);
     }, [isStudyPlanExpanded, onStudyPlanExpandedChange]);
 
+    const todayDateKey = getTodayDateKey();
     const lessonHref = nextLesson?.is_generated
         ? `/lessons/${nextLesson.id}`
         : "/lessons/learning-path";
-    const lessonLabel = nextLesson?.is_generated ? "Start Learning" : "View Learning Path";
+    const lessonLabel = allAssignedLessonsCompleted
+        ? "Review Learning Path"
+        : nextLesson?.is_generated
+            ? "Start Learning"
+            : "View Learning Path";
     const lessonDescription = nextLesson
         ? `${nextLesson.title} · ${formatLabel(nextLesson.difficulty_tier)} · ${formatMinutes(nextLesson.estimated_minutes)}`
-        : "Your next lesson will appear here once your roadmap is ready.";
+        : allAssignedLessonsCompleted
+            ? `All ${totalAssignedLessons} assigned lessons have a passed quiz result.`
+            : "Your next lesson will appear here once your roadmap is ready.";
     const lessonOutcome = nextLesson && nextTopic
         ? `Learn the language patterns needed for ${nextTopic.name} and keep your roadmap moving forward.`
-        : "Open your learning path to see your assigned topics and recommended lesson order.";
+        : allAssignedLessonsCompleted
+            ? "You have finished every assigned lesson quiz in this roadmap. Review previous lessons or continue from the learning path if new content appears."
+            : "Open your learning path to see your assigned topics and recommended lesson order.";
     const currentDays = estimateDays(totalEstimatedMinutes, currentHour * 60);
     const projectedDays = estimateDays(totalEstimatedMinutes, newHour * 60);
     const lessonMinutes = nextLesson?.estimated_minutes ?? 0;
+    const backendStudiedTodayMinutes = getStudyMinutesForDate(
+        profile?.study_history,
+        todayDateKey,
+    );
+    const trackedStudiedTodayMinutes = trackedStudyMinutesByDay[todayDateKey] ?? 0;
+    const todayLearnedMinutes = backendStudiedTodayMinutes + trackedStudiedTodayMinutes;
     const dailyStudyMinutes = currentHour * 60;
     const timeBudgetUsage =
-        lessonMinutes > 0 && dailyStudyMinutes > 0
-            ? Math.min(100, Math.round((lessonMinutes / dailyStudyMinutes) * 100))
+        dailyStudyMinutes > 0
+            ? Math.min(100, Math.round((todayLearnedMinutes / dailyStudyMinutes) * 100))
             : 0;
-    const remainingTodayMinutes =
-        lessonMinutes > 0 && dailyStudyMinutes > lessonMinutes
-            ? dailyStudyMinutes - lessonMinutes
-            : 0;
+    const remainingTodayMinutes = Math.max(0, dailyStudyMinutes - todayLearnedMinutes);
+    const bonusTodayMinutes = Math.max(0, todayLearnedMinutes - dailyStudyMinutes);
+    const hasMetTodayGoal = dailyStudyMinutes > 0 && todayLearnedMinutes >= dailyStudyMinutes;
     const estimatedFinishLabel = formatProfileDate(profile?.estimated_finish);
+    const budgetCardClass = hasMetTodayGoal
+        ? "rounded-3xl border border-emerald-200 bg-[linear-gradient(135deg,_rgba(236,253,245,1)_0%,_rgba(240,249,255,1)_52%,_rgba(219,234,254,1)_100%)] p-4 shadow-[0_18px_45px_rgba(16,185,129,0.12)] ring-1 ring-emerald-100"
+        : "space-y-2";
 
     const handleStudySettingsUpdated = (profile: UserProfileResponse) => {
         const hours = Math.max(1, Math.round(profile.daily_study_minutes / 60));
@@ -177,15 +285,23 @@ export function DailyPlanView({
                                     <p className="text-sm font-medium text-blue-700">
                                         Today's Study Plan
                                     </p>
-                                    <CardTitle className="text-2xl font-bold tracking-tight text-slate-950">
-                                        {nextLesson
+                                    <CardTitle className="text-3xl font-bold tracking-tight text-slate-950">
+                                        {allAssignedLessonsCompleted
+                                            ? "Today's lessons are done"
+                                            : nextLesson
                                             ? `Start with ${nextLesson.title}`
-                                            : "Your roadmap is ready to explore"}
+                                            : hasRoadmap
+                                                ? "Your roadmap is ready to explore"
+                                                : "Your roadmap is being prepared"}
                                     </CardTitle>
-                                    <p className="text-sm leading-6 text-slate-500">
-                                        {nextLesson && nextTopic
+                                    <p className="text-base leading-7 text-slate-500">
+                                        {allAssignedLessonsCompleted
+                                            ? `You have already passed ${completedLessonCount} of ${totalAssignedLessons} assigned lesson quizzes.`
+                                            : nextLesson && nextTopic
                                             ? `Your main focus today is Topic ${nextTopic.sort_order}: ${nextTopic.name}. This lesson is the clearest next action for your track.`
-                                            : "Open your learning path to see the clearest next lesson and roadmap order for your track."}
+                                            : hasRoadmap
+                                                ? "Open your learning path to see the clearest next lesson and roadmap order for your track."
+                                                : "Open your learning path once your assigned roadmap is available."}
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -201,46 +317,61 @@ export function DailyPlanView({
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between text-sm text-slate-500">
-                                    <span>Today's time budget</span>
-                                    <span className="font-semibold text-slate-900">
-                                        {lessonMinutes > 0
-                                            ? `${timeBudgetUsage}% of ${currentHour}h`
-                                            : `${currentHour}h planned`}
+                            <div className={budgetCardClass}>
+                                <div className="flex items-center justify-between text-base text-slate-500">
+                                    <span className={hasMetTodayGoal ? "font-semibold text-emerald-700" : ""}>
+                                        Today's time budget
+                                    </span>
+                                    <span className={`font-semibold ${hasMetTodayGoal ? "text-emerald-700" : "text-slate-900"}`}>
+                                        {formatProgressMinutes(todayLearnedMinutes)} of {currentHour}h
                                     </span>
                                 </div>
+                                {hasMetTodayGoal ? (
+                                    <div className="flex items-center gap-2 rounded-2xl bg-white/80 px-3 py-2 text-sm font-semibold text-emerald-700 shadow-sm ring-1 ring-emerald-100">
+                                        <CheckCircle2 className="h-4 w-4" />
+                                        Daily goal reached
+                                    </div>
+                                ) : null}
                                 <Progress
                                     value={timeBudgetUsage}
                                     className="h-2.5 bg-slate-100"
-                                    indicatorClassName="bg-blue-600"
+                                    indicatorClassName={hasMetTodayGoal ? "bg-emerald-500" : "bg-blue-600"}
                                 />
                                 <div className="grid gap-3 pt-1 sm:grid-cols-3">
                                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
                                             Planned Today
                                         </p>
-                                        <p className="mt-1 text-sm font-bold text-slate-900">
+                                        <p className="mt-1 text-base font-bold text-slate-900">
                                             {currentHour}h
                                         </p>
                                     </div>
                                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                                            This Lesson
+                                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                                            Learned Today
                                         </p>
-                                        <p className="mt-1 text-sm font-bold text-slate-900">
-                                            {formatMinutes(lessonMinutes)}
+                                        <p className="mt-1 text-base font-bold text-slate-900">
+                                            {formatProgressMinutes(todayLearnedMinutes)}
                                         </p>
                                     </div>
                                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                                            Estimated Finish
+                                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                                            {hasMetTodayGoal ? "Bonus Time" : "Remaining"}
                                         </p>
-                                        <p className="mt-1 text-sm font-bold text-slate-900">
-                                            {estimatedFinishLabel ?? "Estimate pending"}
+                                        <p className="mt-1 text-base font-bold text-slate-900">
+                                            {hasMetTodayGoal
+                                                ? formatProgressMinutes(bonusTodayMinutes)
+                                                : formatProgressMinutes(remainingTodayMinutes)}
                                         </p>
                                     </div>
                                 </div>
+                                <p className="pt-1 text-base text-slate-500">
+                                    {hasMetTodayGoal
+                                        ? "You have already reached the study time you planned for today."
+                                        : remainingTodayMinutes > 0
+                                            ? `${formatProgressMinutes(remainingTodayMinutes)} left to hit today's goal.`
+                                            : "Your daily study target will update here as you learn."}
+                                </p>
                                 <p className="pt-1 text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
                                     {isStudyPlanExpanded
                                         ? "Hide today's actions"
@@ -249,6 +380,37 @@ export function DailyPlanView({
                             </div>
                         </CardHeader>
                     </button>
+
+                    {hasMetTodayGoal ? (
+                        <div className="border-t border-emerald-100 bg-[linear-gradient(135deg,_rgba(236,253,245,1)_0%,_rgba(239,246,255,1)_100%)] px-5 py-4">
+                            <div className="rounded-[24px] border border-emerald-200 bg-white px-4 py-4 text-sm text-slate-700 shadow-[0_16px_36px_rgba(16,185,129,0.12)] ring-1 ring-emerald-100">
+                                <div className="flex items-start gap-3">
+                                    <div className="rounded-2xl bg-emerald-100 p-2.5">
+                                        <CheckCircle2 className="h-5 w-5 text-emerald-700" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                                            Goal reached
+                                        </p>
+                                        <p className="font-semibold text-slate-900">
+                                            {studyGoalDecision === "break"
+                                                ? "Great stopping point for today."
+                                                : studyGoalDecision === "continue"
+                                                    ? "Extra study time counts as bonus progress."
+                                                    : "You finished today's planned study time."}
+                                        </p>
+                                        <p className="mt-1 leading-6 text-slate-600">
+                                            {studyGoalDecision === "break"
+                                                ? "Take a break and come back tomorrow with a fresh start."
+                                                : studyGoalDecision === "continue"
+                                                    ? "Keep going if you still have energy. Everything beyond today's goal is extra momentum."
+                                                    : "If you continue learning in a lesson, the app will ask whether you want to stop for today or keep going."}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
 
                     {isStudyPlanExpanded ? (
                         <CardContent className="border-t border-slate-200 bg-slate-50/70 p-5">
@@ -260,14 +422,23 @@ export function DailyPlanView({
                                         </div>
 
                                         <div className="min-w-0 flex-1">
-                                            <h3 className="font-semibold text-slate-900">New Lesson</h3>
-                                            <p className="mt-1 text-sm text-slate-700">
+                                            <h3 className="text-lg font-semibold text-slate-900">New Lesson</h3>
+                                            <p className="mt-1 text-base text-slate-700">
                                                 {lessonDescription}
                                             </p>
-                                            <p className="mt-2 text-sm leading-6 text-slate-500">
+                                            <p className="mt-2 text-base leading-7 text-slate-500">
                                                 {lessonOutcome}
                                             </p>
-                                            {nextLesson && nextTopic ? (
+                                            {allAssignedLessonsCompleted ? (
+                                                <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+                                                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
+                                                        {completedLessonCount} lessons done
+                                                    </span>
+                                                    <span className="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">
+                                                        All assigned quizzes passed
+                                                    </span>
+                                                </div>
+                                            ) : nextLesson && nextTopic ? (
                                                 <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
                                                     <span className="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">
                                                         Topic {nextTopic.sort_order}
@@ -277,7 +448,7 @@ export function DailyPlanView({
                                                     </span>
                                                     {remainingTodayMinutes > 0 ? (
                                                         <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
-                                                            {formatMinutes(remainingTodayMinutes)} left after this
+                                                            {formatProgressMinutes(remainingTodayMinutes)} left in today's goal
                                                         </span>
                                                     ) : null}
                                                 </div>
@@ -298,14 +469,16 @@ export function DailyPlanView({
                                             </div>
 
                                             <div className="min-w-0 flex-1">
-                                                <h3 className="font-semibold text-slate-900">Review</h3>
-                                                <p className="mt-1 text-sm text-slate-700">
+                                                <h3 className="text-lg font-semibold text-slate-900">Review</h3>
+                                                <p className="mt-1 text-base text-slate-700">
                                                     {nextTopic
                                                         ? `Review for ${nextTopic.name} will appear here after you complete lessons and quizzes in this topic.`
                                                         : "Review cards and follow-up practice will appear here once your roadmap is active."}
                                                 </p>
-                                                <p className="mt-2 text-sm leading-6 text-slate-500">
-                                                    {nextLesson
+                                                <p className="mt-2 text-base leading-7 text-slate-500">
+                                                    {allAssignedLessonsCompleted
+                                                        ? "You can now revisit completed lessons and quizzes to reinforce retention."
+                                                        : nextLesson
                                                         ? `Finish ${nextLesson.title} and submit its quiz to unlock targeted review items.`
                                                         : LOCKED_COPY}
                                                 </p>
@@ -317,7 +490,9 @@ export function DailyPlanView({
                                             disabled
                                             className="mt-5 h-11 w-full border-slate-200 text-slate-500"
                                         >
-                                            Complete a lesson first
+                                            {allAssignedLessonsCompleted
+                                                ? "Review unlocked"
+                                                : "Complete a lesson first"}
                                         </Button>
                                     </div>
 
@@ -328,14 +503,18 @@ export function DailyPlanView({
                                             </div>
 
                                             <div className="min-w-0 flex-1">
-                                                <h3 className="font-semibold text-slate-900">Flashcards</h3>
-                                                <p className="mt-1 text-sm text-slate-700">
-                                                    {nextLesson
+                                                <h3 className="text-lg font-semibold text-slate-900">Flashcards</h3>
+                                                <p className="mt-1 text-base text-slate-700">
+                                                    {allAssignedLessonsCompleted
+                                                        ? "Flashcards can now be generated from the lessons you have already completed."
+                                                        : nextLesson
                                                         ? `Flashcards will be generated from the vocabulary and patterns inside ${nextLesson.title}.`
                                                         : "Vocabulary flashcards will be generated from completed lessons."}
                                                 </p>
-                                                <p className="mt-2 text-sm leading-6 text-slate-500">
-                                                    {nextTopic
+                                                <p className="mt-2 text-base leading-7 text-slate-500">
+                                                    {allAssignedLessonsCompleted
+                                                        ? "Use completed lessons as review material while you wait for the next roadmap action."
+                                                        : nextTopic
                                                         ? `Your first deck unlocks after you finish a lesson in ${nextTopic.name}.`
                                                         : LOCKED_COPY}
                                                 </p>
@@ -347,7 +526,9 @@ export function DailyPlanView({
                                             disabled
                                             className="mt-5 h-11 w-full border-slate-200 text-slate-500"
                                         >
-                                            Unlock after your first quiz
+                                            {allAssignedLessonsCompleted
+                                                ? "Ready from completed lessons"
+                                                : "Unlock after your first quiz"}
                                         </Button>
                                     </div>
                                 </div>
@@ -364,17 +545,28 @@ export function DailyPlanView({
                             </div>
                             <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <h3 className="font-semibold text-slate-900">AI Coach</h3>
+                                    <h3 className="text-lg font-semibold text-slate-900">AI Coach</h3>
                                     <span className="rounded-full bg-blue-600 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">
                                         Personal Guidance
                                     </span>
                                 </div>
-                                <p className="mt-2 text-sm leading-6 text-slate-700">
-                                    {nextLesson && currentDays
+                                <p className="mt-2 text-base leading-7 text-slate-700">
+                                    {allAssignedLessonsCompleted
+                                        ? `You have completed ${completedLessonCount} of ${totalAssignedLessons} assigned lessons. Use today to review and consolidate what you passed.`
+                                        : nextLesson && currentDays
                                         ? `At ${currentHour} hour${currentHour === 1 ? "" : "s"} per day, completing ${nextLesson.title} keeps you on pace to finish in about ${currentDays} day${currentDays === 1 ? "" : "s"}.`
                                         : "Start with your next lesson first. Once you finish a quiz, AI Coach can suggest exactly what to review next."}
                                 </p>
-                                {nextLesson && nextTopic ? (
+                                {allAssignedLessonsCompleted ? (
+                                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                                        <span className="rounded-full bg-white px-2.5 py-1 text-emerald-700 ring-1 ring-emerald-100">
+                                            Roadmap progress saved
+                                        </span>
+                                        <span className="rounded-full bg-white px-2.5 py-1 text-slate-700 ring-1 ring-slate-200">
+                                            {completedLessonCount}/{totalAssignedLessons} lessons passed
+                                        </span>
+                                    </div>
+                                ) : nextLesson && nextTopic ? (
                                     <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
                                         <span className="rounded-full bg-white px-2.5 py-1 text-blue-700 ring-1 ring-blue-100">
                                             Focus: {nextTopic.name}
@@ -401,7 +593,7 @@ export function DailyPlanView({
 
                             <div>
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <p className="font-semibold text-slate-900">Study Settings</p>
+                                    <p className="text-lg font-semibold text-slate-900">Study Settings</p>
                                     <span className="rounded-full bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">
                                         Change Career
                                     </span>
@@ -409,11 +601,11 @@ export function DailyPlanView({
                                         Study Time
                                     </span>
                                 </div>
-                                <p className="mt-1 text-sm text-slate-700">
+                                <p className="mt-1 text-base text-slate-700">
                                     {currentHour}h/day
                                     {estimatedFinishLabel ? ` · Finish by ${estimatedFinishLabel}` : ""}
                                 </p>
-                                <p className="mt-1 text-sm text-slate-500">
+                                <p className="mt-1 text-base text-slate-500">
                                     Open settings to change career direction or update your daily study time.
                                 </p>
                             </div>

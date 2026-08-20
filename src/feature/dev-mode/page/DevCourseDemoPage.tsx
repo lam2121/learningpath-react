@@ -93,6 +93,8 @@ export function DevCourseDemoPage() {
 			const result = await generateDevLesson(lessonId)
 			if (result.status === 'completed' || result.status === 'skipped') {
 				refreshLesson(lessonId)
+			} else if (result.status === 'started') {
+				await load()
 			} else {
 				alert(`C-1/C-2 generation failed:\n${result.message}`)
 			}

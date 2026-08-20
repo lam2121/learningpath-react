@@ -26,6 +26,7 @@ import {
 import { MainNavigationMenu } from "@/common/component/MainNavigationMenu";
 import { useAuth } from "@/common/context/AuthContext";
 import { fetchCurrentUserProfile } from "@/feature/auth/api/authAPI";
+import type { UserProfileResponse } from "@/feature/auth/type/Auth";
 import {
     fetchRoadmap,
     fetchLessonQuizState,
@@ -37,7 +38,15 @@ import {
     type RoadmapTopic,
 } from "@/feature/learning-path/roadmapApi";
 import { useRadar } from "@/feature/radar";
-import { recordStudyTime } from "@/feature/user-profile/utils/StudyActivity";
+import { DailyStudyGoalDialog } from "@/feature/user-profile/component/DailyStudyGoalDialog";
+import { getTrackedStudyMinutesByDay, recordStudyTime } from "@/feature/user-profile/utils/StudyActivity";
+import {
+    getStudyMinutesForDate,
+    getTodayDateKey,
+    readStudyGoalDecision,
+    writeStudyGoalDecision,
+    type StudyGoalDecision,
+} from "@/feature/user-profile/utils/dailyStudyGoal";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -1996,9 +2005,17 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
     const auth = useAuth();
     const userId = Number(auth.user?.id);
     const [roadmap, setRoadmap] = useState<RoadmapResponse | null>(null);
+    const [profile, setProfile] = useState<UserProfileResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activeSection, setActiveSection] = useState<SidebarSectionKey>("scenario");
+    const [trackedStudyMinutesByDay, setTrackedStudyMinutesByDay] = useState<Record<string, number>>(
+        () => (Number.isFinite(userId) ? getTrackedStudyMinutesByDay(userId) : {}),
+    );
+    const [studyGoalDecision, setStudyGoalDecision] = useState<StudyGoalDecision | null>(
+        () => (Number.isFinite(userId) ? readStudyGoalDecision(userId, getTodayDateKey()) : null),
+    );
+    const [showDailyStudyGoalDialog, setShowDailyStudyGoalDialog] = useState(false);
 
     useEffect(() => {
         setActiveSection("scenario");
@@ -2038,6 +2055,69 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
         };
     }, [lessonId]);
 
+    useEffect(() => {
+        if (!Number.isFinite(userId)) {
+            setProfile(null);
+            setTrackedStudyMinutesByDay({});
+            setStudyGoalDecision(null);
+            return;
+        }
+
+        let isMounted = true;
+
+        const loadProfile = async () => {
+            try {
+                const profileResponse = await fetchCurrentUserProfile();
+                if (isMounted) {
+                    setProfile(profileResponse);
+                }
+            } catch {
+                if (isMounted) {
+                    setProfile(null);
+                }
+            }
+        };
+
+        void loadProfile();
+        setTrackedStudyMinutesByDay(getTrackedStudyMinutesByDay(userId));
+        setStudyGoalDecision(readStudyGoalDecision(userId, getTodayDateKey()));
+
+        const handleProfileUpdated = (event: Event) => {
+            const customEvent = event as CustomEvent<UserProfileResponse>;
+            if (isMounted) {
+                setProfile(customEvent.detail);
+            }
+        };
+
+        const handleStudyActivityUpdated = (event: Event) => {
+            const customEvent = event as CustomEvent<{
+                userId?: number;
+                studyMinutesByDay?: Record<string, number>;
+            }>;
+            if (!isMounted || customEvent.detail.userId !== userId) {
+                return;
+            }
+            setTrackedStudyMinutesByDay(
+                customEvent.detail.studyMinutesByDay ?? getTrackedStudyMinutesByDay(userId),
+            );
+        };
+
+        window.addEventListener("careerpath:profile-updated", handleProfileUpdated);
+        window.addEventListener(
+            "careerpath:study-activity-updated",
+            handleStudyActivityUpdated,
+        );
+
+        return () => {
+            isMounted = false;
+            window.removeEventListener("careerpath:profile-updated", handleProfileUpdated);
+            window.removeEventListener(
+                "careerpath:study-activity-updated",
+                handleStudyActivityUpdated,
+            );
+        };
+    }, [userId]);
+
     const lessonLookup = useMemo(
         () => (Number.isNaN(lessonId) ? null : findLesson(roadmap, lessonId)),
         [lessonId, roadmap],
@@ -2059,6 +2139,29 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
             theorySections?.find((section) => section.key === activeSection) ?? null,
         [activeSection, theorySections],
     );
+    const todayDateKey = getTodayDateKey();
+    const backendStudiedTodayMinutes = getStudyMinutesForDate(
+        profile?.study_history,
+        todayDateKey,
+    );
+    const trackedStudiedTodayMinutes = trackedStudyMinutesByDay[todayDateKey] ?? 0;
+    const todayLearnedMinutes = backendStudiedTodayMinutes + trackedStudiedTodayMinutes;
+    const dailyStudyMinutes = profile?.daily_study_minutes ?? 0;
+
+    useEffect(() => {
+        if (
+            !Number.isFinite(userId)
+            || dailyStudyMinutes <= 0
+            || studyGoalDecision !== null
+        ) {
+            setShowDailyStudyGoalDialog(false);
+            return;
+        }
+
+        if (todayLearnedMinutes >= dailyStudyMinutes) {
+            setShowDailyStudyGoalDialog(true);
+        }
+    }, [dailyStudyMinutes, studyGoalDecision, todayLearnedMinutes, userId]);
 
     useEffect(() => {
         if (
@@ -2130,6 +2233,22 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
             flushStudyTime();
         };
     }, [error, lessonLookup, loading, userId]);
+
+    const handleTakeBreakAfterGoal = () => {
+        if (Number.isFinite(userId)) {
+            writeStudyGoalDecision(userId, "break", todayDateKey);
+        }
+        setStudyGoalDecision("break");
+        setShowDailyStudyGoalDialog(false);
+    };
+
+    const handleKeepLearningAfterGoal = () => {
+        if (Number.isFinite(userId)) {
+            writeStudyGoalDecision(userId, "continue", todayDateKey);
+        }
+        setStudyGoalDecision("continue");
+        setShowDailyStudyGoalDialog(false);
+    };
 
     if (loading) {
         return <LessonSkeleton />;
@@ -2209,6 +2328,13 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
 
     return (
         <div className="min-h-screen bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_22%,#f8fafc_100%)] text-slate-950 dark:bg-slate-950 dark:text-white">
+            <DailyStudyGoalDialog
+                open={showDailyStudyGoalDialog}
+                plannedMinutes={dailyStudyMinutes}
+                learnedMinutes={todayLearnedMinutes}
+                onTakeBreak={handleTakeBreakAfterGoal}
+                onKeepLearning={handleKeepLearningAfterGoal}
+            />
             <MainNavigationMenu />
 
             <main className="mx-auto max-w-[1480px] px-3 py-4 sm:px-6 sm:py-6 xl:px-8">

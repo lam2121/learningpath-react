@@ -127,6 +127,8 @@ export function UserProfileCard() {
     const [finishBadgeLabel, setFinishBadgeLabel] = useState<string>("Estimate pending");
     const [backendStudiedMinutes, setBackendStudiedMinutes] = useState(0);
     const [trackedStudyMinutes, setTrackedStudyMinutes] = useState(0);
+    const [lessonsCompleted, setLessonsCompleted] = useState(0);
+    const [accuracy, setAccuracy] = useState(0);
     const [avatarUrl, setAvatarUrl] = useState(() => {
         const savedAvatar = localStorage.getItem("user_avatar");
         return savedAvatar || "/avatar.png";
@@ -158,6 +160,18 @@ export function UserProfileCard() {
                 );
                 setBackendStudiedMinutes(
                     Math.max(0, profileResult.value.total_studied_minutes),
+                );
+                const passedLessons = profileResult.value.lesson_quiz_history?.filter(
+                    (entry) => entry.passed,
+                ) ?? [];
+                const latestScoredLesson = profileResult.value.lesson_quiz_history?.find(
+                    (entry) => entry.best_score_percent != null,
+                );
+                setLessonsCompleted(passedLessons.length);
+                setAccuracy(
+                    latestScoredLesson?.best_score_percent != null
+                        ? Math.round(latestScoredLesson.best_score_percent)
+                        : 0,
                 );
             }
 
@@ -202,6 +216,18 @@ export function UserProfileCard() {
             );
             setBackendStudiedMinutes(
                 Math.max(0, customEvent.detail.total_studied_minutes),
+            );
+            const passedLessons = customEvent.detail.lesson_quiz_history?.filter(
+                (entry) => entry.passed,
+            ) ?? [];
+            const latestScoredLesson = customEvent.detail.lesson_quiz_history?.find(
+                (entry) => entry.best_score_percent != null,
+            );
+            setLessonsCompleted(passedLessons.length);
+            setAccuracy(
+                latestScoredLesson?.best_score_percent != null
+                    ? Math.round(latestScoredLesson.best_score_percent)
+                    : 0,
             );
         };
         const handleStudyActivityUpdated = (event: Event) => {
@@ -255,9 +281,6 @@ export function UserProfileCard() {
         return calculateLongestStreak(getLoginDays(user.id));
     }, [user?.id]);
     const totalStudiedMinutes = Math.max(0, backendStudiedMinutes + trackedStudyMinutes);
-
-    const lessonsCompleted = 0;
-    const accuracy = 0;
     const studyDurationLabel = formatStudyDuration(totalStudiedMinutes);
 
     const values = {
@@ -351,17 +374,17 @@ export function UserProfileCard() {
                         <div className="min-w-0 flex-1 pt-12">
                             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                                 <div className="min-w-0">
-                                    <h2 className="break-words text-2xl font-bold text-slate-900">
+                                    <h2 className="break-words text-3xl font-bold text-slate-900 sm:text-4xl">
                                         {displayName}
                                     </h2>
 
                                     <div className="mt-3 flex flex-wrap gap-2">
-                                        <Badge className="rounded-full bg-slate-900 px-3 py-1 text-white hover:bg-slate-900">
+                                        <Badge className="rounded-full bg-slate-900 px-3 py-1.5 text-sm text-white hover:bg-slate-900">
                                             {careerName}
                                         </Badge>
                                         <Badge
                                             variant="secondary"
-                                            className="rounded-full px-3 py-1 text-slate-700"
+                                            className="rounded-full px-3 py-1.5 text-sm text-slate-700"
                                         >
                                             {finishBadgeLabel}
                                         </Badge>
@@ -372,11 +395,11 @@ export function UserProfileCard() {
                                     <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                                         <div className="flex items-center gap-2 text-slate-500">
                                             <CalendarDays className="h-4 w-4 shrink-0" />
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em]">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.16em]">
                                                 Started
                                             </p>
                                         </div>
-                                        <p className="mt-2 text-sm font-semibold text-slate-900">
+                                        <p className="mt-2 text-base font-semibold text-slate-900">
                                             {startedAtLabel}
                                         </p>
                                     </div>
@@ -384,11 +407,11 @@ export function UserProfileCard() {
                                     <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
                                         <div className="flex items-center gap-2 text-blue-700">
                                             <Target className="h-4 w-4 shrink-0" />
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em]">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.16em]">
                                                 Estimated Finish
                                             </p>
                                         </div>
-                                        <p className="mt-2 text-sm font-semibold text-slate-900">
+                                        <p className="mt-2 text-base font-semibold text-slate-900">
                                             {estimatedFinishLabel}
                                         </p>
                                     </div>
@@ -412,13 +435,13 @@ export function UserProfileCard() {
                                             <Icon className={`h-4 w-4 ${item.iconClassName}`} />
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                                                 {item.label}
                                             </p>
-                                            <p className="mt-1 text-base font-bold text-slate-900">
+                                            <p className="mt-1 text-xl font-bold text-slate-900">
                                                 {payload.value}
                                             </p>
-                                            <p className="mt-1 text-xs leading-5 text-slate-500">
+                                            <p className="mt-1 text-sm leading-6 text-slate-500">
                                                 {payload.helper}
                                             </p>
                                         </div>

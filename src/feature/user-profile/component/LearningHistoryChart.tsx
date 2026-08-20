@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
-import { CalendarClock, CheckCircle2, Clock3, Eye, Loader2, Medal, Sparkles } from "lucide-react";
+import { ArrowUpDown, CalendarClock, CheckCircle2, Clock3, Eye, Loader2, Medal, Search, Sparkles } from "lucide-react";
 
 import { fetchCurrentUserProfile } from "@/feature/auth/api/authAPI";
 import type {
@@ -11,6 +11,7 @@ import type {
 import { useAuth } from "@/common/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/component/ui/card";
 import { Button } from "@/shadcn/component/ui/button";
+import { Input } from "@/shadcn/component/ui/input";
 import {
     Accordion,
     AccordionContent,
@@ -355,17 +356,18 @@ export function LoginHistoryCard({
 
     const today = new Date().getDate();
     const chartData = studyTimeData.slice(0, today);
-    const activeDays = chartData.filter((item) => item.minutes > 0).length;
     const totalMinutes = chartData.reduce((sum, item) => sum + item.minutes, 0);
     const todayMinutes = chartData[chartData.length - 1]?.minutes ?? 0;
     const hasActivity = totalMinutes > 0;
-    const trackedStudyMinutes = Number.isFinite(userId)
-        ? getTrackedStudyMinutesTotal(userId)
+    const activeStudyMinutes = chartData
+        .filter((item) => item.minutes > 0)
+        .map((item) => item.minutes);
+    const shortestStudyMinutes = activeStudyMinutes.length > 0
+        ? Math.min(...activeStudyMinutes)
         : 0;
-    const totalTrackedMinutes = Math.max(
-        0,
-        (profile?.total_studied_minutes ?? 0) + trackedStudyMinutes,
-    );
+    const longestStudyMinutes = activeStudyMinutes.length > 0
+        ? Math.max(...activeStudyMinutes)
+        : 0;
     const shouldStretch = compact || stretch;
     const chartHeightClass = shouldStretch
         ? "min-h-28 flex-1 sm:min-h-32"
@@ -431,10 +433,10 @@ export function LoginHistoryCard({
 
                         <div className="flex min-w-0 flex-wrap gap-1.5 text-[11px] font-semibold sm:gap-2 sm:text-xs">
                             <span className="max-w-full truncate rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
-                                Active days: {activeDays}
+                                Shortest time: {formatStudyDuration(shortestStudyMinutes)}
                             </span>
                             <span className="max-w-full truncate rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">
-                                Total tracked: {formatStudyDuration(totalTrackedMinutes)}
+                                Longest time: {formatStudyDuration(longestStudyMinutes)}
                             </span>
                         </div>
 
@@ -476,6 +478,8 @@ export function LessonQuizHistoryCard({
     compact = false,
 }: LessonQuizHistoryCardProps) {
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
+    const [topicSortDirection, setTopicSortDirection] = useState<"asc" | "desc">("asc");
+    const [searchTerm, setSearchTerm] = useState("");
     const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
     const [selectedDetail, setSelectedDetail] = useState<LessonQuizResultDetailResponse | null>(null);
     const [detailLoading, setDetailLoading] = useState(false);
@@ -518,9 +522,53 @@ export function LessonQuizHistoryCard({
         [profile],
     );
 
+    const sortedLessonQuizHistory = useMemo(
+        () =>
+            [...lessonQuizHistory].sort((left, right) => {
+                const leftTopicOrder = left.topic_sort_order ?? Number.MAX_SAFE_INTEGER;
+                const rightTopicOrder = right.topic_sort_order ?? Number.MAX_SAFE_INTEGER;
+
+                if (leftTopicOrder !== rightTopicOrder) {
+                    return topicSortDirection === "asc"
+                        ? leftTopicOrder - rightTopicOrder
+                        : rightTopicOrder - leftTopicOrder;
+                }
+
+                const leftRecordedAt = left.recorded_at ?? left.completed_at ?? left.last_submitted_at ?? "";
+                const rightRecordedAt = right.recorded_at ?? right.completed_at ?? right.last_submitted_at ?? "";
+                if (leftRecordedAt !== rightRecordedAt) {
+                    return rightRecordedAt.localeCompare(leftRecordedAt);
+                }
+
+                return left.lesson_title.localeCompare(right.lesson_title);
+            }),
+        [lessonQuizHistory, topicSortDirection],
+    );
+
+    const filteredLessonQuizHistory = useMemo(() => {
+        const normalizedSearch = searchTerm.trim().toLowerCase();
+        if (!normalizedSearch) {
+            return sortedLessonQuizHistory;
+        }
+
+        return sortedLessonQuizHistory.filter((entry) => {
+            const haystack = [
+                entry.topic_name ?? "",
+                entry.lesson_title,
+                entry.skill,
+                entry.difficulty_tier,
+                entry.topic_sort_order ? `topic ${entry.topic_sort_order}` : "",
+            ]
+                .join(" ")
+                .toLowerCase();
+
+            return haystack.includes(normalizedSearch);
+        });
+    }, [searchTerm, sortedLessonQuizHistory]);
+
     const topAttempts = useMemo(
-        () => (compact ? lessonQuizHistory.slice(0, 3) : lessonQuizHistory),
-        [compact, lessonQuizHistory],
+        () => (compact ? lessonQuizHistory.slice(0, 3) : filteredLessonQuizHistory),
+        [compact, filteredLessonQuizHistory, lessonQuizHistory],
     );
 
     const openLessonDetail = async (lessonId: number) => {
@@ -551,19 +599,60 @@ export function LessonQuizHistoryCard({
                 <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-4">
                         <div>
-                            <CardTitle className="text-xl text-slate-950">Best Lesson Quiz Scores</CardTitle>
-                            <p className="mt-1 text-sm text-slate-500">
+                            <CardTitle className="text-2xl text-slate-950">Best Lesson Quiz Scores</CardTitle>
+                            <p className="mt-1 text-base text-slate-500">
                                 Highest weighted score saved for each lesson, including hint mode.
                             </p>
                         </div>
-                        <div className="rounded-2xl bg-amber-50 p-3 text-amber-700">
-                            <Medal className="h-5 w-5" />
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                            {!compact ? (
+                                <div className="flex items-center gap-1 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+                                    <Button
+                                        type="button"
+                                        variant={topicSortDirection === "asc" ? "default" : "ghost"}
+                                        className={topicSortDirection === "asc" ? "h-8 rounded-xl bg-slate-900 px-3 text-xs hover:bg-slate-800" : "h-8 rounded-xl px-3 text-xs text-slate-600"}
+                                        onClick={() => setTopicSortDirection("asc")}
+                                    >
+                                        <ArrowUpDown className="mr-1.5 h-3.5 w-3.5" />
+                                        Topic 1-8
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant={topicSortDirection === "desc" ? "default" : "ghost"}
+                                        className={topicSortDirection === "desc" ? "h-8 rounded-xl bg-slate-900 px-3 text-xs hover:bg-slate-800" : "h-8 rounded-xl px-3 text-xs text-slate-600"}
+                                        onClick={() => setTopicSortDirection("desc")}
+                                    >
+                                        <ArrowUpDown className="mr-1.5 h-3.5 w-3.5" />
+                                        Topic 8-1
+                                    </Button>
+                                </div>
+                            ) : null}
+                            <div className="rounded-2xl bg-amber-50 p-3 text-amber-700">
+                                <Medal className="h-5 w-5" />
+                            </div>
                         </div>
                     </div>
+                    {!compact ? (
+                        <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="relative w-full lg:max-w-sm">
+                                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                <Input
+                                    type="search"
+                                    value={searchTerm}
+                                    onChange={(event) => setSearchTerm(event.target.value)}
+                                    placeholder="Search topic, lesson, skill, or tier"
+                                    className="h-11 rounded-xl border-slate-200 bg-slate-50 pl-9 text-base"
+                                />
+                            </div>
+                            <p className="text-sm font-medium uppercase tracking-[0.14em] text-slate-400">
+                                {filteredLessonQuizHistory.length} result{filteredLessonQuizHistory.length === 1 ? "" : "s"}
+                            </p>
+                        </div>
+                    ) : null}
                 </CardHeader>
 
                 <CardContent className="pt-0">
-                    {topAttempts.length === 0 ? (
+                    {lessonQuizHistory.length === 0 ? (
                         <div className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center">
                             <Sparkles className="h-10 w-10 text-slate-300" />
                             <div>
@@ -575,13 +664,29 @@ export function LessonQuizHistoryCard({
                                 </p>
                             </div>
                         </div>
+                    ) : topAttempts.length === 0 ? (
+                        <div className="flex min-h-32 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center">
+                            <Search className="h-8 w-8 text-slate-300" />
+                            <div>
+                                <p className="font-semibold text-slate-900">
+                                    No matching lessons
+                                </p>
+                                <p className="mt-2 text-sm leading-6 text-slate-500">
+                                    Try a different topic number, topic name, lesson title, skill, or difficulty tier.
+                                </p>
+                            </div>
+                        </div>
                     ) : (
-                        <div className="space-y-3">
+                        <div className={compact ? "space-y-3" : "grid gap-3 xl:grid-cols-2"}>
                             {topAttempts.map((entry: LessonQuizHistoryEntryResponse) => {
                                 const recordedLabel = formatHistoryDate(entry.recorded_at);
                                 const completedLabel = formatHistoryDate(entry.completed_at);
                                 const submittedLabel = formatHistoryDate(entry.last_submitted_at);
                                 const statusLabel = formatStatusLabel(entry.status);
+                                const topicHeader = entry.topic_name ?? "Lesson quiz history";
+                                const topicLabel = entry.topic_sort_order
+                                    ? `Topic ${entry.topic_sort_order}`
+                                    : "Topic";
                                 const statusClasses = entry.status === "passed"
                                     ? "bg-emerald-100 text-emerald-700"
                                     : entry.status === "failed"
@@ -591,45 +696,48 @@ export function LessonQuizHistoryCard({
                                 return (
                                     <div
                                         key={entry.lesson_id}
-                                        className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+                                        className="flex h-full flex-col rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
                                     >
-                                        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                             <div className="min-w-0">
                                                 <div className="flex flex-wrap items-center gap-2">
-                                                    <p className="text-base font-bold text-slate-950">
-                                                        {entry.lesson_title}
-                                                    </p>
-                                                    <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                                                    <span className="rounded-full bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white">
+                                                        {topicLabel}
+                                                    </span>
+                                                    <span className="rounded-full bg-blue-100 px-3 py-1.5 text-sm font-semibold text-blue-700">
                                                         {formatLabel(entry.skill)}
                                                     </span>
-                                                    <span className="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                                                    <span className="rounded-full bg-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700">
                                                         {formatLabel(entry.difficulty_tier)}
                                                     </span>
-                                                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${statusClasses}`}>
+                                                    <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-semibold ${statusClasses}`}>
                                                         {entry.status === "passed" ? (
                                                             <CheckCircle2 className="h-3.5 w-3.5" />
                                                         ) : null}
                                                         {statusLabel}
                                                     </span>
                                                 </div>
-                                                <p className="mt-2 text-sm text-slate-500">
-                                                    {entry.topic_name ? `Topic: ${entry.topic_name}` : "Lesson quiz history"}
+                                                <p className="mt-2 text-xl font-bold text-slate-950">
+                                                    {topicHeader}
+                                                </p>
+                                                <p className="mt-1 text-base text-slate-500">
+                                                    {entry.lesson_title}
                                                 </p>
                                             </div>
 
-                                            <div className="flex flex-col items-start gap-3 lg:items-end">
-                                                <div className="rounded-2xl bg-white px-4 py-3 text-left shadow-sm lg:min-w-[160px] lg:text-right">
-                                                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                            <div className="flex flex-row items-center gap-3 sm:flex-col sm:items-end">
+                                                <div className="rounded-2xl bg-white px-4 py-3 text-left shadow-sm sm:min-w-[150px] sm:text-right">
+                                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                                                         Best score
                                                     </p>
-                                                    <p className="mt-1 text-2xl font-black text-slate-950">
+                                                    <p className="mt-1 text-3xl font-black text-slate-950">
                                                         {formatPercent(entry.best_score_percent)}
                                                     </p>
                                                 </div>
                                                 <Button
                                                     type="button"
                                                     variant="outline"
-                                                    className="rounded-xl border-slate-300 bg-white"
+                                                    className="rounded-xl border-slate-300 bg-white text-base"
                                                     onClick={() => void openLessonDetail(entry.lesson_id)}
                                                 >
                                                     <Eye className="mr-2 h-4 w-4" />
@@ -638,44 +746,44 @@ export function LessonQuizHistoryCard({
                                             </div>
                                         </div>
 
-                                        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
                                             <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
-                                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                                                     Attempts
                                                 </p>
-                                                <p className="mt-1 font-semibold text-slate-950">
+                                                <p className="mt-1 text-lg font-semibold text-slate-950">
                                                     {entry.attempt_count}
                                                 </p>
                                             </div>
                                             <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
-                                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                                                     Failed attempts
                                                 </p>
-                                                <p className="mt-1 font-semibold text-slate-950">
+                                                <p className="mt-1 text-lg font-semibold text-slate-950">
                                                     {entry.failed_attempts}
                                                 </p>
                                             </div>
                                             <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
-                                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                                                     Correct no hint
                                                 </p>
-                                                <p className="mt-1 font-semibold text-slate-950">
+                                                <p className="mt-1 text-lg font-semibold text-slate-950">
                                                     {entry.correct_no_hint_count} / {entry.total_no_hint_questions}
                                                 </p>
                                             </div>
                                             <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
-                                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                                                     Correct with hint
                                                 </p>
-                                                <p className="mt-1 font-semibold text-slate-950">
+                                                <p className="mt-1 text-lg font-semibold text-slate-950">
                                                     {entry.correct_with_hint_count} / {entry.total_with_hint_questions}
                                                 </p>
                                             </div>
                                             <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
-                                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                                                     Recorded
                                                 </p>
-                                                <p className="mt-1 font-semibold text-slate-950">
+                                                <p className="mt-1 text-lg font-semibold text-slate-950">
                                                     {recordedLabel ?? completedLabel ?? submittedLabel ?? "Unknown"}
                                                 </p>
                                             </div>

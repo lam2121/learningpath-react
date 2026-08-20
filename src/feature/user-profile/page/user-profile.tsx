@@ -10,6 +10,8 @@ import {
     type RoadmapResponse,
     type RoadmapTopic,
 } from "@/feature/learning-path/roadmapApi";
+import { fetchCurrentUserProfile } from "@/feature/auth/api/authAPI";
+import type { UserProfileResponse } from "@/feature/auth/type/Auth";
 import { DailyPlanView } from "../component/DailyPlanView";
 import {
     LearningHistoryChart,
@@ -41,14 +43,19 @@ function formatHours(minutes: number | null | undefined) {
     return `${hours}h ${remainder}m`;
 }
 
-function getNextAssignedLesson(roadmap: RoadmapResponse | null): {
+function getNextAssignedLesson(
+    roadmap: RoadmapResponse | null,
+    passedLessonIds: Set<number>,
+): {
     topic: RoadmapTopic;
     lesson: RoadmapLesson;
 } | null {
     if (!roadmap) return null;
 
     for (const topic of roadmap.topics) {
-        const lesson = topic.lessons.find((item) => item.is_generated) ?? topic.lessons[0];
+        const remainingLessons = topic.lessons.filter((item) => !passedLessonIds.has(item.id));
+        const lesson =
+            remainingLessons.find((item) => item.is_generated) ?? remainingLessons[0];
         if (lesson) {
             return { topic, lesson };
         }
@@ -59,21 +66,28 @@ function getNextAssignedLesson(roadmap: RoadmapResponse | null): {
 
 export function UserProfile() {
     const [roadmap, setRoadmap] = useState<RoadmapResponse | null>(null);
+    const [profile, setProfile] = useState<UserProfileResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isStudyPlanExpanded, setIsStudyPlanExpanded] = useState(false);
 
     useEffect(() => {
         let isMounted = true;
 
-        const loadRoadmap = async () => {
+        const loadProfileAndRoadmap = async () => {
             try {
-                const data = await fetchRoadmap();
-                if (isMounted) {
-                    setRoadmap(data);
+                const [roadmapData, profileData] = await Promise.all([
+                    fetchRoadmap(),
+                    fetchCurrentUserProfile(),
+                ]);
+                if (!isMounted) {
+                    return;
                 }
+                setRoadmap(roadmapData);
+                setProfile(profileData);
             } catch {
                 if (isMounted) {
                     setRoadmap(null);
+                    setProfile(null);
                 }
             } finally {
                 if (isMounted) {
@@ -82,14 +96,49 @@ export function UserProfile() {
             }
         };
 
-        void loadRoadmap();
+        void loadProfileAndRoadmap();
+
+        const handleProfileUpdated = (event: Event) => {
+            const customEvent = event as CustomEvent<UserProfileResponse>;
+            if (isMounted) {
+                setProfile(customEvent.detail);
+            }
+        };
+        window.addEventListener("careerpath:profile-updated", handleProfileUpdated);
 
         return () => {
             isMounted = false;
+            window.removeEventListener(
+                "careerpath:profile-updated",
+                handleProfileUpdated,
+            );
         };
     }, []);
 
-    const nextAssigned = useMemo(() => getNextAssignedLesson(roadmap), [roadmap]);
+    const passedLessonIds = useMemo(
+        () =>
+            new Set(
+                (profile?.lesson_quiz_history ?? [])
+                    .filter((entry) => entry.passed)
+                    .map((entry) => entry.lesson_id),
+            ),
+        [profile?.lesson_quiz_history],
+    );
+    const totalAssignedLessons = useMemo(
+        () =>
+            roadmap?.topics.reduce(
+                (sum, topic) => sum + topic.lessons.length,
+                0,
+            ) ?? 0,
+        [roadmap],
+    );
+    const completedLessonCount = passedLessonIds.size;
+    const allAssignedLessonsCompleted =
+        totalAssignedLessons > 0 && completedLessonCount >= totalAssignedLessons;
+    const nextAssigned = useMemo(
+        () => getNextAssignedLesson(roadmap, passedLessonIds),
+        [roadmap, passedLessonIds],
+    );
     const nextLesson = nextAssigned?.lesson ?? null;
     const nextTopic = nextAssigned?.topic ?? null;
     const heroHref = "/lessons/learning-path";
@@ -119,10 +168,10 @@ export function UserProfile() {
                                             <p className="inline-flex rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white shadow-sm">
                                                 Your next step
                                             </p>
-                                            <CardTitle className="mt-3 text-3xl font-black tracking-tight text-slate-950">
+                                            <CardTitle className="mt-3 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
                                                 Explore your Learning Path
                                             </CardTitle>
-                                            <p className="mt-2 max-w-2xl text-sm font-medium text-slate-600">
+                                            <p className="mt-3 max-w-2xl text-base font-medium leading-7 text-slate-600">
                                                 Continue where your roadmap is already prepared for you.
                                             </p>
                                         </div>
@@ -142,7 +191,7 @@ export function UserProfile() {
                                         <div className="rounded-3xl border border-white/80 bg-white/[0.88] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-sm">
                                             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                                                 <div className="space-y-4">
-                                                    <div className="flex flex-wrap gap-2 text-sm text-slate-600">
+                                                    <div className="flex flex-wrap gap-2 text-base text-slate-600">
                                                         {roadmap?.track ? (
                                                             <>
                                                                 <span className="rounded-full bg-blue-50 px-3 py-1.5 font-semibold text-blue-700 ring-1 ring-blue-100">
@@ -165,7 +214,7 @@ export function UserProfile() {
                                                         )}
                                                     </div>
 
-                                                    <p className="max-w-4xl text-sm leading-7 text-slate-600">
+                                                    <p className="max-w-4xl text-base leading-8 text-slate-600">
                                                         {roadmap?.topics.length
                                                             ? "Open your roadmap to review assigned topics, see lesson order, and choose where to continue."
                                                             : "Open your learning path to review your assigned roadmap as soon as it is available."}
@@ -194,6 +243,10 @@ export function UserProfile() {
                                 <DailyPlanView
                                     nextTopic={nextTopic}
                                     nextLesson={nextLesson}
+                                    hasRoadmap={Boolean(roadmap?.topics.length)}
+                                    completedLessonCount={completedLessonCount}
+                                    totalAssignedLessons={totalAssignedLessons}
+                                    allAssignedLessonsCompleted={allAssignedLessonsCompleted}
                                     onStudyPlanExpandedChange={setIsStudyPlanExpanded}
                                 />
                                 {!isStudyPlanExpanded ? (
