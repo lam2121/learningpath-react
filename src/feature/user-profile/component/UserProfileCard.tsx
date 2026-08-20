@@ -23,6 +23,7 @@ import {
 } from "@/feature/onboarding/api/onboardingApi";
 import {
     calculateLongestStreak,
+    getTrackedStudyMinutesTotal,
     getLoginDays,
 } from "@/feature/user-profile/utils/StudyActivity";
 
@@ -99,12 +100,33 @@ function applyProfileTimeline(
     );
 }
 
+function formatStudyDuration(minutes: number) {
+    if (minutes <= 0) {
+        return "0 min";
+    }
+
+    if (minutes < 60) {
+        return minutes === 1 ? "1 min" : `${minutes} min`;
+    }
+
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+
+    if (remainingMinutes === 0) {
+        return hours === 1 ? "1h" : `${hours}h`;
+    }
+
+    return `${hours}h ${remainingMinutes}m`;
+}
+
 export function UserProfileCard() {
     const { user } = useAuth();
     const [careerName, setCareerName] = useState<string>("Career Track");
     const [startedAtLabel, setStartedAtLabel] = useState<string>("Not started yet");
     const [estimatedFinishLabel, setEstimatedFinishLabel] = useState<string>("Estimate pending");
     const [finishBadgeLabel, setFinishBadgeLabel] = useState<string>("Estimate pending");
+    const [backendStudiedMinutes, setBackendStudiedMinutes] = useState(0);
+    const [trackedStudyMinutes, setTrackedStudyMinutes] = useState(0);
     const [avatarUrl, setAvatarUrl] = useState(() => {
         const savedAvatar = localStorage.getItem("user_avatar");
         return savedAvatar || "/avatar.png";
@@ -133,6 +155,9 @@ export function UserProfileCard() {
                     setStartedAtLabel,
                     setEstimatedFinishLabel,
                     setFinishBadgeLabel,
+                );
+                setBackendStudiedMinutes(
+                    Math.max(0, profileResult.value.total_studied_minutes),
                 );
             }
 
@@ -175,8 +200,27 @@ export function UserProfileCard() {
                 setEstimatedFinishLabel,
                 setFinishBadgeLabel,
             );
+            setBackendStudiedMinutes(
+                Math.max(0, customEvent.detail.total_studied_minutes),
+            );
+        };
+        const handleStudyActivityUpdated = (event: Event) => {
+            const customEvent = event as CustomEvent<{ userId?: number }>;
+            if (customEvent.detail.userId !== user?.id) {
+                return;
+            }
+
+            setTrackedStudyMinutes(getTrackedStudyMinutesTotal(user.id));
         };
         window.addEventListener("careerpath:profile-updated", handleProfileUpdated);
+        window.addEventListener(
+            "careerpath:study-activity-updated",
+            handleStudyActivityUpdated,
+        );
+
+        if (user?.id) {
+            setTrackedStudyMinutes(getTrackedStudyMinutesTotal(user.id));
+        }
 
         return () => {
             isMounted = false;
@@ -184,8 +228,12 @@ export function UserProfileCard() {
                 "careerpath:profile-updated",
                 handleProfileUpdated,
             );
+            window.removeEventListener(
+                "careerpath:study-activity-updated",
+                handleStudyActivityUpdated,
+            );
         };
-    }, []);
+    }, [user?.id]);
 
     const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -206,10 +254,11 @@ export function UserProfileCard() {
         if (!user?.id) return 0;
         return calculateLongestStreak(getLoginDays(user.id));
     }, [user?.id]);
+    const totalStudiedMinutes = Math.max(0, backendStudiedMinutes + trackedStudyMinutes);
 
     const lessonsCompleted = 0;
     const accuracy = 0;
-    const studyHours = 0;
+    const studyDurationLabel = formatStudyDuration(totalStudiedMinutes);
 
     const values = {
         streak: {
@@ -225,8 +274,8 @@ export function UserProfileCard() {
             helper: accuracy > 0 ? "Latest quiz accuracy" : "Appears after your first quiz",
         },
         study: {
-            value: studyHours > 0 ? `${studyHours}h` : "0h",
-            helper: studyHours > 0 ? "Tracked study time" : "Time appears after activity",
+            value: studyDurationLabel,
+            helper: totalStudiedMinutes > 0 ? "Total time learned" : "Time appears after activity",
         },
     };
 

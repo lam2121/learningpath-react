@@ -111,16 +111,30 @@ export function LearningCalendar({
                     return (
                         <div
                             key={dateKey}
-                            title={loggedIn ? `${day}: logged in` : `${day}: no login`}
+                            title={
+                                isToday
+                                    ? loggedIn
+                                        ? `${day}: today with learning activity`
+                                        : `${day}: today`
+                                    : loggedIn
+                                        ? `${day}: logged in`
+                                        : `${day}: no login`
+                            }
                             className={[
                                 "relative flex h-9 items-center justify-center rounded-xl border text-sm font-semibold transition",
-                                loggedIn
+                                isToday && loggedIn
+                                    ? "border-amber-300 bg-[linear-gradient(135deg,#fef3c7_0%,#f59e0b_100%)] text-amber-950 shadow-[0_10px_24px_rgba(245,158,11,0.28)] ring-2 ring-amber-200 ring-offset-1"
+                                    : isToday
+                                        ? "border-amber-300 bg-amber-50 text-amber-700 shadow-[0_8px_18px_rgba(245,158,11,0.16)] ring-2 ring-amber-200 ring-offset-1"
+                                        : loggedIn
                                     ? "border-blue-500 bg-blue-500 text-white shadow-[0_8px_20px_rgba(37,99,235,0.22)]"
                                     : "border-slate-200 bg-slate-50 text-slate-400",
-                                isToday ? "ring-2 ring-slate-900/15 ring-offset-1" : "",
                             ].join(" ")}
                         >
                             {day}
+                            {isToday ? (
+                                <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-white/90" />
+                            ) : null}
                         </div>
                     );
                 })}
@@ -136,7 +150,7 @@ export function LearningCalendar({
                     <span>Learning activity</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full border border-slate-400 bg-white" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
                     <span>Today</span>
                 </div>
             </div>

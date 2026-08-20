@@ -1,86 +1,224 @@
 import { Link } from "@tanstack/react-router";
 import { BookOpenCheck, Code2, Database, FileText, MessageSquareText } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 
+import { fetchCurrentUserProfile } from "@/feature/auth/api/authAPI";
+import type { UserProfileResponse } from "@/feature/auth/type/Auth";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/shadcn/component/ui/hover-card";
 import { Button } from "@/shadcn/component/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/component/ui/card";
-import { fetchPlacementTestResult } from "@/feature/onboarding/api/onboardingApi";
+import {
+    fetchJobRoles,
+    fetchPlacementTestResult,
+    type JobRole,
+    type JobRoleSkillDefinitions,
+} from "@/feature/onboarding/api/onboardingApi";
+
+const DEFAULT_SKILL_DEFINITIONS = {
+    D_doc: {
+        description: "Ability to read and write clear, concise, and structured technical documentation.",
+        example_questions: [],
+    },
+    C_comm: {
+        description: "Effective verbal and written communication in professional IT contexts.",
+        example_questions: [],
+    },
+    T_trouble: {
+        description: "Skills in identifying, analyzing, and resolving technical issues.",
+        example_questions: [],
+    },
+    G_custom: {
+        description: "Specific domain knowledge and expertise required for this role.",
+        example_questions: [],
+    },
+} as const;
+
+function getSkillDefinitions(role?: JobRole | null) {
+    const defs: Partial<JobRoleSkillDefinitions> = role?.skill_definitions ?? {};
+    return {
+        D_doc: {
+            description: defs.D_doc?.description || DEFAULT_SKILL_DEFINITIONS.D_doc.description,
+            example_questions: defs.D_doc?.example_questions ?? [],
+        },
+        C_comm: {
+            description: defs.C_comm?.description || DEFAULT_SKILL_DEFINITIONS.C_comm.description,
+            example_questions: defs.C_comm?.example_questions ?? [],
+        },
+        T_trouble: {
+            description: defs.T_trouble?.description || DEFAULT_SKILL_DEFINITIONS.T_trouble.description,
+            example_questions: defs.T_trouble?.example_questions ?? [],
+        },
+        G_custom: {
+            description: defs.G_custom?.description || DEFAULT_SKILL_DEFINITIONS.G_custom.description,
+            example_questions: defs.G_custom?.example_questions ?? [],
+        },
+    };
+}
+
+function SkillDescriptionHover({
+    label,
+    colorClassName,
+    description,
+    children,
+}: {
+    label: string;
+    colorClassName: string;
+    description: string;
+    children: ReactNode;
+}) {
+    return (
+        <HoverCard openDelay={120} closeDelay={80}>
+            <HoverCardTrigger asChild>
+                {children}
+            </HoverCardTrigger>
+            <HoverCardContent className="w-72 border-slate-200 bg-white p-3 text-left">
+                <p className={`text-[11px] font-bold uppercase tracking-[0.16em] ${colorClassName}`}>
+                    {label}
+                </p>
+                <p className="mt-2 text-xs leading-5 text-slate-600">
+                    {description}
+                </p>
+            </HoverCardContent>
+        </HoverCard>
+    );
+}
 
 const SKILL_META = [
     {
         key: "D_doc",
-        label: "Documentation",
-        description: "Reading and writing professional documents",
+        label: "Documentation (D)",
         icon: FileText,
         color: "text-blue-500",
         bar: "bg-blue-400",
+        barMuted: "bg-blue-200",
         track: "bg-blue-50",
     },
     {
         key: "C_comm",
-        label: "Communication",
-        description: "Vocabulary, meetings, emails, and presentations",
+        label: "Communication (C)",
         icon: MessageSquareText,
         color: "text-emerald-500",
         bar: "bg-emerald-400",
+        barMuted: "bg-emerald-200",
         track: "bg-emerald-50",
     },
     {
         key: "T_trouble",
-        label: "Problem Solving",
-        description: "Handling risks, conflicts, and changing requirements",
+        label: "Troubleshooting (T)",
         icon: Database,
         color: "text-rose-500",
         bar: "bg-rose-400",
+        barMuted: "bg-rose-200",
         track: "bg-rose-50",
     },
     {
         key: "G_custom",
-        label: "Role-Specific Skills",
-        description: "Specialized knowledge for the selected career path",
+        label: "Business (G)",
         icon: Code2,
         color: "text-amber-500",
         bar: "bg-amber-400",
+        barMuted: "bg-amber-200",
         track: "bg-amber-50",
     },
 ] as const;
 
+function formatScore(value: number) {
+    return Number.isInteger(value) ? `${value}%` : `${value.toFixed(1)}%`;
+}
+
 export function SkillsOverview() {
-    const [skillScores, setSkillScores] = useState<Record<string, number> | null>(null);
+    const [initialSkillScores, setInitialSkillScores] = useState<Record<string, number> | null>(null);
+    const [currentSkillScores, setCurrentSkillScores] = useState<Record<string, number> | null>(null);
+    const [selectedRole, setSelectedRole] = useState<JobRole | null>(null);
 
     useEffect(() => {
         let isMounted = true;
 
         const loadScores = async () => {
             try {
-                const result = await fetchPlacementTestResult();
+                const [placementResult, profileResult, jobRolesResult] = await Promise.allSettled([
+                    fetchPlacementTestResult(),
+                    fetchCurrentUserProfile(),
+                    fetchJobRoles(),
+                ]);
+
                 if (isMounted) {
-                    setSkillScores(
-                        Object.keys(result.skill_scores ?? {}).length > 0
-                            ? result.skill_scores
-                            : null,
-                    );
+                    const placementInitialRadarScores =
+                        placementResult.status === "fulfilled"
+                            ? placementResult.value.radar_score?.start_vector ?? null
+                            : null;
+                    const placementCurrentRadarScores =
+                        placementResult.status === "fulfilled"
+                            ? placementResult.value.radar_score?.current_vector ?? null
+                            : null;
+                    const placementScores =
+                        placementResult.status === "fulfilled"
+                        && Object.keys(placementResult.value.skill_scores ?? {}).length > 0
+                            ? placementResult.value.skill_scores
+                            : null;
+                    const profileInitialScores =
+                        profileResult.status === "fulfilled"
+                            ? profileResult.value.initial_skill_scores ?? null
+                            : null;
+                    const profileCurrentScores =
+                        profileResult.status === "fulfilled"
+                            ? profileResult.value.current_skill_scores ?? null
+                            : null;
+
+                    const nextInitialScores =
+                        placementInitialRadarScores
+                        ?? profileInitialScores
+                        ?? placementScores;
+                    const nextCurrentScores =
+                        placementCurrentRadarScores
+                        ?? profileCurrentScores
+                        ?? nextInitialScores;
+                    const nextSelectedRole =
+                        placementResult.status === "fulfilled" && jobRolesResult.status === "fulfilled"
+                            ? jobRolesResult.value.find((role) => role.id === placementResult.value.role_id) ?? null
+                            : null;
+
+                    setInitialSkillScores(nextInitialScores);
+                    setCurrentSkillScores(nextCurrentScores);
+                    setSelectedRole(nextSelectedRole);
                 }
             } catch {
                 if (isMounted) {
-                    setSkillScores(null);
+                    setInitialSkillScores(null);
+                    setCurrentSkillScores(null);
+                    setSelectedRole(null);
                 }
             }
         };
 
         void loadScores();
 
+        const handleProfileUpdated = (event: Event) => {
+            if (!isMounted) {
+                return;
+            }
+
+            const customEvent = event as CustomEvent<UserProfileResponse>;
+            void customEvent;
+            void loadScores();
+        };
+
+        window.addEventListener("careerpath:profile-updated", handleProfileUpdated);
+
         return () => {
             isMounted = false;
+            window.removeEventListener("careerpath:profile-updated", handleProfileUpdated);
         };
     }, []);
 
     const averageScore = useMemo(() => {
-        if (!skillScores) return 0;
-        const values = Object.values(skillScores);
+        if (!currentSkillScores) return 0;
+        const values = Object.values(currentSkillScores);
         if (values.length === 0) return 0;
         return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
-    }, [skillScores]);
+    }, [currentSkillScores]);
+    const skillDefinitions = useMemo(() => getSkillDefinitions(selectedRole), [selectedRole]);
 
     return (
         <Card className="border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.07)]">
@@ -91,7 +229,7 @@ export function SkillsOverview() {
                             Skills Overview
                         </CardTitle>
                         <p className="mt-1 text-sm text-slate-500">
-                            One placement result powers all four skill priorities.
+                            Compare your starting skill scores with your current progress.
                         </p>
                     </div>
 
@@ -110,7 +248,7 @@ export function SkillsOverview() {
                 <div className="rounded-3xl border border-slate-200 bg-slate-50/70 px-4 py-6 sm:px-6">
                     <div className="mb-5 flex items-center justify-between gap-4">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                            Placement Score By Skill
+                            Initial and Current Score By Skill
                         </p>
                         <div className="hidden items-center gap-4 sm:flex">
                             {SKILL_META.map((skill) => (
@@ -125,41 +263,74 @@ export function SkillsOverview() {
                         </div>
                     </div>
 
-                    <div className="flex items-end justify-around gap-3 sm:gap-5">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 lg:grid-cols-4 lg:gap-x-5">
                         {SKILL_META.map((skill) => {
                             const Icon = skill.icon;
-                            const score = skillScores?.[skill.key] ?? 0;
+                            const initialScore = initialSkillScores?.[skill.key] ?? 0;
+                            const currentScore = currentSkillScores?.[skill.key] ?? initialScore;
 
                             return (
                                 <div
                                     key={skill.key}
-                                    className="flex min-w-0 flex-1 flex-col items-center"
+                                    className="flex min-w-0 flex-col items-center"
                                 >
-                                    <div className="mb-3 text-center">
-                                        <p className={`text-2xl font-black sm:text-3xl ${skill.color}`}>
-                                            {score}%
-                                        </p>
-                                    </div>
-
-                                    <div
-                                        className={`relative flex h-44 w-full max-w-[5rem] items-end overflow-hidden rounded-t-2xl border border-slate-100 ${skill.track} sm:h-52 sm:max-w-[6rem]`}
+                                    <SkillDescriptionHover
+                                        label={skill.label}
+                                        colorClassName={skill.color}
+                                        description={skillDefinitions[skill.key].description}
                                     >
-                                        <div
-                                            className={`w-full rounded-t-2xl transition-all duration-700 ease-out ${skill.bar}`}
-                                            style={{ height: `${score}%` }}
-                                        />
-                                    </div>
+                                        <div className="mb-3 grid w-full max-w-[12rem] cursor-help grid-cols-2 gap-3 sm:max-w-[14rem]">
+                                            <div className="flex flex-col items-center">
+                                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                    Initial
+                                                </p>
+                                                <div
+                                                    className={`relative flex h-44 w-full items-end overflow-hidden rounded-t-2xl border border-slate-100 ${skill.track} sm:h-52 lg:h-56`}
+                                                >
+                                                    <div
+                                                        className={`w-full rounded-t-2xl transition-all duration-700 ease-out ${skill.barMuted}`}
+                                                        style={{ height: `${initialScore}%` }}
+                                                    />
+                                                </div>
+                                                <p className="mt-2 text-sm font-bold text-slate-500 sm:text-base">
+                                                    {formatScore(initialScore)}
+                                                </p>
+                                            </div>
+                                            <div className="flex flex-col items-center">
+                                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                    Current
+                                                </p>
+                                                <div
+                                                    className={`relative flex h-44 w-full items-end overflow-hidden rounded-t-2xl border border-slate-100 ${skill.track} sm:h-52 lg:h-56`}
+                                                >
+                                                    <div
+                                                        className={`w-full rounded-t-2xl transition-all duration-700 ease-out ${skill.bar}`}
+                                                        style={{ height: `${currentScore}%` }}
+                                                    />
+                                                </div>
+                                                <p className={`mt-2 text-base font-black sm:text-lg ${skill.color}`}>
+                                                    {formatScore(currentScore)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </SkillDescriptionHover>
 
                                     <div className="mt-4 flex flex-col items-center text-center">
                                         <div className="mb-2 rounded-xl bg-white/80 p-2 shadow-sm">
                                             <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${skill.color}`} />
                                         </div>
-                                        <p className={`text-sm font-bold sm:text-base ${skill.color}`}>
-                                            {skill.label}
-                                        </p>
-                                        <p className="mt-1 hidden text-xs leading-5 text-slate-500 lg:block">
-                                            {skill.description}
-                                        </p>
+                                        <SkillDescriptionHover
+                                            label={skill.label}
+                                            colorClassName={skill.color}
+                                            description={skillDefinitions[skill.key].description}
+                                        >
+                                            <button
+                                                type="button"
+                                                className={`text-sm font-bold sm:text-base ${skill.color} underline decoration-dotted underline-offset-4 transition-opacity hover:opacity-80`}
+                                            >
+                                                {skill.label}
+                                            </button>
+                                        </SkillDescriptionHover>
                                     </div>
                                 </div>
                             );
@@ -167,7 +338,7 @@ export function SkillsOverview() {
                     </div>
                 </div>
 
-                {!skillScores ? (
+                {!initialSkillScores ? (
                     <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
                         <div className="flex items-start gap-3">
                             <div className="rounded-xl bg-white p-2 shadow-sm">

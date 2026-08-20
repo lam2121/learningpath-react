@@ -12,7 +12,10 @@ import {
     type RoadmapTopic,
 } from "@/feature/learning-path/roadmapApi";
 import { DailyPlanView } from "../component/DailyPlanView";
-import { LearningHistoryChart } from "@/feature/user-profile/component/LearningHistoryChart";
+import {
+    LearningHistoryChart,
+    LoginHistoryCard,
+} from "@/feature/user-profile/component/LearningHistoryChart";
 import { UserProfileCard } from "@/feature/user-profile/component/UserProfileCard";
 
 function formatLabel(value: string) {
@@ -58,6 +61,7 @@ function getNextAssignedLesson(roadmap: RoadmapResponse | null): {
 export function UserProfile() {
     const [roadmap, setRoadmap] = useState<RoadmapResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isStudyPlanExpanded, setIsStudyPlanExpanded] = useState(false);
 
     useEffect(() => {
         let isMounted = true;
@@ -181,12 +185,21 @@ export function UserProfile() {
                             </Card>
 
                             <div className="flex-1">
-                                <LearningHistoryChart />
+                                <LearningHistoryChart showLoginHistory={isStudyPlanExpanded} />
                             </div>
                         </div>
 
                         <aside className="h-full min-w-0">
-                            <DailyPlanView nextTopic={nextTopic} nextLesson={nextLesson} />
+                            <div className={`flex h-full flex-col ${isStudyPlanExpanded ? "gap-120" : "gap-3"}`}>
+                                <DailyPlanView
+                                    nextTopic={nextTopic}
+                                    nextLesson={nextLesson}
+                                    onStudyPlanExpandedChange={setIsStudyPlanExpanded}
+                                />
+                                {!isStudyPlanExpanded ? (
+                                    <LoginHistoryCard compact />
+                                ) : null}
+                            </div>
                         </aside>
                     </div>
                 </div>

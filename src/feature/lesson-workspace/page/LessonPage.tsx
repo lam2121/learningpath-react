@@ -12,6 +12,7 @@ import {
     Copy,
     FileText,
     Headphones,
+    Lightbulb,
     Languages,
     ListChecks,
     MessageSquareText,
@@ -24,12 +25,20 @@ import {
 } from "lucide-react";
 
 import { MainNavigationMenu } from "@/common/component/MainNavigationMenu";
+import { useAuth } from "@/common/context/AuthContext";
+import { fetchCurrentUserProfile } from "@/feature/auth/api/authAPI";
 import {
     fetchRoadmap,
+    fetchLessonQuizState,
+    kickoffRoadmapLessonGeneration,
+    submitLessonQuiz,
+    type LessonQuizStateResponse,
     type RoadmapLesson,
     type RoadmapResponse,
     type RoadmapTopic,
 } from "@/feature/learning-path/roadmapApi";
+import { useRadar } from "@/feature/radar";
+import { recordStudyTime } from "@/feature/user-profile/utils/StudyActivity";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -226,7 +235,7 @@ function DosDontsArticle({
     const explanation = parseMirroredExplanation(explanationString);
 
     return (
-        <article className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800">
+        <article className="rounded-2xl border border-slate-200 p-4 sm:p-5 dark:border-slate-800">
             <div className="grid gap-4 lg:grid-cols-2">
                 <div className="rounded-2xl bg-emerald-50 p-4 dark:bg-emerald-950/30">
                     <div className="flex items-center justify-between">
@@ -257,7 +266,7 @@ function DosDontsArticle({
                     variant="outline"
                     size="sm"
                     onClick={() => setShowTranslation(!showTranslation)}
-                    className="text-slate-600 dark:text-slate-300"
+                    className="h-auto max-w-full whitespace-normal text-center text-slate-600 dark:text-slate-300"
                 >
                     <Languages className="mr-2 h-4 w-4" />
                     {showTranslation
@@ -345,6 +354,10 @@ type EmbeddedQuizQuestion = {
     data: FillBlankQuestionData | MultiSelectQuestionData | OrderingQuestionData;
 };
 
+const LESSON_PASS_THRESHOLD = 0.7;
+const HINT_UNLOCK_AFTER_FAILURES = 2;
+const HINT_CREDIT = 0.75;
+
 const SECTION_META: SectionMeta[] = [
     { key: "scenario", label: "Scenario", eyebrow: "Context", icon: ScrollText },
     {
@@ -376,6 +389,10 @@ function formatLabel(value: string) {
         .split("_")
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(" ");
+}
+
+function formatPercent(value: number) {
+    return Number.isInteger(value) ? `${value}%` : `${value.toFixed(1)}%`;
 }
 
 function splitPipe(value: string): string[] {
@@ -659,6 +676,10 @@ function isEmbeddedAnswerCorrect(question: EmbeddedQuizQuestion, answer: string 
     return answer === question.data[2];
 }
 
+function getEmbeddedCorrectAnswer(question: EmbeddedQuizQuestion) {
+    return question.data[2];
+}
+
 function parseReadingQuestions(value: string) {
     return value
         .split(/\s*(?:\|+|#)\s*(?=Q\d+\.)/)
@@ -861,6 +882,27 @@ function findLesson(roadmap: RoadmapResponse | null, lessonId: number): LessonLo
     return null;
 }
 
+function findNextLesson(roadmap: RoadmapResponse | null, lessonId: number): LessonLookup | null {
+    if (!roadmap) {
+        return null;
+    }
+
+    const orderedLessons = roadmap.topics.flatMap((topic) =>
+        topic.lessons.map((lesson) => ({
+            track: roadmap.track,
+            topic,
+            lesson,
+        })),
+    );
+    const currentIndex = orderedLessons.findIndex((item) => item.lesson.id === lessonId);
+
+    if (currentIndex < 0 || currentIndex + 1 >= orderedLessons.length) {
+        return null;
+    }
+
+    return orderedLessons[currentIndex + 1] ?? null;
+}
+
 function SectionButton({
     meta,
     isActive,
@@ -877,7 +919,7 @@ function SectionButton({
             type="button"
             onClick={onClick}
             className={[
-                "w-full rounded-2xl border px-4 py-3 text-left transition-all",
+                "w-full rounded-2xl border px-3 py-3 text-left transition-all sm:px-4",
                 isActive
                     ? "border-blue-500 bg-blue-50 text-blue-900 shadow-sm dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-100"
                     : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-900 dark:hover:bg-slate-800/80",
@@ -919,11 +961,11 @@ function PanelShell({
 }) {
     return (
         <section className="rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <header className="border-b border-slate-200 bg-slate-50 px-6 py-5 dark:border-slate-800 dark:bg-slate-800/60">
+            <header className="border-b border-slate-200 bg-slate-50 px-4 py-4 sm:px-6 sm:py-5 dark:border-slate-800 dark:bg-slate-800/60">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-600 dark:text-blue-300">
                     {eyebrow}
                 </p>
-                <h2 className="mt-2 text-2xl font-bold text-slate-950 dark:text-white">
+                <h2 className="mt-2 text-xl font-bold text-slate-950 dark:text-white sm:text-2xl">
                     {title}
                 </h2>
                 {note ? (
@@ -932,7 +974,7 @@ function PanelShell({
                     </p>
                 ) : null}
             </header>
-            <div className="space-y-6 p-6">{children}</div>
+            <div className="space-y-6 p-4 sm:p-6">{children}</div>
         </section>
     );
 }
@@ -946,7 +988,7 @@ function EmptyPanel({
 }) {
     return (
         <PanelShell eyebrow="Unavailable" title={title}>
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400">
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500 sm:px-6 sm:py-10 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400">
                 {message}
             </div>
         </PanelShell>
@@ -1214,7 +1256,7 @@ function ReadingPracticeSection({
                 </p>
             </article>
 
-            <div className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 text-sm text-slate-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-slate-200">
+            <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-slate-700 sm:px-5 dark:border-blue-900 dark:bg-blue-950/30 dark:text-slate-200">
                 <p className="font-semibold text-slate-950 dark:text-white">
                     Reading comprehension practice
                 </p>
@@ -1712,6 +1754,7 @@ function renderTheorySection(section: ParsedTheorySection) {
         }
 
         case "vocab": {
+        case "vocab": {
             return <VocabularySection section={section} />;
         }
 
@@ -1724,6 +1767,7 @@ function renderTheorySection(section: ParsedTheorySection) {
             return <ReadingPracticeSection section={section} qas={qas} />;
         }
 
+        case "dialogue": {
         case "dialogue": {
             return <DialogueSection section={section} />;
         }
@@ -1747,7 +1791,7 @@ function renderTheorySection(section: ParsedTheorySection) {
                                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-lg font-bold text-white">
                                     {index + 1}
                                 </div>
-                                <div>
+                                <div className="min-w-0">
                                     <p className="font-semibold text-slate-950 dark:text-white">
                                         {step}
                                     </p>
@@ -1782,12 +1826,22 @@ function renderTheorySection(section: ParsedTheorySection) {
         }
 
         case "wrapup": {
+        case "wrapup": {
             return <WrapupSection section={section} />;
         }
     }
 }
 
-function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
+function EmbeddedLessonQuiz({
+    lessonId,
+    quiz,
+    nextLesson,
+}: {
+    lessonId: number;
+    quiz: ParsedQuiz | null;
+    nextLesson: LessonLookup | null;
+}) {
+    const { reinitialize: reinitializeRadar } = useRadar();
     const questions = useMemo(
         () => shuffleQuestions(buildEmbeddedQuizQuestions(quiz)),
         [quiz],
@@ -1797,14 +1851,57 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
     const [submitted, setSubmitted] = useState(false);
     const [showSummary, setShowSummary] = useState(false);
     const [showIncompleteWarning, setShowIncompleteWarning] = useState(false);
+    const [quizStarted, setQuizStarted] = useState(false);
+    const [failedAttempts, setFailedAttempts] = useState(0);
+    const [hintedQuestions, setHintedQuestions] = useState<Record<number, boolean>>({});
+    const [nextLessonStatus, setNextLessonStatus] = useState<"idle" | "preparing" | "ready" | "error">("idle");
+    const [nextLessonMessage, setNextLessonMessage] = useState<string | null>(null);
+    const [savedQuizState, setSavedQuizState] = useState<LessonQuizStateResponse | null>(null);
+    const [quizStateError, setQuizStateError] = useState<string | null>(null);
+    const [savingAttempt, setSavingAttempt] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     useEffect(() => {
+        let cancelled = false;
+
         setCurrentQuestionIndex(0);
         setAnswers({});
         setSubmitted(false);
         setShowSummary(false);
         setShowIncompleteWarning(false);
-    }, [quiz]);
+        setQuizStarted(false);
+        setFailedAttempts(0);
+        setHintedQuestions({});
+        setNextLessonStatus(nextLesson?.lesson.is_generated ? "ready" : "idle");
+        setNextLessonMessage(null);
+        setSavedQuizState(null);
+        setQuizStateError(null);
+        setSavingAttempt(false);
+        setSaveError(null);
+
+        void fetchLessonQuizState(lessonId)
+            .then((state) => {
+                if (cancelled) {
+                    return;
+                }
+                setSavedQuizState(state);
+                setFailedAttempts(state.failed_attempts);
+            })
+            .catch((stateError) => {
+                if (cancelled) {
+                    return;
+                }
+                setQuizStateError(
+                    stateError instanceof Error
+                        ? stateError.message
+                        : "Could not load saved quiz progress.",
+                );
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [lessonId, nextLesson?.lesson.id, nextLesson?.lesson.is_generated, quiz]);
 
     if (!quiz || questions.length === 0) {
         return (
@@ -1820,13 +1917,92 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
     const totalQuestions = questions.length;
     const answeredCount = Object.values(answers).filter((value) => hasAnswer(value)).length;
     const unansweredCount = totalQuestions - answeredCount;
-    const correctCount = questions.reduce(
+    const hintModeUnlocked = failedAttempts >= HINT_UNLOCK_AFTER_FAILURES;
+    const hintedCount = Object.values(hintedQuestions).filter(Boolean).length;
+    const currentQuestionHintUsed = Boolean(hintedQuestions[currentQuestionIndex]);
+    const correctNoHintCount = questions.reduce(
         (count, question, index) =>
-            count + (submitted && isEmbeddedAnswerCorrect(question, answers[index]) ? 1 : 0),
+            count
+            + (
+                submitted
+                && isEmbeddedAnswerCorrect(question, answers[index])
+                && !hintedQuestions[index]
+                    ? 1
+                    : 0
+            ),
         0,
     );
+    const correctWithHintCount = questions.reduce(
+        (count, question, index) =>
+            count
+            + (
+                submitted
+                && isEmbeddedAnswerCorrect(question, answers[index])
+                && hintedQuestions[index]
+                    ? 1
+                    : 0
+            ),
+        0,
+    );
+    const correctCount = correctNoHintCount + correctWithHintCount;
+    const weightedScore =
+        totalQuestions > 0
+            ? (correctNoHintCount + HINT_CREDIT * correctWithHintCount) / totalQuestions
+            : 0;
+    const passedQuiz = submitted && weightedScore >= LESSON_PASS_THRESHOLD;
     const progressValue = ((currentQuestionIndex + 1) / totalQuestions) * 100;
     const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
+    const nextLessonIsReady = nextLessonStatus === "ready" || Boolean(nextLesson?.lesson.is_generated);
+    const savedAttemptCount = savedQuizState?.attempt_count ?? 0;
+    const savedBestScore = savedQuizState?.best_score_percent ?? 0;
+
+    const kickoffNextLessonPreparation = () => {
+        if (!nextLesson) {
+            setNextLessonStatus("idle");
+            setNextLessonMessage("This is the last assigned lesson in your current roadmap.");
+            return;
+        }
+
+        if (nextLesson.lesson.is_generated) {
+            setNextLessonStatus("ready");
+            setNextLessonMessage(
+                `${nextLesson.lesson.title} is already ready, so you can continue as soon as you finish this quiz.`,
+            );
+            return;
+        }
+
+        setNextLessonStatus("preparing");
+        setNextLessonMessage(
+            `Preparing ${nextLesson.lesson.title} in the background while you take this quiz.`,
+        );
+
+        void kickoffRoadmapLessonGeneration(nextLesson.lesson.id)
+            .then((result) => {
+                if (result.status === "completed") {
+                    setNextLessonStatus("ready");
+                    setNextLessonMessage(
+                        `${nextLesson.lesson.title} is ready for you to open next.`,
+                    );
+                    return;
+                }
+
+                setNextLessonStatus("preparing");
+                setNextLessonMessage(result.message);
+            })
+            .catch((generationError) => {
+                setNextLessonStatus("error");
+                setNextLessonMessage(
+                    generationError instanceof Error
+                        ? generationError.message
+                        : "Could not start next lesson generation.",
+                );
+            });
+    };
+
+    const handleStartQuiz = () => {
+        setQuizStarted(true);
+        kickoffNextLessonPreparation();
+    };
 
     const handleRestart = () => {
         setCurrentQuestionIndex(0);
@@ -1834,6 +2010,69 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
         setSubmitted(false);
         setShowSummary(false);
         setShowIncompleteWarning(false);
+        setHintedQuestions({});
+        setSaveError(null);
+    };
+
+    const finalizeSubmission = async () => {
+        if (savingAttempt) {
+            return;
+        }
+
+        setSavingAttempt(true);
+        setSaveError(null);
+
+        try {
+            const response = await submitLessonQuiz(lessonId, {
+                question_order: questions.map((question) => question.id),
+                answers: questions.map((question, index) => ({
+                    question_id: question.id,
+                    question_type: question.type,
+                    answer: answers[index] ?? "",
+                    used_hint: Boolean(hintedQuestions[index]),
+                })),
+            });
+
+            setSavedQuizState({
+                lesson_id: response.lesson_id,
+                skill: response.skill,
+                status: response.status,
+                lesson_passed: response.lesson_passed,
+                best_score_percent: response.best_score_percent,
+                attempt_count: response.attempt_count,
+                failed_attempts: response.failed_attempts,
+                completed_at: response.completed_at,
+                current_skill_score: response.current_skill_score,
+                first_pass_score_percent: response.first_pass_score_percent,
+            });
+            setFailedAttempts(response.failed_attempts);
+
+            if (response.first_pass_radar_applied || response.lesson_passed) {
+                await reinitializeRadar(true);
+            }
+
+            try {
+                const updatedProfile = await fetchCurrentUserProfile();
+                window.dispatchEvent(
+                    new CustomEvent("careerpath:profile-updated", {
+                        detail: updatedProfile,
+                    }),
+                );
+            } catch {
+                // Keep quiz success intact even if the profile refresh fails.
+            }
+
+            setSubmitted(true);
+            setShowIncompleteWarning(false);
+        } catch (submissionError) {
+            setSaveError(
+                submissionError instanceof Error
+                    ? submissionError.message
+                    : "Could not save this quiz attempt.",
+            );
+        } finally {
+            setSavingAttempt(false);
+        }
     };
 
     const handleSubmitQuiz = () => {
@@ -1842,14 +2081,66 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
             return;
         }
 
-        setSubmitted(true);
-        setShowIncompleteWarning(false);
+        void finalizeSubmission();
     };
 
     const handleConfirmSubmitQuiz = () => {
-        setSubmitted(true);
-        setShowIncompleteWarning(false);
+        void finalizeSubmission();
     };
+
+    const handleRevealHint = () => {
+        if (submitted || !hintModeUnlocked) {
+            return;
+        }
+
+        setHintedQuestions((prev) => ({ ...prev, [currentQuestionIndex]: true }));
+        setAnswers((prev) => ({
+            ...prev,
+            [currentQuestionIndex]: getEmbeddedCorrectAnswer(currentQuestion),
+        }));
+    };
+
+    useEffect(() => {
+        if (
+            !quizStarted
+            || !nextLesson
+            || nextLesson.lesson.is_generated
+            || nextLessonStatus !== "preparing"
+        ) {
+            return;
+        }
+
+        let cancelled = false;
+
+        const checkNextLesson = async () => {
+            try {
+                const updatedRoadmap = await fetchRoadmap();
+                if (cancelled) {
+                    return;
+                }
+
+                const updatedNextLesson = findLesson(updatedRoadmap, nextLesson.lesson.id);
+                if (updatedNextLesson?.lesson.is_generated) {
+                    setNextLessonStatus("ready");
+                    setNextLessonMessage(
+                        `${updatedNextLesson.lesson.title} is ready for you to continue immediately after the quiz.`,
+                    );
+                }
+            } catch {
+                // Keep the warmup status as-is; the user can still finish the quiz.
+            }
+        };
+
+        void checkNextLesson();
+        const intervalId = window.setInterval(() => {
+            void checkNextLesson();
+        }, 15000);
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(intervalId);
+        };
+    }, [nextLesson, nextLessonStatus, quizStarted]);
 
     const questionNavigator = (
         <div className="flex gap-2 overflow-x-auto pb-5 pt-1 px-0.5">
@@ -1857,6 +2148,7 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                 const isActive = index === currentQuestionIndex;
                 const isAnswered = hasAnswer(answers[index]);
                 const isCorrect = submitted && isEmbeddedAnswerCorrect(question, answers[index]);
+                const usedHint = Boolean(hintedQuestions[index]);
 
                 return (
                     <button
@@ -1870,10 +2162,14 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                             "flex h-10 w-10 min-w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold transition-colors",
                             isActive
                                 ? "border-blue-600 bg-blue-600 text-white"
-                                : submitted && isCorrect
+                                : submitted && isCorrect && usedHint
+                                    ? "border-amber-300 bg-amber-50 text-amber-700"
+                                    : submitted && isCorrect
                                     ? "border-emerald-300 bg-emerald-50 text-emerald-700"
                                     : submitted
                                         ? "border-rose-300 bg-rose-50 text-rose-700"
+                                        : usedHint
+                                            ? "border-amber-300 bg-amber-50 text-amber-700"
                                         : isAnswered
                                             ? "border-amber-300 bg-amber-50 text-amber-700"
                                             : "border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
@@ -1890,53 +2186,241 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
         <PanelShell
             eyebrow="Section 8"
             title="Quiz"
-            note="One question at a time, embedded directly in the lesson page."
+            note="Review the quiz regulations before you begin. Starting the quiz also prepares your next lesson in the background."
         >
             <div className="space-y-6">
-                <div className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800/60 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white">
-                                <ClipboardList className="h-5 w-5" />
+                {!quizStarted ? (
+                    <div className="space-y-5">
+                        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex items-start gap-4">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                    <ClipboardList className="h-6 w-6" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                                        Before you start
+                                    </p>
+                                    <h3 className="mt-2 text-2xl font-bold text-slate-950 dark:text-white">
+                                        Quiz regulations
+                                    </h3>
+                                    <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                        Read these rules before entering the lesson check. Once you
+                                        start, the next lesson in your roadmap will also begin
+                                        preparing in the background.
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-                                    Embedded quiz
-                                </p>
-                                <p className="font-semibold text-slate-950 dark:text-white">
-                                    Question {currentQuestionIndex + 1} of {totalQuestions}
-                                </p>
-                            </div>
-                        </div>
-                        <Progress value={progressValue} indicatorClassName="bg-blue-600" />
-                    </div>
 
-                    <div className="grid gap-2 text-sm sm:grid-cols-3 lg:min-w-[320px]">
-                        <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
-                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Answered</p>
-                            <p className="mt-1 font-semibold text-slate-950 dark:text-white">{answeredCount}</p>
-                        </div>
-                        <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
-                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Status</p>
-                            <p className="mt-1 font-semibold text-slate-950 dark:text-white">
-                                {submitted ? "Submitted" : "In progress"}
-                            </p>
-                        </div>
-                        <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
-                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Correct</p>
-                            <p className="mt-1 font-semibold text-slate-950 dark:text-white">
-                                {submitted ? correctCount : "?"}
-                            </p>
+                            {savedAttemptCount > 0 ? (
+                                <div className="mt-5 rounded-3xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
+                                    Saved best score: <strong>{formatPercent(savedBestScore)}</strong>
+                                    {savedQuizState?.lesson_passed
+                                        ? " · This lesson has already been passed once, so future retakes can improve your stored best score but will not update radar again."
+                                        : ` · Failed attempts saved: ${failedAttempts}.`}
+                                </div>
+                            ) : null}
+                            {savedQuizState?.current_skill_score !== null && savedQuizState?.current_skill_score !== undefined ? (
+                                <div className="mt-4 rounded-3xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-900 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-100">
+                                    Current {formatLabel(savedQuizState.skill)} radar score:{" "}
+                                    <strong>{formatPercent(savedQuizState.current_skill_score)}</strong>
+                                </div>
+                            ) : null}
+                            {quizStateError ? (
+                                <div className="mt-4 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                                    {quizStateError}
+                                </div>
+                            ) : null}
+
+                            <div className="mt-5 rounded-3xl border border-slate-200 bg-slate-50/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/40 sm:px-5">
+                                <ol className="divide-y divide-slate-200 dark:divide-slate-800">
+                                    <li className="flex gap-4 py-3 first:pt-1 last:pb-1">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-lg font-bold text-slate-500 shadow-sm dark:bg-slate-900 dark:text-slate-300">
+                                            1
+                                        </div>
+                                        <p className="pt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                                            <strong className="font-semibold text-slate-950 dark:text-white">
+                                                Move one question at a time.
+                                            </strong>{" "}
+                                            You can move between questions before submission, but
+                                            <strong className="font-semibold text-slate-950 dark:text-white">
+                                                {" "}scoring is finalized only when you submit.
+                                            </strong>
+                                        </p>
+                                    </li>
+                                    <li className="flex gap-4 py-3">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-lg font-bold text-slate-500 shadow-sm dark:bg-slate-900 dark:text-slate-300">
+                                            2
+                                        </div>
+                                        <p className="pt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                                            <strong className="font-semibold text-slate-950 dark:text-white">
+                                                Pass requires a 70% lesson score.
+                                            </strong>{" "}
+                                            The next lesson can warm up in the background, but it
+                                            stays locked until this quiz is passed.
+                                        </p>
+                                    </li>
+                                    <li className="flex gap-4 py-3 first:pt-1 last:pb-1">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-lg font-bold text-slate-500 shadow-sm dark:bg-slate-900 dark:text-slate-300">
+                                            3
+                                        </div>
+                                        <p className="pt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                                            <strong className="font-semibold text-slate-950 dark:text-white">
+                                                Hint mode unlocks after 2 failed attempts.
+                                            </strong>{" "}
+                                            When hint mode is active, "Show hint" fills in the
+                                            correct answer and that question is worth{" "}
+                                            <strong className="font-semibold text-slate-950 dark:text-white">
+                                                0.75 credit
+                                            </strong>
+                                            .
+                                        </p>
+                                    </li>
+                                    <li className="flex gap-4 py-3 first:pt-1 last:pb-1">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-lg font-bold text-slate-500 shadow-sm dark:bg-slate-900 dark:text-slate-300">
+                                            4
+                                        </div>
+                                        <p className="pt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                                            <strong className="font-semibold text-slate-950 dark:text-white">
+                                                Wrong and hinted answers should be reviewed.
+                                            </strong>{" "}
+                                            Explanations appear after submission so you can check
+                                            weak spots before retrying or moving on.
+                                        </p>
+                                    </li>
+                                </ol>
+                            </div>
+
+                            <div className="mt-4 rounded-2xl border-l-4 border-l-sky-500 bg-sky-50 px-4 py-4 dark:bg-sky-950/20">
+                                <div className="flex items-start gap-3">
+                                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-sky-600 shadow-sm dark:bg-slate-900 dark:text-sky-300">
+                                        <ChevronRight className="h-4 w-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700 dark:text-sky-300">
+                                            Next lesson warmup
+                                        </p>
+                                        <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                                            {nextLesson
+                                                ? `When you click Start quiz, ${nextLesson.lesson.title} from Topic ${nextLesson.topic.sort_order} will be prepared in parallel.`
+                                                : "This is the last assigned lesson right now, so no additional lesson needs to be prepared."}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+                                <Button className="w-full sm:w-auto" onClick={handleStartQuiz}>
+                                    Start quiz
+                                </Button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                ) : null}
+
+                {quizStarted ? (
+                    <>
+                        <div className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-800/60 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white">
+                                            <ClipboardList className="h-5 w-5" />
+                                        </div>
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                                            Embedded quiz
+                                        </p>
+                                        <p className="font-semibold text-slate-950 dark:text-white">
+                                            Question {currentQuestionIndex + 1} of {totalQuestions}
+                                        </p>
+                                    </div>
+                                    </div>
+                                    <Progress value={progressValue} indicatorClassName="bg-blue-600" />
+                                </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4 xl:min-w-[420px]">
+                                <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
+                                    <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Answered</p>
+                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">{answeredCount}</p>
+                                </div>
+                                <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
+                                    <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Status</p>
+                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">
+                                        {submitted ? "Submitted" : "In progress"}
+                                    </p>
+                                </div>
+                                <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
+                                    <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Correct</p>
+                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">
+                                        {submitted ? correctCount : "?"}
+                                    </p>
+                                </div>
+                                <div className="col-span-2 rounded-2xl bg-white px-4 py-3 sm:col-span-1 dark:bg-slate-900">
+                                    <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Hint mode</p>
+                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">
+                                        {hintModeUnlocked
+                                            ? `Active · ${hintedCount} used`
+                                            : `${failedAttempts} / ${HINT_UNLOCK_AFTER_FAILURES}`}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {nextLesson ? (
+                            <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 dark:border-slate-800 dark:bg-slate-900">
+                                <div className="min-w-0">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
+                                        Next lesson warmup
+                                    </p>
+                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">
+                                        Topic {nextLesson.topic.sort_order} · {nextLesson.lesson.title}
+                                    </p>
+                                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                        {nextLessonMessage ??
+                                            (nextLessonIsReady
+                                                ? "Ready to continue when you finish the quiz."
+                                                : "Your next lesson will start preparing after you begin the quiz.")}
+                                    </p>
+                                </div>
+
+                                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                                    <Badge variant={nextLessonIsReady ? "default" : "secondary"}>
+                                        {nextLessonIsReady
+                                            ? "Ready"
+                                            : nextLessonStatus === "error"
+                                                ? "Needs retry"
+                                                : "Preparing"}
+                                    </Badge>
+                                    {nextLessonStatus === "error" ? (
+                                        <Button variant="outline" size="sm" onClick={kickoffNextLessonPreparation}>
+                                            Retry prep
+                                        </Button>
+                                    ) : null}
+                                </div>
+                            </div>
+                        ) : null}
+
+                        {hintModeUnlocked ? (
+                            <div className="rounded-3xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900 dark:bg-amber-950/30 sm:px-5">
+                                <div className="min-w-0">
+                                    <div className="flex items-center gap-2 text-amber-900 dark:text-amber-100">
+                                        <Lightbulb className="h-4 w-4" />
+                                        <p className="text-sm font-semibold">Hint mode is active</p>
+                                    </div>
+                                    <p className="mt-2 text-sm leading-6 text-amber-800 dark:text-amber-200">
+                                        Use a hint if you need it. The correct answer will be
+                                        filled in automatically, and that question will score{" "}
+                                        {Math.round(HINT_CREDIT * 100)}% credit instead of 100%.
+                                    </p>
+                                </div>
+                            </div>
+                        ) : null}
 
                 {questionNavigator}
 
                 {showSummary ? (
                     <section className="space-y-5">
-                        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                            <div className="flex items-center gap-3">
+                        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
                                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white">
                                     <CheckCircle2 className="h-6 w-6" />
                                 </div>
@@ -1947,15 +2431,56 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                                     <h3 className="text-2xl font-bold text-slate-950 dark:text-white">
                                         {correctCount} / {totalQuestions} correct
                                     </h3>
+                                    <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+                                        Weighted score: {Math.round(weightedScore * 100)}%
+                                        {passedQuiz ? " · Passed" : " · Pass requires 70%"}
+                                    </p>
                                 </div>
                             </div>
                             <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                Review any question from the navigator above, or restart the quiz
-                                to take the embedded lesson check again.
+                                {passedQuiz
+                                    ? "You passed this lesson check. Review any question from the navigator above, restart if you want another attempt, or continue once the next lesson is ready."
+                                    : "Review any question from the navigator above, or restart the quiz to try again. You need a weighted 70% score to unlock the continue action for the next lesson."}
                             </p>
+                            {savedQuizState?.current_skill_score !== null && savedQuizState?.current_skill_score !== undefined ? (
+                                <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-900 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-100">
+                                    Current {formatLabel(savedQuizState.skill)} radar score:{" "}
+                                    <strong>{formatPercent(savedQuizState.current_skill_score)}</strong>
+                                    {savedQuizState.first_pass_score_percent !== null && savedQuizState.first_pass_score_percent !== undefined
+                                        ? ` · First pass recorded at ${formatPercent(savedQuizState.first_pass_score_percent)}.`
+                                        : ""}
+                                </div>
+                            ) : null}
+                            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Correct without hint</p>
+                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">{correctNoHintCount}</p>
+                                </div>
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Correct with hint</p>
+                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">{correctWithHintCount}</p>
+                                </div>
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Failed attempts</p>
+                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">{failedAttempts}</p>
+                                </div>
+                            </div>
+                            {!passedQuiz && failedAttempts + 1 === HINT_UNLOCK_AFTER_FAILURES ? (
+                                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                                    One more failed attempt will unlock hint mode for this lesson.
+                                </div>
+                            ) : null}
+                            {!passedQuiz && hintModeUnlocked ? (
+                                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                                    Hint mode is now available on your next retry. Each hinted
+                                    answer auto-fills the correct response and counts as{" "}
+                                    {Math.round(HINT_CREDIT * 100)}% credit.
+                                </div>
+                            ) : null}
                             <div className="mt-5 flex flex-wrap gap-3">
-                                <Button onClick={handleRestart}>Restart quiz</Button>
+                                <Button className="w-full sm:w-auto" onClick={handleRestart}>Restart quiz</Button>
                                 <Button
+                                    className="w-full sm:w-auto"
                                     variant="outline"
                                     onClick={() => {
                                         setShowSummary(false);
@@ -1964,7 +2489,22 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                                 >
                                     Review from question 1
                                 </Button>
+                                {nextLesson && nextLessonIsReady && passedQuiz ? (
+                                    <Button asChild className="w-full sm:w-auto">
+                                        <Link
+                                            to="/lessons/$lessonId"
+                                            params={{ lessonId: String(nextLesson.lesson.id) }}
+                                        >
+                                            Continue to next lesson
+                                        </Link>
+                                    </Button>
+                                ) : null}
                             </div>
+                            {!passedQuiz && nextLesson && nextLessonIsReady ? (
+                                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                                    The next lesson is ready, but it stays locked until you pass this quiz with a weighted score of at least 70%.
+                                </div>
+                            ) : null}
                         </div>
 
                         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -2001,6 +2541,11 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                     </section>
                 ) : (
                     <div className="space-y-5">
+                        {saveError ? (
+                            <div className="rounded-3xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-100">
+                                {saveError}
+                            </div>
+                        ) : null}
                         {currentQuestion.type === "fill_blank" ? (
                             <FillBlankQuestion
                                 key={currentQuestion.id}
@@ -2012,6 +2557,7 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                                 }
                                 isSubmitted={submitted}
                                 userAnswer={currentAnswer}
+                                revealAnswer={passedQuiz}
                             />
                         ) : currentQuestion.type === "multi_select" ? (
                             <MultiSelectQuestion
@@ -2026,6 +2572,7 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                                 isSubmitted={submitted}
                                 isCorrect={submitted ? isEmbeddedAnswerCorrect(currentQuestion, currentAnswer) : undefined}
                                 explanation={currentQuestion.data[3]}
+                                revealAnswer={passedQuiz}
                             />
                         ) : (
                             <OrderingQuestion
@@ -2040,47 +2587,71 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                                 isSubmitted={submitted}
                                 isCorrect={submitted ? isEmbeddedAnswerCorrect(currentQuestion, currentAnswer) : undefined}
                                 explanation={currentQuestion.data[3]}
+                                revealAnswer={passedQuiz}
                             />
                         )}
 
-                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-900">
+                        <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white px-4 py-4 sm:px-5 dark:border-slate-800 dark:bg-slate-900 lg:flex-row lg:items-center lg:justify-between">
                             <div className="text-sm text-slate-500 dark:text-slate-400">
                                 {submitted
-                                    ? isEmbeddedAnswerCorrect(currentQuestion, currentAnswer)
-                                        ? "Correct. You can move on to the next question."
-                                        : "Reviewed. You can revise the explanation and continue."
-                                    : "Move through the quiz with Next. Answers are revealed only after you submit on the last question."}
+                                    ? currentQuestionHintUsed
+                                        ? `Hint applied. This answer counted as ${Math.round(HINT_CREDIT * 100)}% credit.`
+                                        : isEmbeddedAnswerCorrect(currentQuestion, currentAnswer)
+                                            ? "Correct. You can move on to the next question."
+                                            : passedQuiz
+                                                ? "Reviewed. You can revise the explanation and continue."
+                                                : "Incorrect. Answers stay hidden on failed attempts. Review the lesson and try again."
+                                    : currentQuestionHintUsed
+                                        ? `Hint applied. This question will count as ${Math.round(HINT_CREDIT * 100)}% credit when you submit.`
+                                        : hintModeUnlocked
+                                            ? "Hint mode is active. Use Show hint only if you need the correct answer filled in."
+                                            : "Move through the quiz with Next. Failed attempts do not reveal the correct answers."
+                                }
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center lg:justify-end">
+                                {!submitted && hintModeUnlocked ? (
+                                    <Button
+                                        className="w-full border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 sm:w-auto"
+                                        variant="outline"
+                                        onClick={handleRevealHint}
+                                        disabled={currentQuestionHintUsed || savingAttempt}
+                                    >
+                                        <Sparkles className="mr-2 h-4 w-4" />
+                                        {currentQuestionHintUsed ? "Hint applied" : "Show hint"}
+                                    </Button>
+                                ) : null}
                                 <Button
+                                    className="w-full sm:w-auto"
                                     variant="outline"
                                     onClick={() =>
                                         setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))
                                     }
-                                    disabled={currentQuestionIndex === 0}
+                                    disabled={currentQuestionIndex === 0 || savingAttempt}
                                 >
                                     <ChevronLeft className="mr-2 h-4 w-4" />
                                     Previous
                                 </Button>
 
                                 {submitted && isLastQuestion ? (
-                                    <Button onClick={() => setShowSummary(true)}>
+                                    <Button className="w-full sm:w-auto" onClick={() => setShowSummary(true)}>
                                         View summary
                                         <Check className="ml-2 h-4 w-4" />
                                     </Button>
                                 ) : !submitted && isLastQuestion ? (
-                                    <Button onClick={handleSubmitQuiz}>
-                                        Submit quiz
+                                    <Button className="w-full sm:w-auto" onClick={handleSubmitQuiz} disabled={savingAttempt}>
+                                        {savingAttempt ? "Saving attempt..." : "Submit quiz"}
                                         <Check className="ml-2 h-4 w-4" />
                                     </Button>
                                 ) : (
                                     <Button
+                                        className="w-full sm:w-auto"
                                         onClick={() =>
                                             setCurrentQuestionIndex((prev) =>
                                                 Math.min(totalQuestions - 1, prev + 1),
                                             )
                                         }
+                                        disabled={savingAttempt}
                                     >
                                         Next
                                         <ChevronRight className="ml-2 h-4 w-4" />
@@ -2105,30 +2676,34 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                                     You still have {unansweredCount} unanswered question
                                     {unansweredCount === 1 ? "" : "s"}. If you submit now,
                                     those questions will be graded as unanswered and the
-                                    answers will be revealed immediately.
+                                    answers will stay hidden unless you pass.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
 
-                            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                                Review the remaining questions now, or confirm to submit the
-                                quiz as-is.
-                            </div>
+                        <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                            Review the remaining questions now, or confirm to submit the
+                            quiz as-is.
+                        </div>
 
                             <AlertDialogFooter className="mt-6">
                                 <AlertDialogCancel>Go back</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleConfirmSubmitQuiz}>
+                                <AlertDialogAction onClick={handleConfirmSubmitQuiz} disabled={savingAttempt}>
                                     Submit anyway
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </div>
                     </AlertDialogContent>
                 </AlertDialog>
+                    </>
+                ) : null}
             </div>
         </PanelShell>
     );
 }
 
 export function LessonPage({ lessonId }: { lessonId: number }) {
+    const auth = useAuth();
+    const userId = Number(auth.user?.id);
     const [roadmap, setRoadmap] = useState<RoadmapResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -2176,6 +2751,10 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
         () => (Number.isNaN(lessonId) ? null : findLesson(roadmap, lessonId)),
         [lessonId, roadmap],
     );
+    const nextLessonLookup = useMemo(
+        () => (Number.isNaN(lessonId) ? null : findNextLesson(roadmap, lessonId)),
+        [lessonId, roadmap],
+    );
     const theorySections = useMemo(
         () => normalizeTheoryContent(lessonLookup?.lesson.theory_content ?? null),
         [lessonLookup],
@@ -2189,6 +2768,77 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
             theorySections?.find((section) => section.key === activeSection) ?? null,
         [activeSection, theorySections],
     );
+
+    useEffect(() => {
+        if (
+            !Number.isFinite(userId)
+            || loading
+            || error
+            || !lessonLookup
+            || !lessonLookup.lesson.is_generated
+        ) {
+            return;
+        }
+
+        let activeSince =
+            document.visibilityState === "visible" && document.hasFocus()
+                ? Date.now()
+                : null;
+
+        const flushStudyTime = () => {
+            if (activeSince === null) {
+                return;
+            }
+
+            const elapsedMilliseconds = Date.now() - activeSince;
+            activeSince = Date.now();
+
+            if (elapsedMilliseconds > 0) {
+                recordStudyTime(userId, elapsedMilliseconds);
+            }
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === "hidden") {
+                flushStudyTime();
+                activeSince = null;
+                return;
+            }
+
+            if (document.hasFocus()) {
+                activeSince = Date.now();
+            }
+        };
+
+        const handleWindowBlur = () => {
+            flushStudyTime();
+            activeSince = null;
+        };
+
+        const handleWindowFocus = () => {
+            if (document.visibilityState === "visible") {
+                activeSince = Date.now();
+            }
+        };
+
+        const intervalId = window.setInterval(() => {
+            flushStudyTime();
+        }, 15_000);
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        window.addEventListener("blur", handleWindowBlur);
+        window.addEventListener("focus", handleWindowFocus);
+        window.addEventListener("beforeunload", flushStudyTime);
+
+        return () => {
+            window.clearInterval(intervalId);
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+            window.removeEventListener("blur", handleWindowBlur);
+            window.removeEventListener("focus", handleWindowFocus);
+            window.removeEventListener("beforeunload", flushStudyTime);
+            flushStudyTime();
+        };
+    }, [error, lessonLookup, loading, userId]);
 
     if (loading) {
         return <LessonSkeleton />;
@@ -2270,8 +2920,8 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
         <div className="min-h-screen bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_22%,#f8fafc_100%)] text-slate-950 dark:bg-slate-950 dark:text-white">
             <MainNavigationMenu />
 
-            <main className="mx-auto max-w-[1480px] px-4 py-6 sm:px-6 xl:px-8">
-                <header className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <main className="mx-auto max-w-[1480px] px-3 py-4 sm:px-6 sm:py-6 xl:px-8">
+                <header className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
                     <div className="flex flex-wrap items-center gap-3">
                         <Button asChild variant="outline" size="sm">
                             <Link to="/lessons/learning-path">
@@ -2286,12 +2936,12 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
                         <Badge variant="outline">{formatLabel(lesson.difficulty_tier)}</Badge>
                     </div>
 
-                    <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-end">
+                    <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-end">
                         <div className="min-w-0">
                             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-300">
                                 Topic {topic.sort_order} · {topic.name}
                             </p>
-                            <h1 className="mt-3 break-words text-3xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+                            <h1 className="mt-3 break-words text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
                                 {lesson.title}
                             </h1>
                             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
@@ -2300,7 +2950,7 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
                             </p>
                         </div>
 
-                        <div className="grid gap-3 rounded-3xl bg-slate-50 p-5 dark:bg-slate-800/60">
+                        <div className="grid gap-3 rounded-3xl bg-slate-50 p-4 sm:p-5 dark:bg-slate-800/60">
                             <div className="flex items-center gap-3">
                                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white">
                                     <BookOpen className="h-5 w-5" />
@@ -2324,7 +2974,7 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
 
                 <div className="mt-6 grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
                     <aside className="xl:sticky xl:top-24 xl:self-start">
-                        <div className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <div className="rounded-[28px] border border-slate-200 bg-white p-3 sm:p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                             <div className="mb-4 px-2">
                                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
                                     Lesson map
@@ -2334,9 +2984,9 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
                                 </p>
                             </div>
 
-                            <div className="flex gap-3 overflow-x-auto pb-2 xl:flex-col xl:overflow-visible xl:pb-0">
+                            <div className="grid gap-3 sm:grid-cols-2 xl:flex xl:flex-col">
                                 {SECTION_META.map((meta) => (
-                                    <div key={meta.key} className="min-w-[220px] xl:min-w-0">
+                                    <div key={meta.key} className="min-w-0">
                                         <SectionButton
                                             meta={meta}
                                             isActive={meta.key === activeSection}
@@ -2350,7 +3000,7 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
 
                     <div className="min-w-0">
                         {activeSection === "quiz" ? (
-                            <EmbeddedLessonQuiz quiz={quiz} />
+                            <EmbeddedLessonQuiz lessonId={lesson.id} quiz={quiz} nextLesson={nextLessonLookup} />
                         ) : activeTheorySection ? (
                             renderTheorySection(activeTheorySection)
                         ) : (

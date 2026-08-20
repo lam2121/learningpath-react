@@ -1,5 +1,6 @@
 import {
     BookOpen,
+    ChevronDown,
     Brain,
     ChevronRight,
     RotateCcw,
@@ -69,9 +70,15 @@ function formatProfileDate(value: string | null | undefined) {
 type DailyPlanViewProps = {
     nextTopic: RoadmapTopic | null;
     nextLesson: RoadmapLesson | null;
+    onStudyPlanExpandedChange?: (expanded: boolean) => void;
 };
 
-export function DailyPlanView({ nextTopic, nextLesson }: DailyPlanViewProps) {
+export function DailyPlanView({
+    nextTopic,
+    nextLesson,
+    onStudyPlanExpandedChange,
+}: DailyPlanViewProps) {
+    const [isStudyPlanExpanded, setIsStudyPlanExpanded] = useState(false);
     const [openSetting, setOpenSetting] = useState(false);
     const [openStudyTime, setOpenStudyTime] = useState(false);
     const [openCareerAlert, setOpenCareerAlert] = useState(false);
@@ -114,6 +121,10 @@ export function DailyPlanView({ nextTopic, nextLesson }: DailyPlanViewProps) {
         };
     }, []);
 
+    useEffect(() => {
+        onStudyPlanExpandedChange?.(isStudyPlanExpanded);
+    }, [isStudyPlanExpanded, onStudyPlanExpandedChange]);
+
     const lessonHref = nextLesson?.is_generated
         ? `/lessons/${nextLesson.id}`
         : "/lessons/learning-path";
@@ -153,111 +164,197 @@ export function DailyPlanView({ nextTopic, nextLesson }: DailyPlanViewProps) {
 
     return (
         <>
-            <div className="flex h-full w-full flex-col gap-5">
-                <Card className={`${SHARED_CARD_CLASS} border-l-4 border-l-blue-600`}>
-                    <CardHeader className="space-y-5 pb-4">
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="space-y-2">
-                                <p className="text-sm font-medium text-blue-700">
-                                    Today's Study Plan
-                                </p>
-                                <CardTitle className="text-2xl font-bold tracking-tight text-slate-950">
-                                    {nextLesson
-                                        ? `Start with ${nextLesson.title}`
-                                        : "Your roadmap is ready to explore"}
-                                </CardTitle>
-                                <p className="text-sm leading-6 text-slate-500">
-                                    {nextLesson && nextTopic
-                                        ? `Your main focus today is Topic ${nextTopic.sort_order}: ${nextTopic.name}. This lesson is the clearest next action for your track.`
-                                        : "Open your learning path to see the clearest next lesson and roadmap order for your track."}
-                                </p>
-                            </div>
-                            <div className="rounded-2xl bg-blue-50 p-3">
-                                <Target className="h-5 w-5 text-blue-600" />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm text-slate-500">
-                                <span>Today's time budget</span>
-                                <span className="font-semibold text-slate-900">
-                                    {lessonMinutes > 0
-                                        ? `${timeBudgetUsage}% of ${currentHour}h`
-                                        : `${currentHour}h planned`}
-                                </span>
-                            </div>
-                            <Progress
-                                value={timeBudgetUsage}
-                                className="h-2.5 bg-slate-100"
-                                indicatorClassName="bg-blue-600"
-                            />
-                            <div className="grid gap-3 pt-1 sm:grid-cols-3">
-                                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                                        Planned Today
+            <div className="flex w-full flex-col gap-5">
+                <Card className={`${SHARED_CARD_CLASS} overflow-hidden border-l-4 border-l-blue-600`}>
+                    <button
+                        type="button"
+                        onClick={() => setIsStudyPlanExpanded((current) => !current)}
+                        aria-expanded={isStudyPlanExpanded}
+                        className="w-full text-left"
+                    >
+                        <CardHeader className="space-y-5 pb-4">
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-blue-700">
+                                        Today's Study Plan
                                     </p>
-                                    <p className="mt-1 text-sm font-bold text-slate-900">
-                                        {currentHour}h
+                                    <CardTitle className="text-2xl font-bold tracking-tight text-slate-950">
+                                        {nextLesson
+                                            ? `Start with ${nextLesson.title}`
+                                            : "Your roadmap is ready to explore"}
+                                    </CardTitle>
+                                    <p className="text-sm leading-6 text-slate-500">
+                                        {nextLesson && nextTopic
+                                            ? `Your main focus today is Topic ${nextTopic.sort_order}: ${nextTopic.name}. This lesson is the clearest next action for your track.`
+                                            : "Open your learning path to see the clearest next lesson and roadmap order for your track."}
                                     </p>
                                 </div>
-                                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                                        This Lesson
-                                    </p>
-                                    <p className="mt-1 text-sm font-bold text-slate-900">
-                                        {formatMinutes(lessonMinutes)}
-                                    </p>
-                                </div>
-                                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                                        Estimated Finish
-                                    </p>
-                                    <p className="mt-1 text-sm font-bold text-slate-900">
-                                        {estimatedFinishLabel ?? "Estimate pending"}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </CardHeader>
-                </Card>
-
-                <Card className={`${SHARED_CARD_CLASS} border-l-4 border-l-blue-600`}>
-                    <CardContent className="p-5">
-                        <div className="flex items-start gap-4">
-                            <div className="rounded-2xl bg-blue-50 p-3 shadow-sm">
-                                <BookOpen className="h-5 w-5 text-blue-600" />
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                                <h3 className="font-semibold text-slate-900">New Lesson</h3>
-                                <p className="mt-1 text-sm text-slate-700">
-                                    {lessonDescription}
-                                </p>
-                                <p className="mt-2 text-sm leading-6 text-slate-500">
-                                    {lessonOutcome}
-                                </p>
-                                {nextLesson && nextTopic ? (
-                                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-                                        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">
-                                            Topic {nextTopic.sort_order}
-                                        </span>
-                                        <span className="rounded-full bg-slate-100 px-2.5 py-1">
-                                            {formatLabel(nextLesson.primary_skill)}
-                                        </span>
-                                        {remainingTodayMinutes > 0 ? (
-                                            <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
-                                                {formatMinutes(remainingTodayMinutes)} left after this
-                                            </span>
-                                        ) : null}
+                                <div className="flex items-center gap-2">
+                                    <div className="rounded-2xl bg-blue-50 p-3">
+                                        <Target className="h-5 w-5 text-blue-600" />
                                     </div>
-                                ) : null}
+                                    <div className="rounded-2xl bg-slate-100 p-2.5">
+                                        <ChevronDown
+                                            className={`h-5 w-5 text-slate-500 transition-transform duration-200 ${isStudyPlanExpanded ? "rotate-180" : ""
+                                                }`}
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                        </div>
 
-                        <Button asChild className="mt-5 h-11 w-full bg-blue-600 hover:bg-blue-700">
-                            <Link to={lessonHref}>{lessonLabel}</Link>
-                        </Button>
-                    </CardContent>
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between text-sm text-slate-500">
+                                    <span>Today's time budget</span>
+                                    <span className="font-semibold text-slate-900">
+                                        {lessonMinutes > 0
+                                            ? `${timeBudgetUsage}% of ${currentHour}h`
+                                            : `${currentHour}h planned`}
+                                    </span>
+                                </div>
+                                <Progress
+                                    value={timeBudgetUsage}
+                                    className="h-2.5 bg-slate-100"
+                                    indicatorClassName="bg-blue-600"
+                                />
+                                <div className="grid gap-3 pt-1 sm:grid-cols-3">
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                                            Planned Today
+                                        </p>
+                                        <p className="mt-1 text-sm font-bold text-slate-900">
+                                            {currentHour}h
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                                            This Lesson
+                                        </p>
+                                        <p className="mt-1 text-sm font-bold text-slate-900">
+                                            {formatMinutes(lessonMinutes)}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                                            Estimated Finish
+                                        </p>
+                                        <p className="mt-1 text-sm font-bold text-slate-900">
+                                            {estimatedFinishLabel ?? "Estimate pending"}
+                                        </p>
+                                    </div>
+                                </div>
+                                <p className="pt-1 text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
+                                    {isStudyPlanExpanded
+                                        ? "Hide today's actions"
+                                        : "Click to view today's actions"}
+                                </p>
+                            </div>
+                        </CardHeader>
+                    </button>
+
+                    {isStudyPlanExpanded ? (
+                        <CardContent className="border-t border-slate-200 bg-slate-50/70 p-5">
+                            <div className="space-y-4">
+                                <div className="rounded-2xl border border-blue-200 bg-white p-5 shadow-[0_10px_30px_rgba(37,99,235,0.08)]">
+                                    <div className="flex items-start gap-4">
+                                        <div className="rounded-2xl bg-blue-50 p-3 shadow-sm">
+                                            <BookOpen className="h-5 w-5 text-blue-600" />
+                                        </div>
+
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className="font-semibold text-slate-900">New Lesson</h3>
+                                            <p className="mt-1 text-sm text-slate-700">
+                                                {lessonDescription}
+                                            </p>
+                                            <p className="mt-2 text-sm leading-6 text-slate-500">
+                                                {lessonOutcome}
+                                            </p>
+                                            {nextLesson && nextTopic ? (
+                                                <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+                                                    <span className="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">
+                                                        Topic {nextTopic.sort_order}
+                                                    </span>
+                                                    <span className="rounded-full bg-slate-100 px-2.5 py-1">
+                                                        {formatLabel(nextLesson.primary_skill)}
+                                                    </span>
+                                                    {remainingTodayMinutes > 0 ? (
+                                                        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
+                                                            {formatMinutes(remainingTodayMinutes)} left after this
+                                                        </span>
+                                                    ) : null}
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    </div>
+
+                                    <Button asChild className="mt-5 h-11 w-full bg-blue-600 hover:bg-blue-700">
+                                        <a href={lessonHref}>{lessonLabel}</a>
+                                    </Button>
+                                </div>
+
+                                <div className="grid gap-4 lg:grid-cols-2">
+                                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                                        <div className="flex items-start gap-4">
+                                            <div className="rounded-2xl bg-slate-100 p-3 shadow-sm">
+                                                <RotateCcw className="h-5 w-5 text-slate-500" />
+                                            </div>
+
+                                            <div className="min-w-0 flex-1">
+                                                <h3 className="font-semibold text-slate-900">Review</h3>
+                                                <p className="mt-1 text-sm text-slate-700">
+                                                    {nextTopic
+                                                        ? `Review for ${nextTopic.name} will appear here after you complete lessons and quizzes in this topic.`
+                                                        : "Review cards and follow-up practice will appear here once your roadmap is active."}
+                                                </p>
+                                                <p className="mt-2 text-sm leading-6 text-slate-500">
+                                                    {nextLesson
+                                                        ? `Finish ${nextLesson.title} and submit its quiz to unlock targeted review items.`
+                                                        : LOCKED_COPY}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <Button
+                                            variant="outline"
+                                            disabled
+                                            className="mt-5 h-11 w-full border-slate-200 text-slate-500"
+                                        >
+                                            Complete a lesson first
+                                        </Button>
+                                    </div>
+
+                                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                                        <div className="flex items-start gap-4">
+                                            <div className="rounded-2xl bg-slate-100 p-3 shadow-sm">
+                                                <Brain className="h-5 w-5 text-slate-500" />
+                                            </div>
+
+                                            <div className="min-w-0 flex-1">
+                                                <h3 className="font-semibold text-slate-900">Flashcards</h3>
+                                                <p className="mt-1 text-sm text-slate-700">
+                                                    {nextLesson
+                                                        ? `Flashcards will be generated from the vocabulary and patterns inside ${nextLesson.title}.`
+                                                        : "Vocabulary flashcards will be generated from completed lessons."}
+                                                </p>
+                                                <p className="mt-2 text-sm leading-6 text-slate-500">
+                                                    {nextTopic
+                                                        ? `Your first deck unlocks after you finish a lesson in ${nextTopic.name}.`
+                                                        : LOCKED_COPY}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <Button
+                                            variant="outline"
+                                            disabled
+                                            className="mt-5 h-11 w-full border-slate-200 text-slate-500"
+                                        >
+                                            Unlock after your first quiz
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    ) : null}
                 </Card>
 
                 <Card className="border border-blue-200 bg-[linear-gradient(135deg,_rgba(239,246,255,1)_0%,_rgba(224,242,254,0.98)_55%,_rgba(255,255,255,1)_100%)] shadow-[0_18px_45px_rgba(37,99,235,0.14)] ring-1 ring-blue-100">
@@ -295,7 +392,7 @@ export function DailyPlanView({ nextTopic, nextLesson }: DailyPlanViewProps) {
 
                 <Card
                     onClick={() => setOpenSetting(true)}
-                    className="mt-auto cursor-pointer border border-emerald-200 bg-[linear-gradient(135deg,_rgba(236,253,245,1)_0%,_rgba(240,249,255,0.96)_100%)] shadow-[0_18px_45px_rgba(16,185,129,0.12)] ring-1 ring-emerald-100 transition hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(16,185,129,0.16)]"
+                    className="cursor-pointer border border-emerald-200 bg-[linear-gradient(135deg,_rgba(236,253,245,1)_0%,_rgba(240,249,255,0.96)_100%)] shadow-[0_18px_45px_rgba(16,185,129,0.12)] ring-1 ring-emerald-100 transition hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(16,185,129,0.16)]"
                 >
                     <CardContent className="flex min-h-[72px] items-center justify-between gap-4 p-5">
                         <div className="flex items-center gap-3">
@@ -307,7 +404,10 @@ export function DailyPlanView({ nextTopic, nextLesson }: DailyPlanViewProps) {
                                 <div className="flex flex-wrap items-center gap-2">
                                     <p className="font-semibold text-slate-900">Study Settings</p>
                                     <span className="rounded-full bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">
-                                        Adjust Plan
+                                        Change Career
+                                    </span>
+                                    <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700 ring-1 ring-emerald-100">
+                                        Study Time
                                     </span>
                                 </div>
                                 <p className="mt-1 text-sm text-slate-700">
@@ -315,7 +415,7 @@ export function DailyPlanView({ nextTopic, nextLesson }: DailyPlanViewProps) {
                                     {estimatedFinishLabel ? ` · Finish by ${estimatedFinishLabel}` : ""}
                                 </p>
                                 <p className="mt-1 text-sm text-slate-500">
-                                    Update your daily goal and learning pace.
+                                    Open settings to change career direction or update your daily study time.
                                 </p>
                             </div>
                         </div>
@@ -324,69 +424,6 @@ export function DailyPlanView({ nextTopic, nextLesson }: DailyPlanViewProps) {
                     </CardContent>
                 </Card>
 
-                <Card className={`${SHARED_CARD_CLASS} border-l-4 border-l-slate-300`}>
-                    <CardContent className="p-5">
-                        <div className="flex items-start gap-4">
-                            <div className="rounded-2xl bg-slate-100 p-3 shadow-sm">
-                                <RotateCcw className="h-5 w-5 text-slate-500" />
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                                <h3 className="font-semibold text-slate-900">Review</h3>
-                                <p className="mt-1 text-sm text-slate-700">
-                                    {nextTopic
-                                        ? `Review for ${nextTopic.name} will appear here after you complete lessons and quizzes in this topic.`
-                                        : "Review cards and follow-up practice will appear here once your roadmap is active."}
-                                </p>
-                                <p className="mt-2 text-sm leading-6 text-slate-500">
-                                    {nextLesson
-                                        ? `Finish ${nextLesson.title} and submit its quiz to unlock targeted review items.`
-                                        : LOCKED_COPY}
-                                </p>
-                            </div>
-                        </div>
-
-                        <Button
-                            variant="outline"
-                            disabled
-                            className="mt-5 h-11 w-full border-slate-200 text-slate-500"
-                        >
-                            Complete a lesson first
-                        </Button>
-                    </CardContent>
-                </Card>
-
-                <Card className={`${SHARED_CARD_CLASS} border-l-4 border-l-slate-300`}>
-                    <CardContent className="p-5">
-                        <div className="flex items-start gap-4">
-                            <div className="rounded-2xl bg-slate-100 p-3 shadow-sm">
-                                <Brain className="h-5 w-5 text-slate-500" />
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                                <h3 className="font-semibold text-slate-900">Flashcards</h3>
-                                <p className="mt-1 text-sm text-slate-700">
-                                    {nextLesson
-                                        ? `Flashcards will be generated from the vocabulary and patterns inside ${nextLesson.title}.`
-                                        : "Vocabulary flashcards will be generated from completed lessons."}
-                                </p>
-                                <p className="mt-2 text-sm leading-6 text-slate-500">
-                                    {nextTopic
-                                        ? `Your first deck unlocks after you finish a lesson in ${nextTopic.name}.`
-                                        : LOCKED_COPY}
-                                </p>
-                            </div>
-                        </div>
-
-                        <Button
-                            variant="outline"
-                            disabled
-                            className="mt-5 h-11 w-full border-slate-200 text-slate-500"
-                        >
-                            Unlock after your first quiz
-                        </Button>
-                    </CardContent>
-                </Card>
             </div>
 
             <Dialog open={openSetting} onOpenChange={setOpenSetting}>

@@ -19,11 +19,42 @@ export interface UserResponse {
 	created_at: string
 }
 
+export interface StudyHistoryEntryResponse {
+	studied_on: string
+	minutes: number
+}
+
+export interface LessonQuizHistoryEntryResponse {
+	lesson_id: number
+	lesson_title: string
+	topic_name: string | null
+	skill: string
+	difficulty_tier: string
+	status: string
+	best_score_percent: number | null
+	passed: boolean
+	attempt_count: number
+	failed_attempts: number
+	correct_no_hint_count: number
+	total_no_hint_questions: number
+	correct_with_hint_count: number
+	total_with_hint_questions: number
+	total_questions: number
+	recorded_at: string | null
+	completed_at: string | null
+	last_submitted_at: string | null
+}
+
 export interface UserProfileResponse extends UserResponse {
 	started_at: string | null
 	estimated_finish: string | null
 	total_estimated_minutes: number
 	daily_study_minutes: number
+	total_studied_minutes: number
+	study_history: StudyHistoryEntryResponse[]
+	lesson_quiz_history?: LessonQuizHistoryEntryResponse[]
+	initial_skill_scores?: Record<string, number> | null
+	current_skill_scores?: Record<string, number> | null
 }
 
 export interface StudySettingsUpdateRequest {
