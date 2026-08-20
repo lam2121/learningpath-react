@@ -79,6 +79,7 @@ export function ListeningAudioPlayer({
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const isScrubbingRef = useRef(false)
+  const loadTokenRef = useRef(0)
 
   // Fetch available voices on mount
   useEffect(() => {
@@ -107,46 +108,85 @@ export function ListeningAudioPlayer({
   // Setup current stream URL
   const currentStreamUrl = getTTSStreamUrl(scriptText, selectedVoiceId, formattedRate)
 
-  // Sync audio element source when voice, rate, or text changes
-  const updateAudioSource = (newUrl: string, shouldPlay = false) => {
+  // Robust audio source switcher with token guards and one-time listeners
+  const switchAudioTrack = (newVoiceId: string, newRate: number) => {
     const audio = audioRef.current
     if (!audio) return
 
-    const prevTime = audio.currentTime
-    const wasPlaying = isPlaying || shouldPlay
+    const newFormattedRate = `${newRate >= 0 ? '+' : ''}${newRate}%`
+    const newUrl = getTTSStreamUrl(scriptText, newVoiceId, newFormattedRate)
 
+    const wasPlaying = isPlaying
+    const prevTime = audio.currentTime
+    const prevDuration = duration
+    const currentToken = ++loadTokenRef.current
+
+    if (wasPlaying) {
+      audio.pause()
+      setIsLoading(true)
+    }
+
+    setStreamError(null)
     audio.src = newUrl
     audio.load()
 
-    audio.oncanplay = () => {
-      // Resume from previous position if valid
-      if (prevTime > 0 && prevTime < audio.duration) {
-        audio.currentTime = prevTime
+    const onReady = () => {
+      // Ignore if a newer switch request occurred
+      if (loadTokenRef.current !== currentToken) return
+
+      audio.removeEventListener('loadeddata', onReady)
+      audio.removeEventListener('canplay', onReady)
+
+      if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+        setDuration(audio.duration)
       }
+
+      // Proportional position mapping across rate/voice changes
+      if (prevTime > 0 && audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+        const ratio = prevDuration > 0 ? prevTime / prevDuration : 0
+        const targetTime =
+          ratio > 0
+            ? Math.min(ratio * audio.duration, Math.max(0, audio.duration - 0.1))
+            : Math.min(prevTime, Math.max(0, audio.duration - 0.1))
+        audio.currentTime = Math.max(0, targetTime)
+        setCurrentTime(Math.max(0, targetTime))
+      }
+
       if (wasPlaying) {
-        audio.play().catch((err) => {
-          console.warn('Playback resume failed:', err)
-          setIsPlaying(false)
-        })
+        audio
+          .play()
+          .then(() => {
+            if (loadTokenRef.current === currentToken) {
+              setIsPlaying(true)
+              setIsLoading(false)
+            }
+          })
+          .catch((err) => {
+            if (err?.name !== 'AbortError') {
+              console.warn('Playback resume failed:', err)
+              setIsPlaying(false)
+            }
+            setIsLoading(false)
+          })
+      } else {
+        setIsLoading(false)
       }
-      setIsLoading(false)
-      setStreamError(null)
     }
+
+    audio.addEventListener('loadeddata', onReady, { once: true })
+    audio.addEventListener('canplay', onReady, { once: true })
   }
 
   // Handle Voice Change
   const handleVoiceChange = (voiceId: string) => {
     setSelectedVoiceId(voiceId)
-    const newUrl = getTTSStreamUrl(scriptText, voiceId, formattedRate)
-    updateAudioSource(newUrl, isPlaying)
+    switchAudioTrack(voiceId, ratePercent)
   }
 
   // Handle Rate Change
   const handleRateChange = (newRate: number) => {
     setRatePercent(newRate)
-    const newFormattedRate = `${newRate >= 0 ? '+' : ''}${newRate}%`
-    const newUrl = getTTSStreamUrl(scriptText, selectedVoiceId, newFormattedRate)
-    updateAudioSource(newUrl, isPlaying)
+    switchAudioTrack(selectedVoiceId, newRate)
   }
 
   // Play / Pause Toggle
@@ -157,22 +197,29 @@ export function ListeningAudioPlayer({
     if (isPlaying) {
       audio.pause()
       setIsPlaying(false)
+      setIsLoading(false)
       return
-    }
-
-    // If source not set yet, set it now
-    if (!audio.src || !audio.src.includes(encodeURIComponent(selectedVoiceId))) {
-      audio.src = currentStreamUrl
-      audio.load()
     }
 
     setIsLoading(true)
     setStreamError(null)
 
+    // Ensure audio src is current
+    if (!audio.src || audio.src !== currentStreamUrl) {
+      audio.src = currentStreamUrl
+      audio.load()
+    }
+
     try {
       await audio.play()
       setIsPlaying(true)
-    } catch (err) {
+      setIsLoading(false)
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        setIsLoading(false)
+        return
+      }
+
       console.error('Audio stream play error, falling back to Web Speech API:', err)
       setStreamError('Network stream unavailable. Using browser speech synthesis fallback.')
 
@@ -183,13 +230,21 @@ export function ListeningAudioPlayer({
         utterance.lang = activeVoice.locale || 'en-US'
         // Map ratePercent (-25 to +25) to SpeechSynthesis rate (0.7 to 1.3)
         utterance.rate = Math.max(0.6, Math.min(1.4, 1 + ratePercent / 100))
-        utterance.onend = () => setIsPlaying(false)
-        utterance.onerror = () => setIsPlaying(false)
+        utterance.onend = () => {
+          setIsPlaying(false)
+          setIsLoading(false)
+        }
+        utterance.onerror = () => {
+          setIsPlaying(false)
+          setIsLoading(false)
+        }
         window.speechSynthesis.speak(utterance)
         setIsPlaying(true)
+        setIsLoading(false)
+      } else {
+        setIsLoading(false)
+        setIsPlaying(false)
       }
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -205,7 +260,7 @@ export function ListeningAudioPlayer({
   // Seek bar / progress scrubber
   const handleScrub = (newProgress: number[]) => {
     const audio = audioRef.current
-    if (!audio || !duration) return
+    if (!audio || !duration || isNaN(duration)) return
     const targetTime = (newProgress[0] / 100) * duration
     audio.currentTime = targetTime
     setCurrentTime(targetTime)
@@ -225,10 +280,16 @@ export function ListeningAudioPlayer({
     const audio = audioRef.current
     if (!audio) return
 
-    const handlePlay = () => setIsPlaying(true)
-    const handlePause = () => setIsPlaying(false)
+    const handlePlay = () => {
+      setIsPlaying(true)
+      setIsLoading(false)
+    }
+    const handlePause = () => {
+      setIsPlaying(false)
+    }
     const handleEnded = () => {
       setIsPlaying(false)
+      setIsLoading(false)
       setCurrentTime(0)
     }
     const handleTimeUpdate = () => {
@@ -237,19 +298,41 @@ export function ListeningAudioPlayer({
       }
     }
     const handleLoadedMetadata = () => {
-      setDuration(audio.duration)
+      if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+        setDuration(audio.duration)
+      }
       setIsLoading(false)
     }
-    const handleWaiting = () => setIsLoading(true)
-    const handlePlaying = () => setIsLoading(false)
+    const handleDurationChange = () => {
+      if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+        setDuration(audio.duration)
+      }
+    }
+    const handleWaiting = () => {
+      setIsLoading(true)
+    }
+    const handlePlaying = () => {
+      setIsPlaying(true)
+      setIsLoading(false)
+    }
+    const handleCanPlay = () => {
+      setIsLoading(false)
+    }
+    const handleError = () => {
+      setIsLoading(false)
+      setIsPlaying(false)
+    }
 
     audio.addEventListener('play', handlePlay)
     audio.addEventListener('pause', handlePause)
     audio.addEventListener('ended', handleEnded)
     audio.addEventListener('timeupdate', handleTimeUpdate)
     audio.addEventListener('loadedmetadata', handleLoadedMetadata)
+    audio.addEventListener('durationchange', handleDurationChange)
     audio.addEventListener('waiting', handleWaiting)
     audio.addEventListener('playing', handlePlaying)
+    audio.addEventListener('canplay', handleCanPlay)
+    audio.addEventListener('error', handleError)
 
     return () => {
       audio.removeEventListener('play', handlePlay)
@@ -257,8 +340,11 @@ export function ListeningAudioPlayer({
       audio.removeEventListener('ended', handleEnded)
       audio.removeEventListener('timeupdate', handleTimeUpdate)
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      audio.removeEventListener('durationchange', handleDurationChange)
       audio.removeEventListener('waiting', handleWaiting)
       audio.removeEventListener('playing', handlePlaying)
+      audio.removeEventListener('canplay', handleCanPlay)
+      audio.removeEventListener('error', handleError)
       audio.pause()
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel()
@@ -268,18 +354,22 @@ export function ListeningAudioPlayer({
 
   // Format seconds to mm:ss
   const formatTime = (secs: number) => {
-    if (isNaN(secs) || secs < 0) return '0:00'
-    const m = Math.floor(secs / 60)
-    const s = Math.floor(secs % 60)
+    if (isNaN(secs) || !isFinite(secs) || secs < 0) return '0:00'
+    const totalSecs = Math.floor(secs)
+    const m = Math.floor(totalSecs / 60)
+    const s = totalSecs % 60
     return `${m}:${s.toString().padStart(2, '0')}`
   }
 
-  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
+  const progressPercent =
+    duration > 0 && isFinite(duration)
+      ? Math.min(100, Math.max(0, (currentTime / duration) * 100))
+      : 0
 
   return (
     <div className="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50/90 via-indigo-50/60 to-purple-50/90 p-5 md:p-6 shadow-md dark:border-blue-900/60 dark:bg-gradient-to-br dark:from-slate-900 dark:via-blue-950/40 dark:to-slate-900 transition-all">
       {/* Hidden audio element for high fidelity playback */}
-      <audio ref={audioRef} preload="metadata" />
+      <audio ref={audioRef} preload="auto" />
 
       {/* Top Header & Track Title */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-blue-100 dark:border-slate-800">

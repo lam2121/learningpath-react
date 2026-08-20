@@ -1345,12 +1345,6 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
                         line.speaker,
                         index
                     );
-                    const isFemale =
-                        speakerVoice.includes("Jenny") ||
-                        speakerVoice.includes("Aria") ||
-                        speakerVoice.includes("Sonia") ||
-                        speakerVoice.includes("Natasha") ||
-                        speakerVoice.includes("Clara");
 
                     return (
                         <div
@@ -1367,7 +1361,6 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
                                     <span className="text-xs font-bold uppercase tracking-[0.18em] opacity-90">
                                         {line.speaker}
                                     </span>
-                                   
                                 </div>
                                 <AudioSpeakButton
                                     text={line.text}
