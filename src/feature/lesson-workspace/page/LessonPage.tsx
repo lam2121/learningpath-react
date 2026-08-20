@@ -1754,7 +1754,6 @@ function renderTheorySection(section: ParsedTheorySection) {
         }
 
         case "vocab": {
-        case "vocab": {
             return <VocabularySection section={section} />;
         }
 
@@ -1767,7 +1766,6 @@ function renderTheorySection(section: ParsedTheorySection) {
             return <ReadingPracticeSection section={section} qas={qas} />;
         }
 
-        case "dialogue": {
         case "dialogue": {
             return <DialogueSection section={section} />;
         }
@@ -1825,7 +1823,6 @@ function renderTheorySection(section: ParsedTheorySection) {
             );
         }
 
-        case "wrapup": {
         case "wrapup": {
             return <WrapupSection section={section} />;
         }
@@ -1902,6 +1899,48 @@ function EmbeddedLessonQuiz({
             cancelled = true;
         };
     }, [lessonId, nextLesson?.lesson.id, nextLesson?.lesson.is_generated, quiz]);
+
+    useEffect(() => {
+        if (
+            !quizStarted
+            || !nextLesson
+            || nextLesson.lesson.is_generated
+            || nextLessonStatus !== "preparing"
+        ) {
+            return;
+        }
+
+        let cancelled = false;
+
+        const checkNextLesson = async () => {
+            try {
+                const updatedRoadmap = await fetchRoadmap();
+                if (cancelled) {
+                    return;
+                }
+
+                const updatedNextLesson = findLesson(updatedRoadmap, nextLesson.lesson.id);
+                if (updatedNextLesson?.lesson.is_generated) {
+                    setNextLessonStatus("ready");
+                    setNextLessonMessage(
+                        `${updatedNextLesson.lesson.title} is ready for you to continue immediately after the quiz.`,
+                    );
+                }
+            } catch {
+                // Keep the warmup status as-is; the user can still finish the quiz.
+            }
+        };
+
+        void checkNextLesson();
+        const intervalId = window.setInterval(() => {
+            void checkNextLesson();
+        }, 15000);
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(intervalId);
+        };
+    }, [nextLesson, nextLessonStatus, quizStarted]);
 
     if (!quiz || questions.length === 0) {
         return (
@@ -2099,48 +2138,6 @@ function EmbeddedLessonQuiz({
             [currentQuestionIndex]: getEmbeddedCorrectAnswer(currentQuestion),
         }));
     };
-
-    useEffect(() => {
-        if (
-            !quizStarted
-            || !nextLesson
-            || nextLesson.lesson.is_generated
-            || nextLessonStatus !== "preparing"
-        ) {
-            return;
-        }
-
-        let cancelled = false;
-
-        const checkNextLesson = async () => {
-            try {
-                const updatedRoadmap = await fetchRoadmap();
-                if (cancelled) {
-                    return;
-                }
-
-                const updatedNextLesson = findLesson(updatedRoadmap, nextLesson.lesson.id);
-                if (updatedNextLesson?.lesson.is_generated) {
-                    setNextLessonStatus("ready");
-                    setNextLessonMessage(
-                        `${updatedNextLesson.lesson.title} is ready for you to continue immediately after the quiz.`,
-                    );
-                }
-            } catch {
-                // Keep the warmup status as-is; the user can still finish the quiz.
-            }
-        };
-
-        void checkNextLesson();
-        const intervalId = window.setInterval(() => {
-            void checkNextLesson();
-        }, 15000);
-
-        return () => {
-            cancelled = true;
-            window.clearInterval(intervalId);
-        };
-    }, [nextLesson, nextLessonStatus, quizStarted]);
 
     const questionNavigator = (
         <div className="flex gap-2 overflow-x-auto pb-5 pt-1 px-0.5">
