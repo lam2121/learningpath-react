@@ -223,6 +223,7 @@ export function RadarProvider({ children }: { children: ReactNode }) {
 
 // ─── Hook ───────────────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useRadar(): RadarContextValue {
   const ctx = useContext(RadarContext)
   if (!ctx) {
