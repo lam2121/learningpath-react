@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 import { fetchCurrentUserProfile } from "@/feature/auth/api/authAPI";
+import type { UserProfileResponse } from "@/feature/auth/type/Auth";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/shadcn/component/ui/hover-card";
 import { Button } from "@/shadcn/component/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/component/ui/card";
@@ -122,6 +123,10 @@ const SKILL_META = [
     },
 ] as const;
 
+function formatScore(value: number) {
+    return Number.isInteger(value) ? `${value}%` : `${value.toFixed(1)}%`;
+}
+
 export function SkillsOverview() {
     const [initialSkillScores, setInitialSkillScores] = useState<Record<string, number> | null>(null);
     const [currentSkillScores, setCurrentSkillScores] = useState<Record<string, number> | null>(null);
@@ -139,6 +144,14 @@ export function SkillsOverview() {
                 ]);
 
                 if (isMounted) {
+                    const placementInitialRadarScores =
+                        placementResult.status === "fulfilled"
+                            ? placementResult.value.radar_score?.start_vector ?? null
+                            : null;
+                    const placementCurrentRadarScores =
+                        placementResult.status === "fulfilled"
+                            ? placementResult.value.radar_score?.current_vector ?? null
+                            : null;
                     const placementScores =
                         placementResult.status === "fulfilled"
                         && Object.keys(placementResult.value.skill_scores ?? {}).length > 0
@@ -153,8 +166,14 @@ export function SkillsOverview() {
                             ? profileResult.value.current_skill_scores ?? null
                             : null;
 
-                    const nextInitialScores = profileInitialScores ?? placementScores;
-                    const nextCurrentScores = profileCurrentScores ?? nextInitialScores;
+                    const nextInitialScores =
+                        placementInitialRadarScores
+                        ?? profileInitialScores
+                        ?? placementScores;
+                    const nextCurrentScores =
+                        placementCurrentRadarScores
+                        ?? profileCurrentScores
+                        ?? nextInitialScores;
                     const nextSelectedRole =
                         placementResult.status === "fulfilled" && jobRolesResult.status === "fulfilled"
                             ? jobRolesResult.value.find((role) => role.id === placementResult.value.role_id) ?? null
@@ -175,8 +194,21 @@ export function SkillsOverview() {
 
         void loadScores();
 
+        const handleProfileUpdated = (event: Event) => {
+            if (!isMounted) {
+                return;
+            }
+
+            const customEvent = event as CustomEvent<UserProfileResponse>;
+            void customEvent;
+            void loadScores();
+        };
+
+        window.addEventListener("careerpath:profile-updated", handleProfileUpdated);
+
         return () => {
             isMounted = false;
+            window.removeEventListener("careerpath:profile-updated", handleProfileUpdated);
         };
     }, []);
 
@@ -261,7 +293,7 @@ export function SkillsOverview() {
                                                     />
                                                 </div>
                                                 <p className="mt-2 text-sm font-bold text-slate-500 sm:text-base">
-                                                    {initialScore}%
+                                                    {formatScore(initialScore)}
                                                 </p>
                                             </div>
                                             <div className="flex flex-col items-center">
@@ -277,7 +309,7 @@ export function SkillsOverview() {
                                                     />
                                                 </div>
                                                 <p className={`mt-2 text-base font-black sm:text-lg ${skill.color}`}>
-                                                    {currentScore}%
+                                                    {formatScore(currentScore)}
                                                 </p>
                                             </div>
                                         </div>

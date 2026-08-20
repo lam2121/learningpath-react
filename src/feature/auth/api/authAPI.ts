@@ -50,9 +50,15 @@ export async function loginUser(data: LoginRequest): Promise<LoginResponse> {
 }
 
 export async function fetchCurrentUserProfile(): Promise<UserProfileResponse> {
-	const res = await fetch(`${BASE_URL}/auth/me`, {
+	const cacheBuster = Date.now()
+	const res = await fetch(`${BASE_URL}/auth/me?_=${cacheBuster}`, {
 		method: 'GET',
-		headers: authHeaders(),
+		headers: {
+			...authHeaders(),
+			'Cache-Control': 'no-cache, no-store, max-age=0',
+			Pragma: 'no-cache',
+		},
+		cache: 'no-store',
 	})
 	return handleResponse<UserProfileResponse>(res)
 }

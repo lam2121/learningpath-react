@@ -25,13 +25,18 @@ import {
 
 import { MainNavigationMenu } from "@/common/component/MainNavigationMenu";
 import { useAuth } from "@/common/context/AuthContext";
+import { fetchCurrentUserProfile } from "@/feature/auth/api/authAPI";
 import {
     fetchRoadmap,
+    fetchLessonQuizState,
     kickoffRoadmapLessonGeneration,
+    submitLessonQuiz,
+    type LessonQuizStateResponse,
     type RoadmapLesson,
     type RoadmapResponse,
     type RoadmapTopic,
 } from "@/feature/learning-path/roadmapApi";
+import { useRadar } from "@/feature/radar";
 import { recordStudyTime } from "@/feature/user-profile/utils/StudyActivity";
 import {
     AlertDialog,
@@ -200,6 +205,10 @@ function formatLabel(value: string) {
         .split("_")
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(" ");
+}
+
+function formatPercent(value: number) {
+    return Number.isInteger(value) ? `${value}%` : `${value.toFixed(1)}%`;
 }
 
 function splitPipe(value: string): string[] {
@@ -1115,12 +1124,15 @@ function renderTheorySection(section: ParsedTheorySection) {
 }
 
 function EmbeddedLessonQuiz({
+    lessonId,
     quiz,
     nextLesson,
 }: {
+    lessonId: number;
     quiz: ParsedQuiz | null;
     nextLesson: LessonLookup | null;
 }) {
+    const { reinitialize: reinitializeRadar } = useRadar();
     const questions = useMemo(
         () => shuffleQuestions(buildEmbeddedQuizQuestions(quiz)),
         [quiz],
@@ -1135,8 +1147,14 @@ function EmbeddedLessonQuiz({
     const [hintedQuestions, setHintedQuestions] = useState<Record<number, boolean>>({});
     const [nextLessonStatus, setNextLessonStatus] = useState<"idle" | "preparing" | "ready" | "error">("idle");
     const [nextLessonMessage, setNextLessonMessage] = useState<string | null>(null);
+    const [savedQuizState, setSavedQuizState] = useState<LessonQuizStateResponse | null>(null);
+    const [quizStateError, setQuizStateError] = useState<string | null>(null);
+    const [savingAttempt, setSavingAttempt] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     useEffect(() => {
+        let cancelled = false;
+
         setCurrentQuestionIndex(0);
         setAnswers({});
         setSubmitted(false);
@@ -1147,7 +1165,34 @@ function EmbeddedLessonQuiz({
         setHintedQuestions({});
         setNextLessonStatus(nextLesson?.lesson.is_generated ? "ready" : "idle");
         setNextLessonMessage(null);
-    }, [nextLesson?.lesson.id, nextLesson?.lesson.is_generated, quiz]);
+        setSavedQuizState(null);
+        setQuizStateError(null);
+        setSavingAttempt(false);
+        setSaveError(null);
+
+        void fetchLessonQuizState(lessonId)
+            .then((state) => {
+                if (cancelled) {
+                    return;
+                }
+                setSavedQuizState(state);
+                setFailedAttempts(state.failed_attempts);
+            })
+            .catch((stateError) => {
+                if (cancelled) {
+                    return;
+                }
+                setQuizStateError(
+                    stateError instanceof Error
+                        ? stateError.message
+                        : "Could not load saved quiz progress.",
+                );
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [lessonId, nextLesson?.lesson.id, nextLesson?.lesson.is_generated, quiz]);
 
     if (!quiz || questions.length === 0) {
         return (
@@ -1199,6 +1244,8 @@ function EmbeddedLessonQuiz({
     const progressValue = ((currentQuestionIndex + 1) / totalQuestions) * 100;
     const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
     const nextLessonIsReady = nextLessonStatus === "ready" || Boolean(nextLesson?.lesson.is_generated);
+    const savedAttemptCount = savedQuizState?.attempt_count ?? 0;
+    const savedBestScore = savedQuizState?.best_score_percent ?? 0;
 
     const kickoffNextLessonPreparation = () => {
         if (!nextLesson) {
@@ -1255,39 +1302,67 @@ function EmbeddedLessonQuiz({
         setShowSummary(false);
         setShowIncompleteWarning(false);
         setHintedQuestions({});
+        setSaveError(null);
     };
 
-    const finalizeSubmission = () => {
-        setSubmitted(true);
-        setShowIncompleteWarning(false);
+    const finalizeSubmission = async () => {
+        if (savingAttempt) {
+            return;
+        }
 
-        const rawCorrectNoHint = questions.reduce(
-            (count, question, index) =>
-                count
-                + (
-                    isEmbeddedAnswerCorrect(question, answers[index]) && !hintedQuestions[index]
-                        ? 1
-                        : 0
-                ),
-            0,
-        );
-        const rawCorrectWithHint = questions.reduce(
-            (count, question, index) =>
-                count
-                + (
-                    isEmbeddedAnswerCorrect(question, answers[index]) && hintedQuestions[index]
-                        ? 1
-                        : 0
-                ),
-            0,
-        );
-        const nextWeightedScore =
-            totalQuestions > 0
-                ? (rawCorrectNoHint + HINT_CREDIT * rawCorrectWithHint) / totalQuestions
-                : 0;
+        setSavingAttempt(true);
+        setSaveError(null);
 
-        if (nextWeightedScore < LESSON_PASS_THRESHOLD) {
-            setFailedAttempts((prev) => prev + 1);
+        try {
+            const response = await submitLessonQuiz(lessonId, {
+                question_order: questions.map((question) => question.id),
+                answers: questions.map((question, index) => ({
+                    question_id: question.id,
+                    question_type: question.type,
+                    answer: answers[index] ?? "",
+                    used_hint: Boolean(hintedQuestions[index]),
+                })),
+            });
+
+            setSavedQuizState({
+                lesson_id: response.lesson_id,
+                skill: response.skill,
+                status: response.status,
+                lesson_passed: response.lesson_passed,
+                best_score_percent: response.best_score_percent,
+                attempt_count: response.attempt_count,
+                failed_attempts: response.failed_attempts,
+                completed_at: response.completed_at,
+                current_skill_score: response.current_skill_score,
+                first_pass_score_percent: response.first_pass_score_percent,
+            });
+            setFailedAttempts(response.failed_attempts);
+
+            if (response.first_pass_radar_applied || response.lesson_passed) {
+                await reinitializeRadar(true);
+            }
+
+            try {
+                const updatedProfile = await fetchCurrentUserProfile();
+                window.dispatchEvent(
+                    new CustomEvent("careerpath:profile-updated", {
+                        detail: updatedProfile,
+                    }),
+                );
+            } catch {
+                // Keep quiz success intact even if the profile refresh fails.
+            }
+
+            setSubmitted(true);
+            setShowIncompleteWarning(false);
+        } catch (submissionError) {
+            setSaveError(
+                submissionError instanceof Error
+                    ? submissionError.message
+                    : "Could not save this quiz attempt.",
+            );
+        } finally {
+            setSavingAttempt(false);
         }
     };
 
@@ -1297,11 +1372,11 @@ function EmbeddedLessonQuiz({
             return;
         }
 
-        finalizeSubmission();
+        void finalizeSubmission();
     };
 
     const handleConfirmSubmitQuiz = () => {
-        finalizeSubmission();
+        void finalizeSubmission();
     };
 
     const handleRevealHint = () => {
@@ -1426,6 +1501,26 @@ function EmbeddedLessonQuiz({
                                     </p>
                                 </div>
                             </div>
+
+                            {savedAttemptCount > 0 ? (
+                                <div className="mt-5 rounded-3xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
+                                    Saved best score: <strong>{formatPercent(savedBestScore)}</strong>
+                                    {savedQuizState?.lesson_passed
+                                        ? " · This lesson has already been passed once, so future retakes can improve your stored best score but will not update radar again."
+                                        : ` · Failed attempts saved: ${failedAttempts}.`}
+                                </div>
+                            ) : null}
+                            {savedQuizState?.current_skill_score !== null && savedQuizState?.current_skill_score !== undefined ? (
+                                <div className="mt-4 rounded-3xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-900 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-100">
+                                    Current {formatLabel(savedQuizState.skill)} radar score:{" "}
+                                    <strong>{formatPercent(savedQuizState.current_skill_score)}</strong>
+                                </div>
+                            ) : null}
+                            {quizStateError ? (
+                                <div className="mt-4 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                                    {quizStateError}
+                                </div>
+                            ) : null}
 
                             <div className="mt-5 rounded-3xl border border-slate-200 bg-slate-50/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/40 sm:px-5">
                                 <ol className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -1638,6 +1733,15 @@ function EmbeddedLessonQuiz({
                                     ? "You passed this lesson check. Review any question from the navigator above, restart if you want another attempt, or continue once the next lesson is ready."
                                     : "Review any question from the navigator above, or restart the quiz to try again. You need a weighted 70% score to unlock the continue action for the next lesson."}
                             </p>
+                            {savedQuizState?.current_skill_score !== null && savedQuizState?.current_skill_score !== undefined ? (
+                                <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-900 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-100">
+                                    Current {formatLabel(savedQuizState.skill)} radar score:{" "}
+                                    <strong>{formatPercent(savedQuizState.current_skill_score)}</strong>
+                                    {savedQuizState.first_pass_score_percent !== null && savedQuizState.first_pass_score_percent !== undefined
+                                        ? ` · First pass recorded at ${formatPercent(savedQuizState.first_pass_score_percent)}.`
+                                        : ""}
+                                </div>
+                            ) : null}
                             <div className="mt-4 grid gap-3 sm:grid-cols-3">
                                 <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
                                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Correct without hint</p>
@@ -1728,6 +1832,11 @@ function EmbeddedLessonQuiz({
                     </section>
                 ) : (
                     <div className="space-y-5">
+                        {saveError ? (
+                            <div className="rounded-3xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-100">
+                                {saveError}
+                            </div>
+                        ) : null}
                         {currentQuestion.type === "fill_blank" ? (
                             <FillBlankQuestion
                                 key={currentQuestion.id}
@@ -1797,7 +1906,7 @@ function EmbeddedLessonQuiz({
                                         className="w-full border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 sm:w-auto"
                                         variant="outline"
                                         onClick={handleRevealHint}
-                                        disabled={currentQuestionHintUsed}
+                                        disabled={currentQuestionHintUsed || savingAttempt}
                                     >
                                         <Sparkles className="mr-2 h-4 w-4" />
                                         {currentQuestionHintUsed ? "Hint applied" : "Show hint"}
@@ -1809,7 +1918,7 @@ function EmbeddedLessonQuiz({
                                     onClick={() =>
                                         setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))
                                     }
-                                    disabled={currentQuestionIndex === 0}
+                                    disabled={currentQuestionIndex === 0 || savingAttempt}
                                 >
                                     <ChevronLeft className="mr-2 h-4 w-4" />
                                     Previous
@@ -1821,8 +1930,8 @@ function EmbeddedLessonQuiz({
                                         <Check className="ml-2 h-4 w-4" />
                                     </Button>
                                 ) : !submitted && isLastQuestion ? (
-                                    <Button className="w-full sm:w-auto" onClick={handleSubmitQuiz}>
-                                        Submit quiz
+                                    <Button className="w-full sm:w-auto" onClick={handleSubmitQuiz} disabled={savingAttempt}>
+                                        {savingAttempt ? "Saving attempt..." : "Submit quiz"}
                                         <Check className="ml-2 h-4 w-4" />
                                     </Button>
                                 ) : (
@@ -1833,6 +1942,7 @@ function EmbeddedLessonQuiz({
                                                 Math.min(totalQuestions - 1, prev + 1),
                                             )
                                         }
+                                        disabled={savingAttempt}
                                     >
                                         Next
                                         <ChevronRight className="ml-2 h-4 w-4" />
@@ -1861,14 +1971,14 @@ function EmbeddedLessonQuiz({
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
 
-                            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                                Review the remaining questions now, or confirm to submit the
-                                quiz as-is.
-                            </div>
+                        <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                            Review the remaining questions now, or confirm to submit the
+                            quiz as-is.
+                        </div>
 
                             <AlertDialogFooter className="mt-6">
                                 <AlertDialogCancel>Go back</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleConfirmSubmitQuiz}>
+                                <AlertDialogAction onClick={handleConfirmSubmitQuiz} disabled={savingAttempt}>
                                     Submit anyway
                                 </AlertDialogAction>
                             </AlertDialogFooter>
@@ -2181,7 +2291,7 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
 
                     <div className="min-w-0">
                         {activeSection === "quiz" ? (
-                            <EmbeddedLessonQuiz quiz={quiz} nextLesson={nextLessonLookup} />
+                            <EmbeddedLessonQuiz lessonId={lesson.id} quiz={quiz} nextLesson={nextLessonLookup} />
                         ) : activeTheorySection ? (
                             renderTheorySection(activeTheorySection)
                         ) : (
