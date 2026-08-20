@@ -43,6 +43,7 @@ export function StudySettingsDialog({
                     return;
                 }
             } catch {
+                // ignore error
             }
 
             const pendingRoleId = Number(localStorage.getItem("pending_role_id"));

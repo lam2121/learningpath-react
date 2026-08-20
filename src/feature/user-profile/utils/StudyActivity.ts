@@ -99,19 +99,20 @@ function readStudyMinutesRemainder(userId: number): StudyMinutesRemainder | null
             localStorage.getItem(getStudyRemainderStorageKey(userId)) ?? "null",
         );
 
+        const data = savedData as Record<string, unknown>;
         if (
-            !savedData
-            || typeof savedData !== "object"
-            || Array.isArray(savedData)
-            || typeof savedData.dateKey !== "string"
-            || typeof savedData.milliseconds !== "number"
+            !data
+            || typeof data !== "object"
+            || Array.isArray(data)
+            || typeof data.dateKey !== "string"
+            || typeof data.milliseconds !== "number"
         ) {
             return null;
         }
 
         return {
-            dateKey: savedData.dateKey,
-            milliseconds: Math.max(0, Math.floor(savedData.milliseconds)),
+            dateKey: data.dateKey,
+            milliseconds: Math.max(0, Math.floor(data.milliseconds)),
         };
     } catch {
         return null;

@@ -127,11 +127,8 @@ export function UserProfileCard() {
     const [finishBadgeLabel, setFinishBadgeLabel] = useState<string>("Estimate pending");
     const [backendStudiedMinutes, setBackendStudiedMinutes] = useState(0);
     const [trackedStudyMinutes, setTrackedStudyMinutes] = useState(0);
-<<<<<<< HEAD
     const [lessonsCompleted, setLessonsCompleted] = useState(0);
     const [accuracy, setAccuracy] = useState(0);
-=======
->>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
     const [avatarUrl, setAvatarUrl] = useState(() => {
         const savedAvatar = localStorage.getItem("user_avatar");
         return savedAvatar || "/avatar.png";
@@ -164,7 +161,6 @@ export function UserProfileCard() {
                 setBackendStudiedMinutes(
                     Math.max(0, profileResult.value.total_studied_minutes),
                 );
-<<<<<<< HEAD
                 const passedLessons = profileResult.value.lesson_quiz_history?.filter(
                     (entry) => entry.passed,
                 ) ?? [];
@@ -177,8 +173,6 @@ export function UserProfileCard() {
                         ? Math.round(latestScoredLesson.best_score_percent)
                         : 0,
                 );
-=======
->>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
             }
 
             if (
@@ -223,7 +217,6 @@ export function UserProfileCard() {
             setBackendStudiedMinutes(
                 Math.max(0, customEvent.detail.total_studied_minutes),
             );
-<<<<<<< HEAD
             const passedLessons = customEvent.detail.lesson_quiz_history?.filter(
                 (entry) => entry.passed,
             ) ?? [];
@@ -236,8 +229,6 @@ export function UserProfileCard() {
                     ? Math.round(latestScoredLesson.best_score_percent)
                     : 0,
             );
-=======
->>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
         };
         const handleStudyActivityUpdated = (event: Event) => {
             const customEvent = event as CustomEvent<{ userId?: number }>;
@@ -245,7 +236,9 @@ export function UserProfileCard() {
                 return;
             }
 
-            setTrackedStudyMinutes(getTrackedStudyMinutesTotal(user.id));
+            if (user?.id) {
+                setTrackedStudyMinutes(getTrackedStudyMinutesTotal(user.id));
+            }
         };
         window.addEventListener("careerpath:profile-updated", handleProfileUpdated);
         window.addEventListener(
@@ -290,12 +283,6 @@ export function UserProfileCard() {
         return calculateLongestStreak(getLoginDays(user.id));
     }, [user?.id]);
     const totalStudiedMinutes = Math.max(0, backendStudiedMinutes + trackedStudyMinutes);
-<<<<<<< HEAD
-=======
-
-    const lessonsCompleted = 0;
-    const accuracy = 0;
->>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
     const studyDurationLabel = formatStudyDuration(totalStudiedMinutes);
 
     const values = {

@@ -214,8 +214,8 @@ export function ListeningAudioPlayer({
       await audio.play()
       setIsPlaying(true)
       setIsLoading(false)
-    } catch (err: any) {
-      if (err?.name === 'AbortError') {
+    } catch (err) {
+      if ((err as Error)?.name === 'AbortError') {
         setIsLoading(false)
         return
       }

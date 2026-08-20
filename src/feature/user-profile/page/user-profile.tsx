@@ -243,13 +243,10 @@ export function UserProfile() {
                                 <DailyPlanView
                                     nextTopic={nextTopic}
                                     nextLesson={nextLesson}
-<<<<<<< HEAD
                                     hasRoadmap={Boolean(roadmap?.topics.length)}
                                     completedLessonCount={completedLessonCount}
                                     totalAssignedLessons={totalAssignedLessons}
                                     allAssignedLessonsCompleted={allAssignedLessonsCompleted}
-=======
->>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
                                     onStudyPlanExpandedChange={setIsStudyPlanExpanded}
                                 />
                                 {!isStudyPlanExpanded ? (
