@@ -16,10 +16,8 @@ import {
     ListChecks,
     MessageSquareText,
     NotebookPen,
-    Play,
     ScrollText,
     Sparkles,
-    Square,
     Target,
     Volume2,
     type LucideIcon,
@@ -54,36 +52,132 @@ import type {
     OrderingQuestionData,
 } from "@/feature/quiz-engine/type/Quiz";
 import { LessonSkeleton } from "../component/LessonSkeleton";
+import { ListeningAudioPlayer } from "../component/ListeningAudioPlayer";
+import { getTTSStreamUrl } from "@/feature/audio/audioApi";
 
-function speakText(text: string, onEnd?: () => void) {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-        return;
-    }
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
-    utterance.rate = 0.92;
-    if (onEnd) {
-        utterance.onend = onEnd;
-        utterance.onerror = onEnd;
-    }
-    window.speechSynthesis.speak(utterance);
-}
+let activeGlobalAudio: HTMLAudioElement | null = null;
 
 function stopSpeech() {
+    if (activeGlobalAudio) {
+        activeGlobalAudio.pause();
+        activeGlobalAudio.currentTime = 0;
+        activeGlobalAudio = null;
+    }
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
         window.speechSynthesis.cancel();
     }
+}
+
+function speakText(text: string, onEnd?: () => void, voiceOverride?: string) {
+    stopSpeech();
+    const defaultSavedVoice =
+        (typeof window !== "undefined" &&
+            localStorage.getItem("toeic_audio_voice")) ||
+        "en-US-JennyNeural";
+    const selectedVoice = voiceOverride || defaultSavedVoice;
+
+    const savedRate =
+        (typeof window !== "undefined" &&
+            localStorage.getItem("toeic_audio_rate")) ||
+        "-15";
+    const rateNum = parseInt(savedRate, 10);
+    const formattedRate = `${rateNum >= 0 ? "+" : ""}${rateNum}%`;
+
+    // Try Neural TTS stream first
+    const streamUrl = getTTSStreamUrl(text, selectedVoice, formattedRate);
+    const audio = new Audio(streamUrl);
+    activeGlobalAudio = audio;
+
+    let fallbackTriggered = false;
+    const triggerFallback = () => {
+        if (fallbackTriggered) return;
+        fallbackTriggered = true;
+        if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+            onEnd?.();
+            return;
+        }
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "en-US";
+        utterance.rate = Math.max(0.65, Math.min(1.2, 1 + rateNum / 100));
+        if (onEnd) {
+            utterance.onend = onEnd;
+            utterance.onerror = onEnd;
+        }
+        window.speechSynthesis.speak(utterance);
+    };
+
+    audio.onended = () => {
+        activeGlobalAudio = null;
+        onEnd?.();
+    };
+    audio.onerror = () => {
+        triggerFallback();
+    };
+
+    audio.play().catch(() => {
+        triggerFallback();
+    });
+}
+
+function getDialogueVoiceForSpeaker(speaker: string, index: number): string {
+    const s = speaker.toLowerCase().trim();
+    const femaleTerms = [
+        "taylor",
+        "sarah",
+        "emma",
+        "jenny",
+        "sonia",
+        "natasha",
+        "clara",
+        "aria",
+        "anna",
+        "lisa",
+        "mary",
+        "rachel",
+        "woman",
+        "female",
+        "she",
+        "ms",
+    ];
+    const maleTerms = [
+        "jamie",
+        "alex",
+        "guy",
+        "ryan",
+        "william",
+        "liam",
+        "john",
+        "david",
+        "michael",
+        "tom",
+        "man",
+        "male",
+        "he",
+        "mr",
+    ];
+
+    if (femaleTerms.some((term) => s.includes(term))) {
+        return "en-US-JennyNeural"; // Female voice for Taylor
+    }
+    if (maleTerms.some((term) => s.includes(term))) {
+        return "en-US-GuyNeural"; // Male voice for Jamie
+    }
+
+    // Default alternate: even index (white/left) = female, odd index (blue/right) = male
+    return index % 2 === 0 ? "en-US-JennyNeural" : "en-US-GuyNeural";
 }
 
 function AudioSpeakButton({
     text,
     label,
     className,
+    voice,
 }: {
     text: string;
     label?: string;
     className?: string;
+    voice?: string;
 }) {
     const [isPlaying, setIsPlaying] = useState(false);
 
@@ -95,7 +189,7 @@ function AudioSpeakButton({
             return;
         }
         setIsPlaying(true);
-        speakText(text, () => setIsPlaying(false));
+        speakText(text, () => setIsPlaying(false), voice);
     };
 
     return (
@@ -1245,32 +1339,50 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
 
             {/* Dialogue Turns */}
             <div className="space-y-4">
-                {lines.map((line, index) => (
-                    <div
-                        key={line.id}
-                        className={[
-                            "max-w-3xl rounded-3xl p-5 text-sm leading-7 shadow-sm",
-                            index % 2 === 0
-                                ? "mr-auto border border-slate-200 bg-slate-50 text-slate-800 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-100"
-                                : "ml-auto bg-blue-600 text-white",
-                        ].join(" ")}
-                    >
-                        <div className="mb-1.5 flex items-center justify-between gap-3">
-                            <span className="text-xs font-bold uppercase tracking-[0.18em] opacity-80">
-                                {line.speaker}
-                            </span>
-                            <AudioSpeakButton
-                                text={line.text}
-                                className={
-                                    index % 2 === 0
-                                        ? "inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-100 dark:bg-slate-700 dark:text-slate-200"
-                                        : "inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium text-white hover:bg-white/30"
-                                }
-                            />
+                {lines.map((line, index) => {
+                    const isEven = index % 2 === 0;
+                    const speakerVoice = getDialogueVoiceForSpeaker(
+                        line.speaker,
+                        index
+                    );
+                    const isFemale =
+                        speakerVoice.includes("Jenny") ||
+                        speakerVoice.includes("Aria") ||
+                        speakerVoice.includes("Sonia") ||
+                        speakerVoice.includes("Natasha") ||
+                        speakerVoice.includes("Clara");
+
+                    return (
+                        <div
+                            key={line.id}
+                            className={[
+                                "max-w-3xl rounded-3xl p-5 text-sm leading-7 shadow-sm",
+                                isEven
+                                    ? "mr-auto border border-slate-200 bg-slate-50 text-slate-800 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-100"
+                                    : "ml-auto bg-blue-600 text-white",
+                            ].join(" ")}
+                        >
+                            <div className="mb-1.5 flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold uppercase tracking-[0.18em] opacity-90">
+                                        {line.speaker}
+                                    </span>
+                                   
+                                </div>
+                                <AudioSpeakButton
+                                    text={line.text}
+                                    voice={speakerVoice}
+                                    className={
+                                        isEven
+                                            ? "inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-100 dark:bg-slate-700 dark:text-slate-200"
+                                            : "inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium text-white hover:bg-white/30"
+                                    }
+                                />
+                            </div>
+                            <p>{line.text}</p>
                         </div>
-                        <p>{line.text}</p>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             {/* Key Strategic Phrases */}
@@ -1359,8 +1471,6 @@ function ListeningPracticeSection({
 }: {
     section: ParsedTheorySection;
 }) {
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [showTranscript, setShowTranscript] = useState(false);
     const [draftAnswers, setDraftAnswers] = useState<Record<number, string>>({});
     const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
 
@@ -1373,75 +1483,15 @@ function ListeningPracticeSection({
 
     const questions = parseReadingQuestions(section.secondary);
 
-    const handlePlayAll = () => {
-        if (isPlaying) {
-            stopSpeech();
-            setIsPlaying(false);
-            return;
-        }
-        setIsPlaying(true);
-        speakText(scriptText, () => setIsPlaying(false));
-    };
-
     return (
         <PanelShell eyebrow="Section 6" title={section.label} note={section.note}>
-            {/* Audio Player Card */}
-            <div className="rounded-3xl border border-blue-200 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 p-6 dark:border-blue-900 dark:bg-slate-900">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
-                            <Headphones className="h-6 w-6" />
-                        </div>
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">
-                                Workplace Audio Track
-                            </p>
-                            <h3 className="text-lg font-bold text-slate-950 dark:text-white">
-                                Authentic Spoken Workplace Monologue
-                            </h3>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                            onClick={handlePlayAll}
-                            className="rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
-                        >
-                            {isPlaying ? (
-                                <>
-                                    <Square className="mr-2 h-4 w-4" />
-                                    Stop audio
-                                </>
-                            ) : (
-                                <>
-                                    <Play className="mr-2 h-4 w-4" />
-                                    Play audio track
-                                </>
-                            )}
-                        </Button>
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowTranscript(!showTranscript)}
-                            className="rounded-full"
-                        >
-                            <FileText className="mr-2 h-4 w-4" />
-                            {showTranscript ? "Hide transcript" : "View transcript"}
-                        </Button>
-                    </div>
-                </div>
-
-                {/* Audio Script (collapsible) */}
-                {showTranscript && (
-                    <article className="mt-5 rounded-2xl border border-blue-200 bg-white p-5 shadow-inner dark:border-blue-900 dark:bg-slate-950 animate-in fade-in slide-in-from-top-2">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500 mb-2">
-                            Audio Script / Transcript
-                        </p>
-                        <p className="text-sm leading-7 text-slate-700 dark:text-slate-200">
-                            {rawScript}
-                        </p>
-                    </article>
-                )}
-            </div>
+            {/* Rich Multi-Accent Neural Audio Player with Slower Speed Controls */}
+            <ListeningAudioPlayer
+                scriptText={scriptText}
+                rawTranscript={rawScript}
+                title="Workplace Audio Track"
+                subtitle="Authentic Spoken Workplace Monologue"
+            />
 
             {/* Comprehension Questions */}
             <div className="space-y-4 pt-2">
