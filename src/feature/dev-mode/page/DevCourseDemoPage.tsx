@@ -174,6 +174,14 @@ export function DevCourseDemoPage() {
 				</div>
 				<div className="flex items-center gap-2">
 					<Badge className="capitalize">{roadmap.track} track</Badge>
+					<Button
+						variant="outline"
+						size="sm"
+						className="border-indigo-500/40 text-indigo-400 hover:bg-indigo-950/40"
+						onClick={() => navigate({ to: '/dev-audio-test' })}
+					>
+						🎙️ Audio TTS/STT
+					</Button>
 					<Button variant="outline" size="sm" onClick={load}>
 						<RefreshCw /> Refresh
 					</Button>
@@ -181,6 +189,7 @@ export function DevCourseDemoPage() {
 						Role selection
 					</Button>
 				</div>
+
 			</div>
 
 			<div className="grid gap-4 sm:grid-cols-3">

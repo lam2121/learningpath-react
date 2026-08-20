@@ -89,8 +89,9 @@ export function RegenerateTrackModal({ track, loading, onConfirm, onClose }: Reg
 						Regenerate Placement Questions
 					</DialogTitle>
 					<DialogDescription>
-						This track has already generated content. Regenerating will replace the existing
-						question set with a fresh one.
+						Regenerate placement questions for <strong>{track.name}</strong>: 4 skills
+						× 12 questions per skill (3 difficulty bands), each tagged with an{' '}
+						<strong>expanded_skill</strong> layer (Context_layer or Language_layer).
 					</DialogDescription>
 				</DialogHeader>
 				<div className="py-2">

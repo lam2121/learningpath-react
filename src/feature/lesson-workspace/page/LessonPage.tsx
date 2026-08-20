@@ -9,15 +9,19 @@ import {
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
+    Copy,
     FileText,
+    Headphones,
     Languages,
     ListChecks,
     MessageSquareText,
     NotebookPen,
-    Route,
+    Play,
     ScrollText,
-    ShieldCheck,
+    Sparkles,
+    Square,
     Target,
+    Volume2,
     type LucideIcon,
 } from "lucide-react";
 
@@ -51,7 +55,72 @@ import type {
 } from "@/feature/quiz-engine/type/Quiz";
 import { LessonSkeleton } from "../component/LessonSkeleton";
 
-// [THÊM MỚI] Component con xử lý toggle ẩn/hiện bản dịch cho phần Do/Don't
+function speakText(text: string, onEnd?: () => void) {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+        return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US";
+    utterance.rate = 0.92;
+    if (onEnd) {
+        utterance.onend = onEnd;
+        utterance.onerror = onEnd;
+    }
+    window.speechSynthesis.speak(utterance);
+}
+
+function stopSpeech() {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+    }
+}
+
+function AudioSpeakButton({
+    text,
+    label,
+    className,
+}: {
+    text: string;
+    label?: string;
+    className?: string;
+}) {
+    const [isPlaying, setIsPlaying] = useState(false);
+
+    const handlePlay = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (isPlaying) {
+            stopSpeech();
+            setIsPlaying(false);
+            return;
+        }
+        setIsPlaying(true);
+        speakText(text, () => setIsPlaying(false));
+    };
+
+    return (
+        <button
+            type="button"
+            onClick={handlePlay}
+            title={label ?? "Listen to pronunciation"}
+            className={
+                className ??
+                "inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 transition hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900/50"
+            }
+        >
+            <Volume2
+                className={`h-3.5 w-3.5 ${
+                    isPlaying
+                        ? "animate-pulse text-blue-600 dark:text-blue-400"
+                        : ""
+                }`}
+            />
+            {label ? <span>{label}</span> : <span>Listen</span>}
+        </button>
+    );
+}
+
+// Component xử lý toggle ẩn/hiện bản dịch cho phần Do/Don't (hỗ trợ backward compatibility)
 function DosDontsArticle({
     pair,
     explanationString,
@@ -66,17 +135,23 @@ function DosDontsArticle({
         <article className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800">
             <div className="grid gap-4 lg:grid-cols-2">
                 <div className="rounded-2xl bg-emerald-50 p-4 dark:bg-emerald-950/30">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
-                        Do
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
+                            Do (Recommended)
+                        </p>
+                        <AudioSpeakButton text={pair.left} />
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200 font-medium">
                         {pair.left}
                     </p>
                 </div>
                 <div className="rounded-2xl bg-rose-50 p-4 dark:bg-rose-950/30">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700 dark:text-rose-300">
-                        Don't
-                    </p>
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700 dark:text-rose-300">
+                            Don't (Avoid)
+                        </p>
+                        <AudioSpeakButton text={pair.right} />
+                    </div>
                     <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
                         {pair.right}
                     </p>
@@ -91,7 +166,9 @@ function DosDontsArticle({
                     className="text-slate-600 dark:text-slate-300"
                 >
                     <Languages className="mr-2 h-4 w-4" />
-                    {showTranslation ? "Ẩn bản dịch (Hide translation)" : "Dịch sang tiếng Việt (Vietnamese Support)"}
+                    {showTranslation
+                        ? "Ẩn bản dịch (Hide translation)"
+                        : "Dịch sang tiếng Việt (Vietnamese Support)"}
                 </Button>
             </div>
 
@@ -124,16 +201,16 @@ function DosDontsArticle({
     );
 }
 
-// [PHẦN CÒN LẠI CỦA FILE GIỮ NGUYÊN]
 type TheorySectionKey =
     | "scenario"
     | "vocab"
     | "phrases"
     | "reading"
     | "dialogue"
+    | "listening"
+    | "wrapup"
     | "process"
-    | "dos_donts"
-    | "wrapup";
+    | "dos_donts";
 
 type SidebarSectionKey = TheorySectionKey | "quiz";
 
@@ -176,12 +253,26 @@ type EmbeddedQuizQuestion = {
 
 const SECTION_META: SectionMeta[] = [
     { key: "scenario", label: "Scenario", eyebrow: "Context", icon: ScrollText },
-    { key: "vocab", label: "Vocabulary", eyebrow: "Terms", icon: Languages },
-    { key: "phrases", label: "Phrases", eyebrow: "Frames", icon: NotebookPen },
+    {
+        key: "vocab",
+        label: "Vocabulary & Pronunciation",
+        eyebrow: "Speaking & Terms",
+        icon: Volume2,
+    },
+    { key: "phrases", label: "Phrases", eyebrow: "Patterns", icon: NotebookPen },
     { key: "reading", label: "Reading", eyebrow: "Document", icon: FileText },
-    { key: "dialogue", label: "Dialogue", eyebrow: "Exchange", icon: MessageSquareText },
-    { key: "process", label: "Process", eyebrow: "Workflow", icon: Route },
-    { key: "dos_donts", label: "Do / Don't", eyebrow: "Responses", icon: ShieldCheck },
+    {
+        key: "dialogue",
+        label: "Dialogue",
+        eyebrow: "Exchange",
+        icon: MessageSquareText,
+    },
+    {
+        key: "listening",
+        label: "Listening",
+        eyebrow: "Audio Track",
+        icon: Headphones,
+    },
     { key: "wrapup", label: "Wrap-up", eyebrow: "Review", icon: Target },
     { key: "quiz", label: "Quiz", eyebrow: "C-2", icon: CircleHelp },
 ];
@@ -285,19 +376,77 @@ function normalizeTheoryContent(value: unknown): ParsedTheorySection[] | null {
     const parsed = parseMaybeJson(value);
     const rows = findFirstList(parsed);
 
-    if (!rows || rows.length !== 8) {
+    if (!rows || (rows.length !== 7 && rows.length !== 8)) {
         return null;
     }
+
+    // 7-section order (New standard)
+    if (rows.length === 7) {
+        const keys: TheorySectionKey[] = [
+            "scenario",
+            "vocab",
+            "phrases",
+            "reading",
+            "dialogue",
+            "listening",
+            "wrapup",
+        ];
+
+        const sections = rows
+            .map((row, index) => {
+                if (!Array.isArray(row) || row.length < 1) {
+                    return null;
+                }
+                const key = keys[index];
+                const meta = SECTION_META.find((m) => m.key === key);
+                const primary = typeof row[1] === "string" ? row[1] : "";
+                const hasFullRow = row.length >= 4;
+                const secondary = hasFullRow && typeof row[2] === "string" ? row[2] : "";
+                const note = hasFullRow
+                    ? typeof row[3] === "string"
+                        ? row[3]
+                        : ""
+                    : typeof row[2] === "string"
+                        ? row[2]
+                        : "";
+
+                return {
+                    key,
+                    label: meta?.label ?? formatLabel(key),
+                    primary,
+                    secondary,
+                    note,
+                } satisfies ParsedTheorySection;
+            })
+            .filter((row): row is ParsedTheorySection => row !== null);
+
+        return sections.length === 7 ? sections : null;
+    }
+
+    // 8-section legacy order (Backward compatibility)
+    const legacyKeys: TheorySectionKey[] = [
+        "scenario",
+        "vocab",
+        "phrases",
+        "reading",
+        "dialogue",
+        "process",
+        "dos_donts",
+        "wrapup",
+    ];
 
     const sections = rows
         .map((row, index) => {
             if (!Array.isArray(row) || row.length < 1) {
                 return null;
             }
-            const meta = SECTION_META[index];
-            if (!meta || meta.key === "quiz" || row[0] !== meta.key) {
-                return null;
-            }
+            const rawKey = String(row[0]);
+            let key = legacyKeys[index] ?? "scenario";
+            if (rawKey === "listening") key = "listening";
+            else if (rawKey === "process") key = "process";
+            else if (rawKey === "dos_donts") key = "dos_donts";
+
+            const meta = SECTION_META.find((m) => m.key === key);
             const primary = typeof row[1] === "string" ? row[1] : "";
             const hasFullRow = row.length >= 4;
             const secondary = hasFullRow && typeof row[2] === "string" ? row[2] : "";
@@ -310,8 +459,8 @@ function normalizeTheoryContent(value: unknown): ParsedTheorySection[] | null {
                     : "";
 
             return {
-                key: meta.key,
-                label: meta.label,
+                key,
+                label: meta?.label ?? formatLabel(key),
                 primary,
                 secondary,
                 note,
@@ -319,7 +468,7 @@ function normalizeTheoryContent(value: unknown): ParsedTheorySection[] | null {
         })
         .filter((row): row is ParsedTheorySection => row !== null);
 
-    return sections.length === 8 ? sections : null;
+    return sections.length >= 7 ? sections : null;
 }
 
 function normalizeQuizContent(value: unknown): ParsedQuiz | null {
@@ -455,6 +604,7 @@ function parseDialogueLines(value: string) {
             };
         });
 }
+
 type DialogueHighlight = {
     id: string;
     left: string;
@@ -542,7 +692,7 @@ function parseIndexedExplanation(value: string, prefix: "Do" | "Phrase") {
                 right: match?.[2]?.trim() ?? "",
             };
         }
- 
+
         const splitIndex = item.indexOf(" - ");
         return {
             id: `${index}-${item}`,
@@ -709,6 +859,245 @@ function EmptyPanel({
     );
 }
 
+function VocabularySection({ section }: { section: ParsedTheorySection }) {
+    const items = splitHash(section.primary).map((entry, index) => {
+        const parts = entry.split("|").map((part) => part.trim());
+        const term = parts[0] ?? "";
+        const ipa = parts[1] ?? "";
+        const partOfSpeech = parts[2] ?? "";
+        const meaning = parts[3] ?? "";
+        const explanation = parts.length >= 6 ? parts[4] : "";
+        const example = parts.length >= 6 ? parts[5] : (parts[4] ?? "");
+        const pronunciationGuide = parts.length >= 7 ? parts[6] : "";
+
+        return {
+            id: `${index}-${term}`,
+            term,
+            ipa,
+            partOfSpeech,
+            meaning,
+            explanation,
+            example,
+            pronunciationGuide,
+        };
+    });
+
+    // Parse secondary pronunciation tips and spoken drills
+    const secondaryParts = splitPipe(section.secondary);
+    const pronunciationGuideText = secondaryParts
+        .find((p) => /^Pronunciation\s*Guide\s*:/i.test(p))
+        ?.replace(/^Pronunciation\s*Guide\s*:\s*/i, "");
+    const drillSentences = secondaryParts
+        .filter((p) => !/^Pronunciation\s*Guide\s*:/i.test(p))
+        .map((p) => p.replace(/^Drills\s*:\s*/i, "").trim())
+        .filter(Boolean);
+
+    return (
+        <PanelShell eyebrow="Section 2" title={section.label} note={section.note}>
+            <div className="grid gap-5 md:grid-cols-2">
+                {items.map((item) => (
+                    <article
+                        key={item.id}
+                        className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                    >
+                        <div>
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-2.5">
+                                    <h3 className="text-xl font-bold text-slate-950 dark:text-white">
+                                        {item.term}
+                                    </h3>
+                                    <AudioSpeakButton text={item.term} />
+                                </div>
+                                <Badge variant="outline">{item.partOfSpeech}</Badge>
+                            </div>
+
+                            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                <p className="text-sm font-medium text-blue-600 dark:text-blue-300">
+                                    {item.ipa}
+                                </p>
+                                {item.pronunciationGuide && (
+                                    <Badge variant="secondary" className="text-xs">
+                                        {item.pronunciationGuide}
+                                    </Badge>
+                                )}
+                            </div>
+
+                            <div className="mt-3 rounded-xl bg-slate-50 px-3.5 py-2 text-sm font-medium text-slate-800 dark:bg-slate-800/60 dark:text-slate-200">
+                                {item.meaning}
+                            </div>
+
+                            {item.explanation && (
+                                <div className="mt-3 text-xs leading-5 text-slate-600 dark:text-slate-300">
+                                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                        Nuance & Context:{" "}
+                                    </span>
+                                    {item.explanation}
+                                </div>
+                            )}
+                        </div>
+
+                        {item.example && (
+                            <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/70 p-3.5 text-xs leading-5 text-slate-700 dark:border-blue-950 dark:bg-blue-950/20 dark:text-slate-300">
+                                <div className="mb-1.5 flex items-center justify-between">
+                                    <span className="font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300">
+                                        Workplace Example
+                                    </span>
+                                    <AudioSpeakButton
+                                        text={item.example}
+                                        label="Read sentence"
+                                    />
+                                </div>
+                                <p className="italic">"{item.example}"</p>
+                            </div>
+                        )}
+                    </article>
+                ))}
+            </div>
+
+            {/* Pronunciation Guide & Speaking Drills */}
+            {section.secondary && (
+                <div className="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/60 p-6 dark:border-blue-900 dark:bg-slate-900">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+                            <Volume2 className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-300">
+                                Speaking & Pronunciation Drills
+                            </p>
+                            <h4 className="text-base font-bold text-slate-950 dark:text-white">
+                                Pronunciation Tips & Spoken Repetition (Shadowing)
+                            </h4>
+                        </div>
+                    </div>
+
+                    {pronunciationGuideText && (
+                        <div className="mt-4 rounded-2xl bg-white p-4 text-sm text-slate-700 shadow-sm dark:bg-slate-800/80 dark:text-slate-200">
+                            <span className="font-semibold text-blue-700 dark:text-blue-300">
+                                Phonetic Guidance:{" "}
+                            </span>
+                            {pronunciationGuideText}
+                        </div>
+                    )}
+
+                    {drillSentences.length > 0 && (
+                        <div className="mt-4 space-y-2.5">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                Read aloud practice:
+                            </p>
+                            {drillSentences.map((drill, idx) => (
+                                <div
+                                    key={idx}
+                                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 text-sm dark:border-slate-800 dark:bg-slate-950"
+                                >
+                                    <span className="text-slate-800 dark:text-slate-200 font-medium">
+                                        {drill}
+                                    </span>
+                                    <AudioSpeakButton
+                                        text={drill.replace(/^\d+\.\s*/, "")}
+                                        label="Listen & Repeat"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </PanelShell>
+    );
+}
+
+function PhrasesSection({ section }: { section: ParsedTheorySection }) {
+    const patterns = splitHash(section.primary).map((entry, index) => {
+        const parts = entry.split("|").map((part) => part.trim());
+        const frame = parts[0] ?? "";
+        const meaning = parts.length >= 4 ? parts[1] : "";
+        const usage = parts.length >= 4 ? parts[2] : (parts[1] ?? "");
+        const example = parts.length >= 4 ? parts[3] : (parts[2] ?? "");
+
+        return {
+            id: `${index}-${frame}`,
+            frame,
+            meaning,
+            usage,
+            example,
+        };
+    });
+
+    const scenarios = splitPipe(section.secondary);
+
+    return (
+        <PanelShell eyebrow="Section 3" title={section.label} note={section.note}>
+            <div className="space-y-4">
+                {patterns.map((pattern) => (
+                    <article
+                        key={pattern.id}
+                        className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                    >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2.5">
+                                <NotebookPen className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                                <h3 className="font-bold text-slate-950 dark:text-white">
+                                    {pattern.frame}
+                                </h3>
+                                <AudioSpeakButton text={pattern.frame} />
+                            </div>
+                            {pattern.meaning && (
+                                <Badge variant="secondary" className="text-xs">
+                                    {pattern.meaning}
+                                </Badge>
+                            )}
+                        </div>
+
+                        {pattern.usage && (
+                            <p className="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
+                                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                    When to use:{" "}
+                                </span>
+                                {pattern.usage}
+                            </p>
+                        )}
+
+                        {pattern.example && (
+                            <div className="mt-3 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 dark:bg-slate-800/70 dark:text-slate-300">
+                                <div className="mb-1 flex items-center justify-between">
+                                    <span className="text-xs font-semibold uppercase text-slate-400">
+                                        Workplace Example
+                                    </span>
+                                    <AudioSpeakButton
+                                        text={pattern.example}
+                                        label="Read example"
+                                    />
+                                </div>
+                                <p className="italic">"{pattern.example}"</p>
+                            </div>
+                        )}
+                    </article>
+                ))}
+            </div>
+
+            {/* Mini-Scenario Challenges */}
+            {scenarios.length > 0 && (
+                <div className="rounded-3xl border border-dashed border-blue-200 bg-blue-50/50 p-6 dark:border-blue-900 dark:bg-blue-950/20">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-300 mb-3">
+                        Mini-Scenario Challenges
+                    </p>
+                    <div className="space-y-3">
+                        {scenarios.map((scenario, index) => (
+                            <div
+                                key={index}
+                                className="rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                            >
+                                {scenario}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </PanelShell>
+    );
+}
+
 function ReadingPracticeSection({
     section,
     qas,
@@ -721,19 +1110,24 @@ function ReadingPracticeSection({
 
     return (
         <PanelShell eyebrow="Section 4" title={section.label} note={section.note}>
-            <article className="rounded-2xl border border-slate-200 p-6 dark:border-slate-800">
-                <p className="text-sm leading-8 text-slate-700 dark:text-slate-200">
+            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex items-center gap-2 mb-4 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    <FileText className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                    <span>Workplace Technical Document</span>
+                </div>
+                <p className="text-sm leading-8 text-slate-800 dark:text-slate-100 whitespace-pre-line">
                     {section.primary}
                 </p>
             </article>
 
             <div className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 text-sm text-slate-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-slate-200">
                 <p className="font-semibold text-slate-950 dark:text-white">
-                    Reading practice
+                    Reading comprehension practice
                 </p>
                 <p className="mt-1 leading-6">
-                    Write your own answers first, then click <span className="font-semibold">Show answer</span> to compare.
-                    This section is for practice only and does not affect your quiz score.
+                    Write your own answers first, then click{" "}
+                    <span className="font-semibold">Show answer</span> to compare.
+                    This practice is for self-study and does not affect your quiz score.
                 </p>
             </div>
 
@@ -745,7 +1139,7 @@ function ReadingPracticeSection({
                     return (
                         <article
                             key={`${index}-${qa.question}`}
-                            className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
+                            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
                         >
                             <p className="font-medium text-slate-950 dark:text-white">
                                 {qa.question}
@@ -760,12 +1154,13 @@ function ReadingPracticeSection({
                                     }))
                                 }
                                 placeholder="Write your answer here..."
-                                className="mt-4 min-h-28 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700 outline-none transition-colors focus:border-blue-400 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-700 dark:focus:bg-slate-900"
+                                className="mt-4 min-h-24 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700 outline-none transition-colors focus:border-blue-400 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-700 dark:focus:bg-slate-900"
                             />
 
                             <div className="mt-4 flex flex-wrap gap-3">
                                 <Button
                                     variant="outline"
+                                    size="sm"
                                     onClick={() =>
                                         setRevealedAnswers((prev) => ({
                                             ...prev,
@@ -777,6 +1172,7 @@ function ReadingPracticeSection({
                                 </Button>
                                 <Button
                                     variant="ghost"
+                                    size="sm"
                                     onClick={() =>
                                         setDraftAnswers((prev) => ({
                                             ...prev,
@@ -789,16 +1185,441 @@ function ReadingPracticeSection({
                             </div>
 
                             {isRevealed ? (
-                                <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-slate-700 dark:bg-emerald-950/30 dark:text-slate-200">
+                                <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-slate-700 dark:bg-emerald-950/30 dark:text-slate-200 animate-in fade-in">
                                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
                                         Reference answer
                                     </p>
-                                    <p className="mt-2">{qa.answer}</p>
+                                    <p className="mt-1">{qa.answer}</p>
                                 </div>
                             ) : null}
                         </article>
                     );
                 })}
+            </div>
+        </PanelShell>
+    );
+}
+
+function DialogueSection({ section }: { section: ParsedTheorySection }) {
+    let contextText = "";
+    let dialogueContent = section.primary;
+
+    if (dialogueContent.includes(" || ")) {
+        const [left, right] = dialogueContent.split(" || ");
+        if (/^Context\s*:/i.test(left)) {
+            contextText = left.replace(/^Context\s*:\s*/i, "").trim();
+            dialogueContent = right.replace(/^Dialogue\s*:\s*/i, "").trim();
+        }
+    }
+
+    const lines = parseDialogueLines(dialogueContent);
+
+    let partA = section.secondary;
+    let partB = "";
+    if (section.secondary.includes(" || ")) {
+        const [a, b] = section.secondary.split(" || ");
+        partA = a;
+        partB = b;
+    }
+
+    const highlights = parseDialogueHighlights(partA);
+    const practiceTasks = partB
+        ? splitPipe(partB.replace(/^Practice\s*Tasks\s*:\s*/i, ""))
+        : [];
+
+    const [userReplies, setUserReplies] = useState<Record<number, string>>({});
+
+    return (
+        <PanelShell eyebrow="Section 5" title={section.label} note={section.note}>
+            {/* Scenario Setting / Context Banner */}
+            {contextText && (
+                <div className="rounded-2xl border border-blue-200 bg-blue-50/80 px-5 py-4 text-sm text-slate-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-slate-200">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">
+                        Conversation Setting & Objective
+                    </p>
+                    <p className="mt-1.5 leading-6 text-slate-800 dark:text-slate-100 font-medium">
+                        {contextText}
+                    </p>
+                </div>
+            )}
+
+            {/* Dialogue Turns */}
+            <div className="space-y-4">
+                {lines.map((line, index) => (
+                    <div
+                        key={line.id}
+                        className={[
+                            "max-w-3xl rounded-3xl p-5 text-sm leading-7 shadow-sm",
+                            index % 2 === 0
+                                ? "mr-auto border border-slate-200 bg-slate-50 text-slate-800 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-100"
+                                : "ml-auto bg-blue-600 text-white",
+                        ].join(" ")}
+                    >
+                        <div className="mb-1.5 flex items-center justify-between gap-3">
+                            <span className="text-xs font-bold uppercase tracking-[0.18em] opacity-80">
+                                {line.speaker}
+                            </span>
+                            <AudioSpeakButton
+                                text={line.text}
+                                className={
+                                    index % 2 === 0
+                                        ? "inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-100 dark:bg-slate-700 dark:text-slate-200"
+                                        : "inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium text-white hover:bg-white/30"
+                                }
+                            />
+                        </div>
+                        <p>{line.text}</p>
+                    </div>
+                ))}
+            </div>
+
+            {/* Key Strategic Phrases */}
+            {highlights.length > 0 && (
+                <div className="space-y-3 pt-2">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Key Strategic Phrases Used:
+                    </p>
+                    <div className="grid gap-4 md:grid-cols-2">
+                        {highlights.map((highlight) => (
+                            <article
+                                key={highlight.id}
+                                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                            >
+                                <div className="flex items-center justify-between gap-2">
+                                    <p className="font-semibold text-slate-950 dark:text-white">
+                                        {highlight.left}
+                                    </p>
+                                    <AudioSpeakButton text={highlight.left} />
+                                </div>
+                                <p className="mt-2.5 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                    {highlight.right}
+                                </p>
+                            </article>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Interactive Roleplay Practice Tasks */}
+            {practiceTasks.length > 0 && (
+                <div className="rounded-3xl border border-indigo-200 bg-indigo-50/40 p-6 dark:border-indigo-950 dark:bg-slate-900/60">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm">
+                            <MessageSquareText className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-300">
+                                Interactive Roleplay Practice
+                            </p>
+                            <h4 className="text-base font-bold text-slate-950 dark:text-white">
+                                Practice Replying to Meeting Scenarios
+                            </h4>
+                        </div>
+                    </div>
+
+                    <div className="mt-5 space-y-4">
+                        {practiceTasks.map((task, idx) => (
+                            <div
+                                key={idx}
+                                className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950 shadow-sm"
+                            >
+                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                    {task}
+                                </p>
+                                <textarea
+                                    value={userReplies[idx] ?? ""}
+                                    onChange={(e) =>
+                                        setUserReplies((prev) => ({
+                                            ...prev,
+                                            [idx]: e.target.value,
+                                        }))
+                                    }
+                                    placeholder="Type your response here and practice speaking it out loud..."
+                                    className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-400 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                                />
+                                {userReplies[idx] && (
+                                    <div className="mt-2.5 flex justify-end">
+                                        <AudioSpeakButton
+                                            text={userReplies[idx]}
+                                            label="Listen to my response"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </PanelShell>
+    );
+}
+
+function ListeningPracticeSection({
+    section,
+}: {
+    section: ParsedTheorySection;
+}) {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [showTranscript, setShowTranscript] = useState(false);
+    const [draftAnswers, setDraftAnswers] = useState<Record<number, string>>({});
+    const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
+
+    const rawScript = section.primary;
+    const scriptText = rawScript
+        .replace(/^Audio\s*Script\s*:\s*/i, "")
+        .replace(/^\[.*?\]\s*:\s*/i, "")
+        .replace(/^["']|["']$/g, "")
+        .trim();
+
+    const questions = parseReadingQuestions(section.secondary);
+
+    const handlePlayAll = () => {
+        if (isPlaying) {
+            stopSpeech();
+            setIsPlaying(false);
+            return;
+        }
+        setIsPlaying(true);
+        speakText(scriptText, () => setIsPlaying(false));
+    };
+
+    return (
+        <PanelShell eyebrow="Section 6" title={section.label} note={section.note}>
+            {/* Audio Player Card */}
+            <div className="rounded-3xl border border-blue-200 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 p-6 dark:border-blue-900 dark:bg-slate-900">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
+                            <Headphones className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">
+                                Workplace Audio Track
+                            </p>
+                            <h3 className="text-lg font-bold text-slate-950 dark:text-white">
+                                Authentic Spoken Workplace Monologue
+                            </h3>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                            onClick={handlePlayAll}
+                            className="rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                        >
+                            {isPlaying ? (
+                                <>
+                                    <Square className="mr-2 h-4 w-4" />
+                                    Stop audio
+                                </>
+                            ) : (
+                                <>
+                                    <Play className="mr-2 h-4 w-4" />
+                                    Play audio track
+                                </>
+                            )}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowTranscript(!showTranscript)}
+                            className="rounded-full"
+                        >
+                            <FileText className="mr-2 h-4 w-4" />
+                            {showTranscript ? "Hide transcript" : "View transcript"}
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Audio Script (collapsible) */}
+                {showTranscript && (
+                    <article className="mt-5 rounded-2xl border border-blue-200 bg-white p-5 shadow-inner dark:border-blue-900 dark:bg-slate-950 animate-in fade-in slide-in-from-top-2">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500 mb-2">
+                            Audio Script / Transcript
+                        </p>
+                        <p className="text-sm leading-7 text-slate-700 dark:text-slate-200">
+                            {rawScript}
+                        </p>
+                    </article>
+                )}
+            </div>
+
+            {/* Comprehension Questions */}
+            <div className="space-y-4 pt-2">
+                <div className="flex items-center gap-2 px-1">
+                    <ListChecks className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                    <h4 className="font-semibold text-slate-950 dark:text-white">
+                        Listening Comprehension Questions
+                    </h4>
+                </div>
+
+                {questions.map((qa, index) => {
+                    const isRevealed = Boolean(revealedAnswers[index]);
+                    const draft = draftAnswers[index] ?? "";
+
+                    return (
+                        <article
+                            key={`${index}-${qa.question}`}
+                            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                        >
+                            <p className="font-medium text-slate-950 dark:text-white">
+                                {qa.question}
+                            </p>
+
+                            <textarea
+                                value={draft}
+                                onChange={(e) =>
+                                    setDraftAnswers((prev) => ({
+                                        ...prev,
+                                        [index]: e.target.value,
+                                    }))
+                                }
+                                placeholder="Write what you heard or answer here..."
+                                className="mt-4 min-h-24 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700 outline-none transition-colors focus:border-blue-400 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-700 dark:focus:bg-slate-900"
+                            />
+
+                            <div className="mt-4 flex flex-wrap gap-3">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                        setRevealedAnswers((prev) => ({
+                                            ...prev,
+                                            [index]: !prev[index],
+                                        }))
+                                    }
+                                >
+                                    {isRevealed ? "Hide answer" : "Show answer"}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                        setDraftAnswers((prev) => ({
+                                            ...prev,
+                                            [index]: "",
+                                        }))
+                                    }
+                                >
+                                    Clear
+                                </Button>
+                            </div>
+
+                            {isRevealed && (
+                                <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-slate-700 dark:bg-emerald-950/30 dark:text-slate-200 animate-in fade-in">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
+                                        Reference answer
+                                    </p>
+                                    <p className="mt-1">{qa.answer}</p>
+                                </div>
+                            )}
+                        </article>
+                    );
+                })}
+            </div>
+        </PanelShell>
+    );
+}
+
+function WrapupSection({ section }: { section: ParsedTheorySection }) {
+    const takeaways = splitWrapupTakeaways(section.primary);
+    const [actionDraft, setActionDraft] = useState("");
+    const [isCopied, setIsCopied] = useState(false);
+
+    const handleCopy = () => {
+        if (actionDraft) {
+            navigator.clipboard.writeText(actionDraft);
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
+        }
+    };
+
+    const wordCount = actionDraft.trim()
+        ? actionDraft.trim().split(/\s+/).length
+        : 0;
+
+    return (
+        <PanelShell eyebrow="Section 7" title={section.label} note={section.note}>
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+                <div className="space-y-5">
+                    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <div className="flex items-center gap-2.5">
+                            <ListChecks className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                            <h3 className="text-lg font-bold text-slate-950 dark:text-white">
+                                Core Linguistic Takeaways
+                            </h3>
+                        </div>
+                        <div className="mt-4 space-y-3">
+                            {takeaways.map((takeaway, index) => (
+                                <div
+                                    key={`${index}-${takeaway}`}
+                                    className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 dark:bg-slate-800/70 dark:text-slate-200"
+                                >
+                                    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                                        {index + 1}
+                                    </div>
+                                    <span>{takeaway}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Interactive Action Challenge Task */}
+                    <div className="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50/60 to-indigo-50/60 p-6 dark:border-blue-900 dark:bg-slate-900">
+                        <div className="flex items-center gap-2.5">
+                            <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                            <h3 className="text-lg font-bold text-slate-950 dark:text-white">
+                                5-Minute Output Challenge
+                            </h3>
+                        </div>
+                        <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
+                            {section.secondary}
+                        </p>
+
+                        <div className="mt-4">
+                            <textarea
+                                value={actionDraft}
+                                onChange={(e) => setActionDraft(e.target.value)}
+                                placeholder="Draft your email, message, or speech notes applying lesson concepts here..."
+                                className="min-h-32 w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-800 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                            />
+                            <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+                                <span>{wordCount} words</span>
+                                <div className="flex items-center gap-2">
+                                    {actionDraft && (
+                                        <AudioSpeakButton
+                                            text={actionDraft}
+                                            label="Listen to my draft"
+                                        />
+                                    )}
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleCopy}
+                                        disabled={!actionDraft}
+                                        className="h-7 text-xs"
+                                    >
+                                        <Copy className="mr-1.5 h-3.5 w-3.5" />
+                                        {isCopied ? "Copied!" : "Copy text"}
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                            Ready for Quiz
+                        </p>
+                        <h4 className="mt-1 text-base font-bold text-slate-950 dark:text-white">
+                            Self-Check Checklist
+                        </h4>
+                        <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                            {section.note}
+                        </p>
+                    </article>
+                </div>
             </div>
         </PanelShell>
     );
@@ -812,13 +1633,13 @@ function renderTheorySection(section: ParsedTheorySection) {
             return (
                 <PanelShell eyebrow="Section 1" title={section.label} note={section.note}>
                     <div className="grid gap-4 lg:grid-cols-2">
-                        <div className="rounded-2xl bg-slate-950 px-5 py-5 text-slate-50">
+                        <div className="rounded-2xl bg-slate-950 px-5 py-5 text-slate-50 shadow-sm">
                             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">
                                 English scenario
                             </p>
                             <p className="mt-3 text-sm leading-7">{english}</p>
                         </div>
-                        <div className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-5 dark:border-blue-900 dark:bg-blue-950/30">
+                        <div className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-5 dark:border-blue-900 dark:bg-blue-950/30 shadow-sm">
                             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-300">
                                 Vietnamese support
                             </p>
@@ -828,9 +1649,9 @@ function renderTheorySection(section: ParsedTheorySection) {
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                         <p className="text-sm font-semibold text-slate-950 dark:text-white">
-                            Decision points
+                            Decision points to resolve
                         </p>
                         <div className="mt-4 grid gap-3">
                             {decisions.map((decision, index) => (
@@ -848,96 +1669,11 @@ function renderTheorySection(section: ParsedTheorySection) {
         }
 
         case "vocab": {
-            const items = splitHash(section.primary).map((entry, index) => {
-                const [term, ipa, partOfSpeech, meaning, example] = entry
-                    .split("|")
-                    .map((part) => part.trim());
-                return {
-                    id: `${index}-${term}`,
-                    term,
-                    ipa,
-                    partOfSpeech,
-                    meaning,
-                    example,
-                };
-            });
-
-            return (
-                <PanelShell eyebrow="Section 2" title={section.label} note={section.note}>
-                    <div className="grid gap-4 md:grid-cols-2">
-                        {items.map((item) => (
-                            <article
-                                key={item.id}
-                                className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800"
-                            >
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <h3 className="text-lg font-semibold text-slate-950 dark:text-white">
-                                        {item.term}
-                                    </h3>
-                                    <Badge variant="outline">{item.partOfSpeech}</Badge>
-                                </div>
-                                <p className="mt-2 text-sm text-blue-600 dark:text-blue-300">
-                                    {item.ipa}
-                                </p>
-                                <p className="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
-                                    {item.meaning}
-                                </p>
-                                <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 dark:bg-slate-800/70 dark:text-slate-300">
-                                    {item.example}
-                                </div>
-                            </article>
-                        ))}
-                    </div>
-                    {section.secondary ? (
-                        <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50 px-5 py-4 text-sm text-slate-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-slate-200">
-                            {section.secondary}
-                        </div>
-                    ) : null}
-                </PanelShell>
-            );
+            return <VocabularySection section={section} />;
         }
 
         case "phrases": {
-            const patterns = splitHash(section.primary).map((entry, index) => {
-                const [frame, usage, example] = entry.split("|").map((part) => part.trim());
-                return {
-                    id: `${index}-${frame}`,
-                    frame,
-                    usage,
-                    example,
-                };
-            });
-
-            return (
-                <PanelShell eyebrow="Section 3" title={section.label} note={section.note}>
-                    <div className="space-y-4">
-                        {patterns.map((pattern) => (
-                            <article
-                                key={pattern.id}
-                                className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800"
-                            >
-                                <div className="flex items-center gap-2">
-                                    <NotebookPen className="h-4 w-4 text-blue-600 dark:text-blue-300" />
-                                    <h3 className="font-semibold text-slate-950 dark:text-white">
-                                        {pattern.frame}
-                                    </h3>
-                                </div>
-                                <p className="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
-                                    {pattern.usage}
-                                </p>
-                                <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 dark:bg-slate-800/70 dark:text-slate-300">
-                                    {pattern.example}
-                                </div>
-                            </article>
-                        ))}
-                    </div>
-                    {section.secondary ? (
-                        <div className="rounded-2xl border border-dashed border-slate-200 px-5 py-4 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">
-                            {section.secondary}
-                        </div>
-                    ) : null}
-                </PanelShell>
-            );
+            return <PhrasesSection section={section} />;
         }
 
         case "reading": {
@@ -946,48 +1682,15 @@ function renderTheorySection(section: ParsedTheorySection) {
         }
 
         case "dialogue": {
-            const lines = parseDialogueLines(section.primary);
-            const highlights = parseDialogueHighlights(section.secondary);
-            return (
-                <PanelShell eyebrow="Section 5" title={section.label} note={section.note}>
-                    <div className="space-y-3">
-                        {lines.map((line, index) => (
-                            <div
-                                key={line.id}
-                                className={[
-                                    "max-w-3xl rounded-2xl px-5 py-4 text-sm leading-7",
-                                    index % 2 === 0
-                                        ? "mr-auto bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
-                                        : "ml-auto bg-blue-600 text-white",
-                                ].join(" ")}
-                            >
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] opacity-80">
-                                    {line.speaker}
-                                </p>
-                                <p className="mt-2">{line.text}</p>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                        {highlights.map((highlight) => (
-                            <article
-                                key={highlight.id}
-                                className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800"
-                            >
-                                <p className="font-semibold text-slate-950 dark:text-white">
-                                    {highlight.left}
-                                </p>
-                                <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                    {highlight.right}
-                                </p>
-                            </article>
-                        ))}
-                    </div>
-                </PanelShell>
-            );
+            return <DialogueSection section={section} />;
+        }
+
+        case "listening": {
+            return <ListeningPracticeSection section={section} />;
         }
 
         case "process": {
+            // Legacy fallback
             const steps = splitPipe(section.primary);
             const pitfalls = splitProcessPitfalls(section.secondary);
             return (
@@ -996,7 +1699,7 @@ function renderTheorySection(section: ParsedTheorySection) {
                         {steps.map((step, index) => (
                             <article
                                 key={`${index}-${step}`}
-                                className="grid gap-4 rounded-2xl border border-slate-200 p-5 dark:border-slate-800 lg:grid-cols-[auto_minmax(0,1fr)]"
+                                className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 lg:grid-cols-[auto_minmax(0,1fr)]"
                             >
                                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-lg font-bold text-white">
                                     {index + 1}
@@ -1017,6 +1720,7 @@ function renderTheorySection(section: ParsedTheorySection) {
         }
 
         case "dos_donts": {
+            // Legacy fallback
             const pairs = parseIndexedExplanation(section.primary, "Do");
             const explanations = splitHash(section.secondary);
             return (
@@ -1035,47 +1739,7 @@ function renderTheorySection(section: ParsedTheorySection) {
         }
 
         case "wrapup": {
-            const takeaways = splitWrapupTakeaways(section.primary);
-            return (
-                <PanelShell eyebrow="Section 8" title={section.label} note={section.note}>
-                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-                        <div className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800">
-                            <div className="flex items-center gap-2">
-                                <ListChecks className="h-4 w-4 text-blue-600 dark:text-blue-300" />
-                                <p className="font-semibold text-slate-950 dark:text-white">
-                                    Core takeaways
-                                </p>
-                            </div>
-                            <div className="mt-4 space-y-3">
-                                {takeaways.map((takeaway, index) => (
-                                    <div
-                                        key={`${index}-${takeaway}`}
-                                        className="rounded-2xl bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-700 dark:bg-slate-800/70 dark:text-slate-200"
-                                    >
-                                        {takeaway}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            <article className="rounded-2xl bg-blue-600 p-5 text-white">
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100">
-                                    Practice now
-                                </p>
-                                <p className="mt-3 text-sm leading-7">{section.secondary}</p>
-                            </article>
-                            <article className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800">
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                                    Before moving on
-                                </p>
-                                <p className="mt-3 text-sm leading-7 text-slate-700 dark:text-slate-300">
-                                    {section.note}
-                                </p>
-                            </article>
-                        </div>
-                    </div>
-                </PanelShell>
-            );
+            return <WrapupSection section={section} />;
         }
     }
 }
@@ -1145,7 +1809,7 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
     };
 
     const questionNavigator = (
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="flex gap-2 overflow-x-auto pb-5 pt-1 px-0.5">
             {questions.map((question, index) => {
                 const isActive = index === currentQuestionIndex;
                 const isAnswered = hasAnswer(answers[index]);
@@ -1160,7 +1824,7 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
                             setShowSummary(false);
                         }}
                         className={[
-                            "flex h-10 min-w-10 items-center justify-center rounded-full border text-sm font-semibold transition-colors",
+                            "flex h-10 w-10 min-w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold transition-colors",
                             isActive
                                 ? "border-blue-600 bg-blue-600 text-white"
                                 : submitted && isCorrect
@@ -1181,7 +1845,7 @@ function EmbeddedLessonQuiz({ quiz }: { quiz: ParsedQuiz | null }) {
 
     return (
         <PanelShell
-            eyebrow="Section 9"
+            eyebrow="Section 8"
             title="Quiz"
             note="One question at a time, embedded directly in the lesson page."
         >
@@ -1603,12 +2267,12 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
                                         Ready now
                                     </p>
                                     <p className="font-semibold text-slate-950 dark:text-white">
-                                        8 theory sections + quiz
+                                        7 theory sections + quiz
                                     </p>
                                 </div>
                             </div>
                             <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                Use the left navigation to move between the eight theory sections
+                                Use the left navigation to move between the seven theory sections
                                 and the final quiz tab.
                             </p>
                         </div>
@@ -1623,7 +2287,7 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
                                     Lesson map
                                 </p>
                                 <p className="mt-2 text-lg font-semibold text-slate-950 dark:text-white">
-                                    9 sections
+                                    8 sections
                                 </p>
                             </div>
 
