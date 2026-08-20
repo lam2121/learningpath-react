@@ -16,6 +16,7 @@ import type {
 	TrackUpdatePayload,
 	GenerateResponse,
 	GenerationStatus,
+	GenerationSummary,
 	DashboardData,
 	ValidatorCheck,
 	SkillKey,
@@ -38,6 +39,7 @@ export type {
 	TrackUpdatePayload,
 	GenerateResponse,
 	GenerationStatus,
+	GenerationSummary,
 	DashboardData,
 	SkillKey,
 	RoleSkillDefinitions,
@@ -122,6 +124,11 @@ export async function resetTrackLearners(roleId: number): Promise<ResetLearnersR
 
 export async function fetchGenerationStatus(roleId: number): Promise<GenerationStatus> {
 	const res = await axiosJWT.get<GenerationStatus>(`/admin/roles/${roleId}/generation-status`);
+	return res.data;
+}
+
+export async function fetchGenerationSummary(roleId: number): Promise<GenerationSummary> {
+	const res = await axiosJWT.get<GenerationSummary>(`/admin/roles/${roleId}/generation-summary`);
 	return res.data;
 }
 

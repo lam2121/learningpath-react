@@ -32,12 +32,19 @@ export function KillSwitchToggle({ enabled, onToggle, disabled, compact = false 
 
 	if (compact) {
 		return (
-			<div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-				<Zap className="h-5 w-5 text-red-600" />
+			<div className={cn(
+				'flex items-center gap-3 rounded-xl border p-3 transition-colors',
+				enabled
+					? 'border-red-200 bg-red-50'
+					: 'border-emerald-200 bg-emerald-50'
+			)}>
+				<Zap className={cn('h-5 w-5', enabled ? 'text-red-600' : 'text-emerald-600')} />
 				<div className="flex-1 min-w-0">
-					<p className="text-sm font-medium text-red-800">EMERGENCY KILL SWITCH</p>
-					<p className="text-xs text-red-600">
-						{enabled ? 'AI Generation: DISABLED (serving cache only)' : 'AI Generation: ENABLED'}
+					<p className={cn('text-sm font-medium', enabled ? 'text-red-800' : 'text-emerald-800')}>
+						Emergency Kill Switch
+					</p>
+					<p className={cn('text-xs', enabled ? 'text-red-600' : 'text-emerald-700')}>
+						{enabled ? 'AI generation disabled. Serving cache only.' : 'AI generation active and accepting new jobs.'}
 					</p>
 				</div>
 				<Switch
@@ -46,7 +53,7 @@ export function KillSwitchToggle({ enabled, onToggle, disabled, compact = false 
 					disabled={disabled || toggling}
 					aria-label="Toggle AI Kill Switch"
 				/>
-				{toggling && <Loader2 className="h-4 w-4 animate-spin text-red-500" />}
+				{toggling && <Loader2 className={cn('h-4 w-4 animate-spin', enabled ? 'text-red-500' : 'text-emerald-500')} />}
 			</div>
 		);
 	}

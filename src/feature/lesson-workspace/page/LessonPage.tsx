@@ -9,17 +9,19 @@ import {
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
+    Copy,
     FileText,
+    Headphones,
     Lightbulb,
     Languages,
     ListChecks,
     MessageSquareText,
     NotebookPen,
-    Route,
     ScrollText,
     ShieldCheck,
     Sparkles,
     Target,
+    Volume2,
     type LucideIcon,
 } from "lucide-react";
 
@@ -69,8 +71,168 @@ import type {
     OrderingQuestionData,
 } from "@/feature/quiz-engine/type/Quiz";
 import { LessonSkeleton } from "../component/LessonSkeleton";
+import { ListeningAudioPlayer } from "../component/ListeningAudioPlayer";
+import { getTTSStreamUrl } from "@/feature/audio/audioApi";
 
-// [THÊM MỚI] Component con xử lý toggle ẩn/hiện bản dịch cho phần Do/Don't
+let activeGlobalAudio: HTMLAudioElement | null = null;
+
+function stopSpeech() {
+    if (activeGlobalAudio) {
+        activeGlobalAudio.pause();
+        activeGlobalAudio.currentTime = 0;
+        activeGlobalAudio = null;
+    }
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+    }
+}
+
+function speakText(text: string, onEnd?: () => void, voiceOverride?: string) {
+    stopSpeech();
+    const defaultSavedVoice =
+        (typeof window !== "undefined" &&
+            localStorage.getItem("toeic_audio_voice")) ||
+        "en-US-JennyNeural";
+    const selectedVoice = voiceOverride || defaultSavedVoice;
+
+    const savedRate =
+        (typeof window !== "undefined" &&
+            localStorage.getItem("toeic_audio_rate")) ||
+        "-15";
+    const rateNum = parseInt(savedRate, 10);
+    const formattedRate = `${rateNum >= 0 ? "+" : ""}${rateNum}%`;
+
+    // Try Neural TTS stream first
+    const streamUrl = getTTSStreamUrl(text, selectedVoice, formattedRate);
+    const audio = new Audio(streamUrl);
+    activeGlobalAudio = audio;
+
+    let fallbackTriggered = false;
+    const triggerFallback = () => {
+        if (fallbackTriggered) return;
+        fallbackTriggered = true;
+        if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+            onEnd?.();
+            return;
+        }
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "en-US";
+        utterance.rate = Math.max(0.65, Math.min(1.2, 1 + rateNum / 100));
+        if (onEnd) {
+            utterance.onend = onEnd;
+            utterance.onerror = onEnd;
+        }
+        window.speechSynthesis.speak(utterance);
+    };
+
+    audio.onended = () => {
+        activeGlobalAudio = null;
+        onEnd?.();
+    };
+    audio.onerror = () => {
+        triggerFallback();
+    };
+
+    audio.play().catch(() => {
+        triggerFallback();
+    });
+}
+
+function getDialogueVoiceForSpeaker(speaker: string, index: number): string {
+    const s = speaker.toLowerCase().trim();
+    const femaleTerms = [
+        "taylor",
+        "sarah",
+        "emma",
+        "jenny",
+        "sonia",
+        "natasha",
+        "clara",
+        "aria",
+        "anna",
+        "lisa",
+        "mary",
+        "rachel",
+        "woman",
+        "female",
+        "she",
+        "ms",
+    ];
+    const maleTerms = [
+        "jamie",
+        "alex",
+        "guy",
+        "ryan",
+        "william",
+        "liam",
+        "john",
+        "david",
+        "michael",
+        "tom",
+        "man",
+        "male",
+        "he",
+        "mr",
+    ];
+
+    if (femaleTerms.some((term) => s.includes(term))) {
+        return "en-US-JennyNeural"; // Female voice for Taylor
+    }
+    if (maleTerms.some((term) => s.includes(term))) {
+        return "en-US-GuyNeural"; // Male voice for Jamie
+    }
+
+    // Default alternate: even index (white/left) = female, odd index (blue/right) = male
+    return index % 2 === 0 ? "en-US-JennyNeural" : "en-US-GuyNeural";
+}
+
+function AudioSpeakButton({
+    text,
+    label,
+    className,
+    voice,
+}: {
+    text: string;
+    label?: string;
+    className?: string;
+    voice?: string;
+}) {
+    const [isPlaying, setIsPlaying] = useState(false);
+
+    const handlePlay = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (isPlaying) {
+            stopSpeech();
+            setIsPlaying(false);
+            return;
+        }
+        setIsPlaying(true);
+        speakText(text, () => setIsPlaying(false), voice);
+    };
+
+    return (
+        <button
+            type="button"
+            onClick={handlePlay}
+            title={label ?? "Listen to pronunciation"}
+            className={
+                className ??
+                "inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 transition hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900/50"
+            }
+        >
+            <Volume2
+                className={`h-3.5 w-3.5 ${isPlaying
+                    ? "animate-pulse text-blue-600 dark:text-blue-400"
+                    : ""
+                    }`}
+            />
+            {label ? <span>{label}</span> : <span>Listen</span>}
+        </button>
+    );
+}
+
+// Component xử lý toggle ẩn/hiện bản dịch cho phần Do/Don't (hỗ trợ backward compatibility)
 function DosDontsArticle({
     pair,
     explanationString,
@@ -85,17 +247,23 @@ function DosDontsArticle({
         <article className="rounded-2xl border border-slate-200 p-4 sm:p-5 dark:border-slate-800">
             <div className="grid gap-4 lg:grid-cols-2">
                 <div className="rounded-2xl bg-emerald-50 p-4 dark:bg-emerald-950/30">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
-                        Do
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
+                            Do (Recommended)
+                        </p>
+                        <AudioSpeakButton text={pair.left} />
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200 font-medium">
                         {pair.left}
                     </p>
                 </div>
                 <div className="rounded-2xl bg-rose-50 p-4 dark:bg-rose-950/30">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700 dark:text-rose-300">
-                        Don't
-                    </p>
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700 dark:text-rose-300">
+                            Don't (Avoid)
+                        </p>
+                        <AudioSpeakButton text={pair.right} />
+                    </div>
                     <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
                         {pair.right}
                     </p>
@@ -110,7 +278,9 @@ function DosDontsArticle({
                     className="h-auto max-w-full whitespace-normal text-center text-slate-600 dark:text-slate-300"
                 >
                     <Languages className="mr-2 h-4 w-4" />
-                    {showTranslation ? "Ẩn bản dịch (Hide translation)" : "Dịch sang tiếng Việt (Vietnamese Support)"}
+                    {showTranslation
+                        ? "Ẩn bản dịch (Hide translation)"
+                        : "Dịch sang tiếng Việt (Vietnamese Support)"}
                 </Button>
             </div>
 
@@ -143,16 +313,16 @@ function DosDontsArticle({
     );
 }
 
-// [PHẦN CÒN LẠI CỦA FILE GIỮ NGUYÊN]
 type TheorySectionKey =
     | "scenario"
     | "vocab"
     | "phrases"
     | "reading"
     | "dialogue"
+    | "listening"
+    | "wrapup"
     | "process"
-    | "dos_donts"
-    | "wrapup";
+    | "dos_donts";
 
 type SidebarSectionKey = TheorySectionKey | "quiz";
 
@@ -199,12 +369,26 @@ const HINT_CREDIT = 0.75;
 
 const SECTION_META: SectionMeta[] = [
     { key: "scenario", label: "Scenario", eyebrow: "Context", icon: ScrollText },
-    { key: "vocab", label: "Vocabulary", eyebrow: "Terms", icon: Languages },
-    { key: "phrases", label: "Phrases", eyebrow: "Frames", icon: NotebookPen },
+    {
+        key: "vocab",
+        label: "Vocabulary & Pronunciation",
+        eyebrow: "Speaking & Terms",
+        icon: Volume2,
+    },
+    { key: "phrases", label: "Phrases", eyebrow: "Patterns", icon: NotebookPen },
     { key: "reading", label: "Reading", eyebrow: "Document", icon: FileText },
-    { key: "dialogue", label: "Dialogue", eyebrow: "Exchange", icon: MessageSquareText },
-    { key: "process", label: "Process", eyebrow: "Workflow", icon: Route },
-    { key: "dos_donts", label: "Do / Don't", eyebrow: "Responses", icon: ShieldCheck },
+    {
+        key: "dialogue",
+        label: "Dialogue",
+        eyebrow: "Exchange",
+        icon: MessageSquareText,
+    },
+    {
+        key: "listening",
+        label: "Listening",
+        eyebrow: "Audio Track",
+        icon: Headphones,
+    },
     { key: "wrapup", label: "Wrap-up", eyebrow: "Review", icon: Target },
     { key: "quiz", label: "Quiz", eyebrow: "C-2", icon: CircleHelp },
 ];
@@ -312,19 +496,77 @@ function normalizeTheoryContent(value: unknown): ParsedTheorySection[] | null {
     const parsed = parseMaybeJson(value);
     const rows = findFirstList(parsed);
 
-    if (!rows || rows.length !== 8) {
+    if (!rows || (rows.length !== 7 && rows.length !== 8)) {
         return null;
     }
+
+    // 7-section order (New standard)
+    if (rows.length === 7) {
+        const keys: TheorySectionKey[] = [
+            "scenario",
+            "vocab",
+            "phrases",
+            "reading",
+            "dialogue",
+            "listening",
+            "wrapup",
+        ];
+
+        const sections = rows
+            .map((row, index) => {
+                if (!Array.isArray(row) || row.length < 1) {
+                    return null;
+                }
+                const key = keys[index];
+                const meta = SECTION_META.find((m) => m.key === key);
+                const primary = typeof row[1] === "string" ? row[1] : "";
+                const hasFullRow = row.length >= 4;
+                const secondary = hasFullRow && typeof row[2] === "string" ? row[2] : "";
+                const note = hasFullRow
+                    ? typeof row[3] === "string"
+                        ? row[3]
+                        : ""
+                    : typeof row[2] === "string"
+                        ? row[2]
+                        : "";
+
+                return {
+                    key,
+                    label: meta?.label ?? formatLabel(key),
+                    primary,
+                    secondary,
+                    note,
+                } satisfies ParsedTheorySection;
+            })
+            .filter((row): row is ParsedTheorySection => row !== null);
+
+        return sections.length === 7 ? sections : null;
+    }
+
+    // 8-section legacy order (Backward compatibility)
+    const legacyKeys: TheorySectionKey[] = [
+        "scenario",
+        "vocab",
+        "phrases",
+        "reading",
+        "dialogue",
+        "process",
+        "dos_donts",
+        "wrapup",
+    ];
 
     const sections = rows
         .map((row, index) => {
             if (!Array.isArray(row) || row.length < 1) {
                 return null;
             }
-            const meta = SECTION_META[index];
-            if (!meta || meta.key === "quiz" || row[0] !== meta.key) {
-                return null;
-            }
+            const rawKey = String(row[0]);
+            let key = legacyKeys[index] ?? "scenario";
+            if (rawKey === "listening") key = "listening";
+            else if (rawKey === "process") key = "process";
+            else if (rawKey === "dos_donts") key = "dos_donts";
+
+            const meta = SECTION_META.find((m) => m.key === key);
             const primary = typeof row[1] === "string" ? row[1] : "";
             const hasFullRow = row.length >= 4;
             const secondary = hasFullRow && typeof row[2] === "string" ? row[2] : "";
@@ -337,8 +579,8 @@ function normalizeTheoryContent(value: unknown): ParsedTheorySection[] | null {
                     : "";
 
             return {
-                key: meta.key,
-                label: meta.label,
+                key,
+                label: meta?.label ?? formatLabel(key),
                 primary,
                 secondary,
                 note,
@@ -346,7 +588,7 @@ function normalizeTheoryContent(value: unknown): ParsedTheorySection[] | null {
         })
         .filter((row): row is ParsedTheorySection => row !== null);
 
-    return sections.length === 8 ? sections : null;
+    return sections.length >= 7 ? sections : null;
 }
 
 function normalizeQuizContent(value: unknown): ParsedQuiz | null {
@@ -486,6 +728,7 @@ function parseDialogueLines(value: string) {
             };
         });
 }
+
 type DialogueHighlight = {
     id: string;
     left: string;
@@ -761,6 +1004,245 @@ function EmptyPanel({
     );
 }
 
+function VocabularySection({ section }: { section: ParsedTheorySection }) {
+    const items = splitHash(section.primary).map((entry, index) => {
+        const parts = entry.split("|").map((part) => part.trim());
+        const term = parts[0] ?? "";
+        const ipa = parts[1] ?? "";
+        const partOfSpeech = parts[2] ?? "";
+        const meaning = parts[3] ?? "";
+        const explanation = parts.length >= 6 ? parts[4] : "";
+        const example = parts.length >= 6 ? parts[5] : (parts[4] ?? "");
+        const pronunciationGuide = parts.length >= 7 ? parts[6] : "";
+
+        return {
+            id: `${index}-${term}`,
+            term,
+            ipa,
+            partOfSpeech,
+            meaning,
+            explanation,
+            example,
+            pronunciationGuide,
+        };
+    });
+
+    // Parse secondary pronunciation tips and spoken drills
+    const secondaryParts = splitPipe(section.secondary);
+    const pronunciationGuideText = secondaryParts
+        .find((p) => /^Pronunciation\s*Guide\s*:/i.test(p))
+        ?.replace(/^Pronunciation\s*Guide\s*:\s*/i, "");
+    const drillSentences = secondaryParts
+        .filter((p) => !/^Pronunciation\s*Guide\s*:/i.test(p))
+        .map((p) => p.replace(/^Drills\s*:\s*/i, "").trim())
+        .filter(Boolean);
+
+    return (
+        <PanelShell eyebrow="Section 2" title={section.label} note={section.note}>
+            <div className="grid gap-5 md:grid-cols-2">
+                {items.map((item) => (
+                    <article
+                        key={item.id}
+                        className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                    >
+                        <div>
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-2.5">
+                                    <h3 className="text-xl font-bold text-slate-950 dark:text-white">
+                                        {item.term}
+                                    </h3>
+                                    <AudioSpeakButton text={item.term} />
+                                </div>
+                                <Badge variant="outline">{item.partOfSpeech}</Badge>
+                            </div>
+
+                            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                <p className="text-sm font-medium text-blue-600 dark:text-blue-300">
+                                    {item.ipa}
+                                </p>
+                                {item.pronunciationGuide && (
+                                    <Badge variant="secondary" className="text-xs">
+                                        {item.pronunciationGuide}
+                                    </Badge>
+                                )}
+                            </div>
+
+                            <div className="mt-3 rounded-xl bg-slate-50 px-3.5 py-2 text-sm font-medium text-slate-800 dark:bg-slate-800/60 dark:text-slate-200">
+                                {item.meaning}
+                            </div>
+
+                            {item.explanation && (
+                                <div className="mt-3 text-xs leading-5 text-slate-600 dark:text-slate-300">
+                                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                        Nuance & Context:{" "}
+                                    </span>
+                                    {item.explanation}
+                                </div>
+                            )}
+                        </div>
+
+                        {item.example && (
+                            <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/70 p-3.5 text-xs leading-5 text-slate-700 dark:border-blue-950 dark:bg-blue-950/20 dark:text-slate-300">
+                                <div className="mb-1.5 flex items-center justify-between">
+                                    <span className="font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300">
+                                        Workplace Example
+                                    </span>
+                                    <AudioSpeakButton
+                                        text={item.example}
+                                        label="Read sentence"
+                                    />
+                                </div>
+                                <p className="italic">"{item.example}"</p>
+                            </div>
+                        )}
+                    </article>
+                ))}
+            </div>
+
+            {/* Pronunciation Guide & Speaking Drills */}
+            {section.secondary && (
+                <div className="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/60 p-6 dark:border-blue-900 dark:bg-slate-900">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+                            <Volume2 className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-300">
+                                Speaking & Pronunciation Drills
+                            </p>
+                            <h4 className="text-base font-bold text-slate-950 dark:text-white">
+                                Pronunciation Tips & Spoken Repetition (Shadowing)
+                            </h4>
+                        </div>
+                    </div>
+
+                    {pronunciationGuideText && (
+                        <div className="mt-4 rounded-2xl bg-white p-4 text-sm text-slate-700 shadow-sm dark:bg-slate-800/80 dark:text-slate-200">
+                            <span className="font-semibold text-blue-700 dark:text-blue-300">
+                                Phonetic Guidance:{" "}
+                            </span>
+                            {pronunciationGuideText}
+                        </div>
+                    )}
+
+                    {drillSentences.length > 0 && (
+                        <div className="mt-4 space-y-2.5">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                Read aloud practice:
+                            </p>
+                            {drillSentences.map((drill, idx) => (
+                                <div
+                                    key={idx}
+                                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 text-sm dark:border-slate-800 dark:bg-slate-950"
+                                >
+                                    <span className="text-slate-800 dark:text-slate-200 font-medium">
+                                        {drill}
+                                    </span>
+                                    <AudioSpeakButton
+                                        text={drill.replace(/^\d+\.\s*/, "")}
+                                        label="Listen & Repeat"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </PanelShell>
+    );
+}
+
+function PhrasesSection({ section }: { section: ParsedTheorySection }) {
+    const patterns = splitHash(section.primary).map((entry, index) => {
+        const parts = entry.split("|").map((part) => part.trim());
+        const frame = parts[0] ?? "";
+        const meaning = parts.length >= 4 ? parts[1] : "";
+        const usage = parts.length >= 4 ? parts[2] : (parts[1] ?? "");
+        const example = parts.length >= 4 ? parts[3] : (parts[2] ?? "");
+
+        return {
+            id: `${index}-${frame}`,
+            frame,
+            meaning,
+            usage,
+            example,
+        };
+    });
+
+    const scenarios = splitPipe(section.secondary);
+
+    return (
+        <PanelShell eyebrow="Section 3" title={section.label} note={section.note}>
+            <div className="space-y-4">
+                {patterns.map((pattern) => (
+                    <article
+                        key={pattern.id}
+                        className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                    >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2.5">
+                                <NotebookPen className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                                <h3 className="font-bold text-slate-950 dark:text-white">
+                                    {pattern.frame}
+                                </h3>
+                                <AudioSpeakButton text={pattern.frame} />
+                            </div>
+                            {pattern.meaning && (
+                                <Badge variant="secondary" className="text-xs">
+                                    {pattern.meaning}
+                                </Badge>
+                            )}
+                        </div>
+
+                        {pattern.usage && (
+                            <p className="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
+                                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                    When to use:{" "}
+                                </span>
+                                {pattern.usage}
+                            </p>
+                        )}
+
+                        {pattern.example && (
+                            <div className="mt-3 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 dark:bg-slate-800/70 dark:text-slate-300">
+                                <div className="mb-1 flex items-center justify-between">
+                                    <span className="text-xs font-semibold uppercase text-slate-400">
+                                        Workplace Example
+                                    </span>
+                                    <AudioSpeakButton
+                                        text={pattern.example}
+                                        label="Read example"
+                                    />
+                                </div>
+                                <p className="italic">"{pattern.example}"</p>
+                            </div>
+                        )}
+                    </article>
+                ))}
+            </div>
+
+            {/* Mini-Scenario Challenges */}
+            {scenarios.length > 0 && (
+                <div className="rounded-3xl border border-dashed border-blue-200 bg-blue-50/50 p-6 dark:border-blue-900 dark:bg-blue-950/20">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-300 mb-3">
+                        Mini-Scenario Challenges
+                    </p>
+                    <div className="space-y-3">
+                        {scenarios.map((scenario, index) => (
+                            <div
+                                key={index}
+                                className="rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                            >
+                                {scenario}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </PanelShell>
+    );
+}
+
 function ReadingPracticeSection({
     section,
     qas,
@@ -773,19 +1255,24 @@ function ReadingPracticeSection({
 
     return (
         <PanelShell eyebrow="Section 4" title={section.label} note={section.note}>
-            <article className="rounded-2xl border border-slate-200 p-4 sm:p-6 dark:border-slate-800">
-                <p className="text-sm leading-8 text-slate-700 dark:text-slate-200">
+            <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex items-center gap-2 mb-4 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    <FileText className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                    <span>Workplace Technical Document</span>
+                </div>
+                <p className="text-sm leading-8 text-slate-800 dark:text-slate-100 whitespace-pre-line">
                     {section.primary}
                 </p>
             </article>
 
             <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-slate-700 sm:px-5 dark:border-blue-900 dark:bg-blue-950/30 dark:text-slate-200">
                 <p className="font-semibold text-slate-950 dark:text-white">
-                    Reading practice
+                    Reading comprehension practice
                 </p>
                 <p className="mt-1 leading-6">
-                    Write your own answers first, then click <span className="font-semibold">Show answer</span> to compare.
-                    This section is for practice only and does not affect your quiz score.
+                    Write your own answers first, then click{" "}
+                    <span className="font-semibold">Show answer</span> to compare.
+                    This practice is for self-study and does not affect your quiz score.
                 </p>
             </div>
 
@@ -797,7 +1284,7 @@ function ReadingPracticeSection({
                     return (
                         <article
                             key={`${index}-${qa.question}`}
-                            className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900"
+                            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
                         >
                             <p className="font-medium text-slate-950 dark:text-white">
                                 {qa.question}
@@ -812,12 +1299,13 @@ function ReadingPracticeSection({
                                     }))
                                 }
                                 placeholder="Write your answer here..."
-                                className="mt-4 min-h-28 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700 outline-none transition-colors focus:border-blue-400 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-700 dark:focus:bg-slate-900"
+                                className="mt-4 min-h-24 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700 outline-none transition-colors focus:border-blue-400 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-700 dark:focus:bg-slate-900"
                             />
 
                             <div className="mt-4 flex flex-wrap gap-3">
                                 <Button
                                     variant="outline"
+                                    size="sm"
                                     onClick={() =>
                                         setRevealedAnswers((prev) => ({
                                             ...prev,
@@ -829,6 +1317,7 @@ function ReadingPracticeSection({
                                 </Button>
                                 <Button
                                     variant="ghost"
+                                    size="sm"
                                     onClick={() =>
                                         setDraftAnswers((prev) => ({
                                             ...prev,
@@ -841,16 +1330,390 @@ function ReadingPracticeSection({
                             </div>
 
                             {isRevealed ? (
-                                <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-slate-700 dark:bg-emerald-950/30 dark:text-slate-200">
+                                <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-slate-700 dark:bg-emerald-950/30 dark:text-slate-200 animate-in fade-in">
                                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
                                         Reference answer
                                     </p>
-                                    <p className="mt-2">{qa.answer}</p>
+                                    <p className="mt-1">{qa.answer}</p>
                                 </div>
                             ) : null}
                         </article>
                     );
                 })}
+            </div>
+        </PanelShell>
+    );
+}
+
+function DialogueSection({ section }: { section: ParsedTheorySection }) {
+    let contextText = "";
+    let dialogueContent = section.primary;
+
+    if (dialogueContent.includes(" || ")) {
+        const [left, right] = dialogueContent.split(" || ");
+        if (/^Context\s*:/i.test(left)) {
+            contextText = left.replace(/^Context\s*:\s*/i, "").trim();
+            dialogueContent = right.replace(/^Dialogue\s*:\s*/i, "").trim();
+        }
+    }
+
+    const lines = parseDialogueLines(dialogueContent);
+
+    let partA = section.secondary;
+    let partB = "";
+    if (section.secondary.includes(" || ")) {
+        const [a, b] = section.secondary.split(" || ");
+        partA = a;
+        partB = b;
+    }
+
+    const highlights = parseDialogueHighlights(partA);
+    const practiceTasks = partB
+        ? splitPipe(partB.replace(/^Practice\s*Tasks\s*:\s*/i, ""))
+        : [];
+
+    const [userReplies, setUserReplies] = useState<Record<number, string>>({});
+
+    return (
+        <PanelShell eyebrow="Section 5" title={section.label} note={section.note}>
+            {/* Scenario Setting / Context Banner */}
+            {contextText && (
+                <div className="rounded-2xl border border-blue-200 bg-blue-50/80 px-5 py-4 text-sm text-slate-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-slate-200">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">
+                        Conversation Setting & Objective
+                    </p>
+                    <p className="mt-1.5 leading-6 text-slate-800 dark:text-slate-100 font-medium">
+                        {contextText}
+                    </p>
+                </div>
+            )}
+
+            {/* Dialogue Turns */}
+            <div className="space-y-4">
+                {lines.map((line, index) => {
+                    const isEven = index % 2 === 0;
+                    const speakerVoice = getDialogueVoiceForSpeaker(
+                        line.speaker,
+                        index
+                    );
+
+                    return (
+                        <div
+                            key={line.id}
+                            className={[
+                                "max-w-3xl rounded-3xl p-5 text-sm leading-7 shadow-sm",
+                                isEven
+                                    ? "mr-auto border border-slate-200 bg-slate-50 text-slate-800 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-100"
+                                    : "ml-auto bg-blue-600 text-white",
+                            ].join(" ")}
+                        >
+                            <div className="mb-1.5 flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold uppercase tracking-[0.18em] opacity-90">
+                                        {line.speaker}
+                                    </span>
+                                </div>
+                                <AudioSpeakButton
+                                    text={line.text}
+                                    voice={speakerVoice}
+                                    className={
+                                        isEven
+                                            ? "inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-100 dark:bg-slate-700 dark:text-slate-200"
+                                            : "inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium text-white hover:bg-white/30"
+                                    }
+                                />
+                            </div>
+                            <p>{line.text}</p>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Key Strategic Phrases */}
+            {highlights.length > 0 && (
+                <div className="space-y-3 pt-2">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Key Strategic Phrases Used:
+                    </p>
+                    <div className="grid gap-4 md:grid-cols-2">
+                        {highlights.map((highlight) => (
+                            <article
+                                key={highlight.id}
+                                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                            >
+                                <div className="flex items-center justify-between gap-2">
+                                    <p className="font-semibold text-slate-950 dark:text-white">
+                                        {highlight.left}
+                                    </p>
+                                    <AudioSpeakButton text={highlight.left} />
+                                </div>
+                                <p className="mt-2.5 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                    {highlight.right}
+                                </p>
+                            </article>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Interactive Roleplay Practice Tasks */}
+            {practiceTasks.length > 0 && (
+                <div className="rounded-3xl border border-indigo-200 bg-indigo-50/40 p-6 dark:border-indigo-950 dark:bg-slate-900/60">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm">
+                            <MessageSquareText className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-300">
+                                Interactive Roleplay Practice
+                            </p>
+                            <h4 className="text-base font-bold text-slate-950 dark:text-white">
+                                Practice Replying to Meeting Scenarios
+                            </h4>
+                        </div>
+                    </div>
+
+                    <div className="mt-5 space-y-4">
+                        {practiceTasks.map((task, idx) => (
+                            <div
+                                key={idx}
+                                className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950 shadow-sm"
+                            >
+                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                    {task}
+                                </p>
+                                <textarea
+                                    value={userReplies[idx] ?? ""}
+                                    onChange={(e) =>
+                                        setUserReplies((prev) => ({
+                                            ...prev,
+                                            [idx]: e.target.value,
+                                        }))
+                                    }
+                                    placeholder="Type your response here and practice speaking it out loud..."
+                                    className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-400 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                                />
+                                {userReplies[idx] && (
+                                    <div className="mt-2.5 flex justify-end">
+                                        <AudioSpeakButton
+                                            text={userReplies[idx]}
+                                            label="Listen to my response"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </PanelShell>
+    );
+}
+
+function ListeningPracticeSection({
+    section,
+}: {
+    section: ParsedTheorySection;
+}) {
+    const [draftAnswers, setDraftAnswers] = useState<Record<number, string>>({});
+    const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
+
+    const rawScript = section.primary;
+    const scriptText = rawScript
+        .replace(/^Audio\s*Script\s*:\s*/i, "")
+        .replace(/^\[.*?\]\s*:\s*/i, "")
+        .replace(/^["']|["']$/g, "")
+        .trim();
+
+    const questions = parseReadingQuestions(section.secondary);
+
+    return (
+        <PanelShell eyebrow="Section 6" title={section.label} note={section.note}>
+            {/* Rich Multi-Accent Neural Audio Player with Slower Speed Controls */}
+            <ListeningAudioPlayer
+                scriptText={scriptText}
+                rawTranscript={rawScript}
+                title="Workplace Audio Track"
+                subtitle="Authentic Spoken Workplace Monologue"
+            />
+
+            {/* Comprehension Questions */}
+            <div className="space-y-4 pt-2">
+                <div className="flex items-center gap-2 px-1">
+                    <ListChecks className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                    <h4 className="font-semibold text-slate-950 dark:text-white">
+                        Listening Comprehension Questions
+                    </h4>
+                </div>
+
+                {questions.map((qa, index) => {
+                    const isRevealed = Boolean(revealedAnswers[index]);
+                    const draft = draftAnswers[index] ?? "";
+
+                    return (
+                        <article
+                            key={`${index}-${qa.question}`}
+                            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                        >
+                            <p className="font-medium text-slate-950 dark:text-white">
+                                {qa.question}
+                            </p>
+
+                            <textarea
+                                value={draft}
+                                onChange={(e) =>
+                                    setDraftAnswers((prev) => ({
+                                        ...prev,
+                                        [index]: e.target.value,
+                                    }))
+                                }
+                                placeholder="Write what you heard or answer here..."
+                                className="mt-4 min-h-24 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700 outline-none transition-colors focus:border-blue-400 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-700 dark:focus:bg-slate-900"
+                            />
+
+                            <div className="mt-4 flex flex-wrap gap-3">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                        setRevealedAnswers((prev) => ({
+                                            ...prev,
+                                            [index]: !prev[index],
+                                        }))
+                                    }
+                                >
+                                    {isRevealed ? "Hide answer" : "Show answer"}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                        setDraftAnswers((prev) => ({
+                                            ...prev,
+                                            [index]: "",
+                                        }))
+                                    }
+                                >
+                                    Clear
+                                </Button>
+                            </div>
+
+                            {isRevealed && (
+                                <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-slate-700 dark:bg-emerald-950/30 dark:text-slate-200 animate-in fade-in">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
+                                        Reference answer
+                                    </p>
+                                    <p className="mt-1">{qa.answer}</p>
+                                </div>
+                            )}
+                        </article>
+                    );
+                })}
+            </div>
+        </PanelShell>
+    );
+}
+
+function WrapupSection({ section }: { section: ParsedTheorySection }) {
+    const takeaways = splitWrapupTakeaways(section.primary);
+    const [actionDraft, setActionDraft] = useState("");
+    const [isCopied, setIsCopied] = useState(false);
+
+    const handleCopy = () => {
+        if (actionDraft) {
+            navigator.clipboard.writeText(actionDraft);
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
+        }
+    };
+
+    const wordCount = actionDraft.trim()
+        ? actionDraft.trim().split(/\s+/).length
+        : 0;
+
+    return (
+        <PanelShell eyebrow="Section 7" title={section.label} note={section.note}>
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+                <div className="space-y-5">
+                    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <div className="flex items-center gap-2.5">
+                            <ListChecks className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                            <h3 className="text-lg font-bold text-slate-950 dark:text-white">
+                                Core Linguistic Takeaways
+                            </h3>
+                        </div>
+                        <div className="mt-4 space-y-3">
+                            {takeaways.map((takeaway, index) => (
+                                <div
+                                    key={`${index}-${takeaway}`}
+                                    className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 dark:bg-slate-800/70 dark:text-slate-200"
+                                >
+                                    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                                        {index + 1}
+                                    </div>
+                                    <span>{takeaway}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Interactive Action Challenge Task */}
+                    <div className="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50/60 to-indigo-50/60 p-6 dark:border-blue-900 dark:bg-slate-900">
+                        <div className="flex items-center gap-2.5">
+                            <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                            <h3 className="text-lg font-bold text-slate-950 dark:text-white">
+                                5-Minute Output Challenge
+                            </h3>
+                        </div>
+                        <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
+                            {section.secondary}
+                        </p>
+
+                        <div className="mt-4">
+                            <textarea
+                                value={actionDraft}
+                                onChange={(e) => setActionDraft(e.target.value)}
+                                placeholder="Draft your email, message, or speech notes applying lesson concepts here..."
+                                className="min-h-32 w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-800 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                            />
+                            <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+                                <span>{wordCount} words</span>
+                                <div className="flex items-center gap-2">
+                                    {actionDraft && (
+                                        <AudioSpeakButton
+                                            text={actionDraft}
+                                            label="Listen to my draft"
+                                        />
+                                    )}
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleCopy}
+                                        disabled={!actionDraft}
+                                        className="h-7 text-xs"
+                                    >
+                                        <Copy className="mr-1.5 h-3.5 w-3.5" />
+                                        {isCopied ? "Copied!" : "Copy text"}
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                            Ready for Quiz
+                        </p>
+                        <h4 className="mt-1 text-base font-bold text-slate-950 dark:text-white">
+                            Self-Check Checklist
+                        </h4>
+                        <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                            {section.note}
+                        </p>
+                    </article>
+                </div>
             </div>
         </PanelShell>
     );
@@ -864,13 +1727,13 @@ function renderTheorySection(section: ParsedTheorySection) {
             return (
                 <PanelShell eyebrow="Section 1" title={section.label} note={section.note}>
                     <div className="grid gap-4 lg:grid-cols-2">
-                        <div className="rounded-2xl bg-slate-950 px-4 py-4 text-slate-50 sm:px-5 sm:py-5">
+                        <div className="rounded-2xl bg-slate-950 px-5 py-5 text-slate-50 shadow-sm">
                             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">
                                 English scenario
                             </p>
                             <p className="mt-3 text-sm leading-7">{english}</p>
                         </div>
-                        <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4 sm:px-5 sm:py-5 dark:border-blue-900 dark:bg-blue-950/30">
+                        <div className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-5 dark:border-blue-900 dark:bg-blue-950/30 shadow-sm">
                             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-300">
                                 Vietnamese support
                             </p>
@@ -880,9 +1743,9 @@ function renderTheorySection(section: ParsedTheorySection) {
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 p-4 sm:p-5 dark:border-slate-800">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                         <p className="text-sm font-semibold text-slate-950 dark:text-white">
-                            Decision points
+                            Decision points to resolve
                         </p>
                         <div className="mt-4 grid gap-3">
                             {decisions.map((decision, index) => (
@@ -900,96 +1763,11 @@ function renderTheorySection(section: ParsedTheorySection) {
         }
 
         case "vocab": {
-            const items = splitHash(section.primary).map((entry, index) => {
-                const [term, ipa, partOfSpeech, meaning, example] = entry
-                    .split("|")
-                    .map((part) => part.trim());
-                return {
-                    id: `${index}-${term}`,
-                    term,
-                    ipa,
-                    partOfSpeech,
-                    meaning,
-                    example,
-                };
-            });
-
-            return (
-                <PanelShell eyebrow="Section 2" title={section.label} note={section.note}>
-                    <div className="grid gap-4 md:grid-cols-2">
-                        {items.map((item) => (
-                            <article
-                                key={item.id}
-                                className="rounded-2xl border border-slate-200 p-4 sm:p-5 dark:border-slate-800"
-                            >
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <h3 className="text-lg font-semibold text-slate-950 dark:text-white">
-                                        {item.term}
-                                    </h3>
-                                    <Badge variant="outline">{item.partOfSpeech}</Badge>
-                                </div>
-                                <p className="mt-2 text-sm text-blue-600 dark:text-blue-300">
-                                    {item.ipa}
-                                </p>
-                                <p className="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
-                                    {item.meaning}
-                                </p>
-                                <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 dark:bg-slate-800/70 dark:text-slate-300">
-                                    {item.example}
-                                </div>
-                            </article>
-                        ))}
-                    </div>
-                    {section.secondary ? (
-                        <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50 px-4 py-4 text-sm text-slate-700 sm:px-5 dark:border-blue-900 dark:bg-blue-950/30 dark:text-slate-200">
-                            {section.secondary}
-                        </div>
-                    ) : null}
-                </PanelShell>
-            );
+            return <VocabularySection section={section} />;
         }
 
         case "phrases": {
-            const patterns = splitHash(section.primary).map((entry, index) => {
-                const [frame, usage, example] = entry.split("|").map((part) => part.trim());
-                return {
-                    id: `${index}-${frame}`,
-                    frame,
-                    usage,
-                    example,
-                };
-            });
-
-            return (
-                <PanelShell eyebrow="Section 3" title={section.label} note={section.note}>
-                    <div className="space-y-4">
-                        {patterns.map((pattern) => (
-                            <article
-                                key={pattern.id}
-                                className="rounded-2xl border border-slate-200 p-4 sm:p-5 dark:border-slate-800"
-                            >
-                                <div className="flex items-center gap-2">
-                                    <NotebookPen className="h-4 w-4 text-blue-600 dark:text-blue-300" />
-                                    <h3 className="font-semibold text-slate-950 dark:text-white">
-                                        {pattern.frame}
-                                    </h3>
-                                </div>
-                                <p className="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
-                                    {pattern.usage}
-                                </p>
-                                <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 dark:bg-slate-800/70 dark:text-slate-300">
-                                    {pattern.example}
-                                </div>
-                            </article>
-                        ))}
-                    </div>
-                    {section.secondary ? (
-                        <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-4 text-sm text-slate-600 sm:px-5 dark:border-slate-700 dark:text-slate-300">
-                            {section.secondary}
-                        </div>
-                    ) : null}
-                </PanelShell>
-            );
+            return <PhrasesSection section={section} />;
         }
 
         case "reading": {
@@ -998,48 +1776,15 @@ function renderTheorySection(section: ParsedTheorySection) {
         }
 
         case "dialogue": {
-            const lines = parseDialogueLines(section.primary);
-            const highlights = parseDialogueHighlights(section.secondary);
-            return (
-                <PanelShell eyebrow="Section 5" title={section.label} note={section.note}>
-                    <div className="space-y-3">
-                        {lines.map((line, index) => (
-                            <div
-                                key={line.id}
-                                className={[
-                                    "w-full max-w-full rounded-2xl px-4 py-4 text-sm leading-7 break-words sm:w-fit sm:max-w-3xl sm:px-5",
-                                    index % 2 === 0
-                                        ? "mr-auto bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100"
-                                        : "ml-auto bg-blue-600 text-white",
-                                ].join(" ")}
-                            >
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] opacity-80">
-                                    {line.speaker}
-                                </p>
-                                <p className="mt-2">{line.text}</p>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                        {highlights.map((highlight) => (
-                            <article
-                                key={highlight.id}
-                                className="rounded-2xl border border-slate-200 p-4 sm:p-5 dark:border-slate-800"
-                            >
-                                <p className="font-semibold text-slate-950 dark:text-white">
-                                    {highlight.left}
-                                </p>
-                                <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                    {highlight.right}
-                                </p>
-                            </article>
-                        ))}
-                    </div>
-                </PanelShell>
-            );
+            return <DialogueSection section={section} />;
+        }
+
+        case "listening": {
+            return <ListeningPracticeSection section={section} />;
         }
 
         case "process": {
+            // Legacy fallback
             const steps = splitPipe(section.primary);
             const pitfalls = splitProcessPitfalls(section.secondary);
             return (
@@ -1048,7 +1793,7 @@ function renderTheorySection(section: ParsedTheorySection) {
                         {steps.map((step, index) => (
                             <article
                                 key={`${index}-${step}`}
-                                className="grid gap-4 rounded-2xl border border-slate-200 p-4 sm:p-5 dark:border-slate-800 sm:grid-cols-[auto_minmax(0,1fr)]"
+                                className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 lg:grid-cols-[auto_minmax(0,1fr)]"
                             >
                                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-lg font-bold text-white">
                                     {index + 1}
@@ -1069,6 +1814,7 @@ function renderTheorySection(section: ParsedTheorySection) {
         }
 
         case "dos_donts": {
+            // Legacy fallback
             const pairs = parseIndexedExplanation(section.primary, "Do");
             const explanations = splitHash(section.secondary);
             return (
@@ -1087,47 +1833,7 @@ function renderTheorySection(section: ParsedTheorySection) {
         }
 
         case "wrapup": {
-            const takeaways = splitWrapupTakeaways(section.primary);
-            return (
-                <PanelShell eyebrow="Section 8" title={section.label} note={section.note}>
-                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-                        <div className="rounded-2xl border border-slate-200 p-4 sm:p-5 dark:border-slate-800">
-                            <div className="flex items-center gap-2">
-                                <ListChecks className="h-4 w-4 text-blue-600 dark:text-blue-300" />
-                                <p className="font-semibold text-slate-950 dark:text-white">
-                                    Core takeaways
-                                </p>
-                            </div>
-                            <div className="mt-4 space-y-3">
-                                {takeaways.map((takeaway, index) => (
-                                    <div
-                                        key={`${index}-${takeaway}`}
-                                        className="rounded-2xl bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-700 dark:bg-slate-800/70 dark:text-slate-200"
-                                    >
-                                        {takeaway}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            <article className="rounded-2xl bg-blue-600 p-4 text-white sm:p-5">
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100">
-                                    Practice now
-                                </p>
-                                <p className="mt-3 text-sm leading-7">{section.secondary}</p>
-                            </article>
-                            <article className="rounded-2xl border border-slate-200 p-4 sm:p-5 dark:border-slate-800">
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                                    Before moving on
-                                </p>
-                                <p className="mt-3 text-sm leading-7 text-slate-700 dark:text-slate-300">
-                                    {section.note}
-                                </p>
-                            </article>
-                        </div>
-                    </div>
-                </PanelShell>
-            );
+            return <WrapupSection section={section} />;
         }
     }
 }
@@ -1203,6 +1909,48 @@ function EmbeddedLessonQuiz({
         };
     }, [lessonId, nextLesson?.lesson.id, nextLesson?.lesson.is_generated, quiz]);
 
+    useEffect(() => {
+        if (
+            !quizStarted
+            || !nextLesson
+            || nextLesson.lesson.is_generated
+            || nextLessonStatus !== "preparing"
+        ) {
+            return;
+        }
+
+        let cancelled = false;
+
+        const checkNextLesson = async () => {
+            try {
+                const updatedRoadmap = await fetchRoadmap();
+                if (cancelled) {
+                    return;
+                }
+
+                const updatedNextLesson = findLesson(updatedRoadmap, nextLesson.lesson.id);
+                if (updatedNextLesson?.lesson.is_generated) {
+                    setNextLessonStatus("ready");
+                    setNextLessonMessage(
+                        `${updatedNextLesson.lesson.title} is ready for you to continue immediately after the quiz.`,
+                    );
+                }
+            } catch {
+                // Keep the warmup status as-is; the user can still finish the quiz.
+            }
+        };
+
+        void checkNextLesson();
+        const intervalId = window.setInterval(() => {
+            void checkNextLesson();
+        }, 15000);
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(intervalId);
+        };
+    }, [nextLesson, nextLessonStatus, quizStarted]);
+
     if (!quiz || questions.length === 0) {
         return (
             <EmptyPanel
@@ -1225,8 +1973,8 @@ function EmbeddedLessonQuiz({
             count
             + (
                 submitted
-                && isEmbeddedAnswerCorrect(question, answers[index])
-                && !hintedQuestions[index]
+                    && isEmbeddedAnswerCorrect(question, answers[index])
+                    && !hintedQuestions[index]
                     ? 1
                     : 0
             ),
@@ -1237,8 +1985,8 @@ function EmbeddedLessonQuiz({
             count
             + (
                 submitted
-                && isEmbeddedAnswerCorrect(question, answers[index])
-                && hintedQuestions[index]
+                    && isEmbeddedAnswerCorrect(question, answers[index])
+                    && hintedQuestions[index]
                     ? 1
                     : 0
             ),
@@ -1400,6 +2148,7 @@ function EmbeddedLessonQuiz({
         }));
     };
 
+
     useEffect(() => {
         if (
             !quizStarted
@@ -1465,14 +2214,14 @@ function EmbeddedLessonQuiz({
                                 : submitted && isCorrect && usedHint
                                     ? "border-amber-300 bg-amber-50 text-amber-700"
                                     : submitted && isCorrect
-                                    ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                                    : submitted
-                                        ? "border-rose-300 bg-rose-50 text-rose-700"
-                                        : usedHint
-                                            ? "border-amber-300 bg-amber-50 text-amber-700"
-                                        : isAnswered
-                                            ? "border-amber-300 bg-amber-50 text-amber-700"
-                                            : "border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
+                                        ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                                        : submitted
+                                            ? "border-rose-300 bg-rose-50 text-rose-700"
+                                            : usedHint
+                                                ? "border-amber-300 bg-amber-50 text-amber-700"
+                                                : isAnswered
+                                                    ? "border-amber-300 bg-amber-50 text-amber-700"
+                                                    : "border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
                         ].join(" ")}
                     >
                         {index + 1}
@@ -1484,7 +2233,7 @@ function EmbeddedLessonQuiz({
 
     return (
         <PanelShell
-            eyebrow="Section 9"
+            eyebrow="Section 8"
             title="Quiz"
             note="Review the quiz regulations before you begin. Starting the quiz also prepares your next lesson in the background."
         >
@@ -1620,11 +2369,11 @@ function EmbeddedLessonQuiz({
                 {quizStarted ? (
                     <>
                         <div className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-800/60 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white">
-                                            <ClipboardList className="h-5 w-5" />
-                                        </div>
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white">
+                                        <ClipboardList className="h-5 w-5" />
+                                    </div>
                                     <div>
                                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
                                             Embedded quiz
@@ -1633,9 +2382,9 @@ function EmbeddedLessonQuiz({
                                             Question {currentQuestionIndex + 1} of {totalQuestions}
                                         </p>
                                     </div>
-                                    </div>
-                                    <Progress value={progressValue} indicatorClassName="bg-blue-600" />
                                 </div>
+                                <Progress value={progressValue} indicatorClassName="bg-blue-600" />
+                            </div>
 
                             <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4 xl:min-w-[420px]">
                                 <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
@@ -1715,285 +2464,285 @@ function EmbeddedLessonQuiz({
                             </div>
                         ) : null}
 
-                {questionNavigator}
+                        {questionNavigator}
 
-                {showSummary ? (
-                    <section className="space-y-5">
-                        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
-                            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white">
-                                    <CheckCircle2 className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-                                        Quiz complete
+                        {showSummary ? (
+                            <section className="space-y-5">
+                                <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
+                                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white">
+                                            <CheckCircle2 className="h-6 w-6" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                                                Quiz complete
+                                            </p>
+                                            <h3 className="text-2xl font-bold text-slate-950 dark:text-white">
+                                                {correctCount} / {totalQuestions} correct
+                                            </h3>
+                                            <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+                                                Weighted score: {Math.round(weightedScore * 100)}%
+                                                {passedQuiz ? " · Passed" : " · Pass requires 70%"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                        {passedQuiz
+                                            ? "You passed this lesson check. Review any question from the navigator above, restart if you want another attempt, or continue once the next lesson is ready."
+                                            : "Review any question from the navigator above, or restart the quiz to try again. You need a weighted 70% score to unlock the continue action for the next lesson."}
                                     </p>
-                                    <h3 className="text-2xl font-bold text-slate-950 dark:text-white">
-                                        {correctCount} / {totalQuestions} correct
-                                    </h3>
-                                    <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
-                                        Weighted score: {Math.round(weightedScore * 100)}%
-                                        {passedQuiz ? " · Passed" : " · Pass requires 70%"}
-                                    </p>
-                                </div>
-                            </div>
-                            <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                {passedQuiz
-                                    ? "You passed this lesson check. Review any question from the navigator above, restart if you want another attempt, or continue once the next lesson is ready."
-                                    : "Review any question from the navigator above, or restart the quiz to try again. You need a weighted 70% score to unlock the continue action for the next lesson."}
-                            </p>
-                            {savedQuizState?.current_skill_score !== null && savedQuizState?.current_skill_score !== undefined ? (
-                                <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-900 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-100">
-                                    Current {formatLabel(savedQuizState.skill)} radar score:{" "}
-                                    <strong>{formatPercent(savedQuizState.current_skill_score)}</strong>
-                                    {savedQuizState.first_pass_score_percent !== null && savedQuizState.first_pass_score_percent !== undefined
-                                        ? ` · First pass recorded at ${formatPercent(savedQuizState.first_pass_score_percent)}.`
-                                        : ""}
-                                </div>
-                            ) : null}
-                            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Correct without hint</p>
-                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">{correctNoHintCount}</p>
-                                </div>
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Correct with hint</p>
-                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">{correctWithHintCount}</p>
-                                </div>
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Failed attempts</p>
-                                    <p className="mt-1 font-semibold text-slate-950 dark:text-white">{failedAttempts}</p>
-                                </div>
-                            </div>
-                            {!passedQuiz && failedAttempts + 1 === HINT_UNLOCK_AFTER_FAILURES ? (
-                                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                                    One more failed attempt will unlock hint mode for this lesson.
-                                </div>
-                            ) : null}
-                            {!passedQuiz && hintModeUnlocked ? (
-                                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                                    Hint mode is now available on your next retry. Each hinted
-                                    answer auto-fills the correct response and counts as{" "}
-                                    {Math.round(HINT_CREDIT * 100)}% credit.
-                                </div>
-                            ) : null}
-                            <div className="mt-5 flex flex-wrap gap-3">
-                                <Button className="w-full sm:w-auto" onClick={handleRestart}>Restart quiz</Button>
-                                <Button
-                                    className="w-full sm:w-auto"
-                                    variant="outline"
-                                    onClick={() => {
-                                        setShowSummary(false);
-                                        setCurrentQuestionIndex(0);
-                                    }}
-                                >
-                                    Review from question 1
-                                </Button>
-                                {nextLesson && nextLessonIsReady && passedQuiz ? (
-                                    <Button asChild className="w-full sm:w-auto">
-                                        <Link
-                                            to="/lessons/$lessonId"
-                                            params={{ lessonId: String(nextLesson.lesson.id) }}
+                                    {savedQuizState?.current_skill_score !== null && savedQuizState?.current_skill_score !== undefined ? (
+                                        <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-900 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-100">
+                                            Current {formatLabel(savedQuizState.skill)} radar score:{" "}
+                                            <strong>{formatPercent(savedQuizState.current_skill_score)}</strong>
+                                            {savedQuizState.first_pass_score_percent !== null && savedQuizState.first_pass_score_percent !== undefined
+                                                ? ` · First pass recorded at ${formatPercent(savedQuizState.first_pass_score_percent)}.`
+                                                : ""}
+                                        </div>
+                                    ) : null}
+                                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Correct without hint</p>
+                                            <p className="mt-1 font-semibold text-slate-950 dark:text-white">{correctNoHintCount}</p>
+                                        </div>
+                                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Correct with hint</p>
+                                            <p className="mt-1 font-semibold text-slate-950 dark:text-white">{correctWithHintCount}</p>
+                                        </div>
+                                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Failed attempts</p>
+                                            <p className="mt-1 font-semibold text-slate-950 dark:text-white">{failedAttempts}</p>
+                                        </div>
+                                    </div>
+                                    {!passedQuiz && failedAttempts + 1 === HINT_UNLOCK_AFTER_FAILURES ? (
+                                        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                                            One more failed attempt will unlock hint mode for this lesson.
+                                        </div>
+                                    ) : null}
+                                    {!passedQuiz && hintModeUnlocked ? (
+                                        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                                            Hint mode is now available on your next retry. Each hinted
+                                            answer auto-fills the correct response and counts as{" "}
+                                            {Math.round(HINT_CREDIT * 100)}% credit.
+                                        </div>
+                                    ) : null}
+                                    <div className="mt-5 flex flex-wrap gap-3">
+                                        <Button className="w-full sm:w-auto" onClick={handleRestart}>Restart quiz</Button>
+                                        <Button
+                                            className="w-full sm:w-auto"
+                                            variant="outline"
+                                            onClick={() => {
+                                                setShowSummary(false);
+                                                setCurrentQuestionIndex(0);
+                                            }}
                                         >
-                                            Continue to next lesson
-                                        </Link>
-                                    </Button>
-                                ) : null}
-                            </div>
-                            {!passedQuiz && nextLesson && nextLessonIsReady ? (
-                                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                                    The next lesson is ready, but it stays locked until you pass this quiz with a weighted score of at least 70%.
+                                            Review from question 1
+                                        </Button>
+                                        {nextLesson && nextLessonIsReady && passedQuiz ? (
+                                            <Button asChild className="w-full sm:w-auto">
+                                                <Link
+                                                    to="/lessons/$lessonId"
+                                                    params={{ lessonId: String(nextLesson.lesson.id) }}
+                                                >
+                                                    Continue to next lesson
+                                                </Link>
+                                            </Button>
+                                        ) : null}
+                                    </div>
+                                    {!passedQuiz && nextLesson && nextLessonIsReady ? (
+                                        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                                            The next lesson is ready, but it stays locked until you pass this quiz with a weighted score of at least 70%.
+                                        </div>
+                                    ) : null}
                                 </div>
-                            ) : null}
-                        </div>
 
-                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                            {questions.map((question, index) => {
-                                const isCorrect = isEmbeddedAnswerCorrect(question, answers[index]);
-                                return (
-                                    <button
-                                        key={`summary-${question.id}`}
-                                        type="button"
-                                        onClick={() => {
-                                            setCurrentQuestionIndex(index);
-                                            setShowSummary(false);
-                                        }}
-                                        className={[
-                                            "rounded-2xl border px-4 py-4 text-left transition-colors",
-                                            isCorrect
-                                                ? "border-emerald-300 bg-emerald-50 text-emerald-900"
-                                                : "border-rose-300 bg-rose-50 text-rose-900",
-                                        ].join(" ")}
-                                    >
-                                        <p className="text-xs font-semibold uppercase tracking-[0.16em] opacity-70">
-                                            Question {index + 1}
-                                        </p>
-                                        <p className="mt-2 font-semibold">
-                                            {question.type.replace("_", " ")}
-                                        </p>
-                                        <p className="mt-2 text-sm opacity-80">
-                                            {isCorrect ? "Correct" : "Needs review"}
-                                        </p>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </section>
-                ) : (
-                    <div className="space-y-5">
-                        {saveError ? (
-                            <div className="rounded-3xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-100">
-                                {saveError}
-                            </div>
-                        ) : null}
-                        {currentQuestion.type === "fill_blank" ? (
-                            <FillBlankQuestion
-                                key={currentQuestion.id}
-                                data={currentQuestion.data as FillBlankQuestionData}
-                                questionNumber={currentQuestionIndex + 1}
-                                totalQuestions={totalQuestions}
-                                onAnswer={(answer) =>
-                                    setAnswers((prev) => ({ ...prev, [currentQuestionIndex]: answer }))
-                                }
-                                isSubmitted={submitted}
-                                userAnswer={currentAnswer}
-                                revealAnswer={passedQuiz}
-                            />
-                        ) : currentQuestion.type === "multi_select" ? (
-                            <MultiSelectQuestion
-                                key={currentQuestion.id}
-                                data={currentQuestion.data as MultiSelectQuestionData}
-                                questionNumber={currentQuestionIndex + 1}
-                                totalQuestions={totalQuestions}
-                                userAnswer={currentAnswer ?? null}
-                                onAnswerChange={(answer) =>
-                                    setAnswers((prev) => ({ ...prev, [currentQuestionIndex]: answer }))
-                                }
-                                isSubmitted={submitted}
-                                isCorrect={submitted ? isEmbeddedAnswerCorrect(currentQuestion, currentAnswer) : undefined}
-                                explanation={currentQuestion.data[3]}
-                                revealAnswer={passedQuiz}
-                            />
+                                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                    {questions.map((question, index) => {
+                                        const isCorrect = isEmbeddedAnswerCorrect(question, answers[index]);
+                                        return (
+                                            <button
+                                                key={`summary-${question.id}`}
+                                                type="button"
+                                                onClick={() => {
+                                                    setCurrentQuestionIndex(index);
+                                                    setShowSummary(false);
+                                                }}
+                                                className={[
+                                                    "rounded-2xl border px-4 py-4 text-left transition-colors",
+                                                    isCorrect
+                                                        ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+                                                        : "border-rose-300 bg-rose-50 text-rose-900",
+                                                ].join(" ")}
+                                            >
+                                                <p className="text-xs font-semibold uppercase tracking-[0.16em] opacity-70">
+                                                    Question {index + 1}
+                                                </p>
+                                                <p className="mt-2 font-semibold">
+                                                    {question.type.replace("_", " ")}
+                                                </p>
+                                                <p className="mt-2 text-sm opacity-80">
+                                                    {isCorrect ? "Correct" : "Needs review"}
+                                                </p>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </section>
                         ) : (
-                            <OrderingQuestion
-                                key={currentQuestion.id}
-                                data={currentQuestion.data as OrderingQuestionData}
-                                questionNumber={currentQuestionIndex + 1}
-                                totalQuestions={totalQuestions}
-                                userAnswer={currentAnswer ?? null}
-                                onAnswerChange={(answer) =>
-                                    setAnswers((prev) => ({ ...prev, [currentQuestionIndex]: answer }))
-                                }
-                                isSubmitted={submitted}
-                                isCorrect={submitted ? isEmbeddedAnswerCorrect(currentQuestion, currentAnswer) : undefined}
-                                explanation={currentQuestion.data[3]}
-                                revealAnswer={passedQuiz}
-                            />
+                            <div className="space-y-5">
+                                {saveError ? (
+                                    <div className="rounded-3xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-100">
+                                        {saveError}
+                                    </div>
+                                ) : null}
+                                {currentQuestion.type === "fill_blank" ? (
+                                    <FillBlankQuestion
+                                        key={currentQuestion.id}
+                                        data={currentQuestion.data as FillBlankQuestionData}
+                                        questionNumber={currentQuestionIndex + 1}
+                                        totalQuestions={totalQuestions}
+                                        onAnswer={(answer) =>
+                                            setAnswers((prev) => ({ ...prev, [currentQuestionIndex]: answer }))
+                                        }
+                                        isSubmitted={submitted}
+                                        userAnswer={currentAnswer}
+                                        revealAnswer={passedQuiz}
+                                    />
+                                ) : currentQuestion.type === "multi_select" ? (
+                                    <MultiSelectQuestion
+                                        key={currentQuestion.id}
+                                        data={currentQuestion.data as MultiSelectQuestionData}
+                                        questionNumber={currentQuestionIndex + 1}
+                                        totalQuestions={totalQuestions}
+                                        userAnswer={currentAnswer ?? null}
+                                        onAnswerChange={(answer) =>
+                                            setAnswers((prev) => ({ ...prev, [currentQuestionIndex]: answer }))
+                                        }
+                                        isSubmitted={submitted}
+                                        isCorrect={submitted ? isEmbeddedAnswerCorrect(currentQuestion, currentAnswer) : undefined}
+                                        explanation={currentQuestion.data[3]}
+                                        revealAnswer={passedQuiz}
+                                    />
+                                ) : (
+                                    <OrderingQuestion
+                                        key={currentQuestion.id}
+                                        data={currentQuestion.data as OrderingQuestionData}
+                                        questionNumber={currentQuestionIndex + 1}
+                                        totalQuestions={totalQuestions}
+                                        userAnswer={currentAnswer ?? null}
+                                        onAnswerChange={(answer) =>
+                                            setAnswers((prev) => ({ ...prev, [currentQuestionIndex]: answer }))
+                                        }
+                                        isSubmitted={submitted}
+                                        isCorrect={submitted ? isEmbeddedAnswerCorrect(currentQuestion, currentAnswer) : undefined}
+                                        explanation={currentQuestion.data[3]}
+                                        revealAnswer={passedQuiz}
+                                    />
+                                )}
+
+                                <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white px-4 py-4 sm:px-5 dark:border-slate-800 dark:bg-slate-900 lg:flex-row lg:items-center lg:justify-between">
+                                    <div className="text-sm text-slate-500 dark:text-slate-400">
+                                        {submitted
+                                            ? currentQuestionHintUsed
+                                                ? `Hint applied. This answer counted as ${Math.round(HINT_CREDIT * 100)}% credit.`
+                                                : isEmbeddedAnswerCorrect(currentQuestion, currentAnswer)
+                                                    ? "Correct. You can move on to the next question."
+                                                    : passedQuiz
+                                                        ? "Reviewed. You can revise the explanation and continue."
+                                                        : "Incorrect. Answers stay hidden on failed attempts. Review the lesson and try again."
+                                            : currentQuestionHintUsed
+                                                ? `Hint applied. This question will count as ${Math.round(HINT_CREDIT * 100)}% credit when you submit.`
+                                                : hintModeUnlocked
+                                                    ? "Hint mode is active. Use Show hint only if you need the correct answer filled in."
+                                                    : "Move through the quiz with Next. Failed attempts do not reveal the correct answers."
+                                        }
+                                    </div>
+
+                                    <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center lg:justify-end">
+                                        {!submitted && hintModeUnlocked ? (
+                                            <Button
+                                                className="w-full border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 sm:w-auto"
+                                                variant="outline"
+                                                onClick={handleRevealHint}
+                                                disabled={currentQuestionHintUsed || savingAttempt}
+                                            >
+                                                <Sparkles className="mr-2 h-4 w-4" />
+                                                {currentQuestionHintUsed ? "Hint applied" : "Show hint"}
+                                            </Button>
+                                        ) : null}
+                                        <Button
+                                            className="w-full sm:w-auto"
+                                            variant="outline"
+                                            onClick={() =>
+                                                setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))
+                                            }
+                                            disabled={currentQuestionIndex === 0 || savingAttempt}
+                                        >
+                                            <ChevronLeft className="mr-2 h-4 w-4" />
+                                            Previous
+                                        </Button>
+
+                                        {submitted && isLastQuestion ? (
+                                            <Button className="w-full sm:w-auto" onClick={() => setShowSummary(true)}>
+                                                View summary
+                                                <Check className="ml-2 h-4 w-4" />
+                                            </Button>
+                                        ) : !submitted && isLastQuestion ? (
+                                            <Button className="w-full sm:w-auto" onClick={handleSubmitQuiz} disabled={savingAttempt}>
+                                                {savingAttempt ? "Saving attempt..." : "Submit quiz"}
+                                                <Check className="ml-2 h-4 w-4" />
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                className="w-full sm:w-auto"
+                                                onClick={() =>
+                                                    setCurrentQuestionIndex((prev) =>
+                                                        Math.min(totalQuestions - 1, prev + 1),
+                                                    )
+                                                }
+                                                disabled={savingAttempt}
+                                            >
+                                                Next
+                                                <ChevronRight className="ml-2 h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         )}
 
-                        <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white px-4 py-4 sm:px-5 dark:border-slate-800 dark:bg-slate-900 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="text-sm text-slate-500 dark:text-slate-400">
-                                {submitted
-                                    ? currentQuestionHintUsed
-                                        ? `Hint applied. This answer counted as ${Math.round(HINT_CREDIT * 100)}% credit.`
-                                        : isEmbeddedAnswerCorrect(currentQuestion, currentAnswer)
-                                            ? "Correct. You can move on to the next question."
-                                            : passedQuiz
-                                                ? "Reviewed. You can revise the explanation and continue."
-                                                : "Incorrect. Answers stay hidden on failed attempts. Review the lesson and try again."
-                                    : currentQuestionHintUsed
-                                        ? `Hint applied. This question will count as ${Math.round(HINT_CREDIT * 100)}% credit when you submit.`
-                                        : hintModeUnlocked
-                                            ? "Hint mode is active. Use Show hint only if you need the correct answer filled in."
-                                            : "Move through the quiz with Next. Failed attempts do not reveal the correct answers."
-                                }
-                            </div>
+                        <AlertDialog
+                            open={showIncompleteWarning}
+                            onOpenChange={setShowIncompleteWarning}
+                        >
+                            <AlertDialogContent className="rounded-3xl border-slate-200 p-0 shadow-2xl dark:border-slate-800">
+                                <div className="p-6 sm:p-7">
+                                    <AlertDialogHeader className="text-left">
+                                        <AlertDialogTitle className="text-xl font-bold text-slate-950 dark:text-white">
+                                            Submit quiz with unanswered questions?
+                                        </AlertDialogTitle>
+                                        <AlertDialogDescription className="pt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                            You still have {unansweredCount} unanswered question
+                                            {unansweredCount === 1 ? "" : "s"}. If you submit now,
+                                            those questions will be graded as unanswered and the
+                                            answers will stay hidden unless you pass.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
 
-                            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center lg:justify-end">
-                                {!submitted && hintModeUnlocked ? (
-                                    <Button
-                                        className="w-full border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 sm:w-auto"
-                                        variant="outline"
-                                        onClick={handleRevealHint}
-                                        disabled={currentQuestionHintUsed || savingAttempt}
-                                    >
-                                        <Sparkles className="mr-2 h-4 w-4" />
-                                        {currentQuestionHintUsed ? "Hint applied" : "Show hint"}
-                                    </Button>
-                                ) : null}
-                                <Button
-                                    className="w-full sm:w-auto"
-                                    variant="outline"
-                                    onClick={() =>
-                                        setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))
-                                    }
-                                    disabled={currentQuestionIndex === 0 || savingAttempt}
-                                >
-                                    <ChevronLeft className="mr-2 h-4 w-4" />
-                                    Previous
-                                </Button>
+                                    <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                                        Review the remaining questions now, or confirm to submit the
+                                        quiz as-is.
+                                    </div>
 
-                                {submitted && isLastQuestion ? (
-                                    <Button className="w-full sm:w-auto" onClick={() => setShowSummary(true)}>
-                                        View summary
-                                        <Check className="ml-2 h-4 w-4" />
-                                    </Button>
-                                ) : !submitted && isLastQuestion ? (
-                                    <Button className="w-full sm:w-auto" onClick={handleSubmitQuiz} disabled={savingAttempt}>
-                                        {savingAttempt ? "Saving attempt..." : "Submit quiz"}
-                                        <Check className="ml-2 h-4 w-4" />
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        className="w-full sm:w-auto"
-                                        onClick={() =>
-                                            setCurrentQuestionIndex((prev) =>
-                                                Math.min(totalQuestions - 1, prev + 1),
-                                            )
-                                        }
-                                        disabled={savingAttempt}
-                                    >
-                                        Next
-                                        <ChevronRight className="ml-2 h-4 w-4" />
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                <AlertDialog
-                    open={showIncompleteWarning}
-                    onOpenChange={setShowIncompleteWarning}
-                >
-                    <AlertDialogContent className="rounded-3xl border-slate-200 p-0 shadow-2xl dark:border-slate-800">
-                        <div className="p-6 sm:p-7">
-                            <AlertDialogHeader className="text-left">
-                                <AlertDialogTitle className="text-xl font-bold text-slate-950 dark:text-white">
-                                    Submit quiz with unanswered questions?
-                                </AlertDialogTitle>
-                                <AlertDialogDescription className="pt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                    You still have {unansweredCount} unanswered question
-                                    {unansweredCount === 1 ? "" : "s"}. If you submit now,
-                                    those questions will be graded as unanswered and the
-                                    answers will stay hidden unless you pass.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-
-                        <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                            Review the remaining questions now, or confirm to submit the
-                            quiz as-is.
-                        </div>
-
-                            <AlertDialogFooter className="mt-6">
-                                <AlertDialogCancel>Go back</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleConfirmSubmitQuiz} disabled={savingAttempt}>
-                                    Submit anyway
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </div>
-                    </AlertDialogContent>
-                </AlertDialog>
+                                    <AlertDialogFooter className="mt-6">
+                                        <AlertDialogCancel>Go back</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleConfirmSubmitQuiz} disabled={savingAttempt}>
+                                            Submit anyway
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </div>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </>
                 ) : null}
             </div>
@@ -2250,6 +2999,77 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
         setShowDailyStudyGoalDialog(false);
     };
 
+    useEffect(() => {
+        if (
+            !Number.isFinite(userId)
+            || loading
+            || error
+            || !lessonLookup
+            || !lessonLookup.lesson.is_generated
+        ) {
+            return;
+        }
+
+        let activeSince =
+            document.visibilityState === "visible" && document.hasFocus()
+                ? Date.now()
+                : null;
+
+        const flushStudyTime = () => {
+            if (activeSince === null) {
+                return;
+            }
+
+            const elapsedMilliseconds = Date.now() - activeSince;
+            activeSince = Date.now();
+
+            if (elapsedMilliseconds > 0) {
+                recordStudyTime(userId, elapsedMilliseconds);
+            }
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === "hidden") {
+                flushStudyTime();
+                activeSince = null;
+                return;
+            }
+
+            if (document.hasFocus()) {
+                activeSince = Date.now();
+            }
+        };
+
+        const handleWindowBlur = () => {
+            flushStudyTime();
+            activeSince = null;
+        };
+
+        const handleWindowFocus = () => {
+            if (document.visibilityState === "visible") {
+                activeSince = Date.now();
+            }
+        };
+
+        const intervalId = window.setInterval(() => {
+            flushStudyTime();
+        }, 15_000);
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        window.addEventListener("blur", handleWindowBlur);
+        window.addEventListener("focus", handleWindowFocus);
+        window.addEventListener("beforeunload", flushStudyTime);
+
+        return () => {
+            window.clearInterval(intervalId);
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+            window.removeEventListener("blur", handleWindowBlur);
+            window.removeEventListener("focus", handleWindowFocus);
+            window.removeEventListener("beforeunload", flushStudyTime);
+            flushStudyTime();
+        };
+    }, [error, lessonLookup, loading, userId]);
+
     if (loading) {
         return <LessonSkeleton />;
     }
@@ -2377,12 +3197,12 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
                                         Ready now
                                     </p>
                                     <p className="font-semibold text-slate-950 dark:text-white">
-                                        8 theory sections + quiz
+                                        7 theory sections + quiz
                                     </p>
                                 </div>
                             </div>
                             <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                Use the left navigation to move between the eight theory sections
+                                Use the left navigation to move between the seven theory sections
                                 and the final quiz tab.
                             </p>
                         </div>
@@ -2397,7 +3217,7 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
                                     Lesson map
                                 </p>
                                 <p className="mt-2 text-lg font-semibold text-slate-950 dark:text-white">
-                                    9 sections
+                                    8 sections
                                 </p>
                             </div>
 

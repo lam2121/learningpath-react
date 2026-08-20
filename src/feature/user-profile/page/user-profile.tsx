@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { ArrowRight, BookOpen, Layers3, Loader2 } from "lucide-react";
 
 import { MainNavigationMenu } from "@/common/component/MainNavigationMenu";
@@ -141,7 +142,6 @@ export function UserProfile() {
     );
     const nextLesson = nextAssigned?.lesson ?? null;
     const nextTopic = nextAssigned?.topic ?? null;
-    const heroHref = "/lessons/learning-path";
 
     return (
         <div className="min-h-screen w-full bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.14),_transparent_28%),linear-gradient(180deg,_#f8fbff_0%,_#eef4ff_100%)]">
@@ -222,10 +222,10 @@ export function UserProfile() {
                                                 </div>
 
                                                 <Button asChild className="h-14 min-w-[240px] rounded-2xl bg-blue-600 text-base font-semibold shadow-[0_18px_40px_rgba(37,99,235,0.35)] transition hover:bg-blue-700 hover:shadow-[0_22px_48px_rgba(29,78,216,0.42)]">
-                                                    <a href={heroHref}>
+                                                    <Link to="/lessons/learning-path">
                                                         Open Learning Path
                                                         <ArrowRight className="ml-2 h-5 w-5" />
-                                                    </a>
+                                                    </Link>
                                                 </Button>
                                             </div>
                                         </div>
@@ -243,10 +243,13 @@ export function UserProfile() {
                                 <DailyPlanView
                                     nextTopic={nextTopic}
                                     nextLesson={nextLesson}
+<<<<<<< HEAD
                                     hasRoadmap={Boolean(roadmap?.topics.length)}
                                     completedLessonCount={completedLessonCount}
                                     totalAssignedLessons={totalAssignedLessons}
                                     allAssignedLessonsCompleted={allAssignedLessonsCompleted}
+=======
+>>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
                                     onStudyPlanExpandedChange={setIsStudyPlanExpanded}
                                 />
                                 {!isStudyPlanExpanded ? (

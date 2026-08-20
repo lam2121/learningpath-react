@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
+<<<<<<< HEAD
 import { ArrowUpDown, CalendarClock, CheckCircle2, Clock3, Eye, Loader2, Medal, Search, Sparkles } from "lucide-react";
+=======
+import { CalendarClock, CheckCircle2, Clock3, Eye, Loader2, Medal, Sparkles } from "lucide-react";
+>>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
 
 import { fetchCurrentUserProfile } from "@/feature/auth/api/authAPI";
 import type {
@@ -11,7 +15,10 @@ import type {
 import { useAuth } from "@/common/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/component/ui/card";
 import { Button } from "@/shadcn/component/ui/button";
+<<<<<<< HEAD
 import { Input } from "@/shadcn/component/ui/input";
+=======
+>>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
 import {
     Accordion,
     AccordionContent,
@@ -356,6 +363,7 @@ export function LoginHistoryCard({
 
     const today = new Date().getDate();
     const chartData = studyTimeData.slice(0, today);
+<<<<<<< HEAD
     const totalMinutes = chartData.reduce((sum, item) => sum + item.minutes, 0);
     const todayMinutes = chartData[chartData.length - 1]?.minutes ?? 0;
     const hasActivity = totalMinutes > 0;
@@ -368,6 +376,19 @@ export function LoginHistoryCard({
     const longestStudyMinutes = activeStudyMinutes.length > 0
         ? Math.max(...activeStudyMinutes)
         : 0;
+=======
+    const activeDays = chartData.filter((item) => item.minutes > 0).length;
+    const totalMinutes = chartData.reduce((sum, item) => sum + item.minutes, 0);
+    const todayMinutes = chartData[chartData.length - 1]?.minutes ?? 0;
+    const hasActivity = totalMinutes > 0;
+    const trackedStudyMinutes = Number.isFinite(userId)
+        ? getTrackedStudyMinutesTotal(userId)
+        : 0;
+    const totalTrackedMinutes = Math.max(
+        0,
+        (profile?.total_studied_minutes ?? 0) + trackedStudyMinutes,
+    );
+>>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
     const shouldStretch = compact || stretch;
     const chartHeightClass = shouldStretch
         ? "min-h-28 flex-1 sm:min-h-32"
@@ -433,10 +454,17 @@ export function LoginHistoryCard({
 
                         <div className="flex min-w-0 flex-wrap gap-1.5 text-[11px] font-semibold sm:gap-2 sm:text-xs">
                             <span className="max-w-full truncate rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
+<<<<<<< HEAD
                                 Shortest time: {formatStudyDuration(shortestStudyMinutes)}
                             </span>
                             <span className="max-w-full truncate rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">
                                 Longest time: {formatStudyDuration(longestStudyMinutes)}
+=======
+                                Active days: {activeDays}
+                            </span>
+                            <span className="max-w-full truncate rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">
+                                Total tracked: {formatStudyDuration(totalTrackedMinutes)}
+>>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
                             </span>
                         </div>
 
@@ -478,8 +506,11 @@ export function LessonQuizHistoryCard({
     compact = false,
 }: LessonQuizHistoryCardProps) {
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
+<<<<<<< HEAD
     const [topicSortDirection, setTopicSortDirection] = useState<"asc" | "desc">("asc");
     const [searchTerm, setSearchTerm] = useState("");
+=======
+>>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
     const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
     const [selectedDetail, setSelectedDetail] = useState<LessonQuizResultDetailResponse | null>(null);
     const [detailLoading, setDetailLoading] = useState(false);
@@ -522,6 +553,7 @@ export function LessonQuizHistoryCard({
         [profile],
     );
 
+<<<<<<< HEAD
     const sortedLessonQuizHistory = useMemo(
         () =>
             [...lessonQuizHistory].sort((left, right) => {
@@ -569,6 +601,11 @@ export function LessonQuizHistoryCard({
     const topAttempts = useMemo(
         () => (compact ? lessonQuizHistory.slice(0, 3) : filteredLessonQuizHistory),
         [compact, filteredLessonQuizHistory, lessonQuizHistory],
+=======
+    const topAttempts = useMemo(
+        () => (compact ? lessonQuizHistory.slice(0, 3) : lessonQuizHistory),
+        [compact, lessonQuizHistory],
+>>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
     );
 
     const openLessonDetail = async (lessonId: number) => {
@@ -599,6 +636,7 @@ export function LessonQuizHistoryCard({
                 <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-4">
                         <div>
+<<<<<<< HEAD
                             <CardTitle className="text-2xl text-slate-950">Best Lesson Quiz Scores</CardTitle>
                             <p className="mt-1 text-base text-slate-500">
                                 Highest weighted score saved for each lesson, including hint mode.
@@ -653,6 +691,21 @@ export function LessonQuizHistoryCard({
 
                 <CardContent className="pt-0">
                     {lessonQuizHistory.length === 0 ? (
+=======
+                            <CardTitle className="text-xl text-slate-950">Best Lesson Quiz Scores</CardTitle>
+                            <p className="mt-1 text-sm text-slate-500">
+                                Highest weighted score saved for each lesson, including hint mode.
+                            </p>
+                        </div>
+                        <div className="rounded-2xl bg-amber-50 p-3 text-amber-700">
+                            <Medal className="h-5 w-5" />
+                        </div>
+                    </div>
+                </CardHeader>
+
+                <CardContent className="pt-0">
+                    {topAttempts.length === 0 ? (
+>>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
                         <div className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center">
                             <Sparkles className="h-10 w-10 text-slate-300" />
                             <div>
@@ -664,6 +717,7 @@ export function LessonQuizHistoryCard({
                                 </p>
                             </div>
                         </div>
+<<<<<<< HEAD
                     ) : topAttempts.length === 0 ? (
                         <div className="flex min-h-32 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center">
                             <Search className="h-8 w-8 text-slate-300" />
@@ -678,15 +732,22 @@ export function LessonQuizHistoryCard({
                         </div>
                     ) : (
                         <div className={compact ? "space-y-3" : "grid gap-3 xl:grid-cols-2"}>
+=======
+                    ) : (
+                        <div className="space-y-3">
+>>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
                             {topAttempts.map((entry: LessonQuizHistoryEntryResponse) => {
                                 const recordedLabel = formatHistoryDate(entry.recorded_at);
                                 const completedLabel = formatHistoryDate(entry.completed_at);
                                 const submittedLabel = formatHistoryDate(entry.last_submitted_at);
                                 const statusLabel = formatStatusLabel(entry.status);
+<<<<<<< HEAD
                                 const topicHeader = entry.topic_name ?? "Lesson quiz history";
                                 const topicLabel = entry.topic_sort_order
                                     ? `Topic ${entry.topic_sort_order}`
                                     : "Topic";
+=======
+>>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
                                 const statusClasses = entry.status === "passed"
                                     ? "bg-emerald-100 text-emerald-700"
                                     : entry.status === "failed"
@@ -696,6 +757,7 @@ export function LessonQuizHistoryCard({
                                 return (
                                     <div
                                         key={entry.lesson_id}
+<<<<<<< HEAD
                                         className="flex h-full flex-col rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
                                     >
                                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -711,12 +773,30 @@ export function LessonQuizHistoryCard({
                                                         {formatLabel(entry.difficulty_tier)}
                                                     </span>
                                                     <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-semibold ${statusClasses}`}>
+=======
+                                        className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+                                    >
+                                        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                            <div className="min-w-0">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <p className="text-base font-bold text-slate-950">
+                                                        {entry.lesson_title}
+                                                    </p>
+                                                    <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                                                        {formatLabel(entry.skill)}
+                                                    </span>
+                                                    <span className="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                                                        {formatLabel(entry.difficulty_tier)}
+                                                    </span>
+                                                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${statusClasses}`}>
+>>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
                                                         {entry.status === "passed" ? (
                                                             <CheckCircle2 className="h-3.5 w-3.5" />
                                                         ) : null}
                                                         {statusLabel}
                                                     </span>
                                                 </div>
+<<<<<<< HEAD
                                                 <p className="mt-2 text-xl font-bold text-slate-950">
                                                     {topicHeader}
                                                 </p>
@@ -731,13 +811,30 @@ export function LessonQuizHistoryCard({
                                                         Best score
                                                     </p>
                                                     <p className="mt-1 text-3xl font-black text-slate-950">
+=======
+                                                <p className="mt-2 text-sm text-slate-500">
+                                                    {entry.topic_name ? `Topic: ${entry.topic_name}` : "Lesson quiz history"}
+                                                </p>
+                                            </div>
+
+                                            <div className="flex flex-col items-start gap-3 lg:items-end">
+                                                <div className="rounded-2xl bg-white px-4 py-3 text-left shadow-sm lg:min-w-[160px] lg:text-right">
+                                                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                        Best score
+                                                    </p>
+                                                    <p className="mt-1 text-2xl font-black text-slate-950">
+>>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
                                                         {formatPercent(entry.best_score_percent)}
                                                     </p>
                                                 </div>
                                                 <Button
                                                     type="button"
                                                     variant="outline"
+<<<<<<< HEAD
                                                     className="rounded-xl border-slate-300 bg-white text-base"
+=======
+                                                    className="rounded-xl border-slate-300 bg-white"
+>>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
                                                     onClick={() => void openLessonDetail(entry.lesson_id)}
                                                 >
                                                     <Eye className="mr-2 h-4 w-4" />
@@ -746,44 +843,81 @@ export function LessonQuizHistoryCard({
                                             </div>
                                         </div>
 
+<<<<<<< HEAD
                                         <div className="mt-4 grid gap-3 sm:grid-cols-2">
                                             <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
                                                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                                                     Attempts
                                                 </p>
                                                 <p className="mt-1 text-lg font-semibold text-slate-950">
+=======
+                                        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                                            <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
+                                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                    Attempts
+                                                </p>
+                                                <p className="mt-1 font-semibold text-slate-950">
+>>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
                                                     {entry.attempt_count}
                                                 </p>
                                             </div>
                                             <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
+<<<<<<< HEAD
                                                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                                                     Failed attempts
                                                 </p>
                                                 <p className="mt-1 text-lg font-semibold text-slate-950">
+=======
+                                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                    Failed attempts
+                                                </p>
+                                                <p className="mt-1 font-semibold text-slate-950">
+>>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
                                                     {entry.failed_attempts}
                                                 </p>
                                             </div>
                                             <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
+<<<<<<< HEAD
                                                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                                                     Correct no hint
                                                 </p>
                                                 <p className="mt-1 text-lg font-semibold text-slate-950">
+=======
+                                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                    Correct no hint
+                                                </p>
+                                                <p className="mt-1 font-semibold text-slate-950">
+>>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
                                                     {entry.correct_no_hint_count} / {entry.total_no_hint_questions}
                                                 </p>
                                             </div>
                                             <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
+<<<<<<< HEAD
                                                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                                                     Correct with hint
                                                 </p>
                                                 <p className="mt-1 text-lg font-semibold text-slate-950">
+=======
+                                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                    Correct with hint
+                                                </p>
+                                                <p className="mt-1 font-semibold text-slate-950">
+>>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
                                                     {entry.correct_with_hint_count} / {entry.total_with_hint_questions}
                                                 </p>
                                             </div>
                                             <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
+<<<<<<< HEAD
                                                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                                                     Recorded
                                                 </p>
                                                 <p className="mt-1 text-lg font-semibold text-slate-950">
+=======
+                                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                    Recorded
+                                                </p>
+                                                <p className="mt-1 font-semibold text-slate-950">
+>>>>>>> d66bf68efabeaf9d573832a2c443165c67b37066
                                                     {recordedLabel ?? completedLabel ?? submittedLabel ?? "Unknown"}
                                                 </p>
                                             </div>

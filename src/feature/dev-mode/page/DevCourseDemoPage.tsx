@@ -1,8 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Loader2, RefreshCw, Sparkles } from 'lucide-react'
+import { AlertCircle, Loader2, RefreshCw, Sparkles } from 'lucide-react'
 import { Badge } from '@/shadcn/component/ui/badge'
 import { Button } from '@/shadcn/component/ui/button'
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from '@/shadcn/component/ui/dialog'
 import {
 	Select,
 	SelectContent,
@@ -35,6 +43,7 @@ export function DevCourseDemoPage() {
 	const [topicId, setTopicId] = useState<number | null>(null)
 	const [generatingId, setGeneratingId] = useState<number | null>(null)
 	const [generateAll, setGenerateAll] = useState(false)
+	const [confirmGenerateAll, setConfirmGenerateAll] = useState(false)
 
 	const load = async () => {
 		setIsLoading(true)
@@ -167,6 +176,14 @@ export function DevCourseDemoPage() {
 				</div>
 				<div className="flex items-center gap-2">
 					<Badge className="capitalize">{roadmap.track} track</Badge>
+					<Button
+						variant="outline"
+						size="sm"
+						className="border-indigo-500/40 text-indigo-400 hover:bg-indigo-950/40"
+						onClick={() => navigate({ to: '/dev-audio-test' })}
+					>
+						🎙️ Audio TTS/STT
+					</Button>
 					<Button variant="outline" size="sm" onClick={load}>
 						<RefreshCw /> Refresh
 					</Button>
@@ -174,6 +191,7 @@ export function DevCourseDemoPage() {
 						Role selection
 					</Button>
 				</div>
+
 			</div>
 
 			<div className="grid gap-4 sm:grid-cols-3">
@@ -203,7 +221,7 @@ export function DevCourseDemoPage() {
 				</Select>
 				<Button
 					variant="secondary"
-					onClick={handleGenerateAll}
+					onClick={() => setConfirmGenerateAll(true)}
 					disabled={generateAll || remainingCount === 0}
 				>
 					{generateAll ? <Loader2 className="animate-spin" /> : <Sparkles />}
@@ -284,6 +302,34 @@ export function DevCourseDemoPage() {
 					</div>
 				</div>
 			)}
+
+			<Dialog open={confirmGenerateAll} onOpenChange={setConfirmGenerateAll}>
+				<DialogContent className="max-w-md">
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2">
+							<AlertCircle className="h-5 w-5" />
+							Generate All Remaining Lessons
+						</DialogTitle>
+						<DialogDescription>
+							This will generate C-1 (Theory) and C-2 (Quiz) content for{' '}
+							<strong>{remainingCount}</strong> ungenerated lesson(s). Each lesson costs
+							~$0.05 in AI tokens. This action cannot be undone.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter className="flex-col-reverse gap-3 sm:flex-row">
+						<Button variant="outline" onClick={() => setConfirmGenerateAll(false)} disabled={generateAll}>
+							Cancel
+						</Button>
+						<Button
+							onClick={() => { setConfirmGenerateAll(false); handleGenerateAll() }}
+							disabled={generateAll || remainingCount === 0}
+						>
+							{generateAll ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+							Generate {remainingCount} lesson(s)
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	)
 }
