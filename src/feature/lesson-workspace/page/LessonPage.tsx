@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import {
     ArrowLeft,
@@ -33,6 +33,7 @@ import {
     fetchLessonQuizState,
     kickoffRoadmapLessonGeneration,
     submitLessonQuiz,
+    type LessonQuizSubmitResponse,
     type LessonQuizStateResponse,
     type RoadmapLesson,
     type RoadmapResponse,
@@ -360,9 +361,12 @@ type EmbeddedQuizQuestion = {
     id: string;
     type: EmbeddedQuestionType;
     data: FillBlankQuestionData | MultiSelectQuestionData | OrderingQuestionData;
+    canonicalAnswer?: string;
+    displayAnswer?: string;
+    displayToCanonicalIndex?: number[];
+    canonicalToDisplayIndex?: number[];
 };
 
-const LESSON_PASS_THRESHOLD = 0.7;
 const HINT_UNLOCK_AFTER_FAILURES = 2;
 const HINT_CREDIT = 0.75;
 
@@ -628,16 +632,54 @@ function buildEmbeddedQuizQuestions(quiz: ParsedQuiz | null): EmbeddedQuizQuesti
     }
 
     return [
-        ...quiz.fillBlank.map((row, index) => ({
-            id: `fill-${index}`,
-            type: "fill_blank" as const,
-            data: [...row, 0, 0, 0, 0, 0, 0, 0, 0] as FillBlankQuestionData,
-        })),
-        ...quiz.multiSelect.map((row, index) => ({
-            id: `multi-${index}`,
-            type: "multi_select" as const,
-            data: [...row, 0, 0, 0, 0, 0, 0, 0, 0] as MultiSelectQuestionData,
-        })),
+        ...quiz.fillBlank.map((row, index) => {
+            const shuffledRow = shuffleFillBlankRow(row);
+
+            return {
+                id: `fill-${index}`,
+                type: "fill_blank" as const,
+                data: [
+                    ...shuffledRow,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ] as FillBlankQuestionData,
+            };
+        }),
+        ...quiz.multiSelect.map((row, index) => {
+            const {
+                row: shuffledRow,
+                canonicalAnswer,
+                displayAnswer,
+                displayToCanonicalIndex,
+                canonicalToDisplayIndex,
+            } = shuffleMultiSelectRow(row);
+
+            return {
+                id: `multi-${index}`,
+                type: "multi_select" as const,
+                data: [
+                    ...shuffledRow,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ] as MultiSelectQuestionData,
+                canonicalAnswer,
+                displayAnswer,
+                displayToCanonicalIndex,
+                canonicalToDisplayIndex,
+            };
+        }),
         ...quiz.ordering.map((row, index) => ({
             id: `order-${index}`,
             type: "ordering" as const,
@@ -655,7 +697,69 @@ function shuffleQuestions<T>(items: T[]) {
     return next;
 }
 
-function hasAnswer(answer: string | undefined) {
+function shuffleOptionEntries<T>(items: T[]) {
+    const next = [...items];
+    for (let index = next.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(Math.random() * (index + 1));
+        [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+    }
+    return next;
+}
+
+function shuffleFillBlankRow(row: QuizRow): QuizRow {
+    const [stem, optionsStr, correctAnswer, explanation] = row;
+    const shuffledOptions = shuffleOptionEntries(optionsStr.split("|"));
+
+    return [stem, shuffledOptions.join("|"), correctAnswer, explanation];
+}
+
+function shuffleMultiSelectRow(row: QuizRow): {
+    row: QuizRow;
+    canonicalAnswer: string;
+    displayAnswer: string;
+    displayToCanonicalIndex: number[];
+    canonicalToDisplayIndex: number[];
+} {
+    const [stem, optionsStr, answerStr, explanation] = row;
+    const options = optionsStr.split("|");
+    const correctIndices = answerStr
+        .split("|")
+        .map((part) => Number(part.trim()))
+        .filter((value) => !Number.isNaN(value));
+    const shuffledOptions = shuffleOptionEntries(
+        options.map((option, index) => ({
+            option,
+            originalIndex: index,
+        })),
+    );
+    const remappedAnswer = shuffledOptions
+        .map((entry, index) => (
+            correctIndices.includes(entry.originalIndex) ? index : null
+        ))
+        .filter((value): value is number => value !== null)
+        .sort((left, right) => left - right)
+        .join("|");
+    const canonicalToDisplayIndex = options.map(() => -1);
+
+    shuffledOptions.forEach((entry, displayIndex) => {
+        canonicalToDisplayIndex[entry.originalIndex] = displayIndex;
+    });
+
+    return {
+        row: [
+            stem,
+            shuffledOptions.map((entry) => entry.option).join("|"),
+            remappedAnswer,
+            explanation,
+        ],
+        canonicalAnswer: normalizeIndexAnswer(answerStr),
+        displayAnswer: remappedAnswer,
+        displayToCanonicalIndex: shuffledOptions.map((entry) => entry.originalIndex),
+        canonicalToDisplayIndex,
+    };
+}
+
+function hasAnswer(answer: string | undefined): answer is string {
     return Boolean(answer && answer.trim().length > 0);
 }
 
@@ -678,14 +782,57 @@ function isEmbeddedAnswerCorrect(question: EmbeddedQuizQuestion, answer: string 
     }
 
     if (question.type === "multi_select") {
-        return normalizeIndexAnswer(answer ?? "") === normalizeIndexAnswer(question.data[2]);
+        return normalizeIndexAnswer(answer ?? "") === getEmbeddedDisplayAnswer(question);
     }
 
     return answer === question.data[2];
 }
 
-function getEmbeddedCorrectAnswer(question: EmbeddedQuizQuestion) {
+function getEmbeddedDisplayAnswer(question: EmbeddedQuizQuestion) {
+    if (question.type === "multi_select") {
+        if (question.displayAnswer) {
+            return normalizeIndexAnswer(question.displayAnswer);
+        }
+
+        if (question.canonicalAnswer && question.canonicalToDisplayIndex?.length) {
+            return question.canonicalAnswer
+                .split("|")
+                .map((part) => Number(part.trim()))
+                .filter((value) => !Number.isNaN(value))
+                .map((canonicalIndex) => question.canonicalToDisplayIndex?.[canonicalIndex])
+                .filter((value): value is number => typeof value === "number" && Number.isInteger(value) && value >= 0)
+                .sort((left, right) => left - right)
+                .join("|");
+        }
+    }
+
     return question.data[2];
+}
+
+function getEmbeddedCorrectAnswer(question: EmbeddedQuizQuestion) {
+    return getEmbeddedDisplayAnswer(question);
+}
+
+function getCanonicalSubmittedAnswer(
+    question: EmbeddedQuizQuestion,
+    answer: string | undefined,
+) {
+    if (!hasAnswer(answer)) {
+        return "";
+    }
+
+    if (question.type !== "multi_select" || !question.displayToCanonicalIndex?.length) {
+        return answer ?? "";
+    }
+
+    return answer
+        .split("|")
+        .map((part) => Number(part.trim()))
+        .filter((value) => !Number.isNaN(value))
+        .map((displayIndex) => question.displayToCanonicalIndex?.[displayIndex])
+        .filter((value): value is number => Number.isInteger(value))
+        .sort((left, right) => left - right)
+        .join("|");
 }
 
 function parseReadingQuestions(value: string) {
@@ -1862,9 +2009,25 @@ function EmbeddedLessonQuiz({
     const [nextLessonStatus, setNextLessonStatus] = useState<"idle" | "preparing" | "ready" | "error">("idle");
     const [nextLessonMessage, setNextLessonMessage] = useState<string | null>(null);
     const [savedQuizState, setSavedQuizState] = useState<LessonQuizStateResponse | null>(null);
+    const [lastSubmittedResult, setLastSubmittedResult] = useState<LessonQuizSubmitResponse | null>(null);
     const [quizStateError, setQuizStateError] = useState<string | null>(null);
     const [savingAttempt, setSavingAttempt] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
+    const questionNavigatorRef = useRef<HTMLDivElement | null>(null);
+    const activeQuestionButtonRef = useRef<HTMLButtonElement | null>(null);
+    const activeQuestionRef = useRef<HTMLDivElement | null>(null);
+    const previousQuestionIndexRef = useRef(0);
+
+    const backendQuestionResultsById = useMemo(
+        () =>
+            new Map(
+                (lastSubmittedResult?.question_results ?? []).map((result) => [
+                    result.question_id,
+                    result,
+                ]),
+            ),
+        [lastSubmittedResult?.question_results],
+    );
 
     useEffect(() => {
         let cancelled = false;
@@ -1880,6 +2043,7 @@ function EmbeddedLessonQuiz({
         setNextLessonStatus(nextLesson?.lesson.is_generated ? "ready" : "idle");
         setNextLessonMessage(null);
         setSavedQuizState(null);
+        setLastSubmittedResult(null);
         setQuizStateError(null);
         setSavingAttempt(false);
         setSaveError(null);
@@ -1950,6 +2114,56 @@ function EmbeddedLessonQuiz({
         };
     }, [nextLesson, nextLessonStatus, quizStarted]);
 
+    useEffect(() => {
+        if (!quizStarted || showSummary) {
+            previousQuestionIndexRef.current = currentQuestionIndex;
+            return;
+        }
+
+        const questionChanged = previousQuestionIndexRef.current !== currentQuestionIndex;
+        previousQuestionIndexRef.current = currentQuestionIndex;
+
+        if (!questionChanged) {
+            return;
+        }
+
+        const frameId = window.requestAnimationFrame(() => {
+            activeQuestionRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+            });
+        });
+
+        return () => {
+            window.cancelAnimationFrame(frameId);
+        };
+    }, [currentQuestionIndex, quizStarted, showSummary]);
+
+    useEffect(() => {
+        if (!quizStarted || showSummary) {
+            return;
+        }
+
+        const frameId = window.requestAnimationFrame(() => {
+            const navigator = questionNavigatorRef.current;
+            const activeButton = activeQuestionButtonRef.current;
+
+            if (!navigator || !activeButton || !navigator.contains(activeButton)) {
+                return;
+            }
+
+            activeButton.scrollIntoView({
+                behavior: "smooth",
+                block: "nearest",
+                inline: "center",
+            });
+        });
+
+        return () => {
+            window.cancelAnimationFrame(frameId);
+        };
+    }, [currentQuestionIndex, quizStarted, showSummary]);
+
     if (!quiz || questions.length === 0) {
         return (
             <EmptyPanel
@@ -1996,7 +2210,6 @@ function EmbeddedLessonQuiz({
         totalQuestions > 0
             ? (correctNoHintCount + HINT_CREDIT * correctWithHintCount) / totalQuestions
             : 0;
-    const passedQuiz = submitted && weightedScore >= LESSON_PASS_THRESHOLD;
     const progressValue = ((currentQuestionIndex + 1) / totalQuestions) * 100;
     const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
     const nextLessonIsReady = nextLessonStatus === "ready" || Boolean(nextLesson?.lesson.is_generated);
@@ -2058,8 +2271,33 @@ function EmbeddedLessonQuiz({
         setShowSummary(false);
         setShowIncompleteWarning(false);
         setHintedQuestions({});
+        setLastSubmittedResult(null);
         setSaveError(null);
     };
+
+    const isQuestionCorrect = (question: EmbeddedQuizQuestion, index: number) =>
+        backendQuestionResultsById.get(question.id)?.is_correct
+        ?? isEmbeddedAnswerCorrect(question, answers[index]);
+
+    const submittedResult = submitted ? lastSubmittedResult : null;
+    const lessonPassed = submitted
+        ? (submittedResult?.lesson_passed ?? false)
+        : (savedQuizState?.lesson_passed ?? false);
+    const currentAttemptPassed = submitted
+        ? (submittedResult?.current_attempt_passed ?? false)
+        : false;
+    const displayedWeightedScorePercent = submitted
+        ? (submittedResult?.weighted_score_percent ?? 0)
+        : weightedScore * 100;
+    const displayedCorrectNoHintCount = submitted
+        ? (submittedResult?.correct_no_hint_count ?? 0)
+        : correctNoHintCount;
+    const displayedCorrectWithHintCount = submitted
+        ? (submittedResult?.correct_with_hint_count ?? 0)
+        : correctWithHintCount;
+    const displayedCorrectCount = submitted
+        ? displayedCorrectNoHintCount + displayedCorrectWithHintCount
+        : correctCount;
 
     const finalizeSubmission = async () => {
         if (savingAttempt) {
@@ -2075,11 +2313,12 @@ function EmbeddedLessonQuiz({
                 answers: questions.map((question, index) => ({
                     question_id: question.id,
                     question_type: question.type,
-                    answer: answers[index] ?? "",
+                    answer: getCanonicalSubmittedAnswer(question, answers[index]),
                     used_hint: Boolean(hintedQuestions[index]),
                 })),
             });
 
+            setLastSubmittedResult(response);
             setSavedQuizState({
                 lesson_id: response.lesson_id,
                 skill: response.skill,
@@ -2150,17 +2389,22 @@ function EmbeddedLessonQuiz({
 
 
     const questionNavigator = (
-        <div className="flex gap-2 overflow-x-auto pb-5 pt-1 px-0.5">
+        <div
+            ref={questionNavigatorRef}
+            className="flex gap-2 overflow-x-auto pb-5 pt-1 px-0.5"
+        >
             {questions.map((question, index) => {
                 const isActive = index === currentQuestionIndex;
                 const isAnswered = hasAnswer(answers[index]);
-                const isCorrect = submitted && isEmbeddedAnswerCorrect(question, answers[index]);
+                const isCorrect = submitted && isQuestionCorrect(question, index);
                 const usedHint = Boolean(hintedQuestions[index]);
 
                 return (
                     <button
                         key={question.id}
                         type="button"
+                        ref={isActive ? activeQuestionButtonRef : null}
+                        aria-current={isActive ? "step" : undefined}
                         onClick={() => {
                             setCurrentQuestionIndex(index);
                             setShowSummary(false);
@@ -2358,7 +2602,7 @@ function EmbeddedLessonQuiz({
                                 <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
                                     <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Correct</p>
                                     <p className="mt-1 font-semibold text-slate-950 dark:text-white">
-                                        {submitted ? correctCount : "?"}
+                                        {submitted ? displayedCorrectCount : "?"}
                                     </p>
                                 </div>
                                 <div className="col-span-2 rounded-2xl bg-white px-4 py-3 sm:col-span-1 dark:bg-slate-900">
@@ -2436,18 +2680,24 @@ function EmbeddedLessonQuiz({
                                                 Quiz complete
                                             </p>
                                             <h3 className="text-2xl font-bold text-slate-950 dark:text-white">
-                                                {correctCount} / {totalQuestions} correct
+                                                {displayedCorrectCount} / {totalQuestions} correct
                                             </h3>
                                             <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
-                                                Weighted score: {Math.round(weightedScore * 100)}%
-                                                {passedQuiz ? " · Passed" : " · Pass requires 70%"}
+                                                Weighted score: {formatPercent(displayedWeightedScorePercent)}
+                                                {currentAttemptPassed
+                                                    ? " · Passed"
+                                                    : lessonPassed
+                                                        ? " · Lesson already passed previously"
+                                                        : " · Pass requires 70%"}
                                             </p>
                                         </div>
                                     </div>
                                     <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                        {passedQuiz
+                                        {currentAttemptPassed
                                             ? "You passed this lesson check. Review any question from the navigator above, restart if you want another attempt, or continue once the next lesson is ready."
-                                            : "Review any question from the navigator above, or restart the quiz to try again. You need a weighted 70% score to unlock the continue action for the next lesson."}
+                                            : lessonPassed
+                                                ? "This retake did not pass, but the lesson is already marked as passed. You can review any question, restart again, or continue once the next lesson is ready."
+                                                : "Review any question from the navigator above, or restart the quiz to try again. You need a weighted 70% score to unlock the continue action for the next lesson."}
                                     </p>
                                     {savedQuizState?.current_skill_score !== null && savedQuizState?.current_skill_score !== undefined ? (
                                         <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-900 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-100">
@@ -2461,23 +2711,23 @@ function EmbeddedLessonQuiz({
                                     <div className="mt-4 grid gap-3 sm:grid-cols-3">
                                         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
                                             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Correct without hint</p>
-                                            <p className="mt-1 font-semibold text-slate-950 dark:text-white">{correctNoHintCount}</p>
+                                            <p className="mt-1 font-semibold text-slate-950 dark:text-white">{displayedCorrectNoHintCount}</p>
                                         </div>
                                         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
                                             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Correct with hint</p>
-                                            <p className="mt-1 font-semibold text-slate-950 dark:text-white">{correctWithHintCount}</p>
+                                            <p className="mt-1 font-semibold text-slate-950 dark:text-white">{displayedCorrectWithHintCount}</p>
                                         </div>
                                         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
                                             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Failed attempts</p>
                                             <p className="mt-1 font-semibold text-slate-950 dark:text-white">{failedAttempts}</p>
                                         </div>
                                     </div>
-                                    {!passedQuiz && failedAttempts + 1 === HINT_UNLOCK_AFTER_FAILURES ? (
+                                    {!lessonPassed && failedAttempts + 1 === HINT_UNLOCK_AFTER_FAILURES ? (
                                         <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
                                             One more failed attempt will unlock hint mode for this lesson.
                                         </div>
                                     ) : null}
-                                    {!passedQuiz && hintModeUnlocked ? (
+                                    {!lessonPassed && hintModeUnlocked ? (
                                         <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
                                             Hint mode is now available on your next retry. Each hinted
                                             answer auto-fills the correct response and counts as{" "}
@@ -2496,7 +2746,7 @@ function EmbeddedLessonQuiz({
                                         >
                                             Review from question 1
                                         </Button>
-                                        {nextLesson && nextLessonIsReady && passedQuiz ? (
+                                        {nextLesson && nextLessonIsReady && lessonPassed ? (
                                             <Button asChild className="w-full sm:w-auto">
                                                 <Link
                                                     to="/lessons/$lessonId"
@@ -2507,7 +2757,7 @@ function EmbeddedLessonQuiz({
                                             </Button>
                                         ) : null}
                                     </div>
-                                    {!passedQuiz && nextLesson && nextLessonIsReady ? (
+                                    {!lessonPassed && nextLesson && nextLessonIsReady ? (
                                         <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
                                             The next lesson is ready, but it stays locked until you pass this quiz with a weighted score of at least 70%.
                                         </div>
@@ -2516,7 +2766,7 @@ function EmbeddedLessonQuiz({
 
                                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                                     {questions.map((question, index) => {
-                                        const isCorrect = isEmbeddedAnswerCorrect(question, answers[index]);
+                                        const isCorrect = isQuestionCorrect(question, index);
                                         return (
                                             <button
                                                 key={`summary-${question.id}`}
@@ -2547,7 +2797,7 @@ function EmbeddedLessonQuiz({
                                 </div>
                             </section>
                         ) : (
-                            <div className="space-y-5">
+                            <div ref={activeQuestionRef} className="space-y-5">
                                 {saveError ? (
                                     <div className="rounded-3xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-100">
                                         {saveError}
@@ -2564,7 +2814,7 @@ function EmbeddedLessonQuiz({
                                         }
                                         isSubmitted={submitted}
                                         userAnswer={currentAnswer}
-                                        revealAnswer={passedQuiz}
+                                        revealAnswer={currentAttemptPassed}
                                     />
                                 ) : currentQuestion.type === "multi_select" ? (
                                     <MultiSelectQuestion
@@ -2577,9 +2827,9 @@ function EmbeddedLessonQuiz({
                                             setAnswers((prev) => ({ ...prev, [currentQuestionIndex]: answer }))
                                         }
                                         isSubmitted={submitted}
-                                        isCorrect={submitted ? isEmbeddedAnswerCorrect(currentQuestion, currentAnswer) : undefined}
+                                        isCorrect={submitted ? isQuestionCorrect(currentQuestion, currentQuestionIndex) : undefined}
                                         explanation={currentQuestion.data[3]}
-                                        revealAnswer={passedQuiz}
+                                        revealAnswer={currentAttemptPassed}
                                     />
                                 ) : (
                                     <OrderingQuestion
@@ -2592,9 +2842,9 @@ function EmbeddedLessonQuiz({
                                             setAnswers((prev) => ({ ...prev, [currentQuestionIndex]: answer }))
                                         }
                                         isSubmitted={submitted}
-                                        isCorrect={submitted ? isEmbeddedAnswerCorrect(currentQuestion, currentAnswer) : undefined}
+                                        isCorrect={submitted ? isQuestionCorrect(currentQuestion, currentQuestionIndex) : undefined}
                                         explanation={currentQuestion.data[3]}
-                                        revealAnswer={passedQuiz}
+                                        revealAnswer={currentAttemptPassed}
                                     />
                                 )}
 
@@ -2603,9 +2853,9 @@ function EmbeddedLessonQuiz({
                                         {submitted
                                             ? currentQuestionHintUsed
                                                 ? `Hint applied. This answer counted as ${Math.round(HINT_CREDIT * 100)}% credit.`
-                                                : isEmbeddedAnswerCorrect(currentQuestion, currentAnswer)
+                                                : isQuestionCorrect(currentQuestion, currentQuestionIndex)
                                                     ? "Correct. You can move on to the next question."
-                                                    : passedQuiz
+                                                    : currentAttemptPassed
                                                         ? "Reviewed. You can revise the explanation and continue."
                                                         : "Incorrect. Answers stay hidden on failed attempts. Review the lesson and try again."
                                             : currentQuestionHintUsed
@@ -2877,6 +3127,7 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
             || error
             || !lessonLookup
             || !lessonLookup.lesson.is_generated
+            || !lessonLookup.lesson.is_unlocked
         ) {
             return;
         }
@@ -2964,6 +3215,7 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
             || error
             || !lessonLookup
             || !lessonLookup.lesson.is_generated
+            || !lessonLookup.lesson.is_unlocked
         ) {
             return;
         }
@@ -3092,6 +3344,29 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
                         </p>
                         <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
                             Theory and quiz content have not been generated for this lesson yet.
+                        </p>
+                        <div className="mt-6">
+                            <Button asChild variant="outline">
+                                <Link to="/lessons/learning-path">Back to roadmap</Link>
+                            </Button>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        );
+    }
+
+    if (!lesson.is_unlocked) {
+        return (
+            <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white">
+                <MainNavigationMenu />
+                <main className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
+                    <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <p className="text-lg font-semibold text-slate-950 dark:text-white">
+                            Lesson is locked
+                        </p>
+                        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                            Pass the previous lesson in this topic to unlock this lesson.
                         </p>
                         <div className="mt-6">
                             <Button asChild variant="outline">

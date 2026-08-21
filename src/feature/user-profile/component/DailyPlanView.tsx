@@ -10,8 +10,6 @@ import {
     Target,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
-
 import { useAuth } from "@/common/context/AuthContext";
 import {
     fetchCurrentUserProfile,
@@ -24,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/component/ui/
 import { Dialog } from "@/shadcn/component/ui/dialog";
 import { Progress } from "@/shadcn/component/ui/progress";
 import type { RoadmapLesson, RoadmapTopic } from "@/feature/learning-path/roadmapApi";
+import { isLessonReadyToStudy } from "@/feature/learning-path/lessonAccess";
 import { getTrackedStudyMinutesByDay } from "@/feature/user-profile/utils/StudyActivity";
 import {
     getStudyMinutesForDate,
@@ -31,6 +30,7 @@ import {
     readStudyGoalDecision,
     type StudyGoalDecision,
 } from "@/feature/user-profile/utils/dailyStudyGoal";
+import { Link } from "@tanstack/react-router";
 
 import { ChangeCareerAlert } from "./ChangeCareerAlert";
 import { StudySettingsDialog } from "./StudySettingsDialog";
@@ -219,7 +219,7 @@ export function DailyPlanView({
     const todayDateKey = getTodayDateKey();
     const lessonLabel = allAssignedLessonsCompleted
         ? "Review Learning Path"
-        : nextLesson?.is_generated
+        : isLessonReadyToStudy(nextLesson)
             ? "Start Learning"
             : "View Learning Path";
     const lessonDescription = nextLesson
@@ -456,8 +456,8 @@ export function DailyPlanView({
 
                                     <Button asChild className="mt-5 h-11 w-full bg-blue-600 hover:bg-blue-700">
                                         <Link
-                                            to={nextLesson?.is_generated ? "/lessons/$lessonId" : "/lessons/learning-path"}
-                                            params={nextLesson?.is_generated ? { lessonId: String(nextLesson.id) } : undefined}
+                                            to={isLessonReadyToStudy(nextLesson) ? "/lessons/$lessonId" : "/lessons/learning-path"}
+                                            params={isLessonReadyToStudy(nextLesson) ? { lessonId: String(nextLesson!.id) } : undefined}
                                         >
                                             {lessonLabel}
                                         </Link>

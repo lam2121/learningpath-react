@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
     calculateLongestStreak,
     getLoginDays,
+    LOGIN_DAYS_UPDATED_EVENT,
 } from "@/feature/user-profile/utils/StudyActivity";
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -32,13 +33,35 @@ export function LearningCalendar({
     userId,
 }: LearningCalendarProps) {
     const [loginDays, setLoginDays] = useState<string[]>([]);
+    const [today, setToday] = useState(() => new Date());
 
     useEffect(() => {
-        setLoginDays(getLoginDays(userId));
+        const syncCalendar = () => {
+            setLoginDays(getLoginDays(userId));
+            setToday(new Date());
+        };
+
+        const handleLoginDaysUpdated = (event: Event) => {
+            const customEvent = event as CustomEvent<{ userId?: number }>;
+            if (customEvent.detail.userId !== userId) {
+                return;
+            }
+
+            syncCalendar();
+        };
+
+        syncCalendar();
+        window.addEventListener(LOGIN_DAYS_UPDATED_EVENT, handleLoginDaysUpdated);
+
+        return () => {
+            window.removeEventListener(
+                LOGIN_DAYS_UPDATED_EVENT,
+                handleLoginDaysUpdated,
+            );
+        };
     }, [userId]);
 
     const loginDaySet = useMemo(() => new Set(loginDays), [loginDays]);
-    const today = new Date();
     const currentYear = today.getFullYear();
     const currentMonth = today.getMonth();
     const currentMonthLabel = today.toLocaleDateString("en-US", {

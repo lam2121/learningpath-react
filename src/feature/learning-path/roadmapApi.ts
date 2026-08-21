@@ -25,6 +25,7 @@ export interface RoadmapLesson {
 	difficulty_tier: string
 	estimated_minutes: number | null
 	is_generated: boolean
+	is_unlocked: boolean
 	theory_content: unknown | null
 	quiz_content: unknown | null
 }

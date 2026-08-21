@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/shadcn/component/ui/button";
 import {
     DropdownMenu,
@@ -9,16 +9,50 @@ import { Flame } from "lucide-react";
 
 import { LearningCalendar } from "./LearningCalendar";
 import { useAuth } from "@/common/context/AuthContext";
-import { calculateLongestStreak, getLoginDays } from "@/feature/user-profile/utils/StudyActivity";
+import {
+    calculateLongestStreak,
+    getLoginDays,
+    LOGIN_DAYS_UPDATED_EVENT,
+} from "@/feature/user-profile/utils/StudyActivity";
 
 export function StreakDropdown() {
     const auth = useAuth();
     const userId = Number(auth.user?.id);
+    const [loginDays, setLoginDays] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (!Number.isFinite(userId) || userId <= 0) {
+            setLoginDays([]);
+            return;
+        }
+
+        const syncLoginDays = () => {
+            setLoginDays(getLoginDays(userId));
+        };
+
+        const handleLoginDaysUpdated = (event: Event) => {
+            const customEvent = event as CustomEvent<{ userId?: number }>;
+            if (customEvent.detail.userId !== userId) {
+                return;
+            }
+
+            syncLoginDays();
+        };
+
+        syncLoginDays();
+        window.addEventListener(LOGIN_DAYS_UPDATED_EVENT, handleLoginDaysUpdated);
+
+        return () => {
+            window.removeEventListener(
+                LOGIN_DAYS_UPDATED_EVENT,
+                handleLoginDaysUpdated,
+            );
+        };
+    }, [userId]);
 
     const longestStreak = useMemo(() => {
-        const loginDays = getLoginDays(userId);
         return calculateLongestStreak(loginDays);
-    }, [userId]);
+    }, [loginDays]);
 
     return (
         <DropdownMenu>

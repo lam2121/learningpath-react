@@ -16,6 +16,7 @@ import {
     DropdownMenuTrigger,
 } from "@/shadcn/component/ui/dropdown-menu";
 import { Button } from "@/shadcn/component/ui/button";
+import { isLessonReadyToStudy } from "@/feature/learning-path/lessonAccess";
 import { fetchRoadmap, type RoadmapResponse } from "@/feature/learning-path/roadmapApi";
 
 type NotificationItem = {
@@ -24,6 +25,7 @@ type NotificationItem = {
     description: string;
     time: string;
     unread: boolean;
+    topicId?: number;
     icon: typeof BookOpen;
 };
 
@@ -79,18 +81,25 @@ function buildNotifications(
         .flatMap((topic) =>
             topic.lessons
                 .filter((lesson) => lesson.is_generated)
-                .map((lesson) => ({
-                    id: `lesson-${lesson.id}`,
-                    title: "New Lesson Ready",
-                    description: `${lesson.title} is generated in ${topic.name}.`,
-                    time: "Ready to study",
-                    icon: BookOpen,
-                    unread: !seenIds.has(`lesson-${lesson.id}`),
-                })),
+                .map((lesson) => {
+                    const isReady = isLessonReadyToStudy(lesson);
+
+                    return {
+                        id: `lesson-${lesson.id}`,
+                        title: isReady
+                            ? "New Lesson Ready"
+                            : "New Lesson Generated",
+                        description: `${lesson.title} is generated in ${topic.name}.`,
+                        time: isReady ? "Ready to study" : "Generated in your path",
+                        topicId: topic.id,
+                        icon: BookOpen,
+                        unread: !seenIds.has(`lesson-${lesson.id}`),
+                    };
+                }),
         )
         .reverse();
 
-    return [...lessonNotifications, ...topicNotifications].slice(0, 12);
+    return [...lessonNotifications, ...topicNotifications];
 }
 
 export function NotificationDropdown() {
@@ -216,6 +225,11 @@ export function NotificationDropdown() {
                             >
                                 <Link
                                     to="/lessons/learning-path"
+                                    search={
+                                        item.topicId !== undefined
+                                            ? { topicId: item.topicId }
+                                            : {}
+                                    }
                                     className="flex w-full gap-3"
                                 >
                                     <Icon className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />

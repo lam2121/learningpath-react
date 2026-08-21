@@ -863,12 +863,16 @@ function VocabularyModal({
     const answerInputRef = useRef<HTMLInputElement>(null);
     const [answer, setAnswer] = useState("");
     const [result, setResult] = useState<VocabularyAnswerResult | null>(null);
-    const meanings = VOCABULARY_MEANINGS[item.id] ?? [
-        {
-            partOfSpeech: item.wordForms[0] ?? "Meaning",
-            definition: item.description,
-        },
-    ];
+    const meanings = useMemo(
+        () =>
+            VOCABULARY_MEANINGS[item.id] ?? [
+                {
+                    partOfSpeech: item.wordForms[0] ?? "Meaning",
+                    definition: item.description,
+                },
+            ],
+        [item.description, item.id, item.wordForms],
+    );
 
     const meaningGroups = useMemo(() => {
         const groups = new Map<string, VocabularyMeaning[]>();

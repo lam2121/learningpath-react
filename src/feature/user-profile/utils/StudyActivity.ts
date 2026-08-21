@@ -4,6 +4,7 @@ const getStudyMinutesStorageKey = (userId: number) =>
     `learning-study-minutes:${userId}`;
 const getStudyRemainderStorageKey = (userId: number) =>
     `learning-study-minutes-remainder:${userId}`;
+export const LOGIN_DAYS_UPDATED_EVENT = "careerpath:login-days-updated";
 
 function formatDateKey(date: Date): string {
     const year = date.getFullYear();
@@ -11,6 +12,17 @@ function formatDateKey(date: Date): string {
     const day = String(date.getDate()).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
+}
+
+function emitLoginDaysUpdated(userId: number): void {
+    window.dispatchEvent(
+        new CustomEvent(LOGIN_DAYS_UPDATED_EVENT, {
+            detail: {
+                userId,
+                loginDays: getLoginDays(userId),
+            },
+        }),
+    );
 }
 
 export function recordLoginDay(userId: number): void {
@@ -27,6 +39,7 @@ export function recordLoginDay(userId: number): void {
                 (date): date is string => typeof date === "string",
             )
             : [];
+        const alreadyRecorded = savedDates.includes(todayKey);
 
         const updatedDates = [...new Set([...savedDates, todayKey])].sort();
 
@@ -34,11 +47,15 @@ export function recordLoginDay(userId: number): void {
             storageKey,
             JSON.stringify(updatedDates),
         );
+        if (!alreadyRecorded) {
+            emitLoginDaysUpdated(userId);
+        }
     } catch {
         localStorage.setItem(
             storageKey,
             JSON.stringify([todayKey]),
         );
+        emitLoginDaysUpdated(userId);
     }
 }
 
