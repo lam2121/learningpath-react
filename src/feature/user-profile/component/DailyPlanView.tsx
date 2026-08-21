@@ -10,6 +10,7 @@ import {
     Target,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
 
 import { useAuth } from "@/common/context/AuthContext";
 import {
@@ -216,9 +217,6 @@ export function DailyPlanView({
     }, [isStudyPlanExpanded, onStudyPlanExpandedChange]);
 
     const todayDateKey = getTodayDateKey();
-    const lessonHref = nextLesson?.is_generated
-        ? `/lessons/${nextLesson.id}`
-        : "/lessons/learning-path";
     const lessonLabel = allAssignedLessonsCompleted
         ? "Review Learning Path"
         : nextLesson?.is_generated
@@ -457,7 +455,12 @@ export function DailyPlanView({
                                     </div>
 
                                     <Button asChild className="mt-5 h-11 w-full bg-blue-600 hover:bg-blue-700">
-                                        <a href={lessonHref}>{lessonLabel}</a>
+                                        <Link
+                                            to={nextLesson?.is_generated ? "/lessons/$lessonId" : "/lessons/learning-path"}
+                                            params={nextLesson?.is_generated ? { lessonId: String(nextLesson.id) } : undefined}
+                                        >
+                                            {lessonLabel}
+                                        </Link>
                                     </Button>
                                 </div>
 
