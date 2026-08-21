@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState, useEffect } from 'react';
-import { Settings, LayoutDashboard, DollarSign, AlertTriangle, Zap, Shield, Plus, Loader2 } from 'lucide-react';
+import { Settings, LayoutDashboard, DollarSign, AlertTriangle, Zap, Shield, Plus, ScrollText, Loader2 } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import { cn } from '@/shadcn/lib/util';
 import { Card, CardContent } from '@/shadcn/component/ui/card';
@@ -118,7 +118,7 @@ function DashboardPage() {
 			<Card>
 				<CardContent className="p-6">
 					<h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 						<Link to="/admin/tracks" className="p-4 rounded-lg border hover:bg-gray-50 transition-colors">
 							<Plus className="h-8 w-8 text-blue-600 mb-2" />
 							<h4 className="font-medium text-gray-900">Create New Track</h4>
@@ -128,6 +128,11 @@ function DashboardPage() {
 							<DollarSign className="h-8 w-8 text-green-600 mb-2" />
 							<h4 className="font-medium text-gray-900">View Cost Dashboard</h4>
 							<p className="text-sm text-gray-500">Track AI costs by generator</p>
+						</Link>
+						<Link to="/admin/usage-logs" className="p-4 rounded-lg border hover:bg-gray-50 transition-colors">
+							<ScrollText className="h-8 w-8 text-indigo-600 mb-2" />
+							<h4 className="font-medium text-gray-900">Inspect AI Usage Logs</h4>
+							<p className="text-sm text-gray-500">Review call history and clear old records</p>
 						</Link>
 						<Link to="/admin/rejected" className="p-4 rounded-lg border hover:bg-gray-50 transition-colors">
 							<AlertTriangle className="h-8 w-8 text-red-600 mb-2" />

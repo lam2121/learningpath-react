@@ -22,6 +22,9 @@ import type {
 	SkillKey,
 	RoleSkillDefinitions,
 	ResetLearnersResult,
+	UsageLog,
+	UsageLogFilters,
+	UsageLogClearResult,
 } from '../type/Admin';
 
 // Re-export types for consumers
@@ -31,6 +34,9 @@ export type {
 	BudgetValidationResult,
 	CostDashboardData,
 	RejectedContent,
+	UsageLog,
+	UsageLogFilters,
+	UsageLogClearResult,
 	KillSwitchState,
 	AiPreviewRequest,
 	AiPreviewResponse,
@@ -259,6 +265,60 @@ export async function fetchRejectedContent(filters?: { generator?: string; statu
 export async function updateRejectedContentStatus(id: number, status: 'fixed' | 'ignored'): Promise<RejectedContent> {
 	const res = await axiosJWT.post<RejectedResponse>(`/admin/rejected/${id}/status`, { status });
 	return toRejectedContent(res.data);
+}
+
+// ============================================================================
+// AI usage logs
+// ============================================================================
+
+interface UsageLogResponse {
+	id: number;
+	generator: string;
+	model: string;
+	promptTokens: number;
+	completionTokens: number;
+	costUsd: number;
+	status: string;
+	roleId: number | null;
+	roleName: string | null;
+	createdAt: string;
+}
+
+export async function fetchUsageLogs(filters?: UsageLogFilters): Promise<UsageLog[]> {
+	const params = new URLSearchParams();
+	if (filters?.generator && filters.generator !== 'all') params.set('generator', filters.generator);
+	if (filters?.status && filters.status !== 'all') params.set('status', filters.status);
+	if (filters?.roleId) params.set('role_id', String(filters.roleId));
+	params.set('limit', String(filters?.limit ?? 500));
+
+	const query = params.toString();
+	const res = await axiosJWT.get<UsageLogResponse[]>(`/admin/usage-logs${query ? `?${query}` : ''}`);
+	return res.data.map(row => ({
+		id: row.id,
+		generator: row.generator,
+		model: row.model,
+		promptTokens: row.promptTokens,
+		completionTokens: row.completionTokens,
+		costUsd: row.costUsd,
+		status: row.status,
+		roleId: row.roleId,
+		roleName: row.roleName,
+		createdAt: row.createdAt,
+	}));
+}
+
+export async function deleteUsageLog(id: number): Promise<void> {
+	await axiosJWT.delete(`/admin/usage-logs/${id}`);
+}
+
+export async function clearUsageLogs(filters?: { generator?: string; status?: string; roleId?: number | null }): Promise<UsageLogClearResult> {
+	const body: Record<string, unknown> = {};
+	if (filters?.generator && filters.generator !== 'all') body.generator = filters.generator;
+	if (filters?.status && filters.status !== 'all') body.status = filters.status;
+	if (filters?.roleId) body.roleId = filters.roleId;
+
+	const res = await axiosJWT.post<UsageLogClearResult>('/admin/usage-logs/clear', body);
+	return res.data;
 }
 
 // ============================================================================

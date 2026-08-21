@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, Link, redirect, useNavigate } from '@tanstack/react-router'
-import { LayoutDashboard, Settings, AlertTriangle, DollarSign, Shield, LogOut } from 'lucide-react'
+import { LayoutDashboard, Settings, AlertTriangle, DollarSign, Shield, ScrollText, LogOut } from 'lucide-react'
 import { useAuth } from '@/common/context/AuthContext'
 import { useEffect } from 'react'
 
@@ -7,6 +7,7 @@ const navigation = [
 	{ key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
 	{ key: 'tracks', label: 'Career Tracks', icon: Settings, href: '/admin/tracks' },
 	{ key: 'costs', label: 'AI Costs', icon: DollarSign, href: '/admin/costs' },
+	{ key: 'usagelogs', label: 'AI Usage Logs', icon: ScrollText, href: '/admin/usage-logs' },
 	{ key: 'rejected', label: 'Rejected Content', icon: AlertTriangle, href: '/admin/rejected' },
 	{ key: 'killswitch', label: 'Kill Switch', icon: Shield, href: '/admin/killswitch' },
 ]

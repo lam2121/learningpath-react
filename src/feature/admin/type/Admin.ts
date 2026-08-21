@@ -118,6 +118,30 @@ export interface ValidatorCheck {
 	details?: string;
 }
 
+export interface UsageLog {
+	id: number;
+	generator: string;
+	model: string;
+	promptTokens: number;
+	completionTokens: number;
+	costUsd: number;
+	status: 'success' | 'retry' | 'rejected' | 'fallback' | string;
+	roleId: number | null;
+	roleName: string | null;
+	createdAt: string;
+}
+
+export interface UsageLogFilters {
+	generator?: string;
+	status?: string;
+	roleId?: number | null;
+	limit?: number;
+}
+
+export interface UsageLogClearResult {
+	deletedCount: number;
+}
+
 export interface KillSwitchState {
 	enabled: boolean;
 	enabledAt?: string;
