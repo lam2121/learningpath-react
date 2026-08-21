@@ -37,7 +37,7 @@ export function HistoryPage() {
                         </div>
                     </section>
 
-                    <LessonQuizHistoryCard />
+                    <LessonQuizHistoryCard excludedStatuses={["in_progress"]} />
                 </div>
             </div>
         </div>

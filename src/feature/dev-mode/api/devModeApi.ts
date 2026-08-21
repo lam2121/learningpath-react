@@ -36,6 +36,7 @@ export interface DevLesson {
   primary_skill: string
   difficulty_tier: string
   is_generated: boolean
+  is_unlocked: boolean
   theory_content: unknown | null
   quiz_content: unknown | null
 }

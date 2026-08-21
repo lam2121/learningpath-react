@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/component/ui/
 import { Dialog } from "@/shadcn/component/ui/dialog";
 import { Progress } from "@/shadcn/component/ui/progress";
 import type { RoadmapLesson, RoadmapTopic } from "@/feature/learning-path/roadmapApi";
+import { isLessonReadyToStudy } from "@/feature/learning-path/lessonAccess";
 import { getTrackedStudyMinutesByDay } from "@/feature/user-profile/utils/StudyActivity";
 import {
     getStudyMinutesForDate,
@@ -30,6 +31,7 @@ import {
     readStudyGoalDecision,
     type StudyGoalDecision,
 } from "@/feature/user-profile/utils/dailyStudyGoal";
+import { Link } from "@tanstack/react-router";
 
 import { ChangeCareerAlert } from "./ChangeCareerAlert";
 import { StudySettingsDialog } from "./StudySettingsDialog";
@@ -216,12 +218,10 @@ export function DailyPlanView({
     }, [isStudyPlanExpanded, onStudyPlanExpandedChange]);
 
     const todayDateKey = getTodayDateKey();
-    const lessonHref = nextLesson?.is_generated
-        ? `/lessons/${nextLesson.id}`
-        : "/lessons/learning-path";
+
     const lessonLabel = allAssignedLessonsCompleted
         ? "Review Learning Path"
-        : nextLesson?.is_generated
+        : isLessonReadyToStudy(nextLesson)
             ? "Start Learning"
             : "View Learning Path";
     const lessonDescription = nextLesson
@@ -457,7 +457,12 @@ export function DailyPlanView({
                                     </div>
 
                                     <Button asChild className="mt-5 h-11 w-full bg-blue-600 hover:bg-blue-700">
-                                        <a href={lessonHref}>{lessonLabel}</a>
+                                        <Link
+                                            to={isLessonReadyToStudy(nextLesson) ? "/lessons/$lessonId" : "/lessons/learning-path"}
+                                            params={isLessonReadyToStudy(nextLesson) ? { lessonId: String(nextLesson!.id) } : undefined}
+                                        >
+                                            {lessonLabel}
+                                        </Link>
                                     </Button>
                                 </div>
 

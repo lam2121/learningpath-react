@@ -471,10 +471,12 @@ export function LoginHistoryCard({
 
 type LessonQuizHistoryCardProps = {
     compact?: boolean;
+    excludedStatuses?: string[];
 };
 
 export function LessonQuizHistoryCard({
     compact = false,
+    excludedStatuses = [],
 }: LessonQuizHistoryCardProps) {
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
     const [topicSortDirection, setTopicSortDirection] = useState<"asc" | "desc">("asc");
@@ -521,9 +523,20 @@ export function LessonQuizHistoryCard({
         [profile],
     );
 
+    const visibleLessonQuizHistory = useMemo(() => {
+        if (excludedStatuses.length === 0) {
+            return lessonQuizHistory;
+        }
+
+        const excludedStatusSet = new Set(excludedStatuses);
+        return lessonQuizHistory.filter(
+            (entry) => !excludedStatusSet.has(entry.status),
+        );
+    }, [excludedStatuses, lessonQuizHistory]);
+
     const sortedLessonQuizHistory = useMemo(
         () =>
-            [...lessonQuizHistory].sort((left, right) => {
+            [...visibleLessonQuizHistory].sort((left, right) => {
                 const leftTopicOrder = left.topic_sort_order ?? Number.MAX_SAFE_INTEGER;
                 const rightTopicOrder = right.topic_sort_order ?? Number.MAX_SAFE_INTEGER;
 
@@ -541,7 +554,7 @@ export function LessonQuizHistoryCard({
 
                 return left.lesson_title.localeCompare(right.lesson_title);
             }),
-        [lessonQuizHistory, topicSortDirection],
+        [topicSortDirection, visibleLessonQuizHistory],
     );
 
     const filteredLessonQuizHistory = useMemo(() => {
@@ -566,8 +579,11 @@ export function LessonQuizHistoryCard({
     }, [searchTerm, sortedLessonQuizHistory]);
 
     const topAttempts = useMemo(
-        () => (compact ? lessonQuizHistory.slice(0, 3) : filteredLessonQuizHistory),
-        [compact, filteredLessonQuizHistory, lessonQuizHistory],
+        () =>
+            compact
+                ? filteredLessonQuizHistory.slice(0, 3)
+                : filteredLessonQuizHistory,
+        [compact, filteredLessonQuizHistory],
     );
 
     const openLessonDetail = async (lessonId: number) => {
@@ -651,7 +667,7 @@ export function LessonQuizHistoryCard({
                 </CardHeader>
 
                 <CardContent className="pt-0">
-                    {lessonQuizHistory.length === 0 ? (
+                    {visibleLessonQuizHistory.length === 0 ? (
                         <div className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center">
                             <Sparkles className="h-10 w-10 text-slate-300" />
                             <div>

@@ -7,10 +7,9 @@ import { Button } from "@/shadcn/component/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/component/ui/card";
 import {
     fetchRoadmap,
-    type RoadmapLesson,
     type RoadmapResponse,
-    type RoadmapTopic,
 } from "@/feature/learning-path/roadmapApi";
+import { getNextAssignedLesson } from "@/feature/learning-path/lessonAccess";
 import { fetchCurrentUserProfile } from "@/feature/auth/api/authAPI";
 import type { UserProfileResponse } from "@/feature/auth/type/Auth";
 import { DailyPlanView } from "../component/DailyPlanView";
@@ -42,27 +41,6 @@ function formatHours(minutes: number | null | undefined) {
         return `${hours}h`;
     }
     return `${hours}h ${remainder}m`;
-}
-
-function getNextAssignedLesson(
-    roadmap: RoadmapResponse | null,
-    passedLessonIds: Set<number>,
-): {
-    topic: RoadmapTopic;
-    lesson: RoadmapLesson;
-} | null {
-    if (!roadmap) return null;
-
-    for (const topic of roadmap.topics) {
-        const remainingLessons = topic.lessons.filter((item) => !passedLessonIds.has(item.id));
-        const lesson =
-            remainingLessons.find((item) => item.is_generated) ?? remainingLessons[0];
-        if (lesson) {
-            return { topic, lesson };
-        }
-    }
-
-    return null;
 }
 
 export function UserProfile() {

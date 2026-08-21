@@ -6,6 +6,7 @@ import {
   useState,
 } from "react";
 import type { ReactNode } from "react";
+import { recordLoginDay } from "@/feature/user-profile/utils/StudyActivity";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -65,6 +66,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
+
+  useEffect(() => {
+    if (!user?.id) {
+      return;
+    }
+
+    let midnightTimer: number | null = null;
+
+    const syncActiveLoginDay = () => {
+      recordLoginDay(user.id);
+    };
+
+    const scheduleNextMidnightSync = () => {
+      const now = new Date();
+      const nextMidnight = new Date(now);
+      nextMidnight.setHours(24, 0, 0, 0);
+      const delay = Math.max(1_000, nextMidnight.getTime() - now.getTime() + 1_000);
+
+      midnightTimer = window.setTimeout(() => {
+        syncActiveLoginDay();
+        scheduleNextMidnightSync();
+      }, delay);
+    };
+
+    const handleVisibilityOrFocus = () => {
+      syncActiveLoginDay();
+    };
+
+    syncActiveLoginDay();
+    scheduleNextMidnightSync();
+
+    window.addEventListener("focus", handleVisibilityOrFocus);
+    document.addEventListener("visibilitychange", handleVisibilityOrFocus);
+
+    return () => {
+      if (midnightTimer !== null) {
+        window.clearTimeout(midnightTimer);
+      }
+      window.removeEventListener("focus", handleVisibilityOrFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityOrFocus);
+    };
+  }, [user?.id]);
 
   const logout = useCallback(() => {
     clearAuthStorage();

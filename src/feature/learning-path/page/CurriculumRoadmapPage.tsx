@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useSearch } from "@tanstack/react-router";
 import {
     ArrowRight,
     BookOpen,
@@ -18,6 +18,11 @@ import {
     type RoadmapLesson,
     type RoadmapTopic,
 } from "@/feature/learning-path/roadmapApi";
+import {
+    findLatestReadyLessonInTopic,
+    isLessonGeneratedButLocked,
+    isLessonReadyToStudy,
+} from "@/feature/learning-path/lessonAccess";
 import { fetchPlacementTestResult } from "@/feature/onboarding/api/onboardingApi";
 import { Button } from "@/shadcn/component/ui/button";
 
@@ -56,6 +61,19 @@ function formatMinutes(minutes: number) {
 
 function getGeneratedLessonsCount(topic: RoadmapTopic) {
     return topic.lessons.filter((lesson) => lesson.is_generated).length;
+}
+
+function findRequestedTopicId(
+    topics: RoadmapTopic[],
+    requestedTopicId: number | undefined,
+) {
+    if (requestedTopicId === undefined) {
+        return null;
+    }
+
+    return topics.some((topic) => topic.id === requestedTopicId)
+        ? requestedTopicId
+        : null;
 }
 
 function TopicButton({
@@ -141,6 +159,8 @@ function TopicButton({
 }
 
 function LessonCard({ lesson }: { lesson: RoadmapLesson }) {
+    const isReadyToStudy = isLessonReadyToStudy(lesson);
+    const isGeneratedButLocked = isLessonGeneratedButLocked(lesson);
     const content = (
         <>
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 sm:h-14 sm:w-14 dark:bg-blue-950/60 dark:text-blue-400">
@@ -156,12 +176,18 @@ function LessonCard({ lesson }: { lesson: RoadmapLesson }) {
                     <span
                         className={[
                             "rounded-full px-2.5 py-1 text-xs font-semibold",
-                            lesson.is_generated
+                            !lesson.is_generated
+                                ? "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"
+                                : isReadyToStudy
                                 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
-                                : "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
+                                : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
                         ].join(" ")}
                     >
-                        {lesson.is_generated ? "Generated" : "Pending generation"}
+                        {!lesson.is_generated
+                            ? "Pending generation"
+                            : isReadyToStudy
+                                ? "Generated"
+                                : "Generated · Locked"}
                     </span>
                 </div>
 
@@ -180,16 +206,18 @@ function LessonCard({ lesson }: { lesson: RoadmapLesson }) {
                 </div>
 
                 <p className="mt-3 text-sm leading-5 text-slate-600 dark:text-slate-400">
-                    {lesson.is_generated
-                        ? "Theory and quiz content are ready for this lesson."
-                        : "This lesson exists in the roadmap but its content has not been generated yet."}
+                    {!lesson.is_generated
+                        ? "This lesson exists in the roadmap but its content has not been generated yet."
+                        : isGeneratedButLocked
+                        ? "This lesson is generated, but you need to pass the previous lesson in this topic to unlock it."
+                        : "Theory and quiz content are ready for this lesson."}
                 </p>
             </div>
 
             <div
                 className={[
                     "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors",
-                    lesson.is_generated
+                    isReadyToStudy
                         ? "border-blue-200 text-blue-600 group-hover:bg-blue-600 group-hover:text-white dark:border-blue-800 dark:text-blue-400"
                         : "border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-800",
                 ].join(" ")}
@@ -202,7 +230,7 @@ function LessonCard({ lesson }: { lesson: RoadmapLesson }) {
     const className =
         "group flex h-full w-full min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all dark:border-slate-800 dark:bg-slate-900 sm:gap-4 sm:p-5";
 
-    if (!lesson.is_generated) {
+    if (!isReadyToStudy) {
         return <div className={`${className} opacity-80`}>{content}</div>;
     }
 
@@ -218,6 +246,9 @@ function LessonCard({ lesson }: { lesson: RoadmapLesson }) {
 }
 
 export function CurriculumRoadmapPage() {
+    const { topicId: requestedTopicId } = useSearch({
+        from: "/_protected/_user/lessons/learning-path",
+    });
     const [roadmapTrack, setRoadmapTrack] = useState<string | null>(null);
     const [careerTrackName, setCareerTrackName] = useState<string | null>(null);
     const [topics, setTopics] = useState<RoadmapTopic[]>([]);
@@ -245,7 +276,21 @@ export function CurriculumRoadmapPage() {
                 setRoadmapTrack(data.track);
                 setCareerTrackName(placementResult.role_name?.trim() || null);
                 setTopics(data.topics);
-                setSelectedTopicId((prev) => prev ?? data.topics[0]?.id ?? null);
+                setSelectedTopicId((prev) => {
+                    const requestedId = findRequestedTopicId(
+                        data.topics,
+                        requestedTopicId,
+                    );
+                    if (requestedId !== null) {
+                        return requestedId;
+                    }
+
+                    if (prev !== null && data.topics.some((topic) => topic.id === prev)) {
+                        return prev;
+                    }
+
+                    return data.topics[0]?.id ?? null;
+                });
             } catch (loadError) {
                 if (!isMounted) {
                     return;
@@ -272,7 +317,16 @@ export function CurriculumRoadmapPage() {
         return () => {
             isMounted = false;
         };
-    }, []);
+    }, [requestedTopicId]);
+
+    useEffect(() => {
+        const requestedId = findRequestedTopicId(topics, requestedTopicId);
+        if (requestedId === null || requestedId === selectedTopicId) {
+            return;
+        }
+
+        setSelectedTopicId(requestedId);
+    }, [requestedTopicId, selectedTopicId, topics]);
 
     const selectedTopic = useMemo(
         () =>
@@ -313,11 +367,8 @@ export function CurriculumRoadmapPage() {
         : 0;
 
     const startLesson = useMemo(
-        () =>
-            selectedTopic?.lessons.find((lesson) => lesson.is_generated) ??
-            topics.flatMap((topic) => topic.lessons).find((lesson) => lesson.is_generated) ??
-            null,
-        [selectedTopic, topics],
+        () => findLatestReadyLessonInTopic(selectedTopic),
+        [selectedTopic],
     );
 
     const pageTitle = roadmapTrack
@@ -453,7 +504,7 @@ export function CurriculumRoadmapPage() {
                                     font-semibold text-white shadow-sm lg:w-auto
                                 "
                             >
-                                No generated lesson yet
+                                No unlocked lesson ready in this topic
                             </Button>
                         )}
                     </div>

@@ -17,6 +17,7 @@ import tmaLogo from "@/asset/image/tma_logo.png";
 import { useAuth } from "@/common/context/AuthContext";
 import { fetchCurrentUserProfile } from "@/feature/auth/api/authAPI";
 import type { UserProfileResponse } from "@/feature/auth/type/Auth";
+import { fetchRoadmap, type RoadmapResponse } from "@/feature/learning-path/roadmapApi";
 import {
     fetchJobRoles,
     fetchPlacementTestResult,
@@ -25,6 +26,7 @@ import {
     calculateLongestStreak,
     getTrackedStudyMinutesTotal,
     getLoginDays,
+    LOGIN_DAYS_UPDATED_EVENT,
 } from "@/feature/user-profile/utils/StudyActivity";
 
 const STATUS_BAR_ITEMS = [
@@ -33,24 +35,32 @@ const STATUS_BAR_ITEMS = [
         label: "Day Streak",
         icon: Flame,
         iconClassName: "text-orange-500",
+        accentClassName: "bg-orange-50 text-orange-700",
+        helperClassName: "text-orange-600",
     },
     {
         key: "lessons",
         label: "Lessons",
         icon: BookOpen,
         iconClassName: "text-blue-600",
+        accentClassName: "bg-blue-50 text-blue-700",
+        helperClassName: "text-blue-600",
     },
     {
         key: "accuracy",
         label: "Accuracy",
         icon: GraduationCap,
         iconClassName: "text-green-600",
+        accentClassName: "bg-green-50 text-green-700",
+        helperClassName: "text-green-600",
     },
     {
         key: "study",
         label: "Study Time",
         icon: Clock3,
-        iconClassName: "text-slate-500",
+        iconClassName: "text-cyan-600",
+        accentClassName: "bg-cyan-50 text-cyan-700",
+        helperClassName: "text-cyan-600",
     },
 ] as const;
 
@@ -119,6 +129,39 @@ function formatStudyDuration(minutes: number) {
     return `${hours}h ${remainingMinutes}m`;
 }
 
+function getRoadmapLessonIds(roadmap: RoadmapResponse | null): Set<number> {
+    if (!roadmap) {
+        return new Set<number>();
+    }
+
+    return new Set(
+        roadmap.topics.flatMap((topic) => topic.lessons.map((lesson) => lesson.id)),
+    );
+}
+
+function computePassedRoadmapAccuracy(
+    profile: UserProfileResponse,
+    roadmapLessonIds: Set<number>,
+) {
+    const passedRoadmapLessons = (profile.lesson_quiz_history ?? []).filter(
+        (entry) =>
+            entry.passed
+            && entry.best_score_percent != null
+            && roadmapLessonIds.has(entry.lesson_id),
+    );
+
+    if (passedRoadmapLessons.length === 0) {
+        return 0;
+    }
+
+    const totalScore = passedRoadmapLessons.reduce(
+        (sum, entry) => sum + (entry.best_score_percent ?? 0),
+        0,
+    );
+
+    return Math.round(totalScore / passedRoadmapLessons.length);
+}
+
 export function UserProfileCard() {
     const { user } = useAuth();
     const [careerName, setCareerName] = useState<string>("Career Track");
@@ -129,11 +172,13 @@ export function UserProfileCard() {
     const [trackedStudyMinutes, setTrackedStudyMinutes] = useState(0);
     const [lessonsCompleted, setLessonsCompleted] = useState(0);
     const [accuracy, setAccuracy] = useState(0);
+    const [loginDays, setLoginDays] = useState<string[]>([]);
     const [avatarUrl, setAvatarUrl] = useState(() => {
         const savedAvatar = localStorage.getItem("user_avatar");
         return savedAvatar || "/avatar.png";
     });
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const roadmapLessonIdsRef = useRef<Set<number>>(new Set());
 
     const displayName = user?.username ?? user?.email ?? "Anonymous";
     const initials = displayName
@@ -146,10 +191,16 @@ export function UserProfileCard() {
         let isMounted = true;
 
         const loadCareerName = async () => {
-            const [placementResult, profileResult] = await Promise.allSettled([
+            const [placementResult, profileResult, roadmapResult] = await Promise.allSettled([
                 fetchPlacementTestResult(),
                 fetchCurrentUserProfile(),
+                fetchRoadmap(),
             ]);
+
+            roadmapLessonIdsRef.current =
+                roadmapResult.status === "fulfilled"
+                    ? getRoadmapLessonIds(roadmapResult.value)
+                    : new Set<number>();
 
             if (profileResult.status === "fulfilled" && isMounted) {
                 applyProfileTimeline(
@@ -164,14 +215,12 @@ export function UserProfileCard() {
                 const passedLessons = profileResult.value.lesson_quiz_history?.filter(
                     (entry) => entry.passed,
                 ) ?? [];
-                const latestScoredLesson = profileResult.value.lesson_quiz_history?.find(
-                    (entry) => entry.best_score_percent != null,
-                );
                 setLessonsCompleted(passedLessons.length);
                 setAccuracy(
-                    latestScoredLesson?.best_score_percent != null
-                        ? Math.round(latestScoredLesson.best_score_percent)
-                        : 0,
+                    computePassedRoadmapAccuracy(
+                        profileResult.value,
+                        roadmapLessonIdsRef.current,
+                    ),
                 );
             }
 
@@ -220,14 +269,12 @@ export function UserProfileCard() {
             const passedLessons = customEvent.detail.lesson_quiz_history?.filter(
                 (entry) => entry.passed,
             ) ?? [];
-            const latestScoredLesson = customEvent.detail.lesson_quiz_history?.find(
-                (entry) => entry.best_score_percent != null,
-            );
             setLessonsCompleted(passedLessons.length);
             setAccuracy(
-                latestScoredLesson?.best_score_percent != null
-                    ? Math.round(latestScoredLesson.best_score_percent)
-                    : 0,
+                computePassedRoadmapAccuracy(
+                    customEvent.detail,
+                    roadmapLessonIdsRef.current,
+                ),
             );
         };
         const handleStudyActivityUpdated = (event: Event) => {
@@ -240,14 +287,28 @@ export function UserProfileCard() {
                 setTrackedStudyMinutes(getTrackedStudyMinutesTotal(user.id));
             }
         };
+        const handleLoginDaysUpdated = (event: Event) => {
+            const customEvent = event as CustomEvent<{ userId?: number }>;
+            if (customEvent.detail.userId !== user?.id) {
+                return;
+            }
+
+            if (user?.id) {
+                setLoginDays(getLoginDays(user.id));
+            }
+        };
         window.addEventListener("careerpath:profile-updated", handleProfileUpdated);
         window.addEventListener(
             "careerpath:study-activity-updated",
             handleStudyActivityUpdated,
         );
+        window.addEventListener(LOGIN_DAYS_UPDATED_EVENT, handleLoginDaysUpdated);
 
         if (user?.id) {
             setTrackedStudyMinutes(getTrackedStudyMinutesTotal(user.id));
+            setLoginDays(getLoginDays(user.id));
+        } else {
+            setLoginDays([]);
         }
 
         return () => {
@@ -259,6 +320,10 @@ export function UserProfileCard() {
             window.removeEventListener(
                 "careerpath:study-activity-updated",
                 handleStudyActivityUpdated,
+            );
+            window.removeEventListener(
+                LOGIN_DAYS_UPDATED_EVENT,
+                handleLoginDaysUpdated,
             );
         };
     }, [user?.id]);
@@ -279,9 +344,8 @@ export function UserProfileCard() {
     };
 
     const longestStreak = useMemo(() => {
-        if (!user?.id) return 0;
-        return calculateLongestStreak(getLoginDays(user.id));
-    }, [user?.id]);
+        return calculateLongestStreak(loginDays);
+    }, [loginDays]);
     const totalStudiedMinutes = Math.max(0, backendStudiedMinutes + trackedStudyMinutes);
     const studyDurationLabel = formatStudyDuration(totalStudiedMinutes);
 
@@ -295,8 +359,8 @@ export function UserProfileCard() {
             helper: lessonsCompleted > 0 ? "Completed lessons" : "First lesson unlocks momentum",
         },
         accuracy: {
-            value: accuracy > 0 ? `${accuracy}%` : "No quiz yet",
-            helper: accuracy > 0 ? "Latest quiz accuracy" : "Appears after your first quiz",
+            value: accuracy > 0 ? `${accuracy}%` : "No passed lesson yet",
+            helper: accuracy > 0 ? "Average score of passed roadmap lessons" : "Appears after your first passed lesson",
         },
         study: {
             value: studyDurationLabel,
@@ -394,14 +458,14 @@ export function UserProfileCard() {
                                 </div>
 
                                 <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[330px]">
-                                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                        <div className="flex items-center gap-2 text-slate-500">
+                                    <div className="rounded-2xl border border-emerald-100 bg-[linear-gradient(135deg,#ecfdf5_0%,#f0fdf4_100%)] px-4 py-3">
+                                        <div className="flex items-center gap-2 text-emerald-700">
                                             <CalendarDays className="h-4 w-4 shrink-0" />
                                             <p className="text-xs font-semibold uppercase tracking-[0.16em]">
                                                 Started
                                             </p>
                                         </div>
-                                        <p className="mt-2 text-base font-semibold text-slate-900">
+                                        <p className="mt-2 text-base font-semibold text-emerald-950">
                                             {startedAtLabel}
                                         </p>
                                     </div>
@@ -433,17 +497,17 @@ export function UserProfileCard() {
                                         key={item.key}
                                         className="flex items-start gap-3 bg-white px-4 py-4"
                                     >
-                                        <div className="rounded-xl bg-slate-50 p-2">
+                                        <div className={`rounded-xl p-2 ${item.accentClassName.split(" ")[0]}`}>
                                             <Icon className={`h-4 w-4 ${item.iconClassName}`} />
                                         </div>
                                         <div className="min-w-0">
                                             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                                                 {item.label}
                                             </p>
-                                            <p className="mt-1 text-xl font-bold text-slate-900">
+                                            <p className={`mt-1 text-xl font-bold ${item.accentClassName.split(" ")[1]}`}>
                                                 {payload.value}
                                             </p>
-                                            <p className="mt-1 text-sm leading-6 text-slate-500">
+                                            <p className={`mt-1 text-sm leading-6 ${item.helperClassName}`}>
                                                 {payload.helper}
                                             </p>
                                         </div>
