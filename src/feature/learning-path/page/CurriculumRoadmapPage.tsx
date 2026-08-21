@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearch } from "@tanstack/react-router";
 import {
     ArrowRight,
@@ -253,6 +253,7 @@ export function CurriculumRoadmapPage() {
     const [careerTrackName, setCareerTrackName] = useState<string | null>(null);
     const [topics, setTopics] = useState<RoadmapTopic[]>([]);
     const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
+    const lastAppliedParamRef = useRef<number | undefined>(undefined);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -320,12 +321,23 @@ export function CurriculumRoadmapPage() {
     }, [requestedTopicId]);
 
     useEffect(() => {
-        const requestedId = findRequestedTopicId(topics, requestedTopicId);
-        if (requestedId === null || requestedId === selectedTopicId) {
+        // Only react when the URL param itself changes — user-driven topic
+        // clicks must win over the stale param, otherwise arriving from a
+        // notification (?topicId=N) would pin the selection permanently.
+        if (lastAppliedParamRef.current === requestedTopicId) {
             return;
         }
 
-        setSelectedTopicId(requestedId);
+        const requestedId = findRequestedTopicId(topics, requestedTopicId);
+        if (requestedId === null) {
+            return;
+        }
+
+        lastAppliedParamRef.current = requestedTopicId;
+
+        if (requestedId !== selectedTopicId) {
+            setSelectedTopicId(requestedId);
+        }
     }, [requestedTopicId, selectedTopicId, topics]);
 
     const selectedTopic = useMemo(
