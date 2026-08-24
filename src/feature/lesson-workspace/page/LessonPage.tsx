@@ -1590,10 +1590,17 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
 
     let partA = section.secondary;
     let partB = "";
-    if (section.secondary.includes(" || ")) {
-        const [a, b] = section.secondary.split(" || ");
-        partA = a;
-        partB = b;
+    
+    const splitRegex = /(?:\s*\|\|\s*|\s*\|\s*)(?=Practice\s*Tasks\s*:)/i;
+    const parts = section.secondary.split(splitRegex);
+    
+    if (parts.length > 1) {
+        partA = parts[0];
+        partB = parts.slice(1).join(" | ");
+    } else if (section.secondary.includes(" || ")) {
+        const fallbackParts = section.secondary.split(" || ");
+        partA = fallbackParts[0];
+        partB = fallbackParts.slice(1).join(" || ");
     }
 
     const highlights = parseDialogueHighlights(partA);
