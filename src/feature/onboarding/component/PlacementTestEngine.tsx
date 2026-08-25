@@ -8,6 +8,11 @@ import { SKILL_TO_AXIS, ORDERED_LEVELS } from '../api/placementTestTypes'
 import { useRadar } from '@/feature/radar'
 import { completePlacementTest, fetchPlacementTestQuestions } from '../api/onboardingApi'
 import type { RawPlacementQuestionApi } from '../api/onboardingApi'
+import { useAuth } from '@/common/context/AuthContext'
+import {
+  getPlacementReturnPath,
+  saveAnonymousPlacementAttempt,
+} from '../anonymousPlacement'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -152,6 +157,45 @@ function QuitModal({ onStay, onQuit }: { onStay: () => void; onQuit: () => void 
   )
 }
 
+function AuthRequiredModal({
+  onSignIn,
+  onSignUp,
+}: {
+  onSignIn: () => void
+  onSignUp: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="relative z-10 w-full max-w-md rounded-2xl border border-white/20 bg-gray-900/95 p-7 shadow-2xl animate-in zoom-in-90 fade-in duration-200">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-blue-400/30 bg-blue-500/15 text-2xl">
+          🔐
+        </div>
+        <h3 className="mb-2 text-center text-lg font-bold text-white">Sign in to continue</h3>
+        <p className="mb-6 text-center text-sm leading-relaxed text-white/70">
+          Your placement test is complete. Create an account or sign in to save this score and continue to your learning path.
+        </p>
+        <div className="flex gap-3">
+          <button
+            id="btn-auth-required-signup"
+            onClick={onSignUp}
+            className="flex-1 rounded-xl border border-white/20 py-3 text-sm font-medium text-white/70 transition-all hover:bg-white/10"
+          >
+            Sign Up
+          </button>
+          <button
+            id="btn-auth-required-signin"
+            onClick={onSignIn}
+            className="flex-1 rounded-xl border border-blue-400/40 bg-blue-500/30 py-3 text-sm font-bold text-blue-200 transition-all hover:bg-blue-500/40"
+          >
+            Sign In
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Loading Screen ────────────────────────────────────────────────────────────
 
 function LoadingScreen() {
@@ -203,6 +247,8 @@ function NoQuestionsScreen({ onBack }: { onBack: () => void }) {
 export function PlacementTestEngine() {
   const navigate = useNavigate()
   const { reinitialize: reinitializeRadar } = useRadar()
+  const { isAuthenticated } = useAuth()
+  const returnPath = !isAuthenticated ? '/discover' : getPlacementReturnPath()
 
   // ── Fetch state ─────────────────────────────────────────────────────────────
   const [loadState, setLoadState] = useState<'loading' | 'empty' | 'ready'>('loading')
@@ -218,6 +264,7 @@ export function PlacementTestEngine() {
   const [results, setResults] = useState<QuestionResult[]>([])
   const [visible, setVisible] = useState(true)
   const [showQuit, setShowQuit] = useState(false)
+  const [showAuthRequired, setShowAuthRequired] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [remainingSeconds, setRemainingSeconds] = useState(TEST_DURATION_SECONDS)
   const timerDeadlineRef = useRef<number | null>(null)
@@ -340,7 +387,7 @@ export function PlacementTestEngine() {
     if (!roleId) {
       setIsSubmitting(false)
       setFetchError('No role selected. Please go back and choose a role.')
-      navigate({ to: '/onboarding/role-selection' })
+      navigate({ to: returnPath })
       return
     }
 
@@ -356,6 +403,17 @@ export function PlacementTestEngine() {
       axis: r.axis,
       difficulty: r.difficulty,
     }))
+
+    if (!isAuthenticated) {
+      saveAnonymousPlacementAttempt({
+        roleId,
+        answers: formattedResults,
+        completedAt: new Date().toISOString(),
+      })
+      setIsSubmitting(false)
+      setShowAuthRequired(true)
+      return
+    }
 
     completePlacementTest({ role_id: roleId, placement_test_answers: formattedResults })
       .then(() => reinitializeRadar(true))
@@ -421,7 +479,7 @@ export function PlacementTestEngine() {
   if (loadState === 'empty') {
     return (
       <NoQuestionsScreen
-        onBack={() => navigate({ to: '/onboarding/role-selection' })}
+        onBack={() => navigate({ to: returnPath })}
       />
     )
   }
@@ -436,6 +494,13 @@ export function PlacementTestEngine() {
 
   return (
     <div className="min-h-screen relative bg-slate-50">
+      {showAuthRequired && (
+        <AuthRequiredModal
+          onSignIn={() => navigate({ to: '/login' })}
+          onSignUp={() => navigate({ to: '/register' })}
+        />
+      )}
+
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 h-16 bg-[#0072FF] z-40 flex items-center justify-between px-6 shadow-md">
         <img src={tmaLogo} alt="TMA Solutions" className="h-8 w-auto" />
@@ -608,7 +673,7 @@ export function PlacementTestEngine() {
       {showQuit && (
         <QuitModal
           onStay={() => setShowQuit(false)}
-          onQuit={() => navigate({ to: '/onboarding/role-selection' })}
+          onQuit={() => navigate({ to: returnPath })}
         />
       )}
     </div>

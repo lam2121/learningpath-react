@@ -5,6 +5,11 @@ import { loginUser } from '../api/authAPI'
 import { saveUserSession } from '../helper/authHelper'
 import { useAuth } from '@/common/context/AuthContext'
 import { fetchOnboardingStatus } from '@/feature/onboarding/api/onboardingApi'
+import {
+	clearAnonymousPlacementAttempt,
+	clearPlacementMode,
+	syncAnonymousPlacementAttempt,
+} from '@/feature/onboarding/anonymousPlacement'
 
 import { recordLoginDay } from "@/feature/user-profile/utils/StudyActivity";
 export function LoginForm() {
@@ -40,8 +45,22 @@ export function LoginForm() {
 
 			// 4. Redirect based on role
 			if (data.role_id === 2) {
+				clearAnonymousPlacementAttempt()
+				clearPlacementMode()
+				localStorage.removeItem('pending_role_id')
+				localStorage.removeItem('pending_survey_answers')
 				await navigate({ to: '/admin' })
 				return
+			}
+
+			const anonymousSyncState = await syncAnonymousPlacementAttempt()
+			if (anonymousSyncState === 'saved') {
+				await navigate({ to: '/placement-result' })
+				return
+			}
+
+			if (anonymousSyncState === 'already_exists') {
+				window.alert('This account already has a saved placement test score. Your anonymous result was not applied.')
 			}
 
 			// Learner → check if placement test is finished

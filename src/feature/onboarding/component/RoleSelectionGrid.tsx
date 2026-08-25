@@ -4,6 +4,10 @@ import tmaLogo from '@/asset/image/tma_logo.png'
 import { fetchJobRoles, type JobRole, type JobRoleSkillDefinitions } from '../api/onboardingApi'
 import { useAuth } from '@/common/context/AuthContext'
 import { devGenerateCourse, type SkillScores } from '../../dev-mode/api/devModeApi'
+import {
+  clearAnonymousPlacementAttempt,
+  setPlacementMode,
+} from '../anonymousPlacement'
 
 // ─── Dev-mode harness (docs/07 §12.9) ────────────────────────────────────────
 
@@ -646,7 +650,7 @@ export function RoleSelectionGrid() {
   })
   const [isGeneratingCourse, setIsGeneratingCourse] = useState(false)
   const navigate = useNavigate()
-  const { logout } = useAuth()
+  const { isAuthenticated, logout } = useAuth()
 
   useEffect(() => {
     fetchJobRoles()
@@ -677,6 +681,12 @@ export function RoleSelectionGrid() {
     setShowConfirmModal(false)
     localStorage.removeItem('pending_survey_answers')
     localStorage.setItem('pending_role_id', selectedRoleId.toString())
+    if (isAuthenticated) {
+      setPlacementMode('authenticated')
+      clearAnonymousPlacementAttempt()
+    } else {
+      setPlacementMode('anonymous')
+    }
     navigate({ to: '/placement-test' })
   }
 
@@ -736,17 +746,28 @@ export function RoleSelectionGrid() {
       {/* Top Header Bar */}
       <header className="w-full bg-[#0072FF] px-6 py-3.5 flex items-center justify-between shadow-md sticky top-0 z-30">
         <img src={tmaLogo} alt="TMA Solutions" className="h-9 w-auto" />
-        <button
-          id="btn-logout-role-selection"
-          type="button"
-          onClick={handleLogout}
-          className="px-4 py-1.5 rounded-full border border-white/40 text-white hover:bg-white/10 transition-colors text-sm font-medium flex items-center gap-2 cursor-pointer"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          <span>Log out</span>
-        </button>
+        {isAuthenticated ? (
+          <button
+            id="btn-logout-role-selection"
+            type="button"
+            onClick={handleLogout}
+            className="px-4 py-1.5 rounded-full border border-white/40 text-white hover:bg-white/10 transition-colors text-sm font-medium flex items-center gap-2 cursor-pointer"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span>Log out</span>
+          </button>
+        ) : (
+          <button
+            id="btn-login-role-selection"
+            type="button"
+            onClick={() => navigate({ to: '/login' })}
+            className="px-4 py-1.5 rounded-full border border-white/40 text-white hover:bg-white/10 transition-colors text-sm font-medium flex items-center gap-2 cursor-pointer"
+          >
+            <span>Sign in</span>
+          </button>
+        )}
       </header>
 
       {/* Main Content */}

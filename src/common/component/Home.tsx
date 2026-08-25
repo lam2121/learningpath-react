@@ -1,210 +1,340 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { Link } from "@tanstack/react-router"
+import { Link } from "@tanstack/react-router";
+import { useState } from "react";
+import {
+    ArrowRight,
+    Bot,
+    BrainCircuit,
+    CheckCircle2,
+    Compass,
+    MessagesSquare,
+    Sparkles,
+    Target,
+} from "lucide-react";
 
-const slides = [
-    "https://www.tmasolutions.vn/images/icons/GioiThieuTma/6-van-phong-tai-viet-nam.webp",
-    "https://www.tmasolutions.vn/images/imgs/TrangChu/Banner/banner-01.webp",
-    "https://www.tma.vn/images/news/news_content_0_20250515161434.107.webp",
-    "https://www.tma.vn/images/news/news_content_1_20250515161438.035.webp",
-    "https://www.tmasolutions.vn/images/imgs/GiaiPhapDotPha/giai-phap-dot-pha-1.webp",
-    "https://www.tmasolutions.vn/images/icons/GioiThieuTma/26-nam-phat-trien.webp",
-    "https://www.tmasolutions.vn/images/icons/GioiThieuTma/thanh-lap-1997.webp",
-];
+import CareerpathIcon from "@/asset/image/careerpath_logo.png";
+
+const aiCapabilities = [
+    "Role-based placement test",
+    "Personal lesson roadmap",
+    "Adaptive review after each quiz",
+    "AI-guided study pacing",
+] as const;
+
+const roadmapSteps = [
+    { title: "Assess", icon: Target },
+    { title: "Build Path", icon: Compass },
+    { title: "Coach Daily", icon: BrainCircuit },
+] as const;
 
 export function Home() {
-    const [current, setCurrent] = useState(0);
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragStartX, setDragStartX] = useState(0);
-    const [dragOffset, setDragOffset] = useState(0);
-    const containerWidthRef = useRef<HTMLDivElement>(null);
-
-    const goTo = useCallback((index: number) => {
-        setCurrent((index + slides.length) % slides.length);
-    }, []);
-
-    const goPrev = useCallback(() => goTo(current - 1), [current, goTo]);
-    const goNext = useCallback(() => goTo(current + 1), [current, goTo]);
-
-    useEffect(() => {
-        if (isDragging) return;
-        const timer = setInterval(() => {
-            setCurrent((prev) => (prev + 1) % slides.length);
-        }, 5000);
-        return () => clearInterval(timer);
-    }, [isDragging]);
-
-    const handlePointerDown = (e: React.PointerEvent) => {
-        setIsDragging(true);
-        setDragStartX(e.clientX);
-        setDragOffset(0);
-        (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    };
-
-    const handlePointerMove = (e: React.PointerEvent) => {
-        if (!isDragging) return;
-        setDragOffset(e.clientX - dragStartX);
-    };
-
-    const handlePointerUp = () => {
-        if (!isDragging) return;
-        const containerWidth = containerWidthRef.current?.offsetWidth || 1;
-        const threshold = containerWidth * 0.15;
-
-        if (dragOffset > threshold) {
-            goPrev();
-        } else if (dragOffset < -threshold) {
-            goNext();
-        }
-
-        setIsDragging(false);
-        setDragOffset(0);
-    };
+    const [isRobotLive, setIsRobotLive] = useState(true);
+    const primaryCta = isRobotLive
+        ? { to: "/login", label: "Start your AI path" }
+        : { to: "/discover", label: "Discover in anonymous mode" };
 
     return (
-        <main className="flex-1">
-            <div className="bg-background">
-                <div className="h-full w-full md:w-4/5 px-4 md:px-0 mx-auto py-3 md:py-4">
-                    <div className="flex flex-col gap-4 md:gap-5">
-                        <div className="h-full flex flex-col md:flex-row items-center">
-                            {/* Left panel: Hero text */}
-                            <div className="w-full md:w-1/2 rounded-2xl border border-slate-200 bg-white/90 shadow-sm">
-                                <section className="container mx-auto px-4 py-4 md:py-6 my-0 md:my-5">
-                                    <div className="text-left">
-                                        <h1 className="mb-6 text-4xl font-bold md:text-5xl">
-                                            Learn English
-                                            <br />
-                                            <span className="text-primary">
-                                                Your Way, with AI
-                                            </span>
-                                        </h1>
+        <main className="relative overflow-hidden bg-[linear-gradient(180deg,#f6fbff_0%,#edf7ff_45%,#f7fbff_100%)] text-slate-950">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_14%_12%,rgba(14,165,233,0.16),transparent_22%),radial-gradient(circle_at_86%_10%,rgba(34,211,238,0.14),transparent_18%),radial-gradient(circle_at_60%_44%,rgba(14,116,144,0.08),transparent_24%)]" />
 
-                                        <p className="mx-auto mb-4 max-w-3xl text-lg leading-relaxed text-muted-foreground md:mb-6">
-                                            Unlock your English potential with an AI-powered learning platform.
-                                            Complete a placement assessment, receive a personalized learning path,
-                                            and improve your skills through interactive lessons, quizzes, and
-                                            daily practice designed just for you.
-                                        </p>
-                                        <div className="flex gap-4 justify-center items-center">
-                                            <Link
-                                                to="/login"
-                                                className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 h-10 rounded-md px-6 has-[>svg]:px-4 font-semibold"
-                                            >
-                                                Start now
-                                                <ArrowRight className="ml-2 w-5 h-5" aria-hidden="true" />
-                                            </Link>
+            <section className="relative mx-auto flex min-h-[calc(100vh-7rem)] w-full max-w-[1480px] items-center px-4 py-4 sm:px-6 lg:px-8">
+                <div className="grid w-full gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(440px,0.95fr)] lg:items-center">
+                    <div className="max-w-3xl">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white/90 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-sky-800 shadow-[0_10px_24px_rgba(14,165,233,0.10)]">
+                            <Sparkles className="h-4 w-4" />
+                            AI Learning Path
+                        </div>
+
+                        <h1 className="mt-5 text-4xl font-black leading-[0.95] tracking-tight text-slate-950 sm:text-5xl xl:text-6xl">
+                            Learn with an
+                            {" "}
+                            <span className="bg-[linear-gradient(135deg,#005596_0%,#0072BB_50%,#14b8a6_100%)] bg-clip-text text-transparent">
+                                AI coach
+                            </span>
+                            {" "}
+                            that builds your path for real work.
+                        </h1>
+
+                        <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+                            CareerPath turns assessment results into a personalized English roadmap for IT communication. You study the right lessons, review the right weaknesses, and move with a plan that adapts as you improve.
+                        </p>
+
+                        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                            <Link
+                                to={primaryCta.to}
+                                className="inline-flex items-center justify-center rounded-2xl bg-[#0072BB] px-6 py-3.5 text-base font-bold text-white shadow-[0_18px_34px_rgba(0,114,187,0.24)] transition-all hover:-translate-y-0.5 hover:bg-[#005f9b]"
+                            >
+                                {primaryCta.label}
+                                <ArrowRight className="ml-2 h-5 w-5" />
+                            </Link>
+
+                            <Link
+                                to="/guide"
+                                className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white/90 px-6 py-3.5 text-base font-bold text-slate-800 transition-all hover:-translate-y-0.5 hover:border-sky-300 hover:text-sky-800"
+                            >
+                                See how it works
+                            </Link>
+                        </div>
+
+                        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                            {aiCapabilities.map((item) => (
+                                <div
+                                    key={item}
+                                    className="flex items-center gap-3 rounded-2xl border border-white/80 bg-white/82 px-4 py-3 shadow-[0_10px_24px_rgba(148,163,184,0.10)] backdrop-blur"
+                                >
+                                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-600" />
+                                    <p className="text-sm font-semibold text-slate-700">
+                                        {item}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="mt-6 grid gap-3 md:grid-cols-3">
+                            {roadmapSteps.map((step, index) => {
+                                const Icon = step.icon;
+                                return (
+                                    <div
+                                        key={step.title}
+                                        className="rounded-3xl border border-slate-200 bg-white/75 px-4 py-4 shadow-[0_10px_24px_rgba(148,163,184,0.08)]"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-100 text-sky-800">
+                                                <Icon className="h-5 w-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                                                    Step {index + 1}
+                                                </p>
+                                                <p className="text-sm font-black text-slate-900">
+                                                    {step.title}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
-                                </section>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="relative">
+                        <div className="absolute -left-4 top-10 hidden h-28 w-28 rounded-full bg-cyan-200/40 blur-3xl lg:block" />
+                        <div className="absolute -right-4 bottom-4 hidden h-36 w-36 rounded-full bg-sky-300/30 blur-3xl lg:block" />
+
+                        <div className="overflow-hidden rounded-[2rem] border border-sky-100 bg-[linear-gradient(145deg,#ffffff_0%,#eff8ff_58%,#dff3ff_100%)] p-4 shadow-[0_24px_56px_rgba(14,116,144,0.16)] sm:p-5">
+                            <div className="flex items-center justify-between rounded-2xl border border-sky-100 bg-white/85 px-4 py-3">
+                                <div>
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-sky-700">
+                                        AI Coach Console
+                                    </p>
+                                    <p className="mt-1 text-sm font-semibold text-slate-700">
+                                        Adaptive learning path active
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    aria-pressed={isRobotLive}
+                                    onClick={() => setIsRobotLive((current) => !current)}
+                                    className={`rounded-2xl px-3 py-2 text-white shadow-lg transition-colors ${isRobotLive
+                                            ? "bg-sky-600 hover:bg-sky-700"
+                                            : "bg-slate-500 hover:bg-slate-600"
+                                        }`}
+                                >
+                                    <p className={`text-[10px] font-bold uppercase tracking-[0.18em] ${isRobotLive ? "text-sky-100" : "text-slate-200"
+                                        }`}>
+                                        Status
+                                    </p>
+                                    <p className="text-sm font-black">{isRobotLive ? "Live" : "Sleep"}</p>
+                                </button>
                             </div>
 
-                            {/* Right panel: Carousel */}
-                            <div className="w-full md:w-1/2 rounded-2xl border border-slate-200 bg-white/90 shadow-sm md:ml-3">
-                                <section className="container mx-auto px-6 pt-2 md:pt-0">
-                                    <div className="mb-0">
-                                        <section className="container mx-auto px-4 py-4 md:py-6 my-0 md:my-5">
-                                            <div className="mb-0 md:mb-16">
-                                                <div className="w-full relative">
-                                                    <div
-                                                        role="region"
-                                                        aria-roledescription="carousel"
-                                                        className="relative w-full overflow-hidden rounded-2xl"
-                                                    >
-                                                        <div
-                                                            className="overflow-hidden cursor-grab active:cursor-grabbing select-none"
-                                                            ref={containerWidthRef}
-                                                            onPointerDown={handlePointerDown}
-                                                            onPointerMove={handlePointerMove}
-                                                            onPointerUp={handlePointerUp}
-                                                            onPointerLeave={handlePointerUp}
-                                                        >
-                                                            <div
-                                                                className={`flex -ml-4 ${isDragging
-                                                                    ? ""
-                                                                    : "transition-transform duration-500 ease-in-out"
-                                                                    }`}
-                                                                style={{
-                                                                    transform: `translate3d(calc(-${current * 100
-                                                                        }% + ${dragOffset}px), 0px, 0px)`,
-                                                                }}
-                                                            >
-                                                                {slides.map((src, index) => (
-                                                                    <div
-                                                                        key={index}
-                                                                        role="group"
-                                                                        aria-roledescription="slide"
-                                                                        className="min-w-0 shrink-0 grow-0 basis-full pl-4"
-                                                                    >
-                                                                        <div className="text-card-foreground flex flex-col gap-2 rounded-xl border py-2 shadow-sm h-[17rem] bg-transparent !border-none overflow-hidden relative group">
-                                                                            <div className="relative z-10 h-full flex justify-center items-center p-0 border-3 border-gray-400/50 rounded-xl overflow-hidden">
-                                                                                <img
-                                                                                    className="w-full h-full object-cover pointer-events-none"
-                                                                                    src={src}
-                                                                                    alt={`Slide ${index + 1}`}
-                                                                                    draggable={false}
-                                                                                />
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
+                            <div className="mt-4 grid items-stretch gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+                                <div className={`flex h-full flex-col rounded-[1.75rem] p-5 text-white shadow-[0_18px_34px_rgba(0,85,150,0.22)] transition-all ${isRobotLive
+                                        ? "bg-[linear-gradient(180deg,#003d6d_0%,#005596_42%,#0072BB_100%)]"
+                                        : "bg-[linear-gradient(180deg,#1e3a5f_0%,#35597e_42%,#58779b_100%)]"
+                                    }`}>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-100/90">
+                                                Smart mentor
+                                            </p>
+                                            <h2 className="mt-2 text-2xl font-black">
+                                                Robo Coach
+                                            </h2>
+                                        </div>
+                                        <div className="rounded-2xl bg-white/10 p-3">
+                                            <Bot className="h-7 w-7" />
+                                        </div>
+                                    </div>
+
+                                    <div className={`relative mt-5 flex min-h-[24rem] flex-1 items-center justify-center rounded-[1.5rem] border border-white/10 px-6 py-8 transition-all lg:min-h-[26rem] ${isRobotLive
+                                            ? "bg-[radial-gradient(circle_at_50%_24%,rgba(125,211,252,0.34),transparent_24%),linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.02)_100%)]"
+                                            : "bg-[radial-gradient(circle_at_50%_24%,rgba(148,163,184,0.22),transparent_24%),linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(255,255,255,0.01)_100%)]"
+                                        }`}>
+                                        <div className={`absolute left-8 top-8 h-3 w-3 rounded-full transition-opacity ${isRobotLive ? "bg-white/35" : "bg-white/20 opacity-60"}`} />
+                                        <div className={`absolute right-10 top-10 h-2.5 w-2.5 rounded-full transition-opacity ${isRobotLive ? "bg-cyan-100/45" : "bg-slate-200/30 opacity-60"}`} />
+                                        <div className={`absolute left-12 top-24 h-2 w-2 rounded-full transition-opacity ${isRobotLive ? "bg-sky-100/40" : "bg-slate-200/20 opacity-50"}`} />
+                                        <div className={`absolute right-14 top-24 h-3 w-3 rounded-full transition-opacity ${isRobotLive ? "bg-white/28" : "bg-slate-200/20 opacity-50"}`} />
+                                        <div className="relative flex flex-col items-center">
+                                            <div className={`relative h-40 w-40 rounded-[2.7rem] border border-white/20 shadow-[0_18px_40px_rgba(34,211,238,0.40)] transition-all lg:h-44 lg:w-44 ${isRobotLive
+                                                    ? "bg-[linear-gradient(180deg,#e8fbff_0%,#9be3ff_42%,#38bdf8_100%)]"
+                                                    : "bg-[linear-gradient(180deg,#dfe7ef_0%,#9eb4c8_42%,#6d88a3_100%)]"
+                                                }`}>
+                                                <div className="absolute left-1/2 top-[-1.15rem] h-7 w-[3px] -translate-x-1/2 rounded-full bg-cyan-100/90" />
+                                                <div className="absolute left-1/2 top-[-1.55rem] h-5 w-5 -translate-x-1/2 rounded-full border border-white/50 bg-white/85 shadow-sm" />
+                                                <div className="absolute left-1/2 top-4 h-3.5 w-3.5 -translate-x-1/2 rounded-full bg-white/80" />
+                                                <div className={`absolute left-8 top-12 flex items-center justify-center rounded-full bg-[#003d6d] transition-all ${isRobotLive ? "h-6 w-6" : "h-2 w-7 rounded-full"}`}>
+                                                    {isRobotLive ? <span className="h-2 w-2 rounded-full bg-white/95" /> : null}
+                                                </div>
+                                                <div className={`absolute right-8 top-12 flex items-center justify-center rounded-full bg-[#003d6d] transition-all ${isRobotLive ? "h-6 w-6" : "h-2 w-7 rounded-full"}`}>
+                                                    {isRobotLive ? <span className="h-2 w-2 rounded-full bg-white/95" /> : null}
+                                                </div>
+                                                <div className="absolute left-9 top-[5rem] h-3 w-4 rounded-full bg-pink-100/85" />
+                                                <div className="absolute right-9 top-[5rem] h-3 w-4 rounded-full bg-pink-100/85" />
+                                                <div className={`absolute left-1/2 top-[5.45rem] h-3.5 -translate-x-1/2 border-[#005596] transition-all ${isRobotLive
+                                                        ? "w-12 rounded-full border-b-[3px]"
+                                                        : "w-8 rounded-full border-b-[2px]"
+                                                    }`} />
+                                                <div className="absolute left-1/2 top-[6.4rem] h-2 w-9 -translate-x-1/2 rounded-full bg-white/20" />
+                                                <div className="absolute -left-3 top-14 h-12 w-3.5 rounded-full bg-cyan-200/90" />
+                                                <div className="absolute -right-3 top-14 h-12 w-3.5 rounded-full bg-cyan-200/90" />
+                                                <div className="absolute -left-6 top-[6.4rem] h-3 w-8 rounded-full bg-cyan-100/65" />
+                                                <div className="absolute -right-6 top-[6.4rem] h-3 w-8 rounded-full bg-cyan-100/65" />
+                                            </div>
+                                            <div className={`mt-6 flex h-32 w-36 items-center justify-center rounded-[2.1rem] border border-white/15 shadow-[0_14px_28px_rgba(34,211,238,0.24)] transition-all lg:h-36 lg:w-40 ${isRobotLive
+                                                    ? "bg-[linear-gradient(180deg,#8fe3ff_0%,#22d3ee_100%)]"
+                                                    : "bg-[linear-gradient(180deg,#b6cadb_0%,#7e9ab4_100%)]"
+                                                }`}>
+                                                <div className={`flex h-18 w-18 items-center justify-center rounded-[1.35rem] shadow-[0_8px_18px_rgba(255,255,255,0.25)] transition-all ${isRobotLive ? "bg-white/85" : "bg-white/70"
+                                                    }`}>
+                                                    <img
+                                                        src={CareerpathIcon}
+                                                        alt="CareerPath logo"
+                                                        className={`object-contain transition-all ${isRobotLive ? "h-12 w-12 lg:h-14 lg:w-14" : "h-11 w-11 lg:h-13 lg:w-13 opacity-80"}`}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="mt-5 flex w-full items-start justify-center gap-16 lg:gap-18">
+                                                <span className="h-20 w-3 rounded-full bg-cyan-200/90 lg:h-24" />
+                                                <span className="h-20 w-3 rounded-full bg-cyan-200/90 lg:h-24" />
+                                            </div>
+                                            <div className="mt-2 flex w-full items-center justify-center gap-14 lg:gap-16">
+                                                <span className="h-3.5 w-10 rounded-full bg-white/35 lg:w-12" />
+                                                <span className="h-3.5 w-10 rounded-full bg-white/35 lg:w-12" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="overflow-hidden rounded-[1.75rem] border border-sky-100 bg-white shadow-[0_14px_28px_rgba(14,116,144,0.10)]">
+                                        <div className="flex items-center justify-between border-b border-sky-100 px-4 py-3">
+                                            <div>
+                                                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-sky-700">
+                                                    Progress Snapshot
+                                                </p>
+                                                <h3 className="mt-1 text-base font-black text-slate-900">
+                                                    AI-generated roadmap
+                                                </h3>
+                                            </div>
+                                            <MessagesSquare className="h-5 w-5 text-sky-700" />
+                                        </div>
+
+                                        <div className="space-y-3 px-4 py-4">
+                                            {roadmapSteps.map((step, index) => {
+                                                const Icon = step.icon;
+                                                return (
+                                                    <div key={step.title} className="flex gap-3 rounded-2xl bg-slate-50 px-4 py-3">
+                                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-800">
+                                                            <Icon className="h-4 w-4" />
                                                         </div>
-
-                                                        <button
-                                                            onClick={goPrev}
-                                                            aria-label="Previous slide"
-                                                            className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] shadow-xs hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 absolute size-8 rounded-full left-2 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white border w-10 h-10 transition-all duration-300 hover:scale-110 hover:shadow-xl opacity-0 hover:opacity-100 group-hover:opacity-100"
-                                                        >
-                                                            <ArrowLeft className="w-6 h-6" aria-hidden="true" />
-                                                            <span className="sr-only">Previous slide</span>
-                                                        </button>
-
-                                                        <button
-                                                            onClick={goNext}
-                                                            aria-label="Next slide"
-                                                            className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] shadow-xs hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 absolute size-8 rounded-full right-2 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white border w-10 h-10 transition-all duration-300 hover:scale-110 hover:shadow-xl opacity-0 hover:opacity-100 group-hover:opacity-100"
-                                                        >
-                                                            <ArrowRight className="w-6 h-6" aria-hidden="true" />
-                                                            <span className="sr-only">Next slide</span>
-                                                        </button>
+                                                        <div>
+                                                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-sky-700">
+                                                                Step {index + 1}
+                                                            </p>
+                                                            <p className="mt-1 text-sm font-black text-slate-900">
+                                                                {step.title}
+                                                            </p>
+                                                        </div>
                                                     </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
 
-                                                    <div className="flex flex-col items-center mt-2 space-y-4">
-                                                        <div className="flex justify-center space-x-3">
-                                                            {slides.map((_, index) => (
-                                                                <button
-                                                                    key={index}
-                                                                    onClick={() => goTo(index)}
-                                                                    aria-label={`Go to slide ${index + 1}`}
-                                                                    className={`relative transition-all duration-500 rounded-full h-2 ${index === current
-                                                                        ? "w-8 bg-primary shadow-lg shadow-primary/50"
-                                                                        : "w-2 bg-gray-400 hover:bg-muted-foreground/60 hover:scale-125"
-                                                                        }`}
-                                                                >
-                                                                    {index === current && (
-                                                                        <span className="absolute inset-0 bg-primary rounded-full animate-ping opacity-20" />
-                                                                    )}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                        <div className="text-sm text-muted-foreground font-medium">
-                                                            <span className="text-primary font-bold text-base">
-                                                                {current + 1}
-                                                            </span>
-                                                            <span className="mx-1">/</span>
-                                                            <span>{slides.length}</span>
-                                                        </div>
+                                    <div className="rounded-[1.75rem] border border-sky-100 bg-white p-4 shadow-[0_14px_28px_rgba(14,116,144,0.10)]">
+                                        <div className="rounded-[1.5rem] bg-[linear-gradient(135deg,#eef8ff_0%,#dff3ff_100%)] p-4">
+                                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-sky-700">
+                                                Learning flow
+                                            </p>
+                                            <h3 className="mt-2 text-lg font-black text-slate-900">
+                                                Assess, build, practice, review
+                                            </h3>
+                                            <p className="mt-2 text-sm leading-6 text-slate-600">
+                                                Everything stays connected inside one AI-guided path.
+                                            </p>
+
+                                            <div className="mt-4 grid gap-3">
+                                                <div className="flex items-start gap-3 rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-sm">
+                                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sm font-black text-sky-800">
+                                                        1
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                                                            Assess
+                                                        </p>
+                                                        <p className="mt-1 text-sm font-black leading-5 text-slate-900">
+                                                            Detect actual skill gaps
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-start gap-3 rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-sm">
+                                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sm font-black text-sky-800">
+                                                        2
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                                                            Build
+                                                        </p>
+                                                        <p className="mt-1 text-sm font-black leading-5 text-slate-900">
+                                                            Generate your lesson path
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-start gap-3 rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-sm">
+                                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sm font-black text-sky-800">
+                                                        3
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                                                            Practice
+                                                        </p>
+                                                        <p className="mt-1 text-sm font-black leading-5 text-slate-900">
+                                                            Learn with guided coaching
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-start gap-3 rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-sm">
+                                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sm font-black text-sky-800">
+                                                        4
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                                                            Review
+                                                        </p>
+                                                        <p className="mt-1 text-sm font-black leading-5 text-slate-900">
+                                                            Adapt based on each quiz
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </section>
+                                        </div>
                                     </div>
-                                </section>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
         </main>
     );
 }
