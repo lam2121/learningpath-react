@@ -17,6 +17,7 @@ import {
     ListChecks,
     MessageSquareText,
     NotebookPen,
+    Play,
     ScrollText,
     Sparkles,
     Target,
@@ -35,6 +36,8 @@ import {
     fetchLessonQuizState,
     kickoffRoadmapLessonGeneration,
     submitLessonQuiz,
+    evaluateAnswer,
+    type LessonQuizResultDetailResponse,
     type LessonQuizSubmitResponse,
     type LessonQuizStateResponse,
     type RoadmapLesson,
@@ -1401,7 +1404,31 @@ function ReadingPracticeSection({
     const [draftAnswers, setDraftAnswers] = useState<Record<number, string>>({});
     const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
     const [listeningQuestionIndex, setListeningQuestionIndex] = useState<number | null>(null);
+    const [aiFeedback, setAiFeedback] = useState<Record<number, string>>({});
+    const [isEvaluating, setIsEvaluating] = useState<Record<number, boolean>>({});
     const recognitionRef = useRef<any>(null);
+
+    const handleEvaluate = async (index: number, question: string, referenceAnswer: string) => {
+        const userAnswer = draftAnswers[index]?.trim();
+        if (!userAnswer) return;
+
+        setIsEvaluating((prev) => ({ ...prev, [index]: true }));
+        try {
+            const res = await evaluateAnswer({
+                section_type: "reading",
+                context: section.primary,
+                question: question,
+                reference_answer: referenceAnswer,
+                user_answer: userAnswer,
+            });
+            setAiFeedback((prev) => ({ ...prev, [index]: res.feedback_summary }));
+        } catch (error) {
+            console.error(error);
+            alert("Failed to evaluate answer.");
+        } finally {
+            setIsEvaluating((prev) => ({ ...prev, [index]: false }));
+        }
+    };
 
     useEffect(() => {
         return () => {
@@ -1547,16 +1574,43 @@ function ReadingPracticeSection({
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() =>
+                                    onClick={() => handleEvaluate(index, qa.question, qa.answer)}
+                                    disabled={!draft || isEvaluating[index]}
+                                >
+                                    {isEvaluating[index] ? (
+                                        "Evaluating..."
+                                    ) : (
+                                        <>
+                                            <Sparkles className="mr-2 h-4 w-4 text-indigo-500" /> Evaluate
+                                        </>
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
                                         setDraftAnswers((prev) => ({
                                             ...prev,
                                             [index]: "",
-                                        }))
-                                    }
+                                        }));
+                                        setAiFeedback((prev) => ({
+                                            ...prev,
+                                            [index]: "",
+                                        }));
+                                    }}
                                 >
                                     Clear
                                 </Button>
                             </div>
+
+                            {aiFeedback[index] ? (
+                                <div className="mt-4 rounded-2xl bg-indigo-50/50 p-4 text-sm leading-6 text-indigo-900 border border-indigo-100 dark:bg-indigo-950/30 dark:border-indigo-900/50 dark:text-indigo-100 animate-in fade-in slide-in-from-top-2">
+                                    <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-400">
+                                        <Sparkles className="h-3 w-3" /> AI Feedback
+                                    </p>
+                                    <p className="mt-2">{aiFeedback[index]}</p>
+                                </div>
+                            ) : null}
 
                             {isRevealed ? (
                                 <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-slate-700 dark:bg-emerald-950/30 dark:text-slate-200 animate-in fade-in">
@@ -1611,7 +1665,31 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
     const [userReplies, setUserReplies] = useState<Record<number, string>>({});
     const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
     const [listeningQuestionIndex, setListeningQuestionIndex] = useState<number | null>(null);
+    const [aiFeedback, setAiFeedback] = useState<Record<number, string>>({});
+    const [isEvaluating, setIsEvaluating] = useState<Record<number, boolean>>({});
     const recognitionRef = useRef<any>(null);
+
+    const handleEvaluate = async (index: number, promptText: string, suggestedAnswer: string) => {
+        const userAnswer = userReplies[index]?.trim();
+        if (!userAnswer) return;
+
+        setIsEvaluating((prev) => ({ ...prev, [index]: true }));
+        try {
+            const res = await evaluateAnswer({
+                section_type: "dialogue",
+                context: contextText,
+                question: promptText,
+                reference_answer: suggestedAnswer || "No reference answer provided.",
+                user_answer: userAnswer,
+            });
+            setAiFeedback((prev) => ({ ...prev, [index]: res.feedback_summary }));
+        } catch (error) {
+            console.error(error);
+            alert("Failed to evaluate answer.");
+        } finally {
+            setIsEvaluating((prev) => ({ ...prev, [index]: false }));
+        }
+    };
 
     useEffect(() => {
         return () => {
@@ -1834,6 +1912,36 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
                                                     </>
                                                 )}
                                             </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleEvaluate(idx, promptText, suggestedAnswer || "")}
+                                                disabled={!userReplies[idx]?.trim() || isEvaluating[idx]}
+                                            >
+                                                {isEvaluating[idx] ? (
+                                                    "Evaluating..."
+                                                ) : (
+                                                    <>
+                                                        <Sparkles className="mr-2 h-4 w-4 text-indigo-500" /> Evaluate
+                                                    </>
+                                                )}
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setUserReplies((prev) => ({
+                                                        ...prev,
+                                                        [idx]: "",
+                                                    }));
+                                                    setAiFeedback((prev) => ({
+                                                        ...prev,
+                                                        [idx]: "",
+                                                    }));
+                                                }}
+                                            >
+                                                Clear
+                                            </Button>
                                             {userReplies[idx] && (
                                                 <AudioSpeakButton
                                                     text={userReplies[idx]}
@@ -1842,6 +1950,15 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
                                             )}
                                         </div>
                                     </div>
+                                    
+                                    {aiFeedback[idx] ? (
+                                        <div className="mt-4 rounded-2xl bg-indigo-50/50 p-4 text-sm leading-6 text-indigo-900 border border-indigo-100 dark:bg-indigo-950/30 dark:border-indigo-900/50 dark:text-indigo-100 animate-in fade-in slide-in-from-top-2">
+                                            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-400">
+                                                <Sparkles className="h-3 w-3" /> AI Feedback
+                                            </p>
+                                            <p className="mt-2">{aiFeedback[idx]}</p>
+                                        </div>
+                                    ) : null}
                                     
                                     {isRevealed && suggestedAnswer && (
                                         <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-slate-700 dark:bg-emerald-950/30 dark:text-slate-200 animate-in fade-in">
@@ -1869,7 +1986,38 @@ function ListeningPracticeSection({
     const [draftAnswers, setDraftAnswers] = useState<Record<number, string>>({});
     const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
     const [listeningQuestionIndex, setListeningQuestionIndex] = useState<number | null>(null);
+    const [aiFeedback, setAiFeedback] = useState<Record<number, string>>({});
+    const [isEvaluating, setIsEvaluating] = useState<Record<number, boolean>>({});
     const recognitionRef = useRef<any>(null);
+
+    const rawScript = section.primary;
+    const scriptText = rawScript
+        .replace(/^Audio\s*Script\s*:\s*/i, "")
+        .replace(/^\[.*?\]\s*:\s*/i, "")
+        .replace(/^["']|["']$/g, "")
+        .trim();
+
+    const handleEvaluate = async (index: number, question: string, referenceAnswer: string) => {
+        const userAnswer = draftAnswers[index]?.trim();
+        if (!userAnswer) return;
+
+        setIsEvaluating((prev) => ({ ...prev, [index]: true }));
+        try {
+            const res = await evaluateAnswer({
+                section_type: "listening",
+                context: scriptText,
+                question: question,
+                reference_answer: referenceAnswer,
+                user_answer: userAnswer,
+            });
+            setAiFeedback((prev) => ({ ...prev, [index]: res.feedback_summary }));
+        } catch (error) {
+            console.error(error);
+            alert("Failed to evaluate answer.");
+        } finally {
+            setIsEvaluating((prev) => ({ ...prev, [index]: false }));
+        }
+    };
 
     useEffect(() => {
         return () => {
@@ -1933,13 +2081,6 @@ function ListeningPracticeSection({
             setListeningQuestionIndex(null);
         }
     };
-
-    const rawScript = section.primary;
-    const scriptText = rawScript
-        .replace(/^Audio\s*Script\s*:\s*/i, "")
-        .replace(/^\[.*?\]\s*:\s*/i, "")
-        .replace(/^["']|["']$/g, "")
-        .trim();
 
     const questions = parseReadingQuestions(section.secondary);
 
@@ -2019,16 +2160,43 @@ function ListeningPracticeSection({
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() =>
+                                    onClick={() => handleEvaluate(index, qa.question, qa.answer)}
+                                    disabled={!draft || isEvaluating[index]}
+                                >
+                                    {isEvaluating[index] ? (
+                                        "Evaluating..."
+                                    ) : (
+                                        <>
+                                            <Sparkles className="mr-2 h-4 w-4 text-indigo-500" /> Evaluate
+                                        </>
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
                                         setDraftAnswers((prev) => ({
                                             ...prev,
                                             [index]: "",
-                                        }))
-                                    }
+                                        }));
+                                        setAiFeedback((prev) => ({
+                                            ...prev,
+                                            [index]: "",
+                                        }));
+                                    }}
                                 >
                                     Clear
                                 </Button>
                             </div>
+
+                            {aiFeedback[index] ? (
+                                <div className="mt-4 rounded-2xl bg-indigo-50/50 p-4 text-sm leading-6 text-indigo-900 border border-indigo-100 dark:bg-indigo-950/30 dark:border-indigo-900/50 dark:text-indigo-100 animate-in fade-in slide-in-from-top-2">
+                                    <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-400">
+                                        <Sparkles className="h-3 w-3" /> AI Feedback
+                                    </p>
+                                    <p className="mt-2">{aiFeedback[index]}</p>
+                                </div>
+                            ) : null}
 
                             {isRevealed && (
                                 <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-slate-700 dark:bg-emerald-950/30 dark:text-slate-200 animate-in fade-in">
