@@ -518,6 +518,25 @@ export function LessonQuizHistoryCard({
         };
     }, []);
 
+    useEffect(() => {
+        const handlePopState = () => {
+            if (selectedLessonId !== null) {
+                setSelectedLessonId(null);
+                setSelectedDetail(null);
+                setDetailError(null);
+            }
+        };
+
+        if (selectedLessonId !== null) {
+            window.history.pushState({ isLessonDetailModalOpen: true }, "");
+            window.addEventListener("popstate", handlePopState);
+        }
+
+        return () => {
+            window.removeEventListener("popstate", handlePopState);
+        };
+    }, [selectedLessonId]);
+
     const lessonQuizHistory = useMemo(
         () => profile?.lesson_quiz_history ?? [],
         [profile],
@@ -815,6 +834,9 @@ export function LessonQuizHistoryCard({
                 open={selectedLessonId !== null}
                 onOpenChange={(open) => {
                     if (!open) {
+                        if (window.history.state?.isLessonDetailModalOpen) {
+                            window.history.back();
+                        }
                         setSelectedLessonId(null);
                         setSelectedDetail(null);
                         setDetailError(null);
