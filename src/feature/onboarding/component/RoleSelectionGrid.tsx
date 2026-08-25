@@ -394,9 +394,9 @@ function ConfirmRoleModal({
           </p>
           <ul className="space-y-2">
             {[
-              { icon: '🎯', text: 'The test will assess your current IT English proficiency.' },
+              { icon: '🎯', text: 'The test will assess your current English proficiency.' },
+              { icon: '🔒', text: 'This test is intended to help assess and find courses that are suitable for you.' },
               { icon: '⏱️', text: 'Once started, you should complete it without interruption.' },
-              { icon: '🔒', text: 'Your career track cannot be changed until the test is completed.' },
             ].map(({ icon, text }) => (
               <li key={text} className="flex items-start gap-2.5 text-xs text-gray-600 leading-relaxed">
                 <span className="text-base flex-shrink-0 mt-0.5">{icon}</span>

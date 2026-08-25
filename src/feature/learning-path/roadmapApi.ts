@@ -185,3 +185,26 @@ export async function fetchLessonQuizResultDetail(
 	)
 	return handleResponse<LessonQuizResultDetailResponse>(res)
 }
+
+export interface EvaluateAnswerRequest {
+	section_type: 'reading' | 'dialogue' | 'listening'
+	context: string
+	question: string
+	reference_answer: string
+	user_answer: string
+}
+
+export interface EvaluateAnswerResponse {
+	feedback_summary: string
+}
+
+export async function evaluateAnswer(
+	payload: EvaluateAnswerRequest,
+): Promise<EvaluateAnswerResponse> {
+	const res = await fetch(`${BASE_URL}/onboarding/roadmap/evaluate-answer`, {
+		method: 'POST',
+		headers: authHeaders(),
+		body: JSON.stringify(payload),
+	})
+	return handleResponse<EvaluateAnswerResponse>(res)
+}

@@ -17,10 +17,13 @@ import {
     ListChecks,
     MessageSquareText,
     NotebookPen,
+    Play,
     ScrollText,
     Sparkles,
     Target,
     Volume2,
+    Mic,
+    MicOff,
     type LucideIcon,
 } from "lucide-react";
 
@@ -33,6 +36,8 @@ import {
     fetchLessonQuizState,
     kickoffRoadmapLessonGeneration,
     submitLessonQuiz,
+    evaluateAnswer,
+    type LessonQuizResultDetailResponse,
     type LessonQuizSubmitResponse,
     type LessonQuizStateResponse,
     type RoadmapLesson,
@@ -1655,6 +1660,95 @@ function ReadingPracticeSection({
 }) {
     const [draftAnswers, setDraftAnswers] = useState<Record<number, string>>({});
     const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
+    const [listeningQuestionIndex, setListeningQuestionIndex] = useState<number | null>(null);
+    const [aiFeedback, setAiFeedback] = useState<Record<number, string>>({});
+    const [isEvaluating, setIsEvaluating] = useState<Record<number, boolean>>({});
+    const recognitionRef = useRef<any>(null);
+
+    const handleEvaluate = async (index: number, question: string, referenceAnswer: string) => {
+        const userAnswer = draftAnswers[index]?.trim();
+        if (!userAnswer) return;
+
+        setIsEvaluating((prev) => ({ ...prev, [index]: true }));
+        try {
+            const res = await evaluateAnswer({
+                section_type: "reading",
+                context: section.primary,
+                question: question,
+                reference_answer: referenceAnswer,
+                user_answer: userAnswer,
+            });
+            setAiFeedback((prev) => ({ ...prev, [index]: res.feedback_summary }));
+        } catch (error) {
+            console.error(error);
+            alert("Failed to evaluate answer.");
+        } finally {
+            setIsEvaluating((prev) => ({ ...prev, [index]: false }));
+        }
+    };
+
+    useEffect(() => {
+        return () => {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
+        };
+    }, []);
+
+    const toggleDictation = (index: number) => {
+        if (listeningQuestionIndex === index) {
+            recognitionRef.current?.stop();
+            setListeningQuestionIndex(null);
+            return;
+        }
+
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
+
+        const SpeechRecognition =
+            (window as any).SpeechRecognition ||
+            (window as any).webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+            alert("Your browser does not support Speech Recognition.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        let initialText = draftAnswers[index] || "";
+        if (initialText && !initialText.endsWith(" ")) {
+            initialText += " ";
+        }
+
+        recognition.onresult = (event: any) => {
+            let sessionTranscript = "";
+            for (let i = 0; i < event.results.length; ++i) {
+                sessionTranscript += event.results[i][0].transcript;
+            }
+            setDraftAnswers((prev) => ({
+                ...prev,
+                [index]: initialText + sessionTranscript,
+            }));
+        };
+
+        recognition.onend = () => {
+            setListeningQuestionIndex((prev) => (prev === index ? null : prev));
+        };
+
+        try {
+            recognition.start();
+            recognitionRef.current = recognition;
+            setListeningQuestionIndex(index);
+        } catch (error) {
+            console.error("Speech recognition error:", error);
+            setListeningQuestionIndex(null);
+        }
+    };
 
     return (
         <PanelShell eyebrow="Section 4" title={section.label} note={section.note}>
@@ -1721,16 +1815,59 @@ function ReadingPracticeSection({
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() =>
+                                    onClick={() => toggleDictation(index)}
+                                    className={listeningQuestionIndex === index ? "text-rose-500 hover:text-rose-600 hover:bg-rose-50" : ""}
+                                >
+                                    {listeningQuestionIndex === index ? (
+                                        <>
+                                            <MicOff className="mr-2 h-4 w-4 animate-pulse" /> Stop Dictating
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Mic className="mr-2 h-4 w-4" /> Dictate
+                                        </>
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEvaluate(index, qa.question, qa.answer)}
+                                    disabled={!draft || isEvaluating[index]}
+                                >
+                                    {isEvaluating[index] ? (
+                                        "Evaluating..."
+                                    ) : (
+                                        <>
+                                            <Sparkles className="mr-2 h-4 w-4 text-indigo-500" /> Evaluate
+                                        </>
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
                                         setDraftAnswers((prev) => ({
                                             ...prev,
                                             [index]: "",
-                                        }))
-                                    }
+                                        }));
+                                        setAiFeedback((prev) => ({
+                                            ...prev,
+                                            [index]: "",
+                                        }));
+                                    }}
                                 >
                                     Clear
                                 </Button>
                             </div>
+
+                            {aiFeedback[index] ? (
+                                <div className="mt-4 rounded-2xl bg-indigo-50/50 p-4 text-sm leading-6 text-indigo-900 border border-indigo-100 dark:bg-indigo-950/30 dark:border-indigo-900/50 dark:text-indigo-100 animate-in fade-in slide-in-from-top-2">
+                                    <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-400">
+                                        <Sparkles className="h-3 w-3" /> AI Feedback
+                                    </p>
+                                    <p className="mt-2">{aiFeedback[index]}</p>
+                                </div>
+                            ) : null}
 
                             {isRevealed ? (
                                 <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-slate-700 dark:bg-emerald-950/30 dark:text-slate-200 animate-in fade-in">
@@ -1764,10 +1901,17 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
 
     let partA = section.secondary;
     let partB = "";
-    if (section.secondary.includes(" || ")) {
-        const [a, b] = section.secondary.split(" || ");
-        partA = a;
-        partB = b;
+    
+    const splitRegex = /(?:\s*\|\|\s*|\s*\|\s*)(?=Practice\s*Tasks\s*:)/i;
+    const parts = section.secondary.split(splitRegex);
+    
+    if (parts.length > 1) {
+        partA = parts[0];
+        partB = parts.slice(1).join(" | ");
+    } else if (section.secondary.includes(" || ")) {
+        const fallbackParts = section.secondary.split(" || ");
+        partA = fallbackParts[0];
+        partB = fallbackParts.slice(1).join(" || ");
     }
 
     const highlights = parseDialogueHighlights(partA);
@@ -1776,7 +1920,96 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
         : [];
 
     const [userReplies, setUserReplies] = useState<Record<number, string>>({});
+    const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
+    const [listeningQuestionIndex, setListeningQuestionIndex] = useState<number | null>(null);
+    const [aiFeedback, setAiFeedback] = useState<Record<number, string>>({});
+    const [isEvaluating, setIsEvaluating] = useState<Record<number, boolean>>({});
+    const recognitionRef = useRef<any>(null);
 
+    const handleEvaluate = async (index: number, promptText: string, suggestedAnswer: string) => {
+        const userAnswer = userReplies[index]?.trim();
+        if (!userAnswer) return;
+
+        setIsEvaluating((prev) => ({ ...prev, [index]: true }));
+        try {
+            const res = await evaluateAnswer({
+                section_type: "dialogue",
+                context: contextText,
+                question: promptText,
+                reference_answer: suggestedAnswer || "No reference answer provided.",
+                user_answer: userAnswer,
+            });
+            setAiFeedback((prev) => ({ ...prev, [index]: res.feedback_summary }));
+        } catch (error) {
+            console.error(error);
+            alert("Failed to evaluate answer.");
+        } finally {
+            setIsEvaluating((prev) => ({ ...prev, [index]: false }));
+        }
+    };
+
+    useEffect(() => {
+        return () => {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
+        };
+    }, []);
+
+    const toggleDictation = (index: number) => {
+        if (listeningQuestionIndex === index) {
+            recognitionRef.current?.stop();
+            setListeningQuestionIndex(null);
+            return;
+        }
+
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
+
+        const SpeechRecognition =
+            (window as any).SpeechRecognition ||
+            (window as any).webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+            alert("Your browser does not support Speech Recognition.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        let initialText = userReplies[index] || "";
+        if (initialText && !initialText.endsWith(" ")) {
+            initialText += " ";
+        }
+
+        recognition.onresult = (event: any) => {
+            let sessionTranscript = "";
+            for (let i = 0; i < event.results.length; ++i) {
+                sessionTranscript += event.results[i][0].transcript;
+            }
+            setUserReplies((prev) => ({
+                ...prev,
+                [index]: initialText + sessionTranscript,
+            }));
+        };
+
+        recognition.onend = () => {
+            setListeningQuestionIndex((prev) => (prev === index ? null : prev));
+        };
+
+        try {
+            recognition.start();
+            recognitionRef.current = recognition;
+            setListeningQuestionIndex(index);
+        } catch (error) {
+            console.error("Speech recognition error:", error);
+            setListeningQuestionIndex(null);
+        }
+    };
     return (
         <PanelShell eyebrow="Section 5" title={section.label} note={section.note}>
             {/* Scenario Setting / Context Banner */}
@@ -1877,35 +2110,124 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
                     </div>
 
                     <div className="mt-5 space-y-4">
-                        {practiceTasks.map((task, idx) => (
-                            <div
-                                key={idx}
-                                className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950 shadow-sm"
-                            >
-                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                    {task}
-                                </p>
-                                <textarea
-                                    value={userReplies[idx] ?? ""}
-                                    onChange={(e) =>
-                                        setUserReplies((prev) => ({
-                                            ...prev,
-                                            [idx]: e.target.value,
-                                        }))
-                                    }
-                                    placeholder="Type your response here and practice speaking it out loud..."
-                                    className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-400 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                                />
-                                {userReplies[idx] && (
-                                    <div className="mt-2.5 flex justify-end">
-                                        <AudioSpeakButton
-                                            text={userReplies[idx]}
-                                            label="Listen to my response"
-                                        />
+                        {practiceTasks.map((taskRaw, idx) => {
+                            const parts = taskRaw.split(/->\s*Suggested Answer:/i);
+                            const promptText = parts[0].trim();
+                            const suggestedAnswer = parts.length > 1 ? parts[1].trim() : null;
+                            const isRevealed = Boolean(revealedAnswers[idx]);
+
+                            return (
+                                <div
+                                    key={idx}
+                                    className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950 shadow-sm"
+                                >
+                                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                        {promptText}
+                                    </p>
+                                    <textarea
+                                        value={userReplies[idx] ?? ""}
+                                        onChange={(e) =>
+                                            setUserReplies((prev) => ({
+                                                ...prev,
+                                                [idx]: e.target.value,
+                                            }))
+                                        }
+                                        placeholder="Type your response here and practice speaking it out loud..."
+                                        className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-400 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                                    />
+                                    <div className="mt-2.5 flex justify-between items-center flex-wrap gap-2">
+                                        <div>
+                                            {suggestedAnswer && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        setRevealedAnswers((prev) => ({
+                                                            ...prev,
+                                                            [idx]: !prev[idx],
+                                                        }))
+                                                    }
+                                                >
+                                                    {isRevealed ? "Hide answer" : "Show answer"}
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <div className="flex gap-2 justify-end">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => toggleDictation(idx)}
+                                                className={listeningQuestionIndex === idx ? "text-rose-500 hover:text-rose-600 hover:bg-rose-50" : ""}
+                                            >
+                                                {listeningQuestionIndex === idx ? (
+                                                    <>
+                                                        <MicOff className="mr-2 h-4 w-4 animate-pulse" /> Stop Dictating
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Mic className="mr-2 h-4 w-4" /> Dictate
+                                                    </>
+                                                )}
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleEvaluate(idx, promptText, suggestedAnswer || "")}
+                                                disabled={!userReplies[idx]?.trim() || isEvaluating[idx]}
+                                            >
+                                                {isEvaluating[idx] ? (
+                                                    "Evaluating..."
+                                                ) : (
+                                                    <>
+                                                        <Sparkles className="mr-2 h-4 w-4 text-indigo-500" /> Evaluate
+                                                    </>
+                                                )}
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setUserReplies((prev) => ({
+                                                        ...prev,
+                                                        [idx]: "",
+                                                    }));
+                                                    setAiFeedback((prev) => ({
+                                                        ...prev,
+                                                        [idx]: "",
+                                                    }));
+                                                }}
+                                            >
+                                                Clear
+                                            </Button>
+                                            {userReplies[idx] && (
+                                                <AudioSpeakButton
+                                                    text={userReplies[idx]}
+                                                    label="Listen to my response"
+                                                />
+                                            )}
+                                        </div>
                                     </div>
-                                )}
-                            </div>
-                        ))}
+                                    
+                                    {aiFeedback[idx] ? (
+                                        <div className="mt-4 rounded-2xl bg-indigo-50/50 p-4 text-sm leading-6 text-indigo-900 border border-indigo-100 dark:bg-indigo-950/30 dark:border-indigo-900/50 dark:text-indigo-100 animate-in fade-in slide-in-from-top-2">
+                                            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-400">
+                                                <Sparkles className="h-3 w-3" /> AI Feedback
+                                            </p>
+                                            <p className="mt-2">{aiFeedback[idx]}</p>
+                                        </div>
+                                    ) : null}
+                                    
+                                    {isRevealed && suggestedAnswer && (
+                                        <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-slate-700 dark:bg-emerald-950/30 dark:text-slate-200 animate-in fade-in">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
+                                                Suggested answer
+                                            </p>
+                                            <p className="mt-1">{suggestedAnswer}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}
@@ -1920,6 +2242,10 @@ function ListeningPracticeSection({
 }) {
     const [draftAnswers, setDraftAnswers] = useState<Record<number, string>>({});
     const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
+    const [listeningQuestionIndex, setListeningQuestionIndex] = useState<number | null>(null);
+    const [aiFeedback, setAiFeedback] = useState<Record<number, string>>({});
+    const [isEvaluating, setIsEvaluating] = useState<Record<number, boolean>>({});
+    const recognitionRef = useRef<any>(null);
 
     const rawScript = section.primary;
     const scriptText = rawScript
@@ -1927,6 +2253,91 @@ function ListeningPracticeSection({
         .replace(/^\[.*?\]\s*:\s*/i, "")
         .replace(/^["']|["']$/g, "")
         .trim();
+
+    const handleEvaluate = async (index: number, question: string, referenceAnswer: string) => {
+        const userAnswer = draftAnswers[index]?.trim();
+        if (!userAnswer) return;
+
+        setIsEvaluating((prev) => ({ ...prev, [index]: true }));
+        try {
+            const res = await evaluateAnswer({
+                section_type: "listening",
+                context: scriptText,
+                question: question,
+                reference_answer: referenceAnswer,
+                user_answer: userAnswer,
+            });
+            setAiFeedback((prev) => ({ ...prev, [index]: res.feedback_summary }));
+        } catch (error) {
+            console.error(error);
+            alert("Failed to evaluate answer.");
+        } finally {
+            setIsEvaluating((prev) => ({ ...prev, [index]: false }));
+        }
+    };
+
+    useEffect(() => {
+        return () => {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
+        };
+    }, []);
+
+    const toggleDictation = (index: number) => {
+        if (listeningQuestionIndex === index) {
+            recognitionRef.current?.stop();
+            setListeningQuestionIndex(null);
+            return;
+        }
+
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
+
+        const SpeechRecognition =
+            (window as any).SpeechRecognition ||
+            (window as any).webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+            alert("Your browser does not support Speech Recognition.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        let initialText = draftAnswers[index] || "";
+        if (initialText && !initialText.endsWith(" ")) {
+            initialText += " ";
+        }
+
+        recognition.onresult = (event: any) => {
+            let sessionTranscript = "";
+            for (let i = 0; i < event.results.length; ++i) {
+                sessionTranscript += event.results[i][0].transcript;
+            }
+            setDraftAnswers((prev) => ({
+                ...prev,
+                [index]: initialText + sessionTranscript,
+            }));
+        };
+
+        recognition.onend = () => {
+            setListeningQuestionIndex((prev) => (prev === index ? null : prev));
+        };
+
+        try {
+            recognition.start();
+            recognitionRef.current = recognition;
+            setListeningQuestionIndex(index);
+        } catch (error) {
+            console.error("Speech recognition error:", error);
+            setListeningQuestionIndex(null);
+        }
+    };
 
     const questions = parseReadingQuestions(section.secondary);
 
@@ -1990,16 +2401,59 @@ function ListeningPracticeSection({
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() =>
+                                    onClick={() => toggleDictation(index)}
+                                    className={listeningQuestionIndex === index ? "text-rose-500 hover:text-rose-600 hover:bg-rose-50" : ""}
+                                >
+                                    {listeningQuestionIndex === index ? (
+                                        <>
+                                            <MicOff className="mr-2 h-4 w-4 animate-pulse" /> Stop Dictating
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Mic className="mr-2 h-4 w-4" /> Dictate
+                                        </>
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEvaluate(index, qa.question, qa.answer)}
+                                    disabled={!draft || isEvaluating[index]}
+                                >
+                                    {isEvaluating[index] ? (
+                                        "Evaluating..."
+                                    ) : (
+                                        <>
+                                            <Sparkles className="mr-2 h-4 w-4 text-indigo-500" /> Evaluate
+                                        </>
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
                                         setDraftAnswers((prev) => ({
                                             ...prev,
                                             [index]: "",
-                                        }))
-                                    }
+                                        }));
+                                        setAiFeedback((prev) => ({
+                                            ...prev,
+                                            [index]: "",
+                                        }));
+                                    }}
                                 >
                                     Clear
                                 </Button>
                             </div>
+
+                            {aiFeedback[index] ? (
+                                <div className="mt-4 rounded-2xl bg-indigo-50/50 p-4 text-sm leading-6 text-indigo-900 border border-indigo-100 dark:bg-indigo-950/30 dark:border-indigo-900/50 dark:text-indigo-100 animate-in fade-in slide-in-from-top-2">
+                                    <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-400">
+                                        <Sparkles className="h-3 w-3" /> AI Feedback
+                                    </p>
+                                    <p className="mt-2">{aiFeedback[index]}</p>
+                                </div>
+                            ) : null}
 
                             {isRevealed && (
                                 <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-slate-700 dark:bg-emerald-950/30 dark:text-slate-200 animate-in fade-in">
