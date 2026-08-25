@@ -6,6 +6,8 @@ import type {
 	StudySettingsUpdateRequest,
 	UserProfileResponse,
 	UserResponse,
+	AICoachMessageRequest,
+	AICoachMessageResponse,
 } from '../type/Auth'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api'
@@ -73,3 +75,15 @@ export async function updateStudySettings(
 	})
 	return handleResponse<UserProfileResponse>(res)
 }
+
+export async function generateAICoachMessage(
+	data: AICoachMessageRequest,
+): Promise<AICoachMessageResponse> {
+	const res = await fetch(`${BASE_URL}/auth/me/ai-coach-message`, {
+		method: 'POST',
+		headers: authHeaders(),
+		body: JSON.stringify(data),
+	})
+	return handleResponse<AICoachMessageResponse>(res)
+}
+
