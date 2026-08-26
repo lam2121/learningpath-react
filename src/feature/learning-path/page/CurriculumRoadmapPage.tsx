@@ -247,7 +247,7 @@ function LessonCard({ lesson }: { lesson: RoadmapLesson }) {
 
 export function CurriculumRoadmapPage() {
     const { topicId: requestedTopicId } = useSearch({
-        from: "/_protected/_user/lessons/learning-path",
+        from: "/_protected/_user/_enrolled/lessons/learning-path",
     });
     const [roadmapTrack, setRoadmapTrack] = useState<string | null>(null);
     const [careerTrackName, setCareerTrackName] = useState<string | null>(null);

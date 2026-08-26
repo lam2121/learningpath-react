@@ -364,7 +364,7 @@ export function PlacementTestEngine() {
       .finally(() => {
         localStorage.removeItem('pending_survey_answers')
         localStorage.removeItem('pending_role_id')
-        navigate({ to: '/placement-result', state: { results: finalResults } as HistoryState })
+        navigate({ to: '/onboarding/placement-result', state: { results: finalResults } as HistoryState })
       })
   }
 
