@@ -4,10 +4,6 @@ import tmaLogo from '@/asset/image/tma_logo.png'
 import { fetchJobRoles, type JobRole, type JobRoleSkillDefinitions } from '../api/onboardingApi'
 import { useAuth } from '@/common/context/AuthContext'
 import { devGenerateCourse, type SkillScores } from '../../dev-mode/api/devModeApi'
-import {
-  clearAnonymousPlacementAttempt,
-  setPlacementMode,
-} from '../anonymousPlacement'
 
 // ─── Dev-mode harness (docs/07 §12.9) ────────────────────────────────────────
 
@@ -681,12 +677,6 @@ export function RoleSelectionGrid() {
     setShowConfirmModal(false)
     localStorage.removeItem('pending_survey_answers')
     localStorage.setItem('pending_role_id', selectedRoleId.toString())
-    if (isAuthenticated) {
-      setPlacementMode('authenticated')
-      clearAnonymousPlacementAttempt()
-    } else {
-      setPlacementMode('anonymous')
-    }
     navigate({ to: '/placement-test' })
   }
 

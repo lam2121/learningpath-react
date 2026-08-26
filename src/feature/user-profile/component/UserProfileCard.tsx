@@ -180,7 +180,7 @@ export function UserProfileCard() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const roadmapLessonIdsRef = useRef<Set<number>>(new Set());
 
-    const displayName = user?.username ?? user?.email ?? "Anonymous";
+    const displayName = user?.username ?? user?.email ?? "User";
     const initials = displayName
         .split(" ")
         .map((part) => part[0]?.toUpperCase() ?? "")
@@ -369,7 +369,7 @@ export function UserProfileCard() {
     };
 
     return (
-        <Card className="overflow-hidden border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+        <Card className="gap-0 overflow-hidden border border-slate-200 bg-white py-0 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
             <div className="relative h-24 overflow-hidden bg-[linear-gradient(135deg,#1550c9_0%,#0f8ed8_48%,#8ae1ff_100%)]">
                 <div className="pointer-events-none absolute inset-x-0 top-[-3.5rem] h-28 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.82)_0%,rgba(255,255,255,0.32)_44%,rgba(255,255,255,0)_82%)]" />
                 <svg
@@ -457,7 +457,7 @@ export function UserProfileCard() {
                                     </div>
                                 </div>
 
-                                <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[330px]">
+                                <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[330px] lg:pt-3">
                                     <div className="rounded-2xl border border-emerald-100 bg-[linear-gradient(135deg,#ecfdf5_0%,#f0fdf4_100%)] px-4 py-3">
                                         <div className="flex items-center gap-2 text-emerald-700">
                                             <CalendarDays className="h-4 w-4 shrink-0" />

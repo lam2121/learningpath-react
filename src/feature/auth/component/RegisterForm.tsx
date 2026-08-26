@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Eye, EyeOff } from 'lucide-react'
 import { registerUser } from '../api/authAPI'
-import { getAnonymousPlacementAttempt } from '@/feature/onboarding/anonymousPlacement'
 
 export function RegisterForm() {
 	const navigate = useNavigate()
@@ -62,12 +61,7 @@ export function RegisterForm() {
 				name: form.fullName,
 				password: form.password,
 			})
-			const hasAnonymousPlacement = getAnonymousPlacementAttempt() !== null
-			await setSuccess(
-				hasAnonymousPlacement
-					? 'Account created. Sign in to save your placement test result.'
-					: 'Đăng ký thành công',
-			)
+			await setSuccess('Đăng ký thành công')
 			setTimeout(() => {
 				navigate({ to: "/login" });
 			}, 1000)

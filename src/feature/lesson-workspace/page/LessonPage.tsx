@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type WheelEvent as ReactWheelEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
     ArrowLeft,
@@ -80,6 +80,45 @@ import { ListeningAudioPlayer } from "../component/ListeningAudioPlayer";
 import { getTTSStreamUrl } from "@/feature/audio/audioApi";
 
 let activeGlobalAudio: HTMLAudioElement | null = null;
+
+type BrowserHistoryState = Record<string, unknown>;
+
+function readBrowserHistoryState(): BrowserHistoryState {
+    return window.history.state && typeof window.history.state === "object"
+        ? window.history.state as BrowserHistoryState
+        : {};
+}
+
+function stripLessonQuizGuardState(state: BrowserHistoryState): BrowserHistoryState {
+    const nextState = { ...state };
+    delete nextState.lessonQuizGuard;
+    return nextState;
+}
+
+function stripEmbeddedLessonQuizViewState(state: BrowserHistoryState): BrowserHistoryState {
+    const nextState = { ...state };
+    delete nextState.embeddedLessonQuizView;
+    return nextState;
+}
+
+function readEmbeddedLessonQuizViewFromHistoryState(state: BrowserHistoryState) {
+    if (!("embeddedLessonQuizView" in state)) {
+        return null;
+    }
+
+    const rawView = state.embeddedLessonQuizView;
+    if (!rawView || typeof rawView !== "object" || Array.isArray(rawView)) {
+        return null;
+    }
+
+    const view = rawView as {
+        lessonId?: number;
+        mode?: "summary" | "review";
+        questionIndex?: number | null;
+    };
+
+    return view;
+}
 
 function stopSpeech() {
     if (activeGlobalAudio) {
@@ -2739,14 +2778,26 @@ function EmbeddedLessonQuiz({
     const activeQuestionRef = useRef<HTMLDivElement | null>(null);
     const previousQuestionIndexRef = useRef(0);
     const hasInitializedReviewHistoryRef = useRef(false);
+    const lastEmbeddedHistoryViewModeRef = useRef<"summary" | "review" | null>(null);
+    const bypassSubmittedQuizGhostHistoryRef = useRef(false);
+    const navigatorScrollFrameRef = useRef<number | null>(null);
+    const navigatorScrollTargetRef = useRef(0);
+
+    const stopQuestionNavigatorAnimation = useCallback(() => {
+        if (navigatorScrollFrameRef.current !== null) {
+            window.cancelAnimationFrame(navigatorScrollFrameRef.current);
+            navigatorScrollFrameRef.current = null;
+        }
+
+        const navigator = questionNavigatorRef.current;
+        navigatorScrollTargetRef.current = navigator?.scrollLeft ?? 0;
+    }, []);
 
     const buildQuizReviewHistoryState = useCallback((
         mode: "summary" | "review",
         questionIndex?: number,
     ) => ({
-        ...(window.history.state && typeof window.history.state === "object"
-            ? window.history.state
-            : {}),
+        ...stripLessonQuizGuardState(readBrowserHistoryState()),
         embeddedLessonQuizView: {
             lessonId,
             mode,
@@ -2991,7 +3042,17 @@ function EmbeddedLessonQuiz({
         }
 
         hasInitializedReviewHistoryRef.current = false;
+        lastEmbeddedHistoryViewModeRef.current = null;
     }, [isActive]);
+
+    useEffect(() => {
+        if (!quizStarted || !submitted) {
+            lastEmbeddedHistoryViewModeRef.current = null;
+            return;
+        }
+
+        lastEmbeddedHistoryViewModeRef.current = showSummary ? "summary" : "review";
+    }, [quizStarted, showSummary, submitted]);
 
     useEffect(() => {
         if (!quizStarted || !submitted || !isActive) {
@@ -3038,6 +3099,11 @@ function EmbeddedLessonQuiz({
         }
 
         const handlePopState = () => {
+            if (bypassSubmittedQuizGhostHistoryRef.current) {
+                bypassSubmittedQuizGhostHistoryRef.current = false;
+                return;
+            }
+
             const historyState = window.history.state;
             const rawView =
                 historyState
@@ -3053,10 +3119,15 @@ function EmbeddedLessonQuiz({
                     : undefined;
 
             if (!rawView || rawView.lessonId !== lessonId) {
+                if (lastEmbeddedHistoryViewModeRef.current !== null) {
+                    bypassSubmittedQuizGhostHistoryRef.current = true;
+                    window.history.back();
+                }
                 return;
             }
 
             if (rawView.mode === "summary") {
+                lastEmbeddedHistoryViewModeRef.current = "summary";
                 setShowSummary(true);
                 return;
             }
@@ -3068,6 +3139,7 @@ function EmbeddedLessonQuiz({
                         Math.max(0, questions.length - 1),
                     )
                     : 0;
+                lastEmbeddedHistoryViewModeRef.current = "review";
                 setCurrentQuestionIndex(nextIndex);
                 setShowSummary(false);
             }
@@ -3427,12 +3499,73 @@ function EmbeddedLessonQuiz({
         }));
     };
 
+    const animateQuestionNavigatorScroll = useCallback(() => {
+        const navigator = questionNavigatorRef.current;
+        if (!navigator) {
+            navigatorScrollFrameRef.current = null;
+            return;
+        }
+
+        const distance = navigatorScrollTargetRef.current - navigator.scrollLeft;
+
+        if (Math.abs(distance) < 0.5) {
+            navigator.scrollLeft = navigatorScrollTargetRef.current;
+            navigatorScrollFrameRef.current = null;
+            return;
+        }
+
+        navigator.scrollLeft += distance * 0.14;
+        navigatorScrollFrameRef.current = window.requestAnimationFrame(animateQuestionNavigatorScroll);
+    }, []);
+
+    const handleQuestionNavigatorWheel = useCallback((event: ReactWheelEvent<HTMLDivElement>) => {
+        const navigator = questionNavigatorRef.current;
+        if (!navigator) {
+            return;
+        }
+
+        const horizontalDelta = event.deltaX;
+        const verticalDelta = event.deltaY;
+        const primaryDelta = Math.abs(verticalDelta) > Math.abs(horizontalDelta)
+            ? verticalDelta
+            : horizontalDelta;
+
+        if (primaryDelta === 0) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        const maxScrollLeft = Math.max(0, navigator.scrollWidth - navigator.clientWidth);
+        const baseScrollLeft = navigatorScrollFrameRef.current === null
+            ? navigator.scrollLeft
+            : navigatorScrollTargetRef.current;
+        navigatorScrollTargetRef.current = Math.min(
+            maxScrollLeft,
+            Math.max(0, baseScrollLeft + primaryDelta * 1.1),
+        );
+
+        if (navigatorScrollFrameRef.current === null) {
+            navigatorScrollFrameRef.current = window.requestAnimationFrame(animateQuestionNavigatorScroll);
+        }
+    }, [animateQuestionNavigatorScroll]);
+
+    useEffect(() => stopQuestionNavigatorAnimation, [stopQuestionNavigatorAnimation]);
+
 
 
     const questionNavigator = (
         <div
             ref={questionNavigatorRef}
-            className="flex gap-2 overflow-x-auto pb-5 pt-1 px-0.5"
+            onWheel={handleQuestionNavigatorWheel}
+            onMouseDown={stopQuestionNavigatorAnimation}
+            onTouchStart={stopQuestionNavigatorAnimation}
+            onScroll={() => {
+                if (navigatorScrollFrameRef.current === null) {
+                    navigatorScrollTargetRef.current = questionNavigatorRef.current?.scrollLeft ?? 0;
+                }
+            }}
+            className="flex gap-2 overflow-x-auto overscroll-x-contain overscroll-y-contain pb-5 pt-1 px-0.5"
         >
             {questions.map((question, index) => {
                 const isActive = index === currentQuestionIndex;
@@ -3744,22 +3877,6 @@ function EmbeddedLessonQuiz({
                             </div>
                         ) : null}
 
-                        {hintModeUnlocked ? (
-                            <div className="rounded-3xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900 dark:bg-amber-950/30 sm:px-5">
-                                <div className="min-w-0">
-                                    <div className="flex items-center gap-2 text-amber-900 dark:text-amber-100">
-                                        <Lightbulb className="h-4 w-4" />
-                                        <p className="text-sm font-semibold">Hint mode is active</p>
-                                    </div>
-                                    <p className="mt-2 text-sm leading-6 text-amber-800 dark:text-amber-200">
-                                        Use a hint if you need it. The correct answer will be
-                                        filled in automatically, and that question will score{" "}
-                                        {Math.round(HINT_CREDIT * 100)}% credit instead of 100%.
-                                    </p>
-                                </div>
-                            </div>
-                        ) : null}
-
                         {questionNavigator}
 
                         {showSummary ? (
@@ -3791,7 +3908,7 @@ function EmbeddedLessonQuiz({
                                             ? "You passed this lesson check. Review any question from the navigator above, restart if you want another attempt, or continue once the next lesson is ready."
                                             : lessonPassed
                                                 ? "This retake did not pass, but the lesson is already marked as passed. You can review any question, restart again, or continue once the next lesson is ready."
-                                                : "Review any question from the navigator above, or restart the quiz to try again. You need a weighted 70% score to unlock the continue action for the next lesson."}
+                                                : "Review any question from the navigator above, or restart the quiz to try again."}
                                     </p>
                                     {savedQuizState?.current_skill_score !== null && savedQuizState?.current_skill_score !== undefined ? (
                                         <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-900 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-100">
@@ -3816,18 +3933,44 @@ function EmbeddedLessonQuiz({
                                             <p className="mt-1 font-semibold text-slate-950 dark:text-white">{failedAttempts}</p>
                                         </div>
                                     </div>
-                                    {!lessonPassed && failedAttempts + 1 === HINT_UNLOCK_AFTER_FAILURES ? (
-                                        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                                            One more failed attempt will unlock hint mode for this lesson.
+                                    {!lessonPassed && (
+                                        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                                            {nextLesson ? (
+                                                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900 dark:bg-amber-950/40">
+                                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
+                                                        Next lesson lock
+                                                    </p>
+                                                    <p className="mt-2 text-sm text-amber-900 dark:text-amber-200">
+                                                        {nextLessonIsReady
+                                                            ? "The next lesson is ready, but it stays locked until you pass this quiz with a weighted score of at least 70%."
+                                                            : "The next lesson stays locked until you pass this quiz with a weighted score of at least 70%."}
+                                                    </p>
+                                                </div>
+                                            ) : null}
+                                            {failedAttempts + 1 === HINT_UNLOCK_AFTER_FAILURES ? (
+                                                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900 dark:bg-amber-950/40">
+                                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
+                                                        Hint mode
+                                                    </p>
+                                                    <p className="mt-2 text-sm text-amber-900 dark:text-amber-200">
+                                                        One more failed attempt will unlock hint mode for this lesson.
+                                                    </p>
+                                                </div>
+                                            ) : null}
+                                            {hintModeUnlocked ? (
+                                                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900 dark:bg-amber-950/40">
+                                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
+                                                        Hint mode
+                                                    </p>
+                                                    <p className="mt-2 text-sm text-amber-900 dark:text-amber-200">
+                                                        Hint mode is now available on your next retry. Each hinted
+                                                        answer auto-fills the correct response and counts as{" "}
+                                                        {Math.round(HINT_CREDIT * 100)}% credit.
+                                                    </p>
+                                                </div>
+                                            ) : null}
                                         </div>
-                                    ) : null}
-                                    {!lessonPassed && hintModeUnlocked ? (
-                                        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                                            Hint mode is now available on your next retry. Each hinted
-                                            answer auto-fills the correct response and counts as{" "}
-                                            {Math.round(HINT_CREDIT * 100)}% credit.
-                                        </div>
-                                    ) : null}
+                                    )}
                                     <div className="mt-5 flex flex-wrap gap-3">
                                         <Button className="w-full sm:w-auto" onClick={handleRestart}>Restart quiz</Button>
                                         <Button
@@ -3848,11 +3991,6 @@ function EmbeddedLessonQuiz({
                                             </Button>
                                         ) : null}
                                     </div>
-                                    {!lessonPassed && nextLesson && nextLessonIsReady ? (
-                                        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                                            The next lesson is ready, but it stays locked until you pass this quiz with a weighted score of at least 70%.
-                                        </div>
-                                    ) : null}
                                 </div>
 
                                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -4109,7 +4247,8 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
     const [isQuizNavigationGuardActive, setIsQuizNavigationGuardActive] = useState(false);
     const [showQuizLeaveWarning, setShowQuizLeaveWarning] = useState(false);
     const [pendingSectionTarget, setPendingSectionTarget] = useState<SidebarSectionKey | null>(null);
-    const [pendingNavigationKind, setPendingNavigationKind] = useState<"section" | "roadmap" | "browser" | null>(null);
+    const [pendingMainNavTarget, setPendingMainNavTarget] = useState<string | null>(null);
+    const [pendingNavigationKind, setPendingNavigationKind] = useState<"section" | "roadmap" | "browser" | "main-nav" | null>(null);
     const bypassQuizBrowserGuardRef = useRef(false);
 
     const shouldGuardQuizNavigation =
@@ -4120,9 +4259,44 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
     }, [lessonId]);
 
     useEffect(() => {
+        if (!Number.isFinite(userId)) {
+            return;
+        }
+
+        const syncQuizSectionFromHistory = () => {
+            const historyState = readBrowserHistoryState();
+            const quizView = readEmbeddedLessonQuizViewFromHistoryState(historyState);
+            const targetsCurrentLessonQuiz =
+                quizView?.lessonId === lessonId
+                || historyState.lessonQuizGuard === true;
+
+            if (!targetsCurrentLessonQuiz) {
+                return;
+            }
+
+            const hasSavedCompletedQuiz =
+                readEmbeddedLessonQuizCompletedSnapshot(userId, lessonId) !== null;
+            const hasSavedQuizDraft =
+                readEmbeddedLessonQuizDraft(userId, lessonId) !== null;
+
+            if (hasSavedCompletedQuiz || hasSavedQuizDraft) {
+                setActiveSection("quiz");
+            }
+        };
+
+        syncQuizSectionFromHistory();
+        window.addEventListener("popstate", syncQuizSectionFromHistory);
+
+        return () => {
+            window.removeEventListener("popstate", syncQuizSectionFromHistory);
+        };
+    }, [lessonId, userId]);
+
+    useEffect(() => {
         if (!shouldGuardQuizNavigation) {
             setShowQuizLeaveWarning(false);
             setPendingSectionTarget(null);
+            setPendingMainNavTarget(null);
             setPendingNavigationKind(null);
         }
     }, [shouldGuardQuizNavigation]);
@@ -4343,14 +4517,22 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
 
     useEffect(() => {
         if (!shouldGuardQuizNavigation) {
+            const currentState = readBrowserHistoryState();
+            if ("lessonQuizGuard" in currentState) {
+                window.history.replaceState(
+                    stripLessonQuizGuardState(currentState),
+                    "",
+                    window.location.href,
+                );
+            }
             return;
         }
 
         window.history.pushState(
             {
-                ...(window.history.state && typeof window.history.state === "object"
-                    ? window.history.state
-                    : {}),
+                ...stripEmbeddedLessonQuizViewState(
+                    stripLessonQuizGuardState(readBrowserHistoryState()),
+                ),
                 lessonQuizGuard: true,
             },
             "",
@@ -4365,15 +4547,16 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
 
             window.history.pushState(
                 {
-                    ...(window.history.state && typeof window.history.state === "object"
-                        ? window.history.state
-                        : {}),
+                    ...stripEmbeddedLessonQuizViewState(
+                        stripLessonQuizGuardState(readBrowserHistoryState()),
+                    ),
                     lessonQuizGuard: true,
                 },
                 "",
                 window.location.href,
             );
             setPendingSectionTarget(null);
+            setPendingMainNavTarget(null);
             setPendingNavigationKind("browser");
             setShowQuizLeaveWarning(true);
         };
@@ -4395,6 +4578,7 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
     const handleSectionChange = useCallback((sectionKey: SidebarSectionKey) => {
         if (shouldGuardQuizNavigation && sectionKey !== "quiz") {
             setPendingSectionTarget(sectionKey);
+            setPendingMainNavTarget(null);
             setPendingNavigationKind("section");
             setShowQuizLeaveWarning(true);
             return;
@@ -4407,6 +4591,7 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
     const handleBackToRoadmap = useCallback(() => {
         if (shouldGuardQuizNavigation) {
             setPendingSectionTarget(null);
+            setPendingMainNavTarget(null);
             setPendingNavigationKind("roadmap");
             setShowQuizLeaveWarning(true);
             return;
@@ -4415,18 +4600,33 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
         void navigate({ to: "/lessons/learning-path" });
     }, [navigate, shouldGuardQuizNavigation]);
 
+    const handleMainNavigationIntent = useCallback((to: string) => {
+        if (!shouldGuardQuizNavigation) {
+            return false;
+        }
+
+        setPendingSectionTarget(null);
+        setPendingMainNavTarget(to);
+        setPendingNavigationKind("main-nav");
+        setShowQuizLeaveWarning(true);
+        return true;
+    }, [shouldGuardQuizNavigation]);
+
     const handleCancelQuizLeave = useCallback(() => {
         setShowQuizLeaveWarning(false);
         setPendingSectionTarget(null);
+        setPendingMainNavTarget(null);
         setPendingNavigationKind(null);
     }, []);
 
     const handleConfirmQuizLeave = useCallback(() => {
         const pendingSection = pendingSectionTarget;
+        const pendingMainNav = pendingMainNavTarget;
         const navigationKind = pendingNavigationKind;
 
         setShowQuizLeaveWarning(false);
         setPendingSectionTarget(null);
+        setPendingMainNavTarget(null);
         setPendingNavigationKind(null);
 
         if (navigationKind === "section" && pendingSection) {
@@ -4440,11 +4640,16 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
             return;
         }
 
+        if (navigationKind === "main-nav" && pendingMainNav) {
+            void navigate({ to: pendingMainNav });
+            return;
+        }
+
         if (navigationKind === "browser") {
             bypassQuizBrowserGuardRef.current = true;
             window.history.go(-2);
         }
-    }, [navigate, pendingNavigationKind, pendingSectionTarget]);
+    }, [navigate, pendingMainNavTarget, pendingNavigationKind, pendingSectionTarget]);
 
     const handleTakeBreakAfterGoal = () => {
         if (Number.isFinite(userId)) {
@@ -4570,7 +4775,10 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
                 onTakeBreak={handleTakeBreakAfterGoal}
                 onKeepLearning={handleKeepLearningAfterGoal}
             />
-            <MainNavigationMenu />
+            <MainNavigationMenu
+                onNavigateIntent={handleMainNavigationIntent}
+                disableStudySettings={shouldGuardQuizNavigation}
+            />
 
             <main className="mx-auto max-w-[1480px] px-3 py-4 sm:px-6 sm:py-6 xl:px-8">
                 <header className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">

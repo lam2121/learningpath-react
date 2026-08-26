@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent as ReactMouseEvent } from "react";
 import {
     NavigationMenu,
     NavigationMenuItem,
@@ -57,7 +57,13 @@ function estimateDays(totalMinutes: number, dailyStudyMinutes: number) {
     return Math.max(1, Math.ceil(totalMinutes / dailyStudyMinutes));
 }
 
-export function MainNavigationMenu() {
+export function MainNavigationMenu({
+    onNavigateIntent,
+    disableStudySettings = false,
+}: {
+    onNavigateIntent?: (to: string) => boolean;
+    disableStudySettings?: boolean;
+}) {
     const router = useRouter();
     const navigate = useNavigate();
     const auth = useAuth();
@@ -155,12 +161,27 @@ export function MainNavigationMenu() {
         );
     };
 
+    const handleNavigationClick = (
+        event: ReactMouseEvent<HTMLElement>,
+        to: string,
+    ) => {
+        if (!onNavigateIntent) {
+            return;
+        }
+
+        const handled = onNavigateIntent(to);
+        if (handled) {
+            event.preventDefault();
+        }
+    };
+
     const NavigationItems = () => (
         <>
             <NavigationMenuItem>
                 <NavigationMenuLink asChild>
                     <Link
-                        to="/home"
+                        to="/"
+                        onClick={(event) => handleNavigationClick(event, "/")}
                         className="!bg-white px-4 py-2 !text-base font-medium"
                     >
                         Home
@@ -172,6 +193,7 @@ export function MainNavigationMenu() {
                 <NavigationMenuLink asChild>
                     <Link
                         to="/lessons/learning-path"
+                        onClick={(event) => handleNavigationClick(event, "/lessons/learning-path")}
                         className="!bg-white px-4 py-2 !text-base font-medium"
                     >
                         Path
@@ -183,6 +205,7 @@ export function MainNavigationMenu() {
                 <NavigationMenuLink asChild>
                     <Link
                         to="/guide"
+                        onClick={(event) => handleNavigationClick(event, "/guide")}
                         className="!bg-white px-4 py-2 !text-base font-medium"
                     >
                         How It Works
@@ -200,7 +223,8 @@ export function MainNavigationMenu() {
                 <div className="flex h-13 w-full items-center justify-between px-4 py-3 sm:px-6">
                     <div className="flex min-w-0 items-center gap-4 lg:gap-6">
                         <Link
-                            to="/home"
+                            to="/"
+                            onClick={(event) => handleNavigationClick(event, "/")}
                             className="flex shrink-0 items-center gap-3"
                         >
                             <CareerpathIcon className="h-10 w-10" />
@@ -260,6 +284,7 @@ export function MainNavigationMenu() {
                                         <DropdownMenuItem asChild>
                                             <Link
                                                 to="/profile"
+                                                onClick={(event) => handleNavigationClick(event, "/profile")}
                                                 className="cursor-pointer text-base font-medium"
                                             >
                                                 <CircleUser className="mr-2 h-4 w-4" />
@@ -272,6 +297,7 @@ export function MainNavigationMenu() {
                                         <DropdownMenuItem asChild>
                                             <Link
                                                 to="/history"
+                                                onClick={(event) => handleNavigationClick(event, "/history")}
                                                 className="cursor-pointer text-base font-medium"
                                             >
                                                 <History className="mr-2 h-4 w-4" />
@@ -281,11 +307,15 @@ export function MainNavigationMenu() {
 
                                         <DropdownMenuSeparator />
 
-                                        <DropdownMenuItem asChild>
+                                        <DropdownMenuItem
+                                            asChild
+                                            disabled={disableStudySettings}
+                                        >
                                             <button
                                                 type="button"
                                                 onClick={() => setOpenSetting(true)}
-                                                className="flex w-full cursor-pointer items-center text-base font-medium"
+                                                disabled={disableStudySettings}
+                                                className="flex w-full cursor-pointer items-center text-base font-medium disabled:cursor-not-allowed"
                                             >
                                                 <Settings className="mr-2 h-4 w-4" />
                                                 <span>Study Settings</span>
@@ -318,6 +348,7 @@ export function MainNavigationMenu() {
                             >
                                 <Link
                                     to="/login"
+                                    onClick={(event) => handleNavigationClick(event, "/login")}
                                     className="flex items-center gap-2"
                                 >
                                     <span>Log-in</span>
@@ -343,7 +374,7 @@ export function MainNavigationMenu() {
                                 side="left"
                                 className="w-[300px] p-0"
                             >
-                                <MobileNav />
+                                <MobileNav onNavigateIntent={onNavigateIntent} />
                             </SheetContent>
                         </Sheet>
                     </div>
@@ -419,7 +450,11 @@ export function MainNavigationMenu() {
     );
 }
 
-function MobileNav() {
+function MobileNav({
+    onNavigateIntent,
+}: {
+    onNavigateIntent?: (to: string) => boolean;
+}) {
     const router = useRouter();
     const navigate = useNavigate();
     const auth = useAuth();
@@ -441,10 +476,28 @@ function MobileNav() {
     const linkClass =
         "flex items-center rounded-lg px-3 py-2 text-base transition-colors hover:bg-accent hover:text-accent-foreground";
 
+    const handleNavigationClick = (
+        event: ReactMouseEvent<HTMLElement>,
+        to: string,
+    ) => {
+        if (!onNavigateIntent) {
+            return;
+        }
+
+        const handled = onNavigateIntent(to);
+        if (handled) {
+            event.preventDefault();
+        }
+    };
+
     return (
         <div className="flex h-full flex-col">
             <div className="border-b px-6 py-4">
-                <Link to="/" className="flex items-center gap-3">
+                <Link
+                    to="/"
+                    onClick={(event) => handleNavigationClick(event, "/")}
+                    className="flex items-center gap-3"
+                >
                     <TmaLogo className="h-8 w-8" />
 
                     <div className="text-lg font-bold text-sidebar-primary">
@@ -457,6 +510,7 @@ function MobileNav() {
             <nav className="flex-1 space-y-1 px-6 py-4">
                 <Link
                     to="/"
+                    onClick={(event) => handleNavigationClick(event, "/")}
                     className={linkClass}
                     activeProps={{
                         className:
@@ -467,25 +521,27 @@ function MobileNav() {
                 </Link>
 
                 <Link
-                    to="/test"
+                    to="/lessons/learning-path"
+                    onClick={(event) => handleNavigationClick(event, "/lessons/learning-path")}
                     className={linkClass}
                     activeProps={{
                         className:
                             "bg-accent text-accent-foreground font-semibold",
                     }}
                 >
-                    Test
+                    Path
                 </Link>
 
                 <Link
                     to="/guide"
+                    onClick={(event) => handleNavigationClick(event, "/guide")}
                     className={linkClass}
                     activeProps={{
                         className:
                             "bg-accent text-accent-foreground font-semibold",
                     }}
                 >
-                    Learning Hub
+                    How It Works
                 </Link>
             </nav>
 
@@ -503,6 +559,7 @@ function MobileNav() {
 
                     <Link
                         to="/history"
+                        onClick={(event) => handleNavigationClick(event, "/history")}
                         className={cn(linkClass, "gap-2")}
                         activeProps={{
                             className:
@@ -527,6 +584,7 @@ function MobileNav() {
                     <Button asChild variant="outline" className="w-full">
                         <Link
                             to="/login"
+                            onClick={(event) => handleNavigationClick(event, "/login")}
                             className="flex items-center justify-center gap-2"
                         >
                             <User className="h-4 w-4" />

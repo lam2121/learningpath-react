@@ -3,6 +3,9 @@ import { PlacementResultPage } from '@/feature/onboarding/page/PlacementResultPa
 
 export const Route = createFileRoute('/placement-result')({
 	beforeLoad: ({ context }) => {
+		if (!context.auth.isAuthenticated) {
+			throw redirect({ to: '/login' })
+		}
 		if (context.auth.user?.role_id === 2) {
 			throw redirect({ to: '/admin' })
 		}

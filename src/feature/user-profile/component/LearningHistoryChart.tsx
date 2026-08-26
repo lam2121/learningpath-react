@@ -308,6 +308,36 @@ function ReadonlyLessonQuizQuestion({
     );
 }
 
+function TopicHistoryHeader({
+    topicLabel,
+    topicName,
+    lessonCountLabel,
+    className = "",
+}: {
+    topicLabel: string;
+    topicName: string;
+    lessonCountLabel?: string;
+    className?: string;
+}) {
+    return (
+        <div
+            className={`flex flex-wrap items-center gap-3 rounded-2xl border border-cyan-200 bg-gradient-to-r from-cyan-100 via-sky-50 to-cyan-200 px-4 py-3 shadow-[0_10px_22px_rgba(0,169,206,0.18)] ${className}`.trim()}
+        >
+            <span className="rounded-full border border-cyan-300 bg-cyan-200 px-3.5 py-1.5 text-sm font-black uppercase tracking-[0.18em] text-[#004a82] shadow-sm">
+                {topicLabel}
+            </span>
+            <span className="text-lg font-black tracking-tight text-slate-900 sm:text-xl">
+                {topicName}
+            </span>
+            {lessonCountLabel ? (
+                <span className="text-sm font-medium text-slate-500">
+                    {lessonCountLabel}
+                </span>
+            ) : null}
+        </div>
+    );
+}
+
 function StudyTimeTooltip({
     active,
     payload,
@@ -1192,17 +1222,12 @@ export function LessonQuizHistoryCard({
                                                 })}
                                             </div>
                                             {selectedTopicMeta ? (
-                                                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-cyan-100 bg-gradient-to-r from-cyan-50 via-white to-cyan-100 px-3 py-2.5 shadow-sm">
-                                                    <span className="rounded-full border border-cyan-200 bg-cyan-100 px-3 py-1 text-sm font-black uppercase tracking-[0.14em] text-[#005596] shadow-sm">
-                                                        Topic {selectedTopicFilter}
-                                                    </span>
-                                                    <span className="text-lg font-black text-slate-900">
-                                                        {selectedTopicMeta.name}
-                                                    </span>
-                                                    <span className="text-sm text-slate-400">
-                                                        - {sortedLessonQuizHistory.length} lesson{sortedLessonQuizHistory.length === 1 ? "" : "s"}
-                                                    </span>
-                                                </div>
+                                                <TopicHistoryHeader
+                                                    topicLabel={`Topic ${selectedTopicFilter}`}
+                                                    topicName={selectedTopicMeta.name}
+                                                    lessonCountLabel={`${sortedLessonQuizHistory.length} lesson${sortedLessonQuizHistory.length === 1 ? "" : "s"}`}
+                                                    className="mt-3"
+                                                />
                                             ) : null}
                                         </div>
                                     ) : null}
@@ -1231,14 +1256,11 @@ export function LessonQuizHistoryCard({
                                             return (
                                                 <div key={entry.lesson_id} className="contents">
                                                     {showTopicSectionHeader ? (
-                                                        <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl border border-cyan-200 bg-gradient-to-r from-cyan-100 via-sky-50 to-cyan-200 px-4 py-3 shadow-[0_10px_22px_rgba(0,169,206,0.18)] xl:col-span-2 first:mt-0">
-                                                            <span className="rounded-full border border-cyan-300 bg-cyan-200 px-3.5 py-1.5 text-sm font-black uppercase tracking-[0.18em] text-[#004a82] shadow-sm">
-                                                                {topicLabel}
-                                                            </span>
-                                                            <span className="text-lg font-black tracking-tight text-slate-900 sm:text-xl">
-                                                                {topicHeader}
-                                                            </span>
-                                                        </div>
+                                                        <TopicHistoryHeader
+                                                            topicLabel={topicLabel}
+                                                            topicName={topicHeader}
+                                                            className="mt-3 xl:col-span-2 first:mt-0"
+                                                        />
                                                     ) : null}
 
                                                     <button
@@ -1482,32 +1504,44 @@ export function LessonQuizHistoryCard({
 
 type LearningHistoryChartProps = {
     showLoginHistory?: boolean;
+    supplementaryPanelHeight?: number | null;
 };
 
 export function LearningHistoryChart({
     showLoginHistory = true,
+    supplementaryPanelHeight = null,
 }: LearningHistoryChartProps) {
     const auth = useAuth();
     const userId = Number(auth.user?.id);
+    const syncedPanelStyle =
+        showLoginHistory && supplementaryPanelHeight && supplementaryPanelHeight > 0
+            ? { height: `${supplementaryPanelHeight}px` }
+            : undefined;
 
     return (
         <div className="space-y-6">
             <SkillsOverview />
 
             <div className={`grid grid-cols-1 gap-4 ${showLoginHistory ? "items-stretch lg:grid-cols-2" : "items-start"}`}>
-                {showLoginHistory ? <LoginHistoryCard stretch /> : null}
+                {showLoginHistory ? (
+                    <div className="min-w-0" style={syncedPanelStyle}>
+                        <LoginHistoryCard stretch />
+                    </div>
+                ) : null}
 
-                <Card className="flex h-full min-w-0 flex-col border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.07)]">
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-xl">Learning Calendar</CardTitle>
-                    </CardHeader>
+                <div className="min-w-0" style={syncedPanelStyle}>
+                    <Card className="flex h-full min-w-0 flex-col border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.07)]">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-xl">Learning Calendar</CardTitle>
+                        </CardHeader>
 
-                    <CardContent className="flex flex-1 flex-col pt-0">
-                        <div className="flex-1">
-                            <LearningCalendar embedded userId={userId} />
-                        </div>
-                    </CardContent>
-                </Card>
+                        <CardContent className="flex flex-1 flex-col pt-0">
+                            <div className="flex-1">
+                                <LearningCalendar embedded userId={userId} />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </div>
     );

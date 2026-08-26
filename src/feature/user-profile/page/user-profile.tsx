@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, BookOpen, Layers3, Loader2 } from "lucide-react";
 
@@ -48,6 +48,8 @@ export function UserProfile() {
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isStudyPlanExpanded, setIsStudyPlanExpanded] = useState(false);
+    const [supplementaryPanelHeight, setSupplementaryPanelHeight] = useState<number | null>(null);
+    const rightRailRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         let isMounted = true;
@@ -93,6 +95,44 @@ export function UserProfile() {
             );
         };
     }, []);
+
+    useEffect(() => {
+        if (!isStudyPlanExpanded) {
+            setSupplementaryPanelHeight(null);
+            return;
+        }
+
+        const node = rightRailRef.current;
+        if (!node) {
+            setSupplementaryPanelHeight(null);
+            return;
+        }
+
+        const updateHeight = () => {
+            if (window.innerWidth < 1024) {
+                setSupplementaryPanelHeight(null);
+                return;
+            }
+
+            setSupplementaryPanelHeight(
+                Math.round(node.getBoundingClientRect().height),
+            );
+        };
+
+        updateHeight();
+
+        const observer = typeof ResizeObserver !== "undefined"
+            ? new ResizeObserver(updateHeight)
+            : null;
+
+        observer?.observe(node);
+        window.addEventListener("resize", updateHeight);
+
+        return () => {
+            observer?.disconnect();
+            window.removeEventListener("resize", updateHeight);
+        };
+    }, [isStudyPlanExpanded]);
 
     const passedLessonIds = useMemo(
         () =>
@@ -212,12 +252,18 @@ export function UserProfile() {
                             </Card>
 
                             <div className="flex-1">
-                                <LearningHistoryChart showLoginHistory={isStudyPlanExpanded} />
+                                <LearningHistoryChart
+                                    showLoginHistory={isStudyPlanExpanded}
+                                    supplementaryPanelHeight={supplementaryPanelHeight}
+                                />
                             </div>
                         </div>
 
                         <aside className="h-full min-w-0">
-                            <div className={`flex h-full flex-col ${isStudyPlanExpanded ? "gap-120" : "gap-3"}`}>
+                            <div
+                                ref={rightRailRef}
+                                className="flex h-full flex-col gap-3"
+                            >
                                 <DailyPlanView
                                     nextTopic={nextTopic}
                                     nextLesson={nextLesson}

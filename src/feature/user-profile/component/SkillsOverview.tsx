@@ -281,7 +281,7 @@ export function SkillsOverview() {
                                     >
                                         <div className="mb-3 grid w-full max-w-[9.5rem] cursor-help grid-cols-2 gap-2.5 sm:max-w-[10.5rem] sm:gap-3">
                                             <div className="flex flex-col items-center">
-                                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
                                                     Initial
                                                 </p>
                                                 <div
@@ -297,7 +297,7 @@ export function SkillsOverview() {
                                                 </p>
                                             </div>
                                             <div className="flex flex-col items-center">
-                                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
                                                     Current
                                                 </p>
                                                 <div

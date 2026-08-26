@@ -1,5 +1,6 @@
 import { cn } from "@/shadcn/lib/util"
 import careerPathImg from "@/asset/image/careerpath_logo.png"
+import careerPathRobot from "@/asset/image/careerpath-robot.png"
 
 export const GoogleIcon = ({ className }: React.ComponentProps<"div">) => {
 	return (
@@ -72,6 +73,15 @@ export const CareerpathIcon = ({ className }: React.ComponentProps<"div">) => {
 		<img
 			src={careerPathImg}
 			alt="CareerPath"
+			className={cn("w-4 h-4 object-contain", className)}
+		/>
+	)
+}
+export const RobotIcon = ({ className }: React.ComponentProps<"div">) => {
+	return (
+		<img
+			src={careerPathRobot}
+			alt="careerPathRobot"
 			className={cn("w-4 h-4 object-contain", className)}
 		/>
 	)
