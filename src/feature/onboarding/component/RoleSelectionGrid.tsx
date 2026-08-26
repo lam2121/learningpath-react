@@ -398,9 +398,9 @@ function ConfirmRoleModal({
           </p>
           <ul className="space-y-2">
             {[
-              { icon: '🎯', text: 'The test will assess your current IT English proficiency.' },
+              { icon: '🎯', text: 'The test will assess your current English proficiency.' },
+              { icon: '🔒', text: 'This test is intended to help assess and find courses that are suitable for you.' },
               { icon: '⏱️', text: 'Once started, you should complete it without interruption.' },
-              { icon: '🔒', text: 'Your career track cannot be changed until the test is completed.' },
             ].map(({ icon, text }) => (
               <li key={text} className="flex items-start gap-2.5 text-xs text-gray-600 leading-relaxed">
                 <span className="text-base flex-shrink-0 mt-0.5">{icon}</span>
@@ -692,7 +692,7 @@ export function RoleSelectionGrid() {
   })
   const [isGeneratingCourse, setIsGeneratingCourse] = useState(false)
   const navigate = useNavigate()
-  const { logout } = useAuth()
+  const { isAuthenticated, logout } = useAuth()
   const { reinitialize: reinitializeRadar } = useRadar()
 
   useEffect(() => {
@@ -784,17 +784,28 @@ export function RoleSelectionGrid() {
       {/* Top Header Bar */}
       <header className="w-full bg-[#0072FF] px-6 py-3.5 flex items-center justify-between shadow-md sticky top-0 z-30">
         <img src={tmaLogo} alt="TMA Solutions" className="h-9 w-auto" />
-        <button
-          id="btn-logout-role-selection"
-          type="button"
-          onClick={handleLogout}
-          className="px-4 py-1.5 rounded-full border border-white/40 text-white hover:bg-white/10 transition-colors text-sm font-medium flex items-center gap-2 cursor-pointer"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          <span>Log out</span>
-        </button>
+        {isAuthenticated ? (
+          <button
+            id="btn-logout-role-selection"
+            type="button"
+            onClick={handleLogout}
+            className="px-4 py-1.5 rounded-full border border-white/40 text-white hover:bg-white/10 transition-colors text-sm font-medium flex items-center gap-2 cursor-pointer"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span>Log out</span>
+          </button>
+        ) : (
+          <button
+            id="btn-login-role-selection"
+            type="button"
+            onClick={() => navigate({ to: '/login' })}
+            className="px-4 py-1.5 rounded-full border border-white/40 text-white hover:bg-white/10 transition-colors text-sm font-medium flex items-center gap-2 cursor-pointer"
+          >
+            <span>Sign in</span>
+          </button>
+        )}
       </header>
 
       {/* Main Content */}

@@ -203,6 +203,7 @@ function NoQuestionsScreen({ onBack }: { onBack: () => void }) {
 export function PlacementTestEngine() {
   const navigate = useNavigate()
   const { reinitialize: reinitializeRadar } = useRadar()
+  const returnPath = '/onboarding/role-selection'
 
   // ── Fetch state ─────────────────────────────────────────────────────────────
   const [loadState, setLoadState] = useState<'loading' | 'empty' | 'ready'>('loading')
@@ -340,7 +341,7 @@ export function PlacementTestEngine() {
     if (!roleId) {
       setIsSubmitting(false)
       setFetchError('No role selected. Please go back and choose a role.')
-      navigate({ to: '/onboarding/role-selection' })
+      navigate({ to: returnPath })
       return
     }
 
@@ -421,7 +422,7 @@ export function PlacementTestEngine() {
   if (loadState === 'empty') {
     return (
       <NoQuestionsScreen
-        onBack={() => navigate({ to: '/onboarding/role-selection' })}
+        onBack={() => navigate({ to: returnPath })}
       />
     )
   }
@@ -608,7 +609,7 @@ export function PlacementTestEngine() {
       {showQuit && (
         <QuitModal
           onStay={() => setShowQuit(false)}
-          onQuit={() => navigate({ to: '/onboarding/role-selection' })}
+          onQuit={() => navigate({ to: returnPath })}
         />
       )}
     </div>

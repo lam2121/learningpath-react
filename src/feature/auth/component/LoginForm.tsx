@@ -40,6 +40,8 @@ export function LoginForm() {
 
 			// 4. Redirect based on role
 			if (data.role_id === 2) {
+				localStorage.removeItem('pending_role_id')
+				localStorage.removeItem('pending_survey_answers')
 				await navigate({ to: '/admin' })
 				return
 			}

@@ -14,6 +14,7 @@ import { useAuth } from "@/common/context/AuthContext";
 import {
     fetchCurrentUserProfile,
     updateStudySettings,
+    generateAICoachMessage,
 } from "@/feature/auth/api/authAPI";
 import type { UserProfileResponse } from "@/feature/auth/type/Auth";
 import { AlertDialog } from "@/shadcn/component/ui/alert-dialog";
@@ -23,7 +24,7 @@ import { Dialog } from "@/shadcn/component/ui/dialog";
 import { Progress } from "@/shadcn/component/ui/progress";
 import type { RoadmapLesson, RoadmapTopic } from "@/feature/learning-path/roadmapApi";
 import { isLessonReadyToStudy } from "@/feature/learning-path/lessonAccess";
-import { getTrackedStudyMinutesByDay } from "@/feature/user-profile/utils/StudyActivity";
+import { getTrackedStudyMinutesByDay, calculateLongestStreak, getLoginDays } from "@/feature/user-profile/utils/StudyActivity";
 import {
     getStudyMinutesForDate,
     getTodayDateKey,
@@ -211,6 +212,51 @@ export function DailyPlanView({
         setTrackedStudyMinutesByDay(getTrackedStudyMinutesByDay(userId));
         setStudyGoalDecision(readStudyGoalDecision(userId, getTodayDateKey()));
     }, [userId]);
+
+    const [coachMessage, setCoachMessage] = useState<string | null>(null);
+    const [isGeneratingCoach, setIsGeneratingCoach] = useState(false);
+
+    useEffect(() => {
+        if (!profile || !userId || !Number.isFinite(userId)) return;
+
+        const loadCoachMessage = async () => {
+            const todayKey = getTodayDateKey();
+            const storageKey = `careerpath:ai-coach-msg:${userId}:${todayKey}`;
+            const cachedMsg = localStorage.getItem(storageKey);
+            if (cachedMsg) {
+                setCoachMessage(cachedMsg);
+                return;
+            }
+
+            try {
+                setIsGeneratingCoach(true);
+                const history = profile.lesson_quiz_history ?? [];
+                const validScores = history.filter((item) => typeof item.best_score_percent === 'number' && item.best_score_percent > 0);
+                const accuracy = validScores.length > 0
+                    ? validScores.reduce((sum, item) => sum + (item.best_score_percent ?? 0), 0) / validScores.length
+                    : 0;
+
+                const response = await generateAICoachMessage({
+                    day_streak: calculateLongestStreak(getLoginDays(userId)),
+                    lesson_learner: completedLessonCount,
+                    total_lesson_in_track: totalAssignedLessons,
+                    accuracy: Math.round(accuracy),
+                    daily_study_per_day: profile.daily_study_minutes,
+                });
+
+                if (response.feedback_summary) {
+                    setCoachMessage(response.feedback_summary);
+                    localStorage.setItem(storageKey, response.feedback_summary);
+                }
+            } catch (error) {
+                console.error("Failed to generate AI Coach message", error);
+            } finally {
+                setIsGeneratingCoach(false);
+            }
+        };
+
+        void loadCoachMessage();
+    }, [profile, userId, completedLessonCount, totalAssignedLessons]);
 
     useEffect(() => {
         onStudyPlanExpandedChange?.(isStudyPlanExpanded);
@@ -554,11 +600,13 @@ export function DailyPlanView({
                                     </span>
                                 </div>
                                 <p className="mt-2 text-base leading-7 text-slate-700">
-                                    {allAssignedLessonsCompleted
-                                        ? `You have completed ${completedLessonCount} of ${totalAssignedLessons} assigned lessons. Use today to review and consolidate what you passed.`
-                                        : nextLesson && currentDays
-                                            ? `At ${currentHour} hour${currentHour === 1 ? "" : "s"} per day, completing ${nextLesson.title} keeps you on pace to finish in about ${currentDays} day${currentDays === 1 ? "" : "s"}.`
-                                            : "Start with your next lesson first. Once you finish a quiz, AI Coach can suggest exactly what to review next."}
+                                    {isGeneratingCoach ? "AI Coach is analyzing your progress..." : coachMessage ? coachMessage : (
+                                        allAssignedLessonsCompleted
+                                            ? `You have completed ${completedLessonCount} of ${totalAssignedLessons} assigned lessons. Use today to review and consolidate what you passed.`
+                                            : nextLesson && currentDays
+                                                ? `At ${currentHour} hour${currentHour === 1 ? "" : "s"} per day, completing ${nextLesson.title} keeps you on pace to finish in about ${currentDays} day${currentDays === 1 ? "" : "s"}.`
+                                                : "Start with your next lesson first. Once you finish a quiz, AI Coach can suggest exactly what to review next."
+                                    )}
                                 </p>
                                 {allAssignedLessonsCompleted ? (
                                     <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">

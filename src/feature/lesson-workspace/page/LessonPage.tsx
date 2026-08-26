@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type WheelEvent as ReactWheelEvent } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
     ArrowLeft,
     BookOpen,
@@ -12,7 +12,6 @@ import {
     Copy,
     FileText,
     Headphones,
-    Lightbulb,
     Languages,
     ListChecks,
     MessageSquareText,
@@ -21,6 +20,8 @@ import {
     Sparkles,
     Target,
     Volume2,
+    Mic,
+    MicOff,
     type LucideIcon,
 } from "lucide-react";
 
@@ -33,6 +34,7 @@ import {
     fetchLessonQuizState,
     kickoffRoadmapLessonGeneration,
     submitLessonQuiz,
+    evaluateAnswer,
     type LessonQuizSubmitResponse,
     type LessonQuizStateResponse,
     type RoadmapLesson,
@@ -75,6 +77,45 @@ import { ListeningAudioPlayer } from "../component/ListeningAudioPlayer";
 import { getTTSStreamUrl } from "@/feature/audio/audioApi";
 
 let activeGlobalAudio: HTMLAudioElement | null = null;
+
+type BrowserHistoryState = Record<string, unknown>;
+
+function readBrowserHistoryState(): BrowserHistoryState {
+    return window.history.state && typeof window.history.state === "object"
+        ? window.history.state as BrowserHistoryState
+        : {};
+}
+
+function stripLessonQuizGuardState(state: BrowserHistoryState): BrowserHistoryState {
+    const nextState = { ...state };
+    delete nextState.lessonQuizGuard;
+    return nextState;
+}
+
+function stripEmbeddedLessonQuizViewState(state: BrowserHistoryState): BrowserHistoryState {
+    const nextState = { ...state };
+    delete nextState.embeddedLessonQuizView;
+    return nextState;
+}
+
+function readEmbeddedLessonQuizViewFromHistoryState(state: BrowserHistoryState) {
+    if (!("embeddedLessonQuizView" in state)) {
+        return null;
+    }
+
+    const rawView = state.embeddedLessonQuizView;
+    if (!rawView || typeof rawView !== "object" || Array.isArray(rawView)) {
+        return null;
+    }
+
+    const view = rawView as {
+        lessonId?: number;
+        mode?: "summary" | "review";
+        questionIndex?: number | null;
+    };
+
+    return view;
+}
 
 function stopSpeech() {
     if (activeGlobalAudio) {
@@ -367,8 +408,265 @@ type EmbeddedQuizQuestion = {
     canonicalToDisplayIndex?: number[];
 };
 
+type EmbeddedLessonQuizDraft = {
+    version: number;
+    quizStarted: boolean;
+    currentQuestionIndex: number;
+    answers: Record<number, string>;
+    hintedQuestions: Record<number, boolean>;
+    questions: EmbeddedQuizQuestion[];
+};
+
+type EmbeddedLessonQuizCompletedSnapshot = {
+    version: number;
+    showSummary: boolean;
+    currentQuestionIndex: number;
+    answers: Record<number, string>;
+    hintedQuestions: Record<number, boolean>;
+    questions: EmbeddedQuizQuestion[];
+    lastSubmittedResult: LessonQuizSubmitResponse;
+    nextLessonStatus: "idle" | "preparing" | "ready" | "error";
+    nextLessonMessage: string | null;
+};
+
 const HINT_UNLOCK_AFTER_FAILURES = 2;
 const HINT_CREDIT = 0.75;
+const EMBEDDED_LESSON_QUIZ_DRAFT_VERSION = 1;
+const EMBEDDED_LESSON_QUIZ_COMPLETED_VERSION = 1;
+
+function getEmbeddedLessonQuizDraftStorageKey(userId: number, lessonId: number) {
+    return `learning-embedded-quiz-draft:${userId}:${lessonId}`;
+}
+
+function getEmbeddedLessonQuizCompletedStorageKey(userId: number, lessonId: number) {
+    return `learning-embedded-quiz-completed:${userId}:${lessonId}`;
+}
+
+function isEmbeddedQuizQuestion(value: unknown): value is EmbeddedQuizQuestion {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+        return false;
+    }
+
+    const question = value as Record<string, unknown>;
+    return (
+        typeof question.id === "string"
+        && (
+            question.type === "fill_blank"
+            || question.type === "multi_select"
+            || question.type === "ordering"
+        )
+        && Array.isArray(question.data)
+    );
+}
+
+function isEmbeddedLessonQuizDraft(value: unknown): value is EmbeddedLessonQuizDraft {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+        return false;
+    }
+
+    const draft = value as Record<string, unknown>;
+    return (
+        typeof draft.version === "number"
+        && typeof draft.quizStarted === "boolean"
+        && typeof draft.currentQuestionIndex === "number"
+        && draft.answers !== null
+        && typeof draft.answers === "object"
+        && !Array.isArray(draft.answers)
+        && draft.hintedQuestions !== null
+        && typeof draft.hintedQuestions === "object"
+        && !Array.isArray(draft.hintedQuestions)
+        && Array.isArray(draft.questions)
+        && draft.questions.every(isEmbeddedQuizQuestion)
+    );
+}
+
+function isLessonQuizSubmitResponseLike(value: unknown): value is LessonQuizSubmitResponse {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+        return false;
+    }
+
+    const response = value as Record<string, unknown>;
+    return (
+        typeof response.lesson_id === "number"
+        && typeof response.skill === "string"
+        && typeof response.status === "string"
+        && typeof response.lesson_passed === "boolean"
+        && typeof response.best_score_percent === "number"
+        && typeof response.attempt_count === "number"
+        && typeof response.failed_attempts === "number"
+        && (response.completed_at === null || typeof response.completed_at === "string")
+        && (response.current_skill_score === null || typeof response.current_skill_score === "number")
+        && (response.first_pass_score_percent === null || typeof response.first_pass_score_percent === "number")
+        && typeof response.current_attempt_passed === "boolean"
+        && typeof response.weighted_score_percent === "number"
+        && typeof response.correct_no_hint_count === "number"
+        && typeof response.correct_with_hint_count === "number"
+        && typeof response.total_questions === "number"
+        && typeof response.first_pass_radar_applied === "boolean"
+        && typeof response.current_attempt_is_new_best === "boolean"
+        && Array.isArray(response.question_results)
+    );
+}
+
+function isEmbeddedLessonQuizCompletedSnapshot(
+    value: unknown,
+): value is EmbeddedLessonQuizCompletedSnapshot {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+        return false;
+    }
+
+    const snapshot = value as Record<string, unknown>;
+    return (
+        typeof snapshot.version === "number"
+        && typeof snapshot.showSummary === "boolean"
+        && typeof snapshot.currentQuestionIndex === "number"
+        && snapshot.answers !== null
+        && typeof snapshot.answers === "object"
+        && !Array.isArray(snapshot.answers)
+        && snapshot.hintedQuestions !== null
+        && typeof snapshot.hintedQuestions === "object"
+        && !Array.isArray(snapshot.hintedQuestions)
+        && Array.isArray(snapshot.questions)
+        && snapshot.questions.every(isEmbeddedQuizQuestion)
+        && isLessonQuizSubmitResponseLike(snapshot.lastSubmittedResult)
+        && (
+            snapshot.nextLessonStatus === "idle"
+            || snapshot.nextLessonStatus === "preparing"
+            || snapshot.nextLessonStatus === "ready"
+            || snapshot.nextLessonStatus === "error"
+        )
+        && (snapshot.nextLessonMessage === null || typeof snapshot.nextLessonMessage === "string")
+    );
+}
+
+function readEmbeddedLessonQuizDraft(
+    userId: number,
+    lessonId: number,
+): EmbeddedLessonQuizDraft | null {
+    try {
+        const raw: unknown = JSON.parse(
+            localStorage.getItem(getEmbeddedLessonQuizDraftStorageKey(userId, lessonId)) ?? "null",
+        );
+
+        if (!isEmbeddedLessonQuizDraft(raw)) {
+            return null;
+        }
+
+        return raw.version === EMBEDDED_LESSON_QUIZ_DRAFT_VERSION ? raw : null;
+    } catch {
+        return null;
+    }
+}
+
+function writeEmbeddedLessonQuizDraft(
+    userId: number,
+    lessonId: number,
+    draft: EmbeddedLessonQuizDraft,
+) {
+    try {
+        localStorage.setItem(
+            getEmbeddedLessonQuizDraftStorageKey(userId, lessonId),
+            JSON.stringify(draft),
+        );
+    } catch {
+        // Ignore storage errors and keep the quiz usable.
+    }
+}
+
+function readEmbeddedLessonQuizCompletedSnapshot(
+    userId: number,
+    lessonId: number,
+): EmbeddedLessonQuizCompletedSnapshot | null {
+    try {
+        const raw: unknown = JSON.parse(
+            localStorage.getItem(getEmbeddedLessonQuizCompletedStorageKey(userId, lessonId)) ?? "null",
+        );
+
+        if (!isEmbeddedLessonQuizCompletedSnapshot(raw)) {
+            return null;
+        }
+
+        return raw.version === EMBEDDED_LESSON_QUIZ_COMPLETED_VERSION ? raw : null;
+    } catch {
+        return null;
+    }
+}
+
+function writeEmbeddedLessonQuizCompletedSnapshot(
+    userId: number,
+    lessonId: number,
+    snapshot: EmbeddedLessonQuizCompletedSnapshot,
+) {
+    try {
+        localStorage.setItem(
+            getEmbeddedLessonQuizCompletedStorageKey(userId, lessonId),
+            JSON.stringify(snapshot),
+        );
+    } catch {
+        // Ignore storage errors and keep the quiz usable.
+    }
+}
+
+function clearEmbeddedLessonQuizDraft(userId: number, lessonId: number) {
+    try {
+        localStorage.removeItem(
+            getEmbeddedLessonQuizDraftStorageKey(userId, lessonId),
+        );
+    } catch {
+        // Ignore storage errors and keep the quiz usable.
+    }
+}
+
+function clearEmbeddedLessonQuizCompletedSnapshot(userId: number, lessonId: number) {
+    try {
+        localStorage.removeItem(
+            getEmbeddedLessonQuizCompletedStorageKey(userId, lessonId),
+        );
+    } catch {
+        // Ignore storage errors and keep the quiz usable.
+    }
+}
+
+function isEmbeddedLessonQuizDraftCompatible(
+    draft: EmbeddedLessonQuizDraft,
+    sourceQuestions: EmbeddedQuizQuestion[],
+) {
+    if (draft.questions.length !== sourceQuestions.length) {
+        return false;
+    }
+
+    const expectedIds = new Set(sourceQuestions.map((question) => question.id));
+    return draft.questions.every((question) => expectedIds.has(question.id));
+}
+
+function isEmbeddedLessonQuizCompletedSnapshotCompatible(
+    snapshot: EmbeddedLessonQuizCompletedSnapshot,
+    sourceQuestions: EmbeddedQuizQuestion[],
+) {
+    if (snapshot.questions.length !== sourceQuestions.length) {
+        return false;
+    }
+
+    const expectedIds = new Set(sourceQuestions.map((question) => question.id));
+    return snapshot.questions.every((question) => expectedIds.has(question.id));
+}
+
+function buildSavedQuizStateFromSubmission(
+    response: LessonQuizSubmitResponse,
+): LessonQuizStateResponse {
+    return {
+        lesson_id: response.lesson_id,
+        skill: response.skill,
+        status: response.status,
+        lesson_passed: response.lesson_passed,
+        best_score_percent: response.best_score_percent,
+        attempt_count: response.attempt_count,
+        failed_attempts: response.failed_attempts,
+        completed_at: response.completed_at,
+        current_skill_score: response.current_skill_score,
+        first_pass_score_percent: response.first_pass_score_percent,
+    };
+}
 
 const SECTION_META: SectionMeta[] = [
     { key: "scenario", label: "Scenario", eyebrow: "Context", icon: ScrollText },
@@ -1398,6 +1696,99 @@ function ReadingPracticeSection({
 }) {
     const [draftAnswers, setDraftAnswers] = useState<Record<number, string>>({});
     const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
+    const [listeningQuestionIndex, setListeningQuestionIndex] = useState<number | null>(null);
+    const [aiFeedback, setAiFeedback] = useState<Record<number, string>>({});
+    const [isEvaluating, setIsEvaluating] = useState<Record<number, boolean>>({});
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognition API has no TS types
+    const recognitionRef = useRef<any>(null);
+
+    const handleEvaluate = async (index: number, question: string, referenceAnswer: string) => {
+        const userAnswer = draftAnswers[index]?.trim();
+        if (!userAnswer) return;
+
+        setIsEvaluating((prev) => ({ ...prev, [index]: true }));
+        try {
+            const res = await evaluateAnswer({
+                section_type: "reading",
+                context: section.primary,
+                question: question,
+                reference_answer: referenceAnswer,
+                user_answer: userAnswer,
+            });
+            setAiFeedback((prev) => ({ ...prev, [index]: res.feedback_summary }));
+        } catch (error) {
+            console.error(error);
+            alert("Failed to evaluate answer.");
+        } finally {
+            setIsEvaluating((prev) => ({ ...prev, [index]: false }));
+        }
+    };
+
+    useEffect(() => {
+        return () => {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
+        };
+    }, []);
+
+    const toggleDictation = (index: number) => {
+        if (listeningQuestionIndex === index) {
+            recognitionRef.current?.stop();
+            setListeningQuestionIndex(null);
+            return;
+        }
+
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
+
+        /* eslint-disable @typescript-eslint/no-explicit-any -- Web SpeechRecognition API has no TS types */
+        const SpeechRecognition =
+            (window as any).SpeechRecognition ||
+            (window as any).webkitSpeechRecognition;
+        /* eslint-enable @typescript-eslint/no-explicit-any */
+
+        if (!SpeechRecognition) {
+            alert("Your browser does not support Speech Recognition.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        let initialText = draftAnswers[index] || "";
+        if (initialText && !initialText.endsWith(" ")) {
+            initialText += " ";
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognitionEvent has no TS types
+        recognition.onresult = (event: any) => {
+            let sessionTranscript = "";
+            for (let i = 0; i < event.results.length; ++i) {
+                sessionTranscript += event.results[i][0].transcript;
+            }
+            setDraftAnswers((prev) => ({
+                ...prev,
+                [index]: initialText + sessionTranscript,
+            }));
+        };
+
+        recognition.onend = () => {
+            setListeningQuestionIndex((prev) => (prev === index ? null : prev));
+        };
+
+        try {
+            recognition.start();
+            recognitionRef.current = recognition;
+            setListeningQuestionIndex(index);
+        } catch (error) {
+            console.error("Speech recognition error:", error);
+            setListeningQuestionIndex(null);
+        }
+    };
 
     return (
         <PanelShell eyebrow="Section 4" title={section.label} note={section.note}>
@@ -1464,16 +1855,59 @@ function ReadingPracticeSection({
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() =>
+                                    onClick={() => toggleDictation(index)}
+                                    className={listeningQuestionIndex === index ? "text-rose-500 hover:text-rose-600 hover:bg-rose-50" : ""}
+                                >
+                                    {listeningQuestionIndex === index ? (
+                                        <>
+                                            <MicOff className="mr-2 h-4 w-4 animate-pulse" /> Stop Dictating
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Mic className="mr-2 h-4 w-4" /> Dictate
+                                        </>
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEvaluate(index, qa.question, qa.answer)}
+                                    disabled={!draft || isEvaluating[index]}
+                                >
+                                    {isEvaluating[index] ? (
+                                        "Evaluating..."
+                                    ) : (
+                                        <>
+                                            <Sparkles className="mr-2 h-4 w-4 text-indigo-500" /> Evaluate
+                                        </>
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
                                         setDraftAnswers((prev) => ({
                                             ...prev,
                                             [index]: "",
-                                        }))
-                                    }
+                                        }));
+                                        setAiFeedback((prev) => ({
+                                            ...prev,
+                                            [index]: "",
+                                        }));
+                                    }}
                                 >
                                     Clear
                                 </Button>
                             </div>
+
+                            {aiFeedback[index] ? (
+                                <div className="mt-4 rounded-2xl bg-indigo-50/50 p-4 text-sm leading-6 text-indigo-900 border border-indigo-100 dark:bg-indigo-950/30 dark:border-indigo-900/50 dark:text-indigo-100 animate-in fade-in slide-in-from-top-2">
+                                    <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-400">
+                                        <Sparkles className="h-3 w-3" /> AI Feedback
+                                    </p>
+                                    <p className="mt-2">{aiFeedback[index]}</p>
+                                </div>
+                            ) : null}
 
                             {isRevealed ? (
                                 <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-slate-700 dark:bg-emerald-950/30 dark:text-slate-200 animate-in fade-in">
@@ -1507,10 +1941,17 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
 
     let partA = section.secondary;
     let partB = "";
-    if (section.secondary.includes(" || ")) {
-        const [a, b] = section.secondary.split(" || ");
-        partA = a;
-        partB = b;
+
+    const splitRegex = /(?:\s*\|\|\s*|\s*\|\s*)(?=Practice\s*Tasks\s*:)/i;
+    const parts = section.secondary.split(splitRegex);
+
+    if (parts.length > 1) {
+        partA = parts[0];
+        partB = parts.slice(1).join(" | ");
+    } else if (section.secondary.includes(" || ")) {
+        const fallbackParts = section.secondary.split(" || ");
+        partA = fallbackParts[0];
+        partB = fallbackParts.slice(1).join(" || ");
     }
 
     const highlights = parseDialogueHighlights(partA);
@@ -1519,7 +1960,100 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
         : [];
 
     const [userReplies, setUserReplies] = useState<Record<number, string>>({});
+    const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
+    const [listeningQuestionIndex, setListeningQuestionIndex] = useState<number | null>(null);
+    const [aiFeedback, setAiFeedback] = useState<Record<number, string>>({});
+    const [isEvaluating, setIsEvaluating] = useState<Record<number, boolean>>({});
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognition API has no TS types
+    const recognitionRef = useRef<any>(null);
 
+    const handleEvaluate = async (index: number, promptText: string, suggestedAnswer: string) => {
+        const userAnswer = userReplies[index]?.trim();
+        if (!userAnswer) return;
+
+        setIsEvaluating((prev) => ({ ...prev, [index]: true }));
+        try {
+            const res = await evaluateAnswer({
+                section_type: "dialogue",
+                context: contextText,
+                question: promptText,
+                reference_answer: suggestedAnswer || "No reference answer provided.",
+                user_answer: userAnswer,
+            });
+            setAiFeedback((prev) => ({ ...prev, [index]: res.feedback_summary }));
+        } catch (error) {
+            console.error(error);
+            alert("Failed to evaluate answer.");
+        } finally {
+            setIsEvaluating((prev) => ({ ...prev, [index]: false }));
+        }
+    };
+
+    useEffect(() => {
+        return () => {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
+        };
+    }, []);
+
+    const toggleDictation = (index: number) => {
+        if (listeningQuestionIndex === index) {
+            recognitionRef.current?.stop();
+            setListeningQuestionIndex(null);
+            return;
+        }
+
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
+
+        /* eslint-disable @typescript-eslint/no-explicit-any -- Web SpeechRecognition API has no TS types */
+        const SpeechRecognition =
+            (window as any).SpeechRecognition ||
+            (window as any).webkitSpeechRecognition;
+        /* eslint-enable @typescript-eslint/no-explicit-any */
+
+        if (!SpeechRecognition) {
+            alert("Your browser does not support Speech Recognition.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        let initialText = userReplies[index] || "";
+        if (initialText && !initialText.endsWith(" ")) {
+            initialText += " ";
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognitionEvent has no TS types
+        recognition.onresult = (event: any) => {
+            let sessionTranscript = "";
+            for (let i = 0; i < event.results.length; ++i) {
+                sessionTranscript += event.results[i][0].transcript;
+            }
+            setUserReplies((prev) => ({
+                ...prev,
+                [index]: initialText + sessionTranscript,
+            }));
+        };
+
+        recognition.onend = () => {
+            setListeningQuestionIndex((prev) => (prev === index ? null : prev));
+        };
+
+        try {
+            recognition.start();
+            recognitionRef.current = recognition;
+            setListeningQuestionIndex(index);
+        } catch (error) {
+            console.error("Speech recognition error:", error);
+            setListeningQuestionIndex(null);
+        }
+    };
     return (
         <PanelShell eyebrow="Section 5" title={section.label} note={section.note}>
             {/* Scenario Setting / Context Banner */}
@@ -1620,35 +2154,124 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
                     </div>
 
                     <div className="mt-5 space-y-4">
-                        {practiceTasks.map((task, idx) => (
-                            <div
-                                key={idx}
-                                className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950 shadow-sm"
-                            >
-                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                    {task}
-                                </p>
-                                <textarea
-                                    value={userReplies[idx] ?? ""}
-                                    onChange={(e) =>
-                                        setUserReplies((prev) => ({
-                                            ...prev,
-                                            [idx]: e.target.value,
-                                        }))
-                                    }
-                                    placeholder="Type your response here and practice speaking it out loud..."
-                                    className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-400 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                                />
-                                {userReplies[idx] && (
-                                    <div className="mt-2.5 flex justify-end">
-                                        <AudioSpeakButton
-                                            text={userReplies[idx]}
-                                            label="Listen to my response"
-                                        />
+                        {practiceTasks.map((taskRaw, idx) => {
+                            const parts = taskRaw.split(/->\s*Suggested Answer:/i);
+                            const promptText = parts[0].trim();
+                            const suggestedAnswer = parts.length > 1 ? parts[1].trim() : null;
+                            const isRevealed = Boolean(revealedAnswers[idx]);
+
+                            return (
+                                <div
+                                    key={idx}
+                                    className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950 shadow-sm"
+                                >
+                                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                        {promptText}
+                                    </p>
+                                    <textarea
+                                        value={userReplies[idx] ?? ""}
+                                        onChange={(e) =>
+                                            setUserReplies((prev) => ({
+                                                ...prev,
+                                                [idx]: e.target.value,
+                                            }))
+                                        }
+                                        placeholder="Type your response here and practice speaking it out loud..."
+                                        className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-400 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                                    />
+                                    <div className="mt-2.5 flex justify-between items-center flex-wrap gap-2">
+                                        <div>
+                                            {suggestedAnswer && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        setRevealedAnswers((prev) => ({
+                                                            ...prev,
+                                                            [idx]: !prev[idx],
+                                                        }))
+                                                    }
+                                                >
+                                                    {isRevealed ? "Hide answer" : "Show answer"}
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <div className="flex gap-2 justify-end">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => toggleDictation(idx)}
+                                                className={listeningQuestionIndex === idx ? "text-rose-500 hover:text-rose-600 hover:bg-rose-50" : ""}
+                                            >
+                                                {listeningQuestionIndex === idx ? (
+                                                    <>
+                                                        <MicOff className="mr-2 h-4 w-4 animate-pulse" /> Stop Dictating
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Mic className="mr-2 h-4 w-4" /> Dictate
+                                                    </>
+                                                )}
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleEvaluate(idx, promptText, suggestedAnswer || "")}
+                                                disabled={!userReplies[idx]?.trim() || isEvaluating[idx]}
+                                            >
+                                                {isEvaluating[idx] ? (
+                                                    "Evaluating..."
+                                                ) : (
+                                                    <>
+                                                        <Sparkles className="mr-2 h-4 w-4 text-indigo-500" /> Evaluate
+                                                    </>
+                                                )}
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setUserReplies((prev) => ({
+                                                        ...prev,
+                                                        [idx]: "",
+                                                    }));
+                                                    setAiFeedback((prev) => ({
+                                                        ...prev,
+                                                        [idx]: "",
+                                                    }));
+                                                }}
+                                            >
+                                                Clear
+                                            </Button>
+                                            {userReplies[idx] && (
+                                                <AudioSpeakButton
+                                                    text={userReplies[idx]}
+                                                    label="Listen to my response"
+                                                />
+                                            )}
+                                        </div>
                                     </div>
-                                )}
-                            </div>
-                        ))}
+
+                                    {aiFeedback[idx] ? (
+                                        <div className="mt-4 rounded-2xl bg-indigo-50/50 p-4 text-sm leading-6 text-indigo-900 border border-indigo-100 dark:bg-indigo-950/30 dark:border-indigo-900/50 dark:text-indigo-100 animate-in fade-in slide-in-from-top-2">
+                                            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-400">
+                                                <Sparkles className="h-3 w-3" /> AI Feedback
+                                            </p>
+                                            <p className="mt-2">{aiFeedback[idx]}</p>
+                                        </div>
+                                    ) : null}
+
+                                    {isRevealed && suggestedAnswer && (
+                                        <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-slate-700 dark:bg-emerald-950/30 dark:text-slate-200 animate-in fade-in">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
+                                                Suggested answer
+                                            </p>
+                                            <p className="mt-1">{suggestedAnswer}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}
@@ -1663,6 +2286,11 @@ function ListeningPracticeSection({
 }) {
     const [draftAnswers, setDraftAnswers] = useState<Record<number, string>>({});
     const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
+    const [listeningQuestionIndex, setListeningQuestionIndex] = useState<number | null>(null);
+    const [aiFeedback, setAiFeedback] = useState<Record<number, string>>({});
+    const [isEvaluating, setIsEvaluating] = useState<Record<number, boolean>>({});
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognition API has no TS types
+    const recognitionRef = useRef<any>(null);
 
     const rawScript = section.primary;
     const scriptText = rawScript
@@ -1670,6 +2298,94 @@ function ListeningPracticeSection({
         .replace(/^\[.*?\]\s*:\s*/i, "")
         .replace(/^["']|["']$/g, "")
         .trim();
+
+    const handleEvaluate = async (index: number, question: string, referenceAnswer: string) => {
+        const userAnswer = draftAnswers[index]?.trim();
+        if (!userAnswer) return;
+
+        setIsEvaluating((prev) => ({ ...prev, [index]: true }));
+        try {
+            const res = await evaluateAnswer({
+                section_type: "listening",
+                context: scriptText,
+                question: question,
+                reference_answer: referenceAnswer,
+                user_answer: userAnswer,
+            });
+            setAiFeedback((prev) => ({ ...prev, [index]: res.feedback_summary }));
+        } catch (error) {
+            console.error(error);
+            alert("Failed to evaluate answer.");
+        } finally {
+            setIsEvaluating((prev) => ({ ...prev, [index]: false }));
+        }
+    };
+
+    useEffect(() => {
+        return () => {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
+        };
+    }, []);
+
+    const toggleDictation = (index: number) => {
+        if (listeningQuestionIndex === index) {
+            recognitionRef.current?.stop();
+            setListeningQuestionIndex(null);
+            return;
+        }
+
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
+
+        /* eslint-disable @typescript-eslint/no-explicit-any -- Web SpeechRecognition API has no TS types */
+        const SpeechRecognition =
+            (window as any).SpeechRecognition ||
+            (window as any).webkitSpeechRecognition;
+        /* eslint-enable @typescript-eslint/no-explicit-any */
+
+        if (!SpeechRecognition) {
+            alert("Your browser does not support Speech Recognition.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        let initialText = draftAnswers[index] || "";
+        if (initialText && !initialText.endsWith(" ")) {
+            initialText += " ";
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognitionEvent has no TS types
+        recognition.onresult = (event: any) => {
+            let sessionTranscript = "";
+            for (let i = 0; i < event.results.length; ++i) {
+                sessionTranscript += event.results[i][0].transcript;
+            }
+            setDraftAnswers((prev) => ({
+                ...prev,
+                [index]: initialText + sessionTranscript,
+            }));
+        };
+
+        recognition.onend = () => {
+            setListeningQuestionIndex((prev) => (prev === index ? null : prev));
+        };
+
+        try {
+            recognition.start();
+            recognitionRef.current = recognition;
+            setListeningQuestionIndex(index);
+        } catch (error) {
+            console.error("Speech recognition error:", error);
+            setListeningQuestionIndex(null);
+        }
+    };
 
     const questions = parseReadingQuestions(section.secondary);
 
@@ -1733,16 +2449,59 @@ function ListeningPracticeSection({
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() =>
+                                    onClick={() => toggleDictation(index)}
+                                    className={listeningQuestionIndex === index ? "text-rose-500 hover:text-rose-600 hover:bg-rose-50" : ""}
+                                >
+                                    {listeningQuestionIndex === index ? (
+                                        <>
+                                            <MicOff className="mr-2 h-4 w-4 animate-pulse" /> Stop Dictating
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Mic className="mr-2 h-4 w-4" /> Dictate
+                                        </>
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEvaluate(index, qa.question, qa.answer)}
+                                    disabled={!draft || isEvaluating[index]}
+                                >
+                                    {isEvaluating[index] ? (
+                                        "Evaluating..."
+                                    ) : (
+                                        <>
+                                            <Sparkles className="mr-2 h-4 w-4 text-indigo-500" /> Evaluate
+                                        </>
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
                                         setDraftAnswers((prev) => ({
                                             ...prev,
                                             [index]: "",
-                                        }))
-                                    }
+                                        }));
+                                        setAiFeedback((prev) => ({
+                                            ...prev,
+                                            [index]: "",
+                                        }));
+                                    }}
                                 >
                                     Clear
                                 </Button>
                             </div>
+
+                            {aiFeedback[index] ? (
+                                <div className="mt-4 rounded-2xl bg-indigo-50/50 p-4 text-sm leading-6 text-indigo-900 border border-indigo-100 dark:bg-indigo-950/30 dark:border-indigo-900/50 dark:text-indigo-100 animate-in fade-in slide-in-from-top-2">
+                                    <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-400">
+                                        <Sparkles className="h-3 w-3" /> AI Feedback
+                                    </p>
+                                    <p className="mt-2">{aiFeedback[index]}</p>
+                                </div>
+                            ) : null}
 
                             {isRevealed && (
                                 <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-slate-700 dark:bg-emerald-950/30 dark:text-slate-200 animate-in fade-in">
@@ -1988,15 +2747,24 @@ function EmbeddedLessonQuiz({
     lessonId,
     quiz,
     nextLesson,
+    isActive,
+    onNavigationGuardChange,
 }: {
     lessonId: number;
     quiz: ParsedQuiz | null;
     nextLesson: LessonLookup | null;
+    isActive: boolean;
+    onNavigationGuardChange?: (active: boolean) => void;
 }) {
+    const auth = useAuth();
+    const userId = Number(auth.user?.id);
     const { reinitialize: reinitializeRadar } = useRadar();
-    const questions = useMemo(
-        () => shuffleQuestions(buildEmbeddedQuizQuestions(quiz)),
+    const sourceQuestions = useMemo(
+        () => buildEmbeddedQuizQuestions(quiz),
         [quiz],
+    );
+    const [questions, setQuestions] = useState<EmbeddedQuizQuestion[]>(
+        () => shuffleQuestions(sourceQuestions),
     );
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -2004,6 +2772,7 @@ function EmbeddedLessonQuiz({
     const [showSummary, setShowSummary] = useState(false);
     const [showIncompleteWarning, setShowIncompleteWarning] = useState(false);
     const [quizStarted, setQuizStarted] = useState(false);
+    const [pendingDraft, setPendingDraft] = useState<EmbeddedLessonQuizDraft | null>(null);
     const [failedAttempts, setFailedAttempts] = useState(0);
     const [hintedQuestions, setHintedQuestions] = useState<Record<number, boolean>>({});
     const [nextLessonStatus, setNextLessonStatus] = useState<"idle" | "preparing" | "ready" | "error">("idle");
@@ -2017,6 +2786,85 @@ function EmbeddedLessonQuiz({
     const activeQuestionButtonRef = useRef<HTMLButtonElement | null>(null);
     const activeQuestionRef = useRef<HTMLDivElement | null>(null);
     const previousQuestionIndexRef = useRef(0);
+    const hasInitializedReviewHistoryRef = useRef(false);
+    const lastEmbeddedHistoryViewModeRef = useRef<"summary" | "review" | null>(null);
+    const bypassSubmittedQuizGhostHistoryRef = useRef(false);
+    const navigatorScrollFrameRef = useRef<number | null>(null);
+    const navigatorScrollTargetRef = useRef(0);
+
+    const stopQuestionNavigatorAnimation = useCallback(() => {
+        if (navigatorScrollFrameRef.current !== null) {
+            window.cancelAnimationFrame(navigatorScrollFrameRef.current);
+            navigatorScrollFrameRef.current = null;
+        }
+
+        const navigator = questionNavigatorRef.current;
+        navigatorScrollTargetRef.current = navigator?.scrollLeft ?? 0;
+    }, []);
+
+    const buildQuizReviewHistoryState = useCallback((
+        mode: "summary" | "review",
+        questionIndex?: number,
+    ) => ({
+        ...stripLessonQuizGuardState(readBrowserHistoryState()),
+        embeddedLessonQuizView: {
+            lessonId,
+            mode,
+            questionIndex: mode === "review" ? questionIndex ?? 0 : null,
+        },
+    }), [lessonId]);
+
+    const writeQuizReviewHistoryState = useCallback((
+        mode: "summary" | "review",
+        questionIndex?: number,
+        historyMode: "push" | "replace" = "replace",
+    ) => {
+        const nextState = buildQuizReviewHistoryState(mode, questionIndex);
+
+        if (historyMode === "push") {
+            window.history.pushState(nextState, "", window.location.href);
+            return;
+        }
+
+        window.history.replaceState(nextState, "", window.location.href);
+    }, [buildQuizReviewHistoryState]);
+
+    const openSummaryView = useCallback((syncHistory = true) => {
+        if (syncHistory) {
+            writeQuizReviewHistoryState("summary");
+        }
+        hasInitializedReviewHistoryRef.current = true;
+        setShowSummary(true);
+    }, [writeQuizReviewHistoryState]);
+
+    const openReviewQuestion = useCallback((
+        index: number,
+        historyMode: "push" | "replace" = "replace",
+    ) => {
+        if (historyMode === "push" && showSummary) {
+            window.history.replaceState(
+                buildQuizReviewHistoryState("summary"),
+                "",
+                window.location.href,
+            );
+        }
+
+        writeQuizReviewHistoryState("review", index, historyMode);
+        hasInitializedReviewHistoryRef.current = true;
+        setCurrentQuestionIndex(index);
+        setShowSummary(false);
+    }, [buildQuizReviewHistoryState, showSummary, writeQuizReviewHistoryState]);
+
+    const resetAttemptState = useCallback(() => {
+        setCurrentQuestionIndex(0);
+        setAnswers({});
+        setSubmitted(false);
+        setShowSummary(false);
+        setShowIncompleteWarning(false);
+        setHintedQuestions({});
+        setLastSubmittedResult(null);
+        setSaveError(null);
+    }, []);
 
     const backendQuestionResultsById = useMemo(
         () =>
@@ -2031,22 +2879,71 @@ function EmbeddedLessonQuiz({
 
     useEffect(() => {
         let cancelled = false;
+        const freshQuestions = shuffleQuestions(sourceQuestions);
 
-        setCurrentQuestionIndex(0);
-        setAnswers({});
-        setSubmitted(false);
-        setShowSummary(false);
-        setShowIncompleteWarning(false);
+        resetAttemptState();
+        setQuestions(freshQuestions);
+        setPendingDraft(null);
         setQuizStarted(false);
         setFailedAttempts(0);
-        setHintedQuestions({});
         setNextLessonStatus(nextLesson?.lesson.is_generated ? "ready" : "idle");
         setNextLessonMessage(null);
         setSavedQuizState(null);
-        setLastSubmittedResult(null);
         setQuizStateError(null);
         setSavingAttempt(false);
-        setSaveError(null);
+        hasInitializedReviewHistoryRef.current = false;
+
+        if (Number.isFinite(userId) && sourceQuestions.length > 0) {
+            const completedSnapshot = readEmbeddedLessonQuizCompletedSnapshot(userId, lessonId);
+
+            if (
+                completedSnapshot
+                && isEmbeddedLessonQuizCompletedSnapshotCompatible(completedSnapshot, sourceQuestions)
+            ) {
+                setQuestions(completedSnapshot.questions);
+                setCurrentQuestionIndex(
+                    Math.min(
+                        Math.max(0, completedSnapshot.currentQuestionIndex),
+                        Math.max(0, completedSnapshot.questions.length - 1),
+                    ),
+                );
+                setAnswers(completedSnapshot.answers);
+                setHintedQuestions(completedSnapshot.hintedQuestions);
+                setLastSubmittedResult(completedSnapshot.lastSubmittedResult);
+                setSavedQuizState(buildSavedQuizStateFromSubmission(completedSnapshot.lastSubmittedResult));
+                setFailedAttempts(completedSnapshot.lastSubmittedResult.failed_attempts);
+                setNextLessonStatus(completedSnapshot.nextLessonStatus);
+                setNextLessonMessage(completedSnapshot.nextLessonMessage);
+                setQuizStarted(true);
+                setSubmitted(true);
+                setShowSummary(completedSnapshot.showSummary);
+                return () => {
+                    cancelled = true;
+                };
+            } else if (completedSnapshot) {
+                clearEmbeddedLessonQuizCompletedSnapshot(userId, lessonId);
+            }
+
+            const savedDraft = readEmbeddedLessonQuizDraft(userId, lessonId);
+
+            if (
+                savedDraft
+                && isEmbeddedLessonQuizDraftCompatible(savedDraft, sourceQuestions)
+            ) {
+                setQuestions(savedDraft.questions);
+                setCurrentQuestionIndex(
+                    Math.min(
+                        Math.max(0, savedDraft.currentQuestionIndex),
+                        Math.max(0, savedDraft.questions.length - 1),
+                    ),
+                );
+                setAnswers(savedDraft.answers);
+                setHintedQuestions(savedDraft.hintedQuestions);
+                setPendingDraft(savedDraft);
+            } else if (savedDraft) {
+                clearEmbeddedLessonQuizDraft(userId, lessonId);
+            }
+        }
 
         void fetchLessonQuizState(lessonId)
             .then((state) => {
@@ -2063,14 +2960,205 @@ function EmbeddedLessonQuiz({
                 setQuizStateError(
                     stateError instanceof Error
                         ? stateError.message
-                        : "Could not load saved quiz progress.",
+                        : "Could not load saved lesson quiz status.",
                 );
             });
 
         return () => {
             cancelled = true;
         };
-    }, [lessonId, nextLesson?.lesson.id, nextLesson?.lesson.is_generated, quiz]);
+    }, [
+        lessonId,
+        nextLesson?.lesson.id,
+        nextLesson?.lesson.is_generated,
+        resetAttemptState,
+        sourceQuestions,
+        userId,
+    ]);
+
+    useEffect(() => {
+        if (!Number.isFinite(userId) || !quizStarted || submitted || questions.length === 0) {
+            return;
+        }
+
+        writeEmbeddedLessonQuizDraft(userId, lessonId, {
+            version: EMBEDDED_LESSON_QUIZ_DRAFT_VERSION,
+            quizStarted,
+            currentQuestionIndex,
+            answers,
+            hintedQuestions,
+            questions,
+        });
+    }, [
+        answers,
+        currentQuestionIndex,
+        hintedQuestions,
+        lessonId,
+        questions,
+        quizStarted,
+        submitted,
+        userId,
+    ]);
+
+    useEffect(() => {
+        if (
+            !Number.isFinite(userId)
+            || !quizStarted
+            || !submitted
+            || !lastSubmittedResult
+            || questions.length === 0
+        ) {
+            return;
+        }
+
+        writeEmbeddedLessonQuizCompletedSnapshot(userId, lessonId, {
+            version: EMBEDDED_LESSON_QUIZ_COMPLETED_VERSION,
+            showSummary,
+            currentQuestionIndex,
+            answers,
+            hintedQuestions,
+            questions,
+            lastSubmittedResult,
+            nextLessonStatus,
+            nextLessonMessage,
+        });
+    }, [
+        answers,
+        currentQuestionIndex,
+        hintedQuestions,
+        lastSubmittedResult,
+        lessonId,
+        nextLessonMessage,
+        nextLessonStatus,
+        questions,
+        quizStarted,
+        showSummary,
+        submitted,
+        userId,
+    ]);
+
+    useEffect(() => {
+        onNavigationGuardChange?.(quizStarted && !submitted);
+
+        return () => {
+            onNavigationGuardChange?.(false);
+        };
+    }, [onNavigationGuardChange, quizStarted, submitted]);
+
+    useEffect(() => {
+        if (isActive) {
+            return;
+        }
+
+        hasInitializedReviewHistoryRef.current = false;
+        lastEmbeddedHistoryViewModeRef.current = null;
+    }, [isActive]);
+
+    useEffect(() => {
+        if (!quizStarted || !submitted) {
+            lastEmbeddedHistoryViewModeRef.current = null;
+            return;
+        }
+
+        lastEmbeddedHistoryViewModeRef.current = showSummary ? "summary" : "review";
+    }, [quizStarted, showSummary, submitted]);
+
+    useEffect(() => {
+        if (!quizStarted || !submitted || !isActive) {
+            return;
+        }
+
+        if (!hasInitializedReviewHistoryRef.current) {
+            if (showSummary) {
+                writeQuizReviewHistoryState("summary");
+            } else {
+                window.history.replaceState(
+                    buildQuizReviewHistoryState("summary"),
+                    "",
+                    window.location.href,
+                );
+                window.history.pushState(
+                    buildQuizReviewHistoryState("review", currentQuestionIndex),
+                    "",
+                    window.location.href,
+                );
+            }
+
+            hasInitializedReviewHistoryRef.current = true;
+            return;
+        }
+
+        writeQuizReviewHistoryState(
+            showSummary ? "summary" : "review",
+            showSummary ? undefined : currentQuestionIndex,
+        );
+    }, [
+        buildQuizReviewHistoryState,
+        currentQuestionIndex,
+        isActive,
+        quizStarted,
+        showSummary,
+        submitted,
+        writeQuizReviewHistoryState,
+    ]);
+
+    useEffect(() => {
+        if (!isActive || !quizStarted || !submitted) {
+            return;
+        }
+
+        const handlePopState = () => {
+            if (bypassSubmittedQuizGhostHistoryRef.current) {
+                bypassSubmittedQuizGhostHistoryRef.current = false;
+                return;
+            }
+
+            const historyState = window.history.state;
+            const rawView =
+                historyState
+                    && typeof historyState === "object"
+                    && "embeddedLessonQuizView" in historyState
+                    ? (historyState as {
+                        embeddedLessonQuizView?: {
+                            lessonId?: number;
+                            mode?: "summary" | "review";
+                            questionIndex?: number | null;
+                        };
+                    }).embeddedLessonQuizView
+                    : undefined;
+
+            if (!rawView || rawView.lessonId !== lessonId) {
+                if (lastEmbeddedHistoryViewModeRef.current !== null) {
+                    bypassSubmittedQuizGhostHistoryRef.current = true;
+                    window.history.back();
+                }
+                return;
+            }
+
+            if (rawView.mode === "summary") {
+                lastEmbeddedHistoryViewModeRef.current = "summary";
+                setShowSummary(true);
+                return;
+            }
+
+            if (rawView.mode === "review") {
+                const nextIndex = Number.isFinite(rawView.questionIndex)
+                    ? Math.min(
+                        Math.max(0, Number(rawView.questionIndex)),
+                        Math.max(0, questions.length - 1),
+                    )
+                    : 0;
+                lastEmbeddedHistoryViewModeRef.current = "review";
+                setCurrentQuestionIndex(nextIndex);
+                setShowSummary(false);
+            }
+        };
+
+        window.addEventListener("popstate", handlePopState);
+        return () => {
+            window.removeEventListener("popstate", handlePopState);
+        };
+    }, [isActive, lessonId, questions.length, quizStarted, submitted]);
 
     useEffect(() => {
         if (
@@ -2164,6 +3252,59 @@ function EmbeddedLessonQuiz({
         };
     }, [currentQuestionIndex, quizStarted, showSummary]);
 
+    const animateQuestionNavigatorScroll = useCallback(() => {
+        const navigator = questionNavigatorRef.current;
+        if (!navigator) {
+            navigatorScrollFrameRef.current = null;
+            return;
+        }
+
+        const distance = navigatorScrollTargetRef.current - navigator.scrollLeft;
+
+        if (Math.abs(distance) < 0.5) {
+            navigator.scrollLeft = navigatorScrollTargetRef.current;
+            navigatorScrollFrameRef.current = null;
+            return;
+        }
+
+        navigator.scrollLeft += distance * 0.14;
+        navigatorScrollFrameRef.current = window.requestAnimationFrame(animateQuestionNavigatorScroll);
+    }, []);
+
+    const handleQuestionNavigatorWheel = useCallback((event: ReactWheelEvent<HTMLDivElement>) => {
+        const navigator = questionNavigatorRef.current;
+        if (!navigator) {
+            return;
+        }
+
+        const horizontalDelta = event.deltaX;
+        const verticalDelta = event.deltaY;
+        const primaryDelta = Math.abs(verticalDelta) > Math.abs(horizontalDelta)
+            ? verticalDelta
+            : horizontalDelta;
+
+        if (primaryDelta === 0) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        const maxScrollLeft = Math.max(0, navigator.scrollWidth - navigator.clientWidth);
+        const baseScrollLeft = navigatorScrollFrameRef.current === null
+            ? navigator.scrollLeft
+            : navigatorScrollTargetRef.current;
+        navigatorScrollTargetRef.current = Math.min(
+            maxScrollLeft,
+            Math.max(0, baseScrollLeft + primaryDelta * 1.1),
+        );
+
+        if (navigatorScrollFrameRef.current === null) {
+            navigatorScrollFrameRef.current = window.requestAnimationFrame(animateQuestionNavigatorScroll);
+        }
+    }, [animateQuestionNavigatorScroll]);
+
+    useEffect(() => stopQuestionNavigatorAnimation, [stopQuestionNavigatorAnimation]);
+
     if (!quiz || questions.length === 0) {
         return (
             <EmptyPanel
@@ -2215,6 +3356,9 @@ function EmbeddedLessonQuiz({
     const nextLessonIsReady = nextLessonStatus === "ready" || Boolean(nextLesson?.lesson.is_generated);
     const savedAttemptCount = savedQuizState?.attempt_count ?? 0;
     const savedBestScore = savedQuizState?.best_score_percent ?? 0;
+    const firstUnansweredQuestionIndex = questions.findIndex(
+        (_, index) => !hasAnswer(answers[index]),
+    );
 
     const kickoffNextLessonPreparation = () => {
         if (!nextLesson) {
@@ -2260,19 +3404,46 @@ function EmbeddedLessonQuiz({
     };
 
     const handleStartQuiz = () => {
+        setPendingDraft(null);
         setQuizStarted(true);
         kickoffNextLessonPreparation();
     };
 
+    const handleResumeQuiz = () => {
+        if (!pendingDraft) {
+            handleStartQuiz();
+            return;
+        }
+
+        setPendingDraft(null);
+        setQuizStarted(true);
+        kickoffNextLessonPreparation();
+    };
+
+    const handleStartOver = () => {
+        resetAttemptState();
+        setQuestions(shuffleQuestions(sourceQuestions));
+        setPendingDraft(null);
+        setQuizStarted(false);
+        setNextLessonStatus(nextLesson?.lesson.is_generated ? "ready" : "idle");
+        setNextLessonMessage(null);
+        if (Number.isFinite(userId)) {
+            clearEmbeddedLessonQuizDraft(userId, lessonId);
+            clearEmbeddedLessonQuizCompletedSnapshot(userId, lessonId);
+        }
+    };
+
     const handleRestart = () => {
-        setCurrentQuestionIndex(0);
-        setAnswers({});
-        setSubmitted(false);
-        setShowSummary(false);
-        setShowIncompleteWarning(false);
-        setHintedQuestions({});
-        setLastSubmittedResult(null);
-        setSaveError(null);
+        resetAttemptState();
+        setQuestions(shuffleQuestions(sourceQuestions));
+        setPendingDraft(null);
+        setQuizStarted(false);
+        setNextLessonStatus(nextLesson?.lesson.is_generated ? "ready" : "idle");
+        setNextLessonMessage(null);
+        if (Number.isFinite(userId)) {
+            clearEmbeddedLessonQuizDraft(userId, lessonId);
+            clearEmbeddedLessonQuizCompletedSnapshot(userId, lessonId);
+        }
     };
 
     const isQuestionCorrect = (question: EmbeddedQuizQuestion, index: number) =>
@@ -2319,18 +3490,7 @@ function EmbeddedLessonQuiz({
             });
 
             setLastSubmittedResult(response);
-            setSavedQuizState({
-                lesson_id: response.lesson_id,
-                skill: response.skill,
-                status: response.status,
-                lesson_passed: response.lesson_passed,
-                best_score_percent: response.best_score_percent,
-                attempt_count: response.attempt_count,
-                failed_attempts: response.failed_attempts,
-                completed_at: response.completed_at,
-                current_skill_score: response.current_skill_score,
-                first_pass_score_percent: response.first_pass_score_percent,
-            });
+            setSavedQuizState(buildSavedQuizStateFromSubmission(response));
             setFailedAttempts(response.failed_attempts);
 
             if (response.first_pass_radar_applied || response.lesson_passed) {
@@ -2348,7 +3508,13 @@ function EmbeddedLessonQuiz({
                 // Keep quiz success intact even if the profile refresh fails.
             }
 
+            if (Number.isFinite(userId)) {
+                clearEmbeddedLessonQuizDraft(userId, lessonId);
+            }
+
             setSubmitted(true);
+            setPendingDraft(null);
+            openSummaryView(false);
             setShowIncompleteWarning(false);
         } catch (submissionError) {
             setSaveError(
@@ -2374,6 +3540,15 @@ function EmbeddedLessonQuiz({
         void finalizeSubmission();
     };
 
+    const handleGoToFirstUnansweredQuestion = () => {
+        if (firstUnansweredQuestionIndex < 0) {
+            return;
+        }
+
+        setShowIncompleteWarning(false);
+        setCurrentQuestionIndex(firstUnansweredQuestionIndex);
+    };
+
     const handleRevealHint = () => {
         if (submitted || !hintModeUnlocked) {
             return;
@@ -2386,12 +3561,18 @@ function EmbeddedLessonQuiz({
         }));
     };
 
-
-
     const questionNavigator = (
         <div
             ref={questionNavigatorRef}
-            className="flex gap-2 overflow-x-auto pb-5 pt-1 px-0.5"
+            onWheel={handleQuestionNavigatorWheel}
+            onMouseDown={stopQuestionNavigatorAnimation}
+            onTouchStart={stopQuestionNavigatorAnimation}
+            onScroll={() => {
+                if (navigatorScrollFrameRef.current === null) {
+                    navigatorScrollTargetRef.current = questionNavigatorRef.current?.scrollLeft ?? 0;
+                }
+            }}
+            className="flex gap-2 overflow-x-auto overscroll-x-contain overscroll-y-contain pb-5 pt-1 px-0.5"
         >
             {questions.map((question, index) => {
                 const isActive = index === currentQuestionIndex;
@@ -2406,13 +3587,18 @@ function EmbeddedLessonQuiz({
                         ref={isActive ? activeQuestionButtonRef : null}
                         aria-current={isActive ? "step" : undefined}
                         onClick={() => {
+                            if (submitted) {
+                                openReviewQuestion(index, showSummary ? "push" : "replace");
+                                return;
+                            }
+
                             setCurrentQuestionIndex(index);
                             setShowSummary(false);
                         }}
                         className={[
                             "flex h-10 w-10 min-w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold transition-colors",
                             isActive
-                                ? "border-blue-600 bg-blue-600 text-white"
+                                ? "border-blue-600 bg-blue-600 text-white ring-4 ring-blue-100 dark:ring-blue-950/40"
                                 : submitted && isCorrect && usedHint
                                     ? "border-amber-300 bg-amber-50 text-amber-700"
                                     : submitted && isCorrect
@@ -2422,9 +3608,18 @@ function EmbeddedLessonQuiz({
                                             : usedHint
                                                 ? "border-amber-300 bg-amber-50 text-amber-700"
                                                 : isAnswered
-                                                    ? "border-amber-300 bg-amber-50 text-amber-700"
+                                                    ? "border-emerald-300 bg-emerald-50 text-emerald-700"
                                                     : "border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
                         ].join(" ")}
+                        title={
+                            submitted
+                                ? `Question ${index + 1}: ${isCorrect ? "Correct" : "Needs review"}`
+                                : usedHint
+                                    ? `Question ${index + 1}: Hint used`
+                                    : isAnswered
+                                        ? `Question ${index + 1}: Answered`
+                                        : `Question ${index + 1}: Unanswered`
+                        }
                     >
                         {index + 1}
                     </button>
@@ -2481,6 +3676,31 @@ function EmbeddedLessonQuiz({
                                     {quizStateError}
                                 </div>
                             ) : null}
+                            {pendingDraft ? (
+                                <div className="mt-4 rounded-3xl border border-blue-200 bg-blue-50 px-4 py-4 dark:border-blue-900 dark:bg-blue-950/30">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300">
+                                        Quiz draft found
+                                    </p>
+                                    <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                                        Resume from question{" "}
+                                        <strong>{Math.min(pendingDraft.currentQuestionIndex + 1, Math.max(1, pendingDraft.questions.length))}</strong>{" "}
+                                        of <strong>{pendingDraft.questions.length}</strong>. You already answered{" "}
+                                        <strong>
+                                            {
+                                                Object.values(pendingDraft.answers).filter((value) =>
+                                                    hasAnswer(value),
+                                                ).length
+                                            }
+                                        </strong>{" "}
+                                        question
+                                        {
+                                            Object.values(pendingDraft.answers).filter((value) =>
+                                                hasAnswer(value),
+                                            ).length === 1 ? "" : "s"
+                                        }.
+                                    </p>
+                                </div>
+                            ) : null}
 
                             <div className="mt-5 rounded-3xl border border-slate-200 bg-slate-50/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/40 sm:px-5">
                                 <ol className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -2534,8 +3754,7 @@ function EmbeddedLessonQuiz({
                                             <strong className="font-semibold text-slate-950 dark:text-white">
                                                 Wrong and hinted answers should be reviewed.
                                             </strong>{" "}
-                                            Explanations appear after submission so you can check
-                                            weak spots before retrying or moving on.
+                                            If the attempt is failed, the correct answers and explanations for those questions will remain hidden until you pass the quiz.
                                         </p>
                                     </li>
                                 </ol>
@@ -2560,9 +3779,24 @@ function EmbeddedLessonQuiz({
                             </div>
 
                             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-                                <Button className="w-full sm:w-auto" onClick={handleStartQuiz}>
-                                    Start quiz
-                                </Button>
+                                {pendingDraft ? (
+                                    <>
+                                        <Button className="w-full sm:w-auto" onClick={handleResumeQuiz}>
+                                            Resume quiz
+                                        </Button>
+                                        <Button
+                                            className="w-full sm:w-auto"
+                                            variant="outline"
+                                            onClick={handleStartOver}
+                                        >
+                                            Start over
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Button className="w-full sm:w-auto" onClick={handleStartQuiz}>
+                                        Start quiz
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -2650,22 +3884,6 @@ function EmbeddedLessonQuiz({
                             </div>
                         ) : null}
 
-                        {hintModeUnlocked ? (
-                            <div className="rounded-3xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900 dark:bg-amber-950/30 sm:px-5">
-                                <div className="min-w-0">
-                                    <div className="flex items-center gap-2 text-amber-900 dark:text-amber-100">
-                                        <Lightbulb className="h-4 w-4" />
-                                        <p className="text-sm font-semibold">Hint mode is active</p>
-                                    </div>
-                                    <p className="mt-2 text-sm leading-6 text-amber-800 dark:text-amber-200">
-                                        Use a hint if you need it. The correct answer will be
-                                        filled in automatically, and that question will score{" "}
-                                        {Math.round(HINT_CREDIT * 100)}% credit instead of 100%.
-                                    </p>
-                                </div>
-                            </div>
-                        ) : null}
-
                         {questionNavigator}
 
                         {showSummary ? (
@@ -2697,7 +3915,7 @@ function EmbeddedLessonQuiz({
                                             ? "You passed this lesson check. Review any question from the navigator above, restart if you want another attempt, or continue once the next lesson is ready."
                                             : lessonPassed
                                                 ? "This retake did not pass, but the lesson is already marked as passed. You can review any question, restart again, or continue once the next lesson is ready."
-                                                : "Review any question from the navigator above, or restart the quiz to try again. You need a weighted 70% score to unlock the continue action for the next lesson."}
+                                                : "Review any question from the navigator above, or restart the quiz to try again."}
                                     </p>
                                     {savedQuizState?.current_skill_score !== null && savedQuizState?.current_skill_score !== undefined ? (
                                         <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-900 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-100">
@@ -2722,27 +3940,50 @@ function EmbeddedLessonQuiz({
                                             <p className="mt-1 font-semibold text-slate-950 dark:text-white">{failedAttempts}</p>
                                         </div>
                                     </div>
-                                    {!lessonPassed && failedAttempts + 1 === HINT_UNLOCK_AFTER_FAILURES ? (
-                                        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                                            One more failed attempt will unlock hint mode for this lesson.
+                                    {!lessonPassed && (
+                                        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                                            {nextLesson ? (
+                                                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900 dark:bg-amber-950/40">
+                                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
+                                                        Next lesson lock
+                                                    </p>
+                                                    <p className="mt-2 text-sm text-amber-900 dark:text-amber-200">
+                                                        {nextLessonIsReady
+                                                            ? "The next lesson is ready, but it stays locked until you pass this quiz with a weighted score of at least 70%."
+                                                            : "The next lesson stays locked until you pass this quiz with a weighted score of at least 70%."}
+                                                    </p>
+                                                </div>
+                                            ) : null}
+                                            {failedAttempts + 1 === HINT_UNLOCK_AFTER_FAILURES ? (
+                                                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900 dark:bg-amber-950/40">
+                                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
+                                                        Hint mode
+                                                    </p>
+                                                    <p className="mt-2 text-sm text-amber-900 dark:text-amber-200">
+                                                        One more failed attempt will unlock hint mode for this lesson.
+                                                    </p>
+                                                </div>
+                                            ) : null}
+                                            {hintModeUnlocked ? (
+                                                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900 dark:bg-amber-950/40">
+                                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
+                                                        Hint mode
+                                                    </p>
+                                                    <p className="mt-2 text-sm text-amber-900 dark:text-amber-200">
+                                                        Hint mode is now available on your next retry. Each hinted
+                                                        answer auto-fills the correct response and counts as{" "}
+                                                        {Math.round(HINT_CREDIT * 100)}% credit.
+                                                    </p>
+                                                </div>
+                                            ) : null}
                                         </div>
-                                    ) : null}
-                                    {!lessonPassed && hintModeUnlocked ? (
-                                        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                                            Hint mode is now available on your next retry. Each hinted
-                                            answer auto-fills the correct response and counts as{" "}
-                                            {Math.round(HINT_CREDIT * 100)}% credit.
-                                        </div>
-                                    ) : null}
+                                    )}
                                     <div className="mt-5 flex flex-wrap gap-3">
                                         <Button className="w-full sm:w-auto" onClick={handleRestart}>Restart quiz</Button>
                                         <Button
                                             className="w-full sm:w-auto"
                                             variant="outline"
-                                            onClick={() => {
-                                                setShowSummary(false);
-                                                setCurrentQuestionIndex(0);
-                                            }}
+                                            onClick={() => openReviewQuestion(0, "push")}
                                         >
                                             Review from question 1
                                         </Button>
@@ -2757,11 +3998,6 @@ function EmbeddedLessonQuiz({
                                             </Button>
                                         ) : null}
                                     </div>
-                                    {!lessonPassed && nextLesson && nextLessonIsReady ? (
-                                        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                                            The next lesson is ready, but it stays locked until you pass this quiz with a weighted score of at least 70%.
-                                        </div>
-                                    ) : null}
                                 </div>
 
                                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -2771,10 +4007,7 @@ function EmbeddedLessonQuiz({
                                             <button
                                                 key={`summary-${question.id}`}
                                                 type="button"
-                                                onClick={() => {
-                                                    setCurrentQuestionIndex(index);
-                                                    setShowSummary(false);
-                                                }}
+                                                onClick={() => openReviewQuestion(index, "push")}
                                                 className={[
                                                     "rounded-2xl border px-4 py-4 text-left transition-colors",
                                                     isCorrect
@@ -2881,20 +4114,55 @@ function EmbeddedLessonQuiz({
                                         <Button
                                             className="w-full sm:w-auto"
                                             variant="outline"
-                                            onClick={() =>
-                                                setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))
-                                            }
+                                            onClick={() => {
+                                                const nextIndex = Math.max(0, currentQuestionIndex - 1);
+                                                openReviewQuestion(nextIndex);
+                                            }}
                                             disabled={currentQuestionIndex === 0 || savingAttempt}
                                         >
                                             <ChevronLeft className="mr-2 h-4 w-4" />
                                             Previous
                                         </Button>
 
-                                        {submitted && isLastQuestion ? (
-                                            <Button className="w-full sm:w-auto" onClick={() => setShowSummary(true)}>
-                                                View summary
-                                                <Check className="ml-2 h-4 w-4" />
-                                            </Button>
+                                        {submitted ? (
+                                            <>
+                                                {!isLastQuestion ? (
+                                                    <Button
+                                                        className="w-full sm:w-auto"
+                                                        onClick={() => {
+                                                            const nextIndex = Math.min(totalQuestions - 1, currentQuestionIndex + 1);
+                                                            openReviewQuestion(nextIndex);
+                                                        }}
+                                                    >
+                                                        Next
+                                                        <ChevronRight className="ml-2 h-4 w-4" />
+                                                    </Button>
+                                                ) : null}
+                                                <Button
+                                                    className="w-full sm:w-auto"
+                                                    onClick={() => {
+                                                        const historyState = window.history.state;
+                                                        const currentMode =
+                                                            historyState
+                                                                && typeof historyState === "object"
+                                                                && "embeddedLessonQuizView" in historyState
+                                                                ? (historyState as {
+                                                                    embeddedLessonQuizView?: { mode?: "summary" | "review" };
+                                                                }).embeddedLessonQuizView?.mode
+                                                                : undefined;
+
+                                                        if (currentMode === "review") {
+                                                            window.history.back();
+                                                            return;
+                                                        }
+
+                                                        openSummaryView();
+                                                    }}
+                                                >
+                                                    View summary
+                                                    <Check className="ml-2 h-4 w-4" />
+                                                </Button>
+                                            </>
                                         ) : !submitted && isLastQuestion ? (
                                             <Button className="w-full sm:w-auto" onClick={handleSubmitQuiz} disabled={savingAttempt}>
                                                 {savingAttempt ? "Saving attempt..." : "Submit quiz"}
@@ -2938,12 +4206,21 @@ function EmbeddedLessonQuiz({
                                     </AlertDialogHeader>
 
                                     <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                                        Review the remaining questions now, or confirm to submit the
-                                        quiz as-is.
+                                        Jump to the first unanswered question to finish faster, or
+                                        submit the quiz as-is.
                                     </div>
 
                                     <AlertDialogFooter className="mt-6">
                                         <AlertDialogCancel>Go back</AlertDialogCancel>
+                                        {firstUnansweredQuestionIndex >= 0 ? (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={handleGoToFirstUnansweredQuestion}
+                                            >
+                                                Go to question {firstUnansweredQuestionIndex + 1}
+                                            </Button>
+                                        ) : null}
                                         <AlertDialogAction onClick={handleConfirmSubmitQuiz} disabled={savingAttempt}>
                                             Submit anyway
                                         </AlertDialogAction>
@@ -2960,6 +4237,7 @@ function EmbeddedLessonQuiz({
 
 export function LessonPage({ lessonId }: { lessonId: number }) {
     const auth = useAuth();
+    const navigate = useNavigate();
     const userId = Number(auth.user?.id);
     const [roadmap, setRoadmap] = useState<RoadmapResponse | null>(null);
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
@@ -2973,10 +4251,62 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
         () => (Number.isFinite(userId) ? readStudyGoalDecision(userId, getTodayDateKey()) : null),
     );
     const [showDailyStudyGoalDialog, setShowDailyStudyGoalDialog] = useState(false);
+    const [isQuizNavigationGuardActive, setIsQuizNavigationGuardActive] = useState(false);
+    const [showQuizLeaveWarning, setShowQuizLeaveWarning] = useState(false);
+    const [pendingSectionTarget, setPendingSectionTarget] = useState<SidebarSectionKey | null>(null);
+    const [pendingMainNavTarget, setPendingMainNavTarget] = useState<string | null>(null);
+    const [pendingNavigationKind, setPendingNavigationKind] = useState<"section" | "roadmap" | "browser" | "main-nav" | null>(null);
+    const bypassQuizBrowserGuardRef = useRef(false);
+
+    const shouldGuardQuizNavigation =
+        activeSection === "quiz" && isQuizNavigationGuardActive;
 
     useEffect(() => {
         setActiveSection("scenario");
     }, [lessonId]);
+
+    useEffect(() => {
+        if (!Number.isFinite(userId)) {
+            return;
+        }
+
+        const syncQuizSectionFromHistory = () => {
+            const historyState = readBrowserHistoryState();
+            const quizView = readEmbeddedLessonQuizViewFromHistoryState(historyState);
+            const targetsCurrentLessonQuiz =
+                quizView?.lessonId === lessonId
+                || historyState.lessonQuizGuard === true;
+
+            if (!targetsCurrentLessonQuiz) {
+                return;
+            }
+
+            const hasSavedCompletedQuiz =
+                readEmbeddedLessonQuizCompletedSnapshot(userId, lessonId) !== null;
+            const hasSavedQuizDraft =
+                readEmbeddedLessonQuizDraft(userId, lessonId) !== null;
+
+            if (hasSavedCompletedQuiz || hasSavedQuizDraft) {
+                setActiveSection("quiz");
+            }
+        };
+
+        syncQuizSectionFromHistory();
+        window.addEventListener("popstate", syncQuizSectionFromHistory);
+
+        return () => {
+            window.removeEventListener("popstate", syncQuizSectionFromHistory);
+        };
+    }, [lessonId, userId]);
+
+    useEffect(() => {
+        if (!shouldGuardQuizNavigation) {
+            setShowQuizLeaveWarning(false);
+            setPendingSectionTarget(null);
+            setPendingMainNavTarget(null);
+            setPendingNavigationKind(null);
+        }
+    }, [shouldGuardQuizNavigation]);
 
     useEffect(() => {
         let isMounted = true;
@@ -3192,6 +4522,142 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
         };
     }, [error, lessonLookup, loading, userId]);
 
+    useEffect(() => {
+        if (!shouldGuardQuizNavigation) {
+            const currentState = readBrowserHistoryState();
+            if ("lessonQuizGuard" in currentState) {
+                window.history.replaceState(
+                    stripLessonQuizGuardState(currentState),
+                    "",
+                    window.location.href,
+                );
+            }
+            return;
+        }
+
+        window.history.pushState(
+            {
+                ...stripEmbeddedLessonQuizViewState(
+                    stripLessonQuizGuardState(readBrowserHistoryState()),
+                ),
+                lessonQuizGuard: true,
+            },
+            "",
+            window.location.href,
+        );
+
+        const handlePopState = () => {
+            if (bypassQuizBrowserGuardRef.current) {
+                bypassQuizBrowserGuardRef.current = false;
+                return;
+            }
+
+            window.history.pushState(
+                {
+                    ...stripEmbeddedLessonQuizViewState(
+                        stripLessonQuizGuardState(readBrowserHistoryState()),
+                    ),
+                    lessonQuizGuard: true,
+                },
+                "",
+                window.location.href,
+            );
+            setPendingSectionTarget(null);
+            setPendingMainNavTarget(null);
+            setPendingNavigationKind("browser");
+            setShowQuizLeaveWarning(true);
+        };
+
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = "";
+        };
+
+        window.addEventListener("popstate", handlePopState);
+        window.addEventListener("beforeunload", handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener("popstate", handlePopState);
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+        };
+    }, [shouldGuardQuizNavigation]);
+
+    const handleSectionChange = useCallback((sectionKey: SidebarSectionKey) => {
+        if (shouldGuardQuizNavigation && sectionKey !== "quiz") {
+            setPendingSectionTarget(sectionKey);
+            setPendingMainNavTarget(null);
+            setPendingNavigationKind("section");
+            setShowQuizLeaveWarning(true);
+            return;
+        }
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        setActiveSection(sectionKey);
+    }, [shouldGuardQuizNavigation]);
+
+    const handleBackToRoadmap = useCallback(() => {
+        if (shouldGuardQuizNavigation) {
+            setPendingSectionTarget(null);
+            setPendingMainNavTarget(null);
+            setPendingNavigationKind("roadmap");
+            setShowQuizLeaveWarning(true);
+            return;
+        }
+
+        void navigate({ to: "/lessons/learning-path" });
+    }, [navigate, shouldGuardQuizNavigation]);
+
+    const handleMainNavigationIntent = useCallback((to: string) => {
+        if (!shouldGuardQuizNavigation) {
+            return false;
+        }
+
+        setPendingSectionTarget(null);
+        setPendingMainNavTarget(to);
+        setPendingNavigationKind("main-nav");
+        setShowQuizLeaveWarning(true);
+        return true;
+    }, [shouldGuardQuizNavigation]);
+
+    const handleCancelQuizLeave = useCallback(() => {
+        setShowQuizLeaveWarning(false);
+        setPendingSectionTarget(null);
+        setPendingMainNavTarget(null);
+        setPendingNavigationKind(null);
+    }, []);
+
+    const handleConfirmQuizLeave = useCallback(() => {
+        const pendingSection = pendingSectionTarget;
+        const pendingMainNav = pendingMainNavTarget;
+        const navigationKind = pendingNavigationKind;
+
+        setShowQuizLeaveWarning(false);
+        setPendingSectionTarget(null);
+        setPendingMainNavTarget(null);
+        setPendingNavigationKind(null);
+
+        if (navigationKind === "section" && pendingSection) {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            setActiveSection(pendingSection);
+            return;
+        }
+
+        if (navigationKind === "roadmap") {
+            void navigate({ to: "/lessons/learning-path" });
+            return;
+        }
+
+        if (navigationKind === "main-nav" && pendingMainNav) {
+            void navigate({ to: pendingMainNav });
+            return;
+        }
+
+        if (navigationKind === "browser") {
+            bypassQuizBrowserGuardRef.current = true;
+            window.history.go(-2);
+        }
+    }, [navigate, pendingMainNavTarget, pendingNavigationKind, pendingSectionTarget]);
+
     const handleTakeBreakAfterGoal = () => {
         if (Number.isFinite(userId)) {
             writeStudyGoalDecision(userId, "break", todayDateKey);
@@ -3207,78 +4673,6 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
         setStudyGoalDecision("continue");
         setShowDailyStudyGoalDialog(false);
     };
-
-    useEffect(() => {
-        if (
-            !Number.isFinite(userId)
-            || loading
-            || error
-            || !lessonLookup
-            || !lessonLookup.lesson.is_generated
-            || !lessonLookup.lesson.is_unlocked
-        ) {
-            return;
-        }
-
-        let activeSince =
-            document.visibilityState === "visible" && document.hasFocus()
-                ? Date.now()
-                : null;
-
-        const flushStudyTime = () => {
-            if (activeSince === null) {
-                return;
-            }
-
-            const elapsedMilliseconds = Date.now() - activeSince;
-            activeSince = Date.now();
-
-            if (elapsedMilliseconds > 0) {
-                recordStudyTime(userId, elapsedMilliseconds);
-            }
-        };
-
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === "hidden") {
-                flushStudyTime();
-                activeSince = null;
-                return;
-            }
-
-            if (document.hasFocus()) {
-                activeSince = Date.now();
-            }
-        };
-
-        const handleWindowBlur = () => {
-            flushStudyTime();
-            activeSince = null;
-        };
-
-        const handleWindowFocus = () => {
-            if (document.visibilityState === "visible") {
-                activeSince = Date.now();
-            }
-        };
-
-        const intervalId = window.setInterval(() => {
-            flushStudyTime();
-        }, 15_000);
-
-        document.addEventListener("visibilitychange", handleVisibilityChange);
-        window.addEventListener("blur", handleWindowBlur);
-        window.addEventListener("focus", handleWindowFocus);
-        window.addEventListener("beforeunload", flushStudyTime);
-
-        return () => {
-            window.clearInterval(intervalId);
-            document.removeEventListener("visibilitychange", handleVisibilityChange);
-            window.removeEventListener("blur", handleWindowBlur);
-            window.removeEventListener("focus", handleWindowFocus);
-            window.removeEventListener("beforeunload", flushStudyTime);
-            flushStudyTime();
-        };
-    }, [error, lessonLookup, loading, userId]);
 
     if (loading) {
         return <LessonSkeleton />;
@@ -3388,16 +4782,17 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
                 onTakeBreak={handleTakeBreakAfterGoal}
                 onKeepLearning={handleKeepLearningAfterGoal}
             />
-            <MainNavigationMenu />
+            <MainNavigationMenu
+                onNavigateIntent={handleMainNavigationIntent}
+                disableStudySettings={shouldGuardQuizNavigation}
+            />
 
             <main className="mx-auto max-w-[1480px] px-3 py-4 sm:px-6 sm:py-6 xl:px-8">
                 <header className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
                     <div className="flex flex-wrap items-center gap-3">
-                        <Button asChild variant="outline" size="sm">
-                            <Link to="/lessons/learning-path">
-                                <ArrowLeft className="mr-2 h-4 w-4" />
-                                Back to roadmap
-                            </Link>
+                        <Button variant="outline" size="sm" onClick={handleBackToRoadmap}>
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to roadmap
                         </Button>
                         <Badge variant="secondary" className="capitalize">
                             {track} track
@@ -3460,7 +4855,7 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
                                         <SectionButton
                                             meta={meta}
                                             isActive={meta.key === activeSection}
-                                            onClick={() => setActiveSection(meta.key)}
+                                            onClick={() => handleSectionChange(meta.key)}
                                         />
                                     </div>
                                 ))}
@@ -3469,19 +4864,66 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
                     </aside>
 
                     <div className="min-w-0">
-                        {activeSection === "quiz" ? (
-                            <EmbeddedLessonQuiz lessonId={lesson.id} quiz={quiz} nextLesson={nextLessonLookup} />
-                        ) : activeTheorySection ? (
-                            renderTheorySection(activeTheorySection)
-                        ) : (
-                            <EmptyPanel
-                                title="Section unavailable"
-                                message="This section is missing or malformed in the stored lesson payload."
+                        <div className={activeSection === "quiz" ? "block" : "hidden"}>
+                            <EmbeddedLessonQuiz
+                                lessonId={lesson.id}
+                                quiz={quiz}
+                                nextLesson={nextLessonLookup}
+                                isActive={activeSection === "quiz"}
+                                onNavigationGuardChange={setIsQuizNavigationGuardActive}
                             />
-                        )}
+                        </div>
+
+                        {activeSection !== "quiz" ? (
+                            activeTheorySection ? (
+                                renderTheorySection(activeTheorySection)
+                            ) : (
+                                <EmptyPanel
+                                    title="Section unavailable"
+                                    message="This section is missing or malformed in the stored lesson payload."
+                                />
+                            )
+                        ) : null}
                     </div>
                 </div>
             </main>
+
+            <AlertDialog
+                open={showQuizLeaveWarning}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        handleCancelQuizLeave();
+                    }
+                }}
+            >
+                <AlertDialogContent className="rounded-3xl border-slate-200 p-0 shadow-2xl dark:border-slate-800">
+                    <div className="p-6 sm:p-7">
+                        <AlertDialogHeader className="text-left">
+                            <AlertDialogTitle className="text-xl font-bold text-slate-950 dark:text-white">
+                                Leave quiz in progress?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="pt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                Your quiz attempt is still in progress. If you leave this quiz tab,
+                                a warning is shown so you do not move away by accident.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+
+                        <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                            You can stay in the quiz and continue answering, or leave and come
+                            back later to resume from your saved draft.
+                        </div>
+
+                        <AlertDialogFooter className="mt-6">
+                            <AlertDialogCancel onClick={handleCancelQuizLeave}>
+                                Stay in quiz
+                            </AlertDialogCancel>
+                            <AlertDialogAction onClick={handleConfirmQuizLeave}>
+                                Leave quiz
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </div>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

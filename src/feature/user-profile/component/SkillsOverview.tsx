@@ -91,7 +91,7 @@ const SKILL_META = [
         icon: FileText,
         color: "text-blue-500",
         bar: "bg-blue-400",
-        barMuted: "bg-blue-200",
+        barInitial: "bg-blue-300",
         track: "bg-blue-50",
     },
     {
@@ -100,7 +100,7 @@ const SKILL_META = [
         icon: MessageSquareText,
         color: "text-emerald-500",
         bar: "bg-emerald-400",
-        barMuted: "bg-emerald-200",
+        barInitial: "bg-emerald-300",
         track: "bg-emerald-50",
     },
     {
@@ -109,7 +109,7 @@ const SKILL_META = [
         icon: Database,
         color: "text-rose-500",
         bar: "bg-rose-400",
-        barMuted: "bg-rose-200",
+        barInitial: "bg-rose-300",
         track: "bg-rose-50",
     },
     {
@@ -118,7 +118,7 @@ const SKILL_META = [
         icon: Code2,
         color: "text-amber-500",
         bar: "bg-amber-400",
-        barMuted: "bg-amber-200",
+        barInitial: "bg-amber-300",
         track: "bg-amber-50",
     },
 ] as const;
@@ -279,16 +279,16 @@ export function SkillsOverview() {
                                         colorClassName={skill.color}
                                         description={skillDefinitions[skill.key].description}
                                     >
-                                        <div className="mb-3 grid w-full max-w-[12rem] cursor-help grid-cols-2 gap-3 sm:max-w-[14rem]">
+                                        <div className="mb-3 grid w-full max-w-[9.5rem] cursor-help grid-cols-2 gap-2.5 sm:max-w-[10.5rem] sm:gap-3">
                                             <div className="flex flex-col items-center">
-                                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
                                                     Initial
                                                 </p>
                                                 <div
                                                     className={`relative flex h-44 w-full items-end overflow-hidden rounded-t-2xl border border-slate-100 ${skill.track} sm:h-52 lg:h-56`}
                                                 >
                                                     <div
-                                                        className={`w-full rounded-t-2xl transition-all duration-700 ease-out ${skill.barMuted}`}
+                                                        className={`w-full rounded-t-2xl transition-all duration-700 ease-out ${skill.barInitial}`}
                                                         style={{ height: `${initialScore}%` }}
                                                     />
                                                 </div>
@@ -297,7 +297,7 @@ export function SkillsOverview() {
                                                 </p>
                                             </div>
                                             <div className="flex flex-col items-center">
-                                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
                                                     Current
                                                 </p>
                                                 <div

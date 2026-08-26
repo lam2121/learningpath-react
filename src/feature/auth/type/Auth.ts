@@ -70,3 +70,16 @@ export interface LoginResponse {
 	name: string
 	role_id: number | null
 }
+
+export interface AICoachMessageRequest {
+	day_streak: number
+	lesson_learner: number
+	total_lesson_in_track: number
+	accuracy: number
+	daily_study_per_day: number
+}
+
+export interface AICoachMessageResponse {
+	feedback_summary: string
+}
+
