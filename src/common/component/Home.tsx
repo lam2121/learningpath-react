@@ -96,9 +96,9 @@ export function Home() {
                         Role-specific professional English
                     </div>
 
-                    <h1 className="mt-5 max-w-3xl text-4xl font-black leading-[0.98] tracking-[-0.055em] sm:text-5xl xl:text-[3.7rem]">
+                    <h1 className="mt-5 max-w-3xl text-4xl font-black leading-[1.1] tracking-[-0.055em] sm:text-5xl xl:text-[3.7rem]">
                         Know exactly what English
-                        <span className="mt-2 block bg-[linear-gradient(135deg,#005596_0%,#0072bb_48%,#00a9ce_100%)] bg-clip-text text-transparent">
+                        <span className="mt-2 block pb-2 bg-[linear-gradient(135deg,#005596_0%,#0072bb_48%,#00a9ce_100%)] bg-clip-text text-transparent">
                             to learn for your career.
                         </span>
                     </h1>
