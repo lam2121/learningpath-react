@@ -848,11 +848,6 @@ export function LessonQuizHistoryCard({
         setCurrentPage(1);
     };
 
-    const handleStatusFilterChange = (status: string) => {
-        setSelectedStatusFilter(status);
-        setCurrentPage(1);
-    };
-
     const handleTopicFilterChange = (order: number | null) => {
         setSelectedTopicFilter(order);
         setCurrentPage(1);

@@ -12,12 +12,10 @@ import {
     Copy,
     FileText,
     Headphones,
-    Lightbulb,
     Languages,
     ListChecks,
     MessageSquareText,
     NotebookPen,
-    Play,
     ScrollText,
     Sparkles,
     Target,
@@ -37,7 +35,6 @@ import {
     kickoffRoadmapLessonGeneration,
     submitLessonQuiz,
     evaluateAnswer,
-    type LessonQuizResultDetailResponse,
     type LessonQuizSubmitResponse,
     type LessonQuizStateResponse,
     type RoadmapLesson,
@@ -1940,10 +1937,10 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
 
     let partA = section.secondary;
     let partB = "";
-    
+
     const splitRegex = /(?:\s*\|\|\s*|\s*\|\s*)(?=Practice\s*Tasks\s*:)/i;
     const parts = section.secondary.split(splitRegex);
-    
+
     if (parts.length > 1) {
         partA = parts[0];
         partB = parts.slice(1).join(" | ");
@@ -2246,7 +2243,7 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
                                             )}
                                         </div>
                                     </div>
-                                    
+
                                     {aiFeedback[idx] ? (
                                         <div className="mt-4 rounded-2xl bg-indigo-50/50 p-4 text-sm leading-6 text-indigo-900 border border-indigo-100 dark:bg-indigo-950/30 dark:border-indigo-900/50 dark:text-indigo-100 animate-in fade-in slide-in-from-top-2">
                                             <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-400">
@@ -2255,7 +2252,7 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
                                             <p className="mt-2">{aiFeedback[idx]}</p>
                                         </div>
                                     ) : null}
-                                    
+
                                     {isRevealed && suggestedAnswer && (
                                         <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm leading-6 text-slate-700 dark:bg-emerald-950/30 dark:text-slate-200 animate-in fade-in">
                                             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
@@ -3107,8 +3104,8 @@ function EmbeddedLessonQuiz({
             const historyState = window.history.state;
             const rawView =
                 historyState
-                && typeof historyState === "object"
-                && "embeddedLessonQuizView" in historyState
+                    && typeof historyState === "object"
+                    && "embeddedLessonQuizView" in historyState
                     ? (historyState as {
                         embeddedLessonQuizView?: {
                             lessonId?: number;
@@ -4137,8 +4134,8 @@ function EmbeddedLessonQuiz({
                                                         const historyState = window.history.state;
                                                         const currentMode =
                                                             historyState
-                                                            && typeof historyState === "object"
-                                                            && "embeddedLessonQuizView" in historyState
+                                                                && typeof historyState === "object"
+                                                                && "embeddedLessonQuizView" in historyState
                                                                 ? (historyState as {
                                                                     embeddedLessonQuizView?: { mode?: "summary" | "review" };
                                                                 }).embeddedLessonQuizView?.mode
