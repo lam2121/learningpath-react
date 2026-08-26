@@ -13,6 +13,6 @@ function RejectedPage() {
 	)
 }
 
-export const Route = createFileRoute('/admin/rejected')({
+export const Route = createFileRoute('/_protected/admin/rejected')({
 	component: RejectedPage,
 });

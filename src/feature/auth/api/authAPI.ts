@@ -28,6 +28,13 @@ async function handleResponse<T>(res: Response): Promise<T> {
 	return res.json() as Promise<T>
 }
 
+async function handleEmptyResponse(res: Response): Promise<void> {
+	if (!res.ok) {
+		const errorData = await res.json().catch(() => ({ detail: res.statusText }))
+		throw new Error(errorData.detail ?? 'Đã có lỗi xảy ra.')
+	}
+}
+
 export async function registerUser(data: RegisterRequest): Promise<UserResponse> {
 	const res = await fetch(`${BASE_URL}/auth/register`, {
 		method: 'POST',
@@ -76,6 +83,14 @@ export async function updateStudySettings(
 	return handleResponse<UserProfileResponse>(res)
 }
 
+export async function deleteCareerTrack(): Promise<void> {
+	const res = await fetch(`${BASE_URL}/auth/me/career-track`, {
+		method: 'DELETE',
+		headers: authHeaders(),
+	})
+	return handleEmptyResponse(res)
+}
+
 export async function generateAICoachMessage(
 	data: AICoachMessageRequest,
 ): Promise<AICoachMessageResponse> {
@@ -86,4 +101,3 @@ export async function generateAICoachMessage(
 	})
 	return handleResponse<AICoachMessageResponse>(res)
 }
-

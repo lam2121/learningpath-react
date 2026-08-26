@@ -16,7 +16,7 @@ function KillSwitchPage() {
 		// Listen for kill switch changes from other tabs
 		const handleKillSwitchChange = (e: CustomEvent) => {
 			setKillSwitch(e.detail);
-		};
+		}
 		window.addEventListener('kill-switch-changed', handleKillSwitchChange as EventListener);
 		return () => window.removeEventListener('kill-switch-changed', handleKillSwitchChange as EventListener);
 	}, []);
@@ -30,7 +30,7 @@ function KillSwitchPage() {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}
 
 	const handleToggleKillSwitch = async (enabled: boolean) => {
 		setToggling(true);
@@ -42,7 +42,7 @@ function KillSwitchPage() {
 		} finally {
 			setToggling(false);
 		}
-	};
+	}
 
 	if (loading) {
 		return (
@@ -55,7 +55,7 @@ function KillSwitchPage() {
 					<Loader2 className="h-6 w-6 animate-spin text-blue-600" />
 				</div>
 			</div>
-		);
+		)
 	}
 
 	return (
@@ -105,6 +105,6 @@ Activated at: {new Date(killSwitch.enabledAt).toLocaleString()}
 	)
 }
 
-export const Route = createFileRoute('/admin/killswitch')({
+export const Route = createFileRoute('/_protected/admin/killswitch')({
 	component: KillSwitchPage,
 });
