@@ -353,7 +353,7 @@ export function SkillsOverview() {
                                 </p>
                             </div>
                             <Button asChild variant="outline" className="shrink-0 border-slate-300">
-                                <Link to="/placement-test">Take placement test</Link>
+                                <Link to="/onboarding/placement-test">Take placement test</Link>
                             </Button>
                         </div>
                     </div>
