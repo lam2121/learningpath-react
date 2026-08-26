@@ -33,13 +33,13 @@ function getRowStatus(track: CareerTrack): { label: string; className: string } 
 		return {
 			label: courseStatus === 'in_progress' || courseStatus === 'pending' ? 'Generating course' : 'Generating placement',
 			className: 'border-blue-200 bg-blue-50 text-blue-700',
-		};
+		}
 	}
 	if (placementStatus === 'failed' || courseStatus === 'failed') {
 		return {
 			label: 'Attention',
 			className: 'border-red-200 bg-red-50 text-red-700',
-		};
+		}
 	}
 	const placementReady = track.placementQuestionsCount >= 48;
 	const courseReady = track.topicsCount >= 20 && track.lessonsCount >= 120;
@@ -47,18 +47,18 @@ function getRowStatus(track: CareerTrack): { label: string; className: string } 
 		return {
 			label: 'Ready',
 			className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-		};
+		}
 	}
 	if (track.placementQuestionsCount > 0 || track.topicsCount > 0 || track.lessonsCount > 0) {
 		return {
 			label: 'Partial',
 			className: 'border-amber-200 bg-amber-50 text-amber-800',
-		};
+		}
 	}
 	return {
 		label: 'Not started',
 		className: 'border-slate-200 bg-slate-50 text-slate-700',
-	};
+	}
 }
 
 function summarizePlacement(track: CareerTrack): string {
@@ -149,14 +149,14 @@ function TracksPage() {
 		setConfirmWorkflow(null);
 		setGenerationSummary(null);
 		await loadGenerationSummary(track.id);
-	};
+	}
 
 	const closeGenerationCenter = () => {
 		if (actionLoading !== null) return;
 		setSelectedTrack(null);
 		setGenerationSummary(null);
 		setConfirmWorkflow(null);
-	};
+	}
 
 	const handleGenerateRequest = async (workflow: Workflow) => {
 		if (!selectedTrack || !generationSummary) return;
@@ -166,7 +166,7 @@ function TracksPage() {
 
 		if (hasAssets && confirmWorkflow !== workflow) {
 			setConfirmWorkflow(workflow);
-			return;
+			return
 		}
 
 		setActionLoading(workflow);
@@ -182,7 +182,7 @@ function TracksPage() {
 			await Promise.all([
 				loadTracks(),
 				loadGenerationSummary(selectedTrack.id, true),
-			]);
+			])
 		} catch (error) {
 			console.error(`${workflow} generation failed:`, error);
 			const detail = (error as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
@@ -191,7 +191,7 @@ function TracksPage() {
 		} finally {
 			setActionLoading(null);
 		}
-	};
+	}
 
 	const handleResetLearners = async () => {
 		if (!selectedTrack) return;
@@ -200,12 +200,12 @@ function TracksPage() {
 			const result = await resetTrackLearners(selectedTrack.id);
 			toast.success(
 				`Reset ${result.resetLearners} learner(s), cleared ${result.clearedAnswers} answer(s), and removed ${result.clearedRoadmaps} roadmap(s).`
-			);
+			)
 			setConfirmWorkflow(null);
 			await Promise.all([
 				loadTracks(),
 				loadGenerationSummary(selectedTrack.id, true),
-			]);
+			])
 		} catch (error) {
 			console.error('Reset learners failed:', error);
 			const detail = (error as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
@@ -213,13 +213,13 @@ function TracksPage() {
 		} finally {
 			setActionLoading(null);
 		}
-	};
+	}
 
 	const handleTrackSaved = () => {
 		setShowForm(false);
 		setEditingTrack(undefined);
 		loadTracks();
-	};
+	}
 
 	const handleActivate = async (track: CareerTrack) => {
 		setMutating(true);
@@ -233,7 +233,7 @@ function TracksPage() {
 		} finally {
 			setMutating(false);
 		}
-	};
+	}
 
 	const handleDelete = async () => {
 		if (!confirmDelete) return;
@@ -251,14 +251,14 @@ function TracksPage() {
 		} finally {
 			setMutating(false);
 		}
-	};
+	}
 
 	if (loading) {
 		return (
 			<div className="flex h-64 items-center justify-center">
 				<Loader2 className="h-8 w-8 animate-spin text-blue-600" />
 			</div>
-		);
+		)
 	}
 
 	return (
@@ -300,7 +300,7 @@ function TracksPage() {
 									<td className="p-4 font-medium text-gray-900">{track.name}</td>
 									<td className="max-w-xs p-4 text-sm text-gray-600">{track.jobDescription.slice(0, 80)}...</td>
 									<td className="p-4 text-sm text-gray-600">{track.activeLearnerCount}</td>
-									<td className="p-4">
+									<td className='p-4'>
 										<Badge variant={track.isActive ? 'default' : 'secondary'}>
 											{track.isActive ? 'Active' : 'Inactive'}
 										</Badge>
@@ -308,13 +308,13 @@ function TracksPage() {
 									<td className="p-4 font-mono text-sm">
 										D:{track.baseline.D_doc} C:{track.baseline.C_comm} T:{track.baseline.T_trouble} G:{track.baseline.G_custom}
 									</td>
-									<td className="p-4">
+									<td className='p-4'>
 										<div className="flex flex-col gap-3">
 											<div className="flex flex-wrap items-center gap-2">
 												<Button
-													variant="outline"
-													size="sm"
-													className="h-8 text-xs"
+													variant='outline'
+													size='sm'
+													className='h-8 text-xs'
 													onClick={() => openGenerationCenter(track)}
 												>
 													{isRunning ? <Loader2 className="mr-1 h-3 w-3 animate-spin text-blue-600" /> : <Sparkles className="mr-1 h-3 w-3" />}
@@ -330,37 +330,37 @@ function TracksPage() {
 											</div>
 										</div>
 									</td>
-									<td className="p-4">
+									<td className='p-4'>
 										<div className="flex items-center gap-2">
 											<Button variant="ghost" size="icon" title="Edit Track" onClick={() => { setEditingTrack(track); setShowForm(true); }}>
-												<Edit className="h-4 w-4" />
+												<Edit className='h-4 w-4' />
 											</Button>
 											{!track.isActive && (
 												<Button
-													variant="ghost"
-													size="icon"
+													variant='ghost'
+													size='icon'
 													className="text-green-600 hover:text-green-700"
-													title="Reactivate track"
+													title='Reactivate track'
 													disabled={mutating}
 													onClick={() => handleActivate(track)}
 												>
-													<RotateCcw className="h-4 w-4" />
+													<RotateCcw className='h-4 w-4' />
 												</Button>
 											)}
 											<Button
-												variant="ghost"
-												size="icon"
+												variant='ghost'
+												size='icon'
 												className="text-red-500 hover:text-red-700"
-												title="Delete track"
+												title='Delete track'
 												disabled={isRunning || mutating}
 												onClick={() => setConfirmDelete(track)}
 											>
-												<Trash2 className="h-4 w-4" />
+												<Trash2 className='h-4 w-4' />
 											</Button>
 										</div>
 									</td>
 								</tr>
-							);
+							)
 						})}
 					</tbody>
 				</table>
@@ -419,7 +419,7 @@ function TracksPage() {
 							Cancel
 						</Button>
 						<Button
-							variant="destructive"
+							variant='destructive'
 							disabled={mutating || (confirmDelete?.activeLearnerCount ?? 0) > 0}
 							onClick={handleDelete}
 						>
@@ -430,9 +430,9 @@ function TracksPage() {
 				</DialogContent>
 			</Dialog>
 		</div>
-	);
+	)
 }
 
-export const Route = createFileRoute('/admin/tracks')({
+export const Route = createFileRoute('/_protected/admin/tracks')({
 	component: TracksPage,
 });

@@ -1,7 +1,6 @@
 import { createFileRoute, Outlet, Link, redirect, useNavigate } from '@tanstack/react-router'
 import { LayoutDashboard, Settings, AlertTriangle, DollarSign, Shield, ScrollText, LogOut } from 'lucide-react'
 import { useAuth } from '@/common/context/AuthContext'
-import { useEffect } from 'react'
 
 const navigation = [
 	{ key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
@@ -54,11 +53,8 @@ function AdminSidebar() {
 	)
 }
 
-export const Route = createFileRoute('/admin')({
+export const Route = createFileRoute('/_protected/admin')({
 	beforeLoad: ({ context }) => {
-		if (!context.auth.isAuthenticated) {
-			throw redirect({ to: '/login' })
-		}
 		if (context.auth.user?.role_id !== 2) {
 			throw redirect({ to: '/onboarding/role-selection' })
 		}
@@ -67,17 +63,6 @@ export const Route = createFileRoute('/admin')({
 })
 
 function AdminLayout() {
-	const { user } = useAuth()
-	const navigate = useNavigate()
-
-	useEffect(() => {
-		if (user?.role_id !== 2) {
-			navigate({ to: '/onboarding/role-selection' })
-		}
-	}, [user, navigate])
-
-	if (user?.role_id !== 2) return null
-
 	return (
 		<div className="flex min-h-screen bg-gray-50">
 			<AdminSidebar />

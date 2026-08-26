@@ -13,6 +13,6 @@ function UsageLogsPage() {
 	)
 }
 
-export const Route = createFileRoute('/admin/usage-logs')({
+export const Route = createFileRoute('/_protected/admin/usage-logs')({
 	component: UsageLogsPage,
 });

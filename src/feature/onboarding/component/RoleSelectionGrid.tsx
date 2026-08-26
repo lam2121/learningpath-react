@@ -280,13 +280,13 @@ function RoleCardItem({ role, paletteIdx, isSelected, isHovered, onSelect, onHov
           </span>
         </div>
       </div>
-      
+
       {/* Selection indicator */}
       {isSelected && (
         <div className="absolute top-1/2 right-4 -translate-y-1/2">
-           <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-           </svg>
+          <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+          </svg>
         </div>
       )}
     </div>
@@ -677,7 +677,7 @@ export function RoleSelectionGrid() {
     setShowConfirmModal(false)
     localStorage.removeItem('pending_survey_answers')
     localStorage.setItem('pending_role_id', selectedRoleId.toString())
-    navigate({ to: '/placement-test' })
+    navigate({ to: '/onboarding/placement-test' })
   }
 
   async function handleDevGenerate() {
@@ -770,8 +770,8 @@ export function RoleSelectionGrid() {
               <div key={step} className="flex items-center">
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${step === 1
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
-                      : 'bg-gray-100 text-gray-400 border border-gray-200'
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
+                    : 'bg-gray-100 text-gray-400 border border-gray-200'
                     }`}
                 >
                   {step}
@@ -832,7 +832,7 @@ export function RoleSelectionGrid() {
         {/* Main Content Split View */}
         {!isLoading && !error && (
           <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
-            
+
             {/* Left Panel: Role List */}
             <div className="w-full lg:w-1/3 2xl:w-2/5 flex flex-col gap-3 lg:max-h-[70vh] lg:overflow-y-auto pr-1">
               {roles.map((role, idx) => (
@@ -867,90 +867,90 @@ export function RoleSelectionGrid() {
                       </svg>
                     </button>
                   </div>
-                  
+
                   {/* Two column details layout */}
                   <div className="flex flex-col md:flex-row gap-8 2xl:gap-12">
-                     {/* Left column in details */}
-                     <div className="w-full md:w-1/2 space-y-6">
-                        <div>
-                           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">Job Description</h3>
-                           <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
-                             {getRoleDescription(selectedRole)}
-                           </p>
-                        </div>
-                        
-                        <div className="pt-2">
-                           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">Skill Overview</h3>
-                           <SkillLegend
-                             weightDescriptions={getWeightDescriptions(selectedRole)}
-                             activeSkill={activeSkill}
-                             onSkillClick={setActiveSkill}
-                           />
-                           <p className="text-[11px] text-gray-400 mt-3 italic">
-                              Click a skill to see its role-specific details and examples.
-                           </p>
-                         </div>
-
+                    {/* Left column in details */}
+                    <div className="w-full md:w-1/2 space-y-6">
+                      <div>
+                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">Job Description</h3>
+                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                          {getRoleDescription(selectedRole)}
+                        </p>
                       </div>
-                      
-                      {/* Right column in details */}
-                     <div className="w-full md:w-1/2 space-y-6">
-                        <div>
-                          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">Skill Weights</h3>
-                          <div className="space-y-3 mt-4">
-                            {(() => {
-                               const weights = extractWeights(selectedRole.baseline)
-                               const weightDescriptions = getWeightDescriptions(selectedRole)
-                               return (
-                                 <>
-                                   <SkillBar axis="D" value={weights.D} weightDescriptions={weightDescriptions} isActive={activeSkill === 'D_doc'} onClick={() => setActiveSkill('D_doc')} />
-                                   <SkillBar axis="C" value={weights.C} weightDescriptions={weightDescriptions} isActive={activeSkill === 'C_comm'} onClick={() => setActiveSkill('C_comm')} />
-                                   <SkillBar axis="T" value={weights.T} weightDescriptions={weightDescriptions} isActive={activeSkill === 'T_trouble'} onClick={() => setActiveSkill('T_trouble')} />
-                                   <SkillBar axis="G" value={weights.G} weightDescriptions={weightDescriptions} isActive={activeSkill === 'G_custom'} onClick={() => setActiveSkill('G_custom')} />
-                                 </>
-                               )
-                            })()}
-                          </div>
-                        </div>
 
-                        <div>
-                           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">
-                             Example Questions
-                           </h3>
-                           {(() => {
-                              const exampleQs = getExampleQuestions(selectedRole, activeSkill)
-                              const activeDescription = getWeightDescriptions(selectedRole)[SKILL_TO_AXIS[activeSkill]]
-                              return (
-                                 <ul className="space-y-3 mt-4">
-                                   <li className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
-                                     {activeDescription.name}
-                                   </li>
-                                   {exampleQs.length > 0
-                                     ? exampleQs.map((q, i) => (
-                                         <li key={i} className="flex items-start gap-2.5 text-sm text-gray-700 leading-snug bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                           <span className="font-bold text-indigo-500 flex-shrink-0 mt-0.5">Q{i + 1}.</span>
-                                           <span>{q}</span>
-                                         </li>
-                                       ))
-                                     : (
-                                         <li className="text-sm text-gray-500 italic">
-                                           No example questions available for this skill yet.
-                                         </li>
-                                       )
-                                   }
-                                 </ul>
-                              )
-                           })()}
+                      <div className="pt-2">
+                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">Skill Overview</h3>
+                        <SkillLegend
+                          weightDescriptions={getWeightDescriptions(selectedRole)}
+                          activeSkill={activeSkill}
+                          onSkillClick={setActiveSkill}
+                        />
+                        <p className="text-[11px] text-gray-400 mt-3 italic">
+                          Click a skill to see its role-specific details and examples.
+                        </p>
+                      </div>
+
+                    </div>
+
+                    {/* Right column in details */}
+                    <div className="w-full md:w-1/2 space-y-6">
+                      <div>
+                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">Skill Weights</h3>
+                        <div className="space-y-3 mt-4">
+                          {(() => {
+                            const weights = extractWeights(selectedRole.baseline)
+                            const weightDescriptions = getWeightDescriptions(selectedRole)
+                            return (
+                              <>
+                                <SkillBar axis="D" value={weights.D} weightDescriptions={weightDescriptions} isActive={activeSkill === 'D_doc'} onClick={() => setActiveSkill('D_doc')} />
+                                <SkillBar axis="C" value={weights.C} weightDescriptions={weightDescriptions} isActive={activeSkill === 'C_comm'} onClick={() => setActiveSkill('C_comm')} />
+                                <SkillBar axis="T" value={weights.T} weightDescriptions={weightDescriptions} isActive={activeSkill === 'T_trouble'} onClick={() => setActiveSkill('T_trouble')} />
+                                <SkillBar axis="G" value={weights.G} weightDescriptions={weightDescriptions} isActive={activeSkill === 'G_custom'} onClick={() => setActiveSkill('G_custom')} />
+                              </>
+                            )
+                          })()}
                         </div>
-                     </div>
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">
+                          Example Questions
+                        </h3>
+                        {(() => {
+                          const exampleQs = getExampleQuestions(selectedRole, activeSkill)
+                          const activeDescription = getWeightDescriptions(selectedRole)[SKILL_TO_AXIS[activeSkill]]
+                          return (
+                            <ul className="space-y-3 mt-4">
+                              <li className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+                                {activeDescription.name}
+                              </li>
+                              {exampleQs.length > 0
+                                ? exampleQs.map((q, i) => (
+                                  <li key={i} className="flex items-start gap-2.5 text-sm text-gray-700 leading-snug bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                    <span className="font-bold text-indigo-500 flex-shrink-0 mt-0.5">Q{i + 1}.</span>
+                                    <span>{q}</span>
+                                  </li>
+                                ))
+                                : (
+                                  <li className="text-sm text-gray-500 italic">
+                                    No example questions available for this skill yet.
+                                  </li>
+                                )
+                              }
+                            </ul>
+                          )
+                        })()}
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : (
                 <div className="bg-gray-50/80 rounded-2xl border border-dashed border-gray-300 p-12 text-center h-full flex flex-col items-center justify-center min-h-[400px]">
                   <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
-                     <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-                     </svg>
+                    <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                    </svg>
                   </div>
                   <h3 className="text-lg font-bold text-gray-900 mb-2">Select a Career Track</h3>
                   <p className="text-gray-500 text-sm max-w-sm">

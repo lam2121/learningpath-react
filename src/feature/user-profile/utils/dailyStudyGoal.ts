@@ -18,6 +18,21 @@ function getStudyGoalDecisionStorageKey(userId: number, dateKey: string) {
     return `careerpath:daily-study-goal:${userId}:${dateKey}`;
 }
 
+export function clearStudyGoalDecisions(userId: number) {
+    const prefix = `careerpath:daily-study-goal:${userId}:`;
+
+    try {
+        for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+            const key = localStorage.key(index);
+            if (key?.startsWith(prefix)) {
+                localStorage.removeItem(key);
+            }
+        }
+    } catch {
+        // Ignore storage failures and keep the UI usable.
+    }
+}
+
 export function readStudyGoalDecision(
     userId: number,
     dateKey = getTodayDateKey(),
