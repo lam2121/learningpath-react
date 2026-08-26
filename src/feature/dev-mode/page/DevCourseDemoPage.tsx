@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { AlertCircle, Loader2, RefreshCw, Sparkles } from 'lucide-react'
+import { AlertCircle, Loader2, RefreshCw, Sparkles, User } from 'lucide-react'
 import { Badge } from '@/shadcn/component/ui/badge'
 import { Button } from '@/shadcn/component/ui/button'
 import {
@@ -186,6 +186,9 @@ export function DevCourseDemoPage() {
 					</Button>
 					<Button variant="outline" size="sm" onClick={load}>
 						<RefreshCw /> Refresh
+					</Button>
+					<Button variant="ghost" size="sm" onClick={() => navigate({ to: '/profile' })}>
+						<User /> Profile
 					</Button>
 					<Button variant="ghost" size="sm" onClick={() => navigate({ to: '/onboarding/role-selection' })}>
 						Role selection

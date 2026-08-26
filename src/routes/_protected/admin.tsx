@@ -21,12 +21,12 @@ function AdminSidebar() {
 	}
 
 	return (
-		<aside className="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col">
+		<aside className="w-64 bg-white border-r border-gray-200 h-screen sticky top-0 flex flex-col">
 			<div className="p-6 border-b border-gray-100">
 				<h1 className="text-xl font-bold text-gray-900">Admin Portal</h1>
 				<p className="text-xs text-gray-500 mt-1">TMA IT Communication</p>
 			</div>
-			<nav className="flex-1 p-4 space-y-1">
+			<nav className="flex-1 p-4 space-y-1 overflow-y-auto min-h-0">
 				{navigation.map(item => (
 					<Link
 						key={item.key}

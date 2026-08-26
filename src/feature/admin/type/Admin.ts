@@ -244,6 +244,9 @@ export interface ResetLearnersResult {
 	resetLearners: number;
 	clearedAnswers: number;
 	clearedRoadmaps: number;
+	clearedLessons: number;
+	clearedRadarScores: number;
+	clearedQueueEntries: number;
 }
 
 export interface DashboardData {

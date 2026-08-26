@@ -1699,6 +1699,7 @@ function ReadingPracticeSection({
     const [listeningQuestionIndex, setListeningQuestionIndex] = useState<number | null>(null);
     const [aiFeedback, setAiFeedback] = useState<Record<number, string>>({});
     const [isEvaluating, setIsEvaluating] = useState<Record<number, boolean>>({});
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognition API has no TS types
     const recognitionRef = useRef<any>(null);
 
     const handleEvaluate = async (index: number, question: string, referenceAnswer: string) => {
@@ -1742,9 +1743,11 @@ function ReadingPracticeSection({
             recognitionRef.current.stop();
         }
 
+        /* eslint-disable @typescript-eslint/no-explicit-any -- Web SpeechRecognition API has no TS types */
         const SpeechRecognition =
             (window as any).SpeechRecognition ||
             (window as any).webkitSpeechRecognition;
+        /* eslint-enable @typescript-eslint/no-explicit-any */
 
         if (!SpeechRecognition) {
             alert("Your browser does not support Speech Recognition.");
@@ -1761,6 +1764,7 @@ function ReadingPracticeSection({
             initialText += " ";
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognitionEvent has no TS types
         recognition.onresult = (event: any) => {
             let sessionTranscript = "";
             for (let i = 0; i < event.results.length; ++i) {
@@ -1960,6 +1964,7 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
     const [listeningQuestionIndex, setListeningQuestionIndex] = useState<number | null>(null);
     const [aiFeedback, setAiFeedback] = useState<Record<number, string>>({});
     const [isEvaluating, setIsEvaluating] = useState<Record<number, boolean>>({});
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognition API has no TS types
     const recognitionRef = useRef<any>(null);
 
     const handleEvaluate = async (index: number, promptText: string, suggestedAnswer: string) => {
@@ -2003,9 +2008,11 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
             recognitionRef.current.stop();
         }
 
+        /* eslint-disable @typescript-eslint/no-explicit-any -- Web SpeechRecognition API has no TS types */
         const SpeechRecognition =
             (window as any).SpeechRecognition ||
             (window as any).webkitSpeechRecognition;
+        /* eslint-enable @typescript-eslint/no-explicit-any */
 
         if (!SpeechRecognition) {
             alert("Your browser does not support Speech Recognition.");
@@ -2022,6 +2029,7 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
             initialText += " ";
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognitionEvent has no TS types
         recognition.onresult = (event: any) => {
             let sessionTranscript = "";
             for (let i = 0; i < event.results.length; ++i) {
@@ -2281,6 +2289,7 @@ function ListeningPracticeSection({
     const [listeningQuestionIndex, setListeningQuestionIndex] = useState<number | null>(null);
     const [aiFeedback, setAiFeedback] = useState<Record<number, string>>({});
     const [isEvaluating, setIsEvaluating] = useState<Record<number, boolean>>({});
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognition API has no TS types
     const recognitionRef = useRef<any>(null);
 
     const rawScript = section.primary;
@@ -2331,9 +2340,11 @@ function ListeningPracticeSection({
             recognitionRef.current.stop();
         }
 
+        /* eslint-disable @typescript-eslint/no-explicit-any -- Web SpeechRecognition API has no TS types */
         const SpeechRecognition =
             (window as any).SpeechRecognition ||
             (window as any).webkitSpeechRecognition;
+        /* eslint-enable @typescript-eslint/no-explicit-any */
 
         if (!SpeechRecognition) {
             alert("Your browser does not support Speech Recognition.");
@@ -2350,6 +2361,7 @@ function ListeningPracticeSection({
             initialText += " ";
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognitionEvent has no TS types
         recognition.onresult = (event: any) => {
             let sessionTranscript = "";
             for (let i = 0; i < event.results.length; ++i) {
@@ -3240,6 +3252,59 @@ function EmbeddedLessonQuiz({
         };
     }, [currentQuestionIndex, quizStarted, showSummary]);
 
+    const animateQuestionNavigatorScroll = useCallback(() => {
+        const navigator = questionNavigatorRef.current;
+        if (!navigator) {
+            navigatorScrollFrameRef.current = null;
+            return;
+        }
+
+        const distance = navigatorScrollTargetRef.current - navigator.scrollLeft;
+
+        if (Math.abs(distance) < 0.5) {
+            navigator.scrollLeft = navigatorScrollTargetRef.current;
+            navigatorScrollFrameRef.current = null;
+            return;
+        }
+
+        navigator.scrollLeft += distance * 0.14;
+        navigatorScrollFrameRef.current = window.requestAnimationFrame(animateQuestionNavigatorScroll);
+    }, []);
+
+    const handleQuestionNavigatorWheel = useCallback((event: ReactWheelEvent<HTMLDivElement>) => {
+        const navigator = questionNavigatorRef.current;
+        if (!navigator) {
+            return;
+        }
+
+        const horizontalDelta = event.deltaX;
+        const verticalDelta = event.deltaY;
+        const primaryDelta = Math.abs(verticalDelta) > Math.abs(horizontalDelta)
+            ? verticalDelta
+            : horizontalDelta;
+
+        if (primaryDelta === 0) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        const maxScrollLeft = Math.max(0, navigator.scrollWidth - navigator.clientWidth);
+        const baseScrollLeft = navigatorScrollFrameRef.current === null
+            ? navigator.scrollLeft
+            : navigatorScrollTargetRef.current;
+        navigatorScrollTargetRef.current = Math.min(
+            maxScrollLeft,
+            Math.max(0, baseScrollLeft + primaryDelta * 1.1),
+        );
+
+        if (navigatorScrollFrameRef.current === null) {
+            navigatorScrollFrameRef.current = window.requestAnimationFrame(animateQuestionNavigatorScroll);
+        }
+    }, [animateQuestionNavigatorScroll]);
+
+    useEffect(() => stopQuestionNavigatorAnimation, [stopQuestionNavigatorAnimation]);
+
     if (!quiz || questions.length === 0) {
         return (
             <EmptyPanel
@@ -3495,61 +3560,6 @@ function EmbeddedLessonQuiz({
             [currentQuestionIndex]: getEmbeddedCorrectAnswer(currentQuestion),
         }));
     };
-
-    const animateQuestionNavigatorScroll = useCallback(() => {
-        const navigator = questionNavigatorRef.current;
-        if (!navigator) {
-            navigatorScrollFrameRef.current = null;
-            return;
-        }
-
-        const distance = navigatorScrollTargetRef.current - navigator.scrollLeft;
-
-        if (Math.abs(distance) < 0.5) {
-            navigator.scrollLeft = navigatorScrollTargetRef.current;
-            navigatorScrollFrameRef.current = null;
-            return;
-        }
-
-        navigator.scrollLeft += distance * 0.14;
-        navigatorScrollFrameRef.current = window.requestAnimationFrame(animateQuestionNavigatorScroll);
-    }, []);
-
-    const handleQuestionNavigatorWheel = useCallback((event: ReactWheelEvent<HTMLDivElement>) => {
-        const navigator = questionNavigatorRef.current;
-        if (!navigator) {
-            return;
-        }
-
-        const horizontalDelta = event.deltaX;
-        const verticalDelta = event.deltaY;
-        const primaryDelta = Math.abs(verticalDelta) > Math.abs(horizontalDelta)
-            ? verticalDelta
-            : horizontalDelta;
-
-        if (primaryDelta === 0) {
-            return;
-        }
-
-        event.preventDefault();
-        event.stopPropagation();
-        const maxScrollLeft = Math.max(0, navigator.scrollWidth - navigator.clientWidth);
-        const baseScrollLeft = navigatorScrollFrameRef.current === null
-            ? navigator.scrollLeft
-            : navigatorScrollTargetRef.current;
-        navigatorScrollTargetRef.current = Math.min(
-            maxScrollLeft,
-            Math.max(0, baseScrollLeft + primaryDelta * 1.1),
-        );
-
-        if (navigatorScrollFrameRef.current === null) {
-            navigatorScrollFrameRef.current = window.requestAnimationFrame(animateQuestionNavigatorScroll);
-        }
-    }, [animateQuestionNavigatorScroll]);
-
-    useEffect(() => stopQuestionNavigatorAnimation, [stopQuestionNavigatorAnimation]);
-
-
 
     const questionNavigator = (
         <div

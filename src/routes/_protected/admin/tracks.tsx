@@ -199,8 +199,8 @@ function TracksPage() {
 		try {
 			const result = await resetTrackLearners(selectedTrack.id);
 			toast.success(
-				`Reset ${result.resetLearners} learner(s), cleared ${result.clearedAnswers} answer(s), and removed ${result.clearedRoadmaps} roadmap(s).`
-			)
+				`Reset ${result.resetLearners} learner(s), cleared ${result.clearedAnswers} answer(s), ${result.clearedRoadmaps} roadmap(s), ${result.clearedLessons} lesson(s), ${result.clearedRadarScores} radar score(s), and ${result.clearedQueueEntries} review queue entry(ies).`
+			);
 			setConfirmWorkflow(null);
 			await Promise.all([
 				loadTracks(),
