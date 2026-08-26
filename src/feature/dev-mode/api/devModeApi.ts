@@ -23,12 +23,13 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 // ─── Dev-mode types (mirrors backend roadmap_schema.py) ───────────────────────
 
-export interface SkillScores {
-  D_doc: number
-  C_comm: number
-  T_trouble: number
-  G_custom: number
+export interface SkillDifficultyBreakdown {
+  easy: number   // 0-4 correct on Easy questions
+  medium: number // 0-4 correct on Medium questions
+  hard: number   // 0-4 correct on Hard questions
 }
+
+export type SkillScores = Record<string, SkillDifficultyBreakdown>
 
 export interface DevLesson {
   id: number

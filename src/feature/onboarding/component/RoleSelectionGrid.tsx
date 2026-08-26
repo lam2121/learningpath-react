@@ -3,7 +3,8 @@ import { useNavigate } from '@tanstack/react-router'
 import tmaLogo from '@/asset/image/tma_logo.png'
 import { fetchJobRoles, type JobRole, type JobRoleSkillDefinitions } from '../api/onboardingApi'
 import { useAuth } from '@/common/context/AuthContext'
-import { devGenerateCourse, type SkillScores } from '../../dev-mode/api/devModeApi'
+import { useRadar } from '@/feature/radar/context/RadarContext'
+import { devGenerateCourse, type SkillScores, type SkillDifficultyBreakdown } from '../../dev-mode/api/devModeApi'
 
 // ─── Dev-mode harness (docs/07 §12.9) ────────────────────────────────────────
 
@@ -49,11 +50,18 @@ const DEFAULT_SKILL_DEFINITIONS = {
   },
 } as const
 
-/** Replicate backend `classify_user` (placement_evaluator.py, spec §3) for the live track preview. */
+const MAX_SKILL_WEIGHT = 24
+
+/** Compute earned weight from a difficulty breakdown: Easy×1 + Medium×2 + Hard×3. */
+function earnedWeight(bd: SkillDifficultyBreakdown): number {
+  return bd.easy * 1 + bd.medium * 2 + bd.hard * 3
+}
+
+/** Replicate backend `classify_user` (placement_evaluator.py) for the live track preview. */
 function classifyTrackPreview(skills: SkillScores): 'basic' | 'intermediate' | 'advanced' {
-  const scores = SKILL_KEYS.map((k) => skills[k] / 12)
-  const overall = scores.reduce((a, b) => a + b, 0) / scores.length
-  const min = Math.min(...scores)
+  const fractions = SKILL_KEYS.map((k) => Math.min(earnedWeight(skills[k]) / MAX_SKILL_WEIGHT, 1))
+  const overall = fractions.reduce((a, b) => a + b, 0) / fractions.length
+  const min = Math.min(...fractions)
   if (overall >= 0.75 && min >= 0.5) return 'advanced'
   if (overall >= 0.75 && min < 0.5) return 'intermediate'
   if (overall >= 0.45 && overall < 0.75 && min >= 0.3) return 'intermediate'
@@ -415,7 +423,7 @@ function ConfirmRoleModal({
               />
               <span className="text-xs text-indigo-800 leading-relaxed">
                 <span className="font-bold">Developer mode</span> — skip the placement test and set
-                skill scores manually to build the course roadmap.
+                difficulty breakdown manually to build the course roadmap.
               </span>
             </label>
           )}
@@ -438,7 +446,7 @@ function ConfirmRoleModal({
               onClick={onSetScores}
               className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-sm shadow-md shadow-indigo-200 hover:shadow-lg transition-all duration-200 active:scale-[0.98] cursor-pointer"
             >
-              Set skill scores →
+              Set correct answers →
             </button>
           ) : (
             <button
@@ -530,9 +538,15 @@ function InactiveRoleModal({
   )
 }
 
-// ─── Dev-mode Skill Score Panel (docs/07 §12.9) ─────────────────────────────
+// ─── Dev-mode Placement Panel (v3 scoring) ──────────────────────────────────
 
-function DevSkillPanel({
+const DIFFICULTY_META = [
+  { key: 'easy' as const, label: 'Easy', weight: 1, color: 'text-emerald-600' },
+  { key: 'medium' as const, label: 'Medium', weight: 2, color: 'text-amber-600' },
+  { key: 'hard' as const, label: 'Hard', weight: 3, color: 'text-rose-600' },
+]
+
+function DevPlacementPanel({
   skills,
   onSkillsChange,
   onGenerate,
@@ -545,6 +559,7 @@ function DevSkillPanel({
   onCancel: () => void
   isGenerating: boolean
 }) {
+  const [expandedSkill, setExpandedSkill] = useState<SkillKey | null>(null)
   const track = classifyTrackPreview(skills)
   const trackStyles: Record<string, { label: string; color: string; badge: string }> = {
     basic: { label: 'Basic Track', color: 'text-emerald-700', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
@@ -552,6 +567,13 @@ function DevSkillPanel({
     advanced: { label: 'Advanced Track', color: 'text-violet-700', badge: 'bg-violet-100 text-violet-700 border-violet-200' },
   }
   const style = trackStyles[track]
+
+  function updateBreakdown(skill: SkillKey, tier: keyof SkillDifficultyBreakdown, value: number) {
+    onSkillsChange({
+      ...skills,
+      [skill]: { ...skills[skill], [tier]: value },
+    })
+  }
 
   return (
     <div
@@ -571,30 +593,54 @@ function DevSkillPanel({
             </div>
             <div>
               <h2 className="text-white font-bold text-lg leading-tight">Developer Mode</h2>
-              <p className="text-white/80 text-xs mt-0.5">Set skill scores (0–12) to build the roadmap</p>
+              <p className="text-white/80 text-xs mt-0.5">Set correct answers per difficulty to build the roadmap</p>
             </div>
           </div>
         </div>
 
-        <div className="px-6 py-5 space-y-4">
-          {SKILL_KEYS.map((key) => (
-            <div key={key}>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-medium text-gray-700">{SKILL_LABELS[key]}</label>
-                <span className="text-sm font-bold text-indigo-700">{skills[key]}/12</span>
+        <div className="px-6 py-5 space-y-3">
+          {SKILL_KEYS.map((key) => {
+            const ew = earnedWeight(skills[key])
+            const isExpanded = expandedSkill === key
+            return (
+              <div key={key}>
+                <button
+                  type="button"
+                  onClick={() => setExpandedSkill(isExpanded ? null : key)}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/40 transition-all duration-150 cursor-pointer"
+                >
+                  <span className="text-sm font-medium text-gray-700">{SKILL_LABELS[key]}</span>
+                  <span className="text-sm font-bold text-indigo-700">{ew} / {MAX_SKILL_WEIGHT}</span>
+                </button>
+
+                {isExpanded && (
+                  <div className="mt-2 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
+                    {DIFFICULTY_META.map(({ key: tier, label, weight, color }) => (
+                      <div key={tier}>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className={`text-xs font-semibold ${color}`}>{label} (×{weight})</label>
+                          <span className="text-xs font-bold text-gray-600">{skills[key][tier]} correct</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={4}
+                          step={1}
+                          value={skills[key][tier]}
+                          onChange={(e) => updateBreakdown(key, tier, Number(e.target.value))}
+                          className="w-full accent-indigo-600 cursor-pointer"
+                          disabled={isGenerating}
+                        />
+                      </div>
+                    ))}
+                    <p className="text-xs text-gray-500 text-right font-medium">
+                      Earned: {ew} / {MAX_SKILL_WEIGHT} ({Math.round(Math.min(ew / MAX_SKILL_WEIGHT, 1) * 100)}%)
+                    </p>
+                  </div>
+                )}
               </div>
-              <input
-                type="range"
-                min={0}
-                max={12}
-                step={1}
-                value={skills[key]}
-                onChange={(e) => onSkillsChange({ ...skills, [key]: Number(e.target.value) })}
-                className="w-full accent-indigo-600 cursor-pointer"
-                disabled={isGenerating}
-              />
-            </div>
-          ))}
+            )
+          })}
 
           <div className={`rounded-xl border px-4 py-3 ${style.badge}`}>
             <p className="text-xs font-bold uppercase tracking-wide">Track preview</p>
@@ -619,7 +665,7 @@ function DevSkillPanel({
             disabled={isGenerating}
             className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-sm shadow-md shadow-indigo-200 hover:shadow-lg transition-all duration-200 active:scale-[0.98] cursor-pointer disabled:opacity-50"
           >
-            {isGenerating ? 'Building course…' : 'Generate Course'}
+            {isGenerating ? 'Building course…' : 'Skip Placement & Generate'}
           </button>
         </div>
       </div>
@@ -639,14 +685,15 @@ export function RoleSelectionGrid() {
   const [devMode, setDevMode] = useState(false)
   const [showDevPanel, setShowDevPanel] = useState(false)
   const [devSkills, setDevSkills] = useState<SkillScores>({
-    D_doc: 6,
-    C_comm: 6,
-    T_trouble: 6,
-    G_custom: 6,
+    D_doc: { easy: 2, medium: 2, hard: 2 },
+    C_comm: { easy: 2, medium: 2, hard: 2 },
+    T_trouble: { easy: 2, medium: 2, hard: 2 },
+    G_custom: { easy: 2, medium: 2, hard: 2 },
   })
   const [isGeneratingCourse, setIsGeneratingCourse] = useState(false)
   const navigate = useNavigate()
   const { logout } = useAuth()
+  const { reinitialize: reinitializeRadar } = useRadar()
 
   useEffect(() => {
     fetchJobRoles()
@@ -685,6 +732,7 @@ export function RoleSelectionGrid() {
     setIsGeneratingCourse(true)
     try {
       await devGenerateCourse(selectedRoleId, devSkills)
+      await reinitializeRadar(true)
       setShowDevPanel(false)
       setShowConfirmModal(false)
       navigate({ to: '/dev-course-demo' })
@@ -723,9 +771,9 @@ export function RoleSelectionGrid() {
         />
       )}
 
-      {/* Developer-mode Skill Score Panel */}
+      {/* Developer-mode Placement Panel */}
       {showDevPanel && (
-        <DevSkillPanel
+        <DevPlacementPanel
           skills={devSkills}
           onSkillsChange={setDevSkills}
           onGenerate={handleDevGenerate}
