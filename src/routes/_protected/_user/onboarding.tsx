@@ -7,7 +7,8 @@ export const Route = createFileRoute('/_protected/_user/onboarding')({
             learning_status:
                 'none'
         }))
-        if (status.learning_status === 'enrolled') {
+        if (status.learning_status === 'enrolled' && !location.pathname.endsWith('/careerpath/onboarding/placement-result')) {
+
             throw redirect({ to: '/profile' })
         }
     },
