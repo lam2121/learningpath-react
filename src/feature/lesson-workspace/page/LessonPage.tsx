@@ -79,6 +79,13 @@ import { getTTSStreamUrl } from "@/feature/audio/audioApi";
 let activeGlobalAudio: HTMLAudioElement | null = null;
 
 type BrowserHistoryState = Record<string, unknown>;
+type LessonQuizMode = "intro" | "question" | "summary" | "review";
+type LessonHistoryView = {
+    lessonId: number;
+    section: SidebarSectionKey;
+    quizMode?: LessonQuizMode;
+    questionIndex?: number | null;
+};
 
 function readBrowserHistoryState(): BrowserHistoryState {
     return window.history.state && typeof window.history.state === "object"
@@ -96,6 +103,107 @@ function stripEmbeddedLessonQuizViewState(state: BrowserHistoryState): BrowserHi
     const nextState = { ...state };
     delete nextState.embeddedLessonQuizView;
     return nextState;
+}
+
+function stripLegacyLessonHistoryState(state: BrowserHistoryState): BrowserHistoryState {
+    return stripEmbeddedLessonQuizViewState(stripLessonQuizGuardState(state));
+}
+
+function isSidebarSectionKey(value: unknown): value is SidebarSectionKey {
+    return value === "scenario"
+        || value === "vocab"
+        || value === "phrases"
+        || value === "reading"
+        || value === "dialogue"
+        || value === "listening"
+        || value === "wrapup"
+        || value === "process"
+        || value === "dos_donts"
+        || value === "quiz";
+}
+
+function isLessonQuizMode(value: unknown): value is LessonQuizMode {
+    return value === "intro"
+        || value === "question"
+        || value === "summary"
+        || value === "review";
+}
+
+function buildLessonHistoryView(
+    lessonId: number,
+    section: SidebarSectionKey,
+    quizMode?: LessonQuizMode,
+    questionIndex?: number | null,
+): LessonHistoryView {
+    if (section !== "quiz") {
+        return {
+            lessonId,
+            section,
+            questionIndex: null,
+        };
+    }
+
+    const nextQuizMode = quizMode ?? "intro";
+    return {
+        lessonId,
+        section,
+        quizMode: nextQuizMode,
+        questionIndex:
+            nextQuizMode === "question" || nextQuizMode === "review"
+                ? Math.max(0, Number(questionIndex ?? 0))
+                : null,
+    };
+}
+
+function readLessonHistoryViewFromState(state: BrowserHistoryState): LessonHistoryView | null {
+    const rawView = state.lessonView;
+    if (rawView && typeof rawView === "object" && !Array.isArray(rawView)) {
+        const view = rawView as {
+            lessonId?: unknown;
+            section?: unknown;
+            quizMode?: unknown;
+            questionIndex?: unknown;
+        };
+
+        if (typeof view.lessonId === "number" && isSidebarSectionKey(view.section)) {
+            return buildLessonHistoryView(
+                view.lessonId,
+                view.section,
+                isLessonQuizMode(view.quizMode) ? view.quizMode : undefined,
+                typeof view.questionIndex === "number" ? view.questionIndex : null,
+            );
+        }
+    }
+
+    const legacyView = readEmbeddedLessonQuizViewFromHistoryState(state);
+    if (!legacyView || typeof legacyView.lessonId !== "number") {
+        return null;
+    }
+
+    return buildLessonHistoryView(
+        legacyView.lessonId,
+        "quiz",
+        legacyView.mode === "review" ? "review" : "summary",
+        typeof legacyView.questionIndex === "number" ? legacyView.questionIndex : null,
+    );
+}
+
+function areLessonHistoryViewsEqual(
+    left: LessonHistoryView | null,
+    right: LessonHistoryView | null,
+) {
+    if (left === right) {
+        return true;
+    }
+
+    if (!left || !right) {
+        return false;
+    }
+
+    return left.lessonId === right.lessonId
+        && left.section === right.section
+        && left.quizMode === right.quizMode
+        && (left.questionIndex ?? null) === (right.questionIndex ?? null);
 }
 
 function readEmbeddedLessonQuizViewFromHistoryState(state: BrowserHistoryState) {
@@ -116,7 +224,6 @@ function readEmbeddedLessonQuizViewFromHistoryState(state: BrowserHistoryState) 
 
     return view;
 }
-
 function stopSpeech() {
     if (activeGlobalAudio) {
         activeGlobalAudio.pause();
@@ -410,6 +517,7 @@ type EmbeddedQuizQuestion = {
 
 type EmbeddedLessonQuizDraft = {
     version: number;
+    lessonId: number;
     quizStarted: boolean;
     currentQuestionIndex: number;
     answers: Record<number, string>;
@@ -419,6 +527,7 @@ type EmbeddedLessonQuizDraft = {
 
 type EmbeddedLessonQuizCompletedSnapshot = {
     version: number;
+    lessonId: number;
     showSummary: boolean;
     currentQuestionIndex: number;
     answers: Record<number, string>;
@@ -431,8 +540,8 @@ type EmbeddedLessonQuizCompletedSnapshot = {
 
 const HINT_UNLOCK_AFTER_FAILURES = 2;
 const HINT_CREDIT = 0.75;
-const EMBEDDED_LESSON_QUIZ_DRAFT_VERSION = 1;
-const EMBEDDED_LESSON_QUIZ_COMPLETED_VERSION = 1;
+const EMBEDDED_LESSON_QUIZ_DRAFT_VERSION = 2;
+const EMBEDDED_LESSON_QUIZ_COMPLETED_VERSION = 2;
 
 function getEmbeddedLessonQuizDraftStorageKey(userId: number, lessonId: number) {
     return `learning-embedded-quiz-draft:${userId}:${lessonId}`;
@@ -467,6 +576,7 @@ function isEmbeddedLessonQuizDraft(value: unknown): value is EmbeddedLessonQuizD
     const draft = value as Record<string, unknown>;
     return (
         typeof draft.version === "number"
+        && typeof draft.lessonId === "number"
         && typeof draft.quizStarted === "boolean"
         && typeof draft.currentQuestionIndex === "number"
         && draft.answers !== null
@@ -518,6 +628,7 @@ function isEmbeddedLessonQuizCompletedSnapshot(
     const snapshot = value as Record<string, unknown>;
     return (
         typeof snapshot.version === "number"
+        && typeof snapshot.lessonId === "number"
         && typeof snapshot.showSummary === "boolean"
         && typeof snapshot.currentQuestionIndex === "number"
         && snapshot.answers !== null
@@ -629,8 +740,13 @@ function clearEmbeddedLessonQuizCompletedSnapshot(userId: number, lessonId: numb
 
 function isEmbeddedLessonQuizDraftCompatible(
     draft: EmbeddedLessonQuizDraft,
+    lessonId: number,
     sourceQuestions: EmbeddedQuizQuestion[],
 ) {
+    if (draft.lessonId !== lessonId) {
+        return false;
+    }
+
     if (draft.questions.length !== sourceQuestions.length) {
         return false;
     }
@@ -641,8 +757,13 @@ function isEmbeddedLessonQuizDraftCompatible(
 
 function isEmbeddedLessonQuizCompletedSnapshotCompatible(
     snapshot: EmbeddedLessonQuizCompletedSnapshot,
+    lessonId: number,
     sourceQuestions: EmbeddedQuizQuestion[],
 ) {
+    if (snapshot.lessonId !== lessonId || snapshot.lastSubmittedResult.lesson_id !== lessonId) {
+        return false;
+    }
+
     if (snapshot.questions.length !== sourceQuestions.length) {
         return false;
     }
@@ -2748,12 +2869,21 @@ function EmbeddedLessonQuiz({
     quiz,
     nextLesson,
     isActive,
+    lessonView,
+    onLessonViewRequest,
+    onQuizViewStateChange,
     onNavigationGuardChange,
 }: {
     lessonId: number;
     quiz: ParsedQuiz | null;
     nextLesson: LessonLookup | null;
     isActive: boolean;
+    lessonView: LessonHistoryView | null;
+    onLessonViewRequest?: (
+        nextView: LessonHistoryView,
+        historyMode?: "push" | "replace",
+    ) => void;
+    onQuizViewStateChange?: (view: LessonHistoryView) => void;
     onNavigationGuardChange?: (active: boolean) => void;
 }) {
     const auth = useAuth();
@@ -2786,9 +2916,6 @@ function EmbeddedLessonQuiz({
     const activeQuestionButtonRef = useRef<HTMLButtonElement | null>(null);
     const activeQuestionRef = useRef<HTMLDivElement | null>(null);
     const previousQuestionIndexRef = useRef(0);
-    const hasInitializedReviewHistoryRef = useRef(false);
-    const lastEmbeddedHistoryViewModeRef = useRef<"summary" | "review" | null>(null);
-    const bypassSubmittedQuizGhostHistoryRef = useRef(false);
     const navigatorScrollFrameRef = useRef<number | null>(null);
     const navigatorScrollTargetRef = useRef(0);
 
@@ -2802,58 +2929,39 @@ function EmbeddedLessonQuiz({
         navigatorScrollTargetRef.current = navigator?.scrollLeft ?? 0;
     }, []);
 
-    const buildQuizReviewHistoryState = useCallback((
-        mode: "summary" | "review",
-        questionIndex?: number,
-    ) => ({
-        ...stripLessonQuizGuardState(readBrowserHistoryState()),
-        embeddedLessonQuizView: {
-            lessonId,
-            mode,
-            questionIndex: mode === "review" ? questionIndex ?? 0 : null,
-        },
-    }), [lessonId]);
+    const requestLessonView = useCallback((
+        nextView: LessonHistoryView,
+        historyMode: "push" | "replace" = "replace",
+    ) => {
+        onLessonViewRequest?.(nextView, historyMode);
+    }, [onLessonViewRequest]);
 
-    const writeQuizReviewHistoryState = useCallback((
-        mode: "summary" | "review",
+    const requestQuizView = useCallback((
+        quizMode: LessonQuizMode,
         questionIndex?: number,
         historyMode: "push" | "replace" = "replace",
     ) => {
-        const nextState = buildQuizReviewHistoryState(mode, questionIndex);
+        requestLessonView(
+            buildLessonHistoryView(lessonId, "quiz", quizMode, questionIndex),
+            historyMode,
+        );
+    }, [lessonId, requestLessonView]);
 
-        if (historyMode === "push") {
-            window.history.pushState(nextState, "", window.location.href);
-            return;
-        }
-
-        window.history.replaceState(nextState, "", window.location.href);
-    }, [buildQuizReviewHistoryState]);
-
-    const openSummaryView = useCallback((syncHistory = true) => {
-        if (syncHistory) {
-            writeQuizReviewHistoryState("summary");
-        }
-        hasInitializedReviewHistoryRef.current = true;
+    const openSummaryView = useCallback((
+        historyMode: "push" | "replace" = "replace",
+    ) => {
         setShowSummary(true);
-    }, [writeQuizReviewHistoryState]);
+        requestQuizView("summary", undefined, historyMode);
+    }, [requestQuizView]);
 
     const openReviewQuestion = useCallback((
         index: number,
         historyMode: "push" | "replace" = "replace",
     ) => {
-        if (historyMode === "push" && showSummary) {
-            window.history.replaceState(
-                buildQuizReviewHistoryState("summary"),
-                "",
-                window.location.href,
-            );
-        }
-
-        writeQuizReviewHistoryState("review", index, historyMode);
-        hasInitializedReviewHistoryRef.current = true;
         setCurrentQuestionIndex(index);
         setShowSummary(false);
-    }, [buildQuizReviewHistoryState, showSummary, writeQuizReviewHistoryState]);
+        requestQuizView("review", index, historyMode);
+    }, [requestQuizView]);
 
     const resetAttemptState = useCallback(() => {
         setCurrentQuestionIndex(0);
@@ -2877,6 +2985,28 @@ function EmbeddedLessonQuiz({
         [lastSubmittedResult?.question_results],
     );
 
+    const currentQuizView = useMemo(() => {
+        if (!quizStarted) {
+            return buildLessonHistoryView(lessonId, "quiz", "intro");
+        }
+
+        if (!submitted) {
+            return buildLessonHistoryView(
+                lessonId,
+                "quiz",
+                "question",
+                currentQuestionIndex,
+            );
+        }
+
+        return buildLessonHistoryView(
+            lessonId,
+            "quiz",
+            showSummary ? "summary" : "review",
+            showSummary ? null : currentQuestionIndex,
+        );
+    }, [currentQuestionIndex, lessonId, quizStarted, showSummary, submitted]);
+
     useEffect(() => {
         let cancelled = false;
         const freshQuestions = shuffleQuestions(sourceQuestions);
@@ -2891,14 +3021,17 @@ function EmbeddedLessonQuiz({
         setSavedQuizState(null);
         setQuizStateError(null);
         setSavingAttempt(false);
-        hasInitializedReviewHistoryRef.current = false;
 
         if (Number.isFinite(userId) && sourceQuestions.length > 0) {
             const completedSnapshot = readEmbeddedLessonQuizCompletedSnapshot(userId, lessonId);
 
             if (
                 completedSnapshot
-                && isEmbeddedLessonQuizCompletedSnapshotCompatible(completedSnapshot, sourceQuestions)
+                && isEmbeddedLessonQuizCompletedSnapshotCompatible(
+                    completedSnapshot,
+                    lessonId,
+                    sourceQuestions,
+                )
             ) {
                 setQuestions(completedSnapshot.questions);
                 setCurrentQuestionIndex(
@@ -2928,18 +3061,30 @@ function EmbeddedLessonQuiz({
 
             if (
                 savedDraft
-                && isEmbeddedLessonQuizDraftCompatible(savedDraft, sourceQuestions)
+                && isEmbeddedLessonQuizDraftCompatible(savedDraft, lessonId, sourceQuestions)
             ) {
                 setQuestions(savedDraft.questions);
+                const nextDraftIndex = Math.min(
+                    Math.max(0, savedDraft.currentQuestionIndex),
+                    Math.max(0, savedDraft.questions.length - 1),
+                );
                 setCurrentQuestionIndex(
-                    Math.min(
-                        Math.max(0, savedDraft.currentQuestionIndex),
-                        Math.max(0, savedDraft.questions.length - 1),
-                    ),
+                    nextDraftIndex,
                 );
                 setAnswers(savedDraft.answers);
                 setHintedQuestions(savedDraft.hintedQuestions);
-                setPendingDraft(savedDraft);
+                if (
+                    lessonView?.lessonId === lessonId
+                    && lessonView.section === "quiz"
+                    && lessonView.quizMode === "question"
+                ) {
+                    setPendingDraft(null);
+                    setQuizStarted(true);
+                    setSubmitted(false);
+                    setShowSummary(false);
+                } else {
+                    setPendingDraft(savedDraft);
+                }
             } else if (savedDraft) {
                 clearEmbeddedLessonQuizDraft(userId, lessonId);
             }
@@ -2983,6 +3128,7 @@ function EmbeddedLessonQuiz({
 
         writeEmbeddedLessonQuizDraft(userId, lessonId, {
             version: EMBEDDED_LESSON_QUIZ_DRAFT_VERSION,
+            lessonId,
             quizStarted,
             currentQuestionIndex,
             answers,
@@ -3013,6 +3159,7 @@ function EmbeddedLessonQuiz({
 
         writeEmbeddedLessonQuizCompletedSnapshot(userId, lessonId, {
             version: EMBEDDED_LESSON_QUIZ_COMPLETED_VERSION,
+            lessonId,
             showSummary,
             currentQuestionIndex,
             answers,
@@ -3038,6 +3185,10 @@ function EmbeddedLessonQuiz({
     ]);
 
     useEffect(() => {
+        onQuizViewStateChange?.(currentQuizView);
+    }, [currentQuizView, onQuizViewStateChange]);
+
+    useEffect(() => {
         onNavigationGuardChange?.(quizStarted && !submitted);
 
         return () => {
@@ -3046,119 +3197,79 @@ function EmbeddedLessonQuiz({
     }, [onNavigationGuardChange, quizStarted, submitted]);
 
     useEffect(() => {
-        if (isActive) {
+        if (
+            !lessonView
+            || lessonView.lessonId !== lessonId
+            || lessonView.section !== "quiz"
+        ) {
             return;
         }
 
-        hasInitializedReviewHistoryRef.current = false;
-        lastEmbeddedHistoryViewModeRef.current = null;
-    }, [isActive]);
-
-    useEffect(() => {
-        if (!quizStarted || !submitted) {
-            lastEmbeddedHistoryViewModeRef.current = null;
-            return;
-        }
-
-        lastEmbeddedHistoryViewModeRef.current = showSummary ? "summary" : "review";
-    }, [quizStarted, showSummary, submitted]);
-
-    useEffect(() => {
-        if (!quizStarted || !submitted || !isActive) {
-            return;
-        }
-
-        if (!hasInitializedReviewHistoryRef.current) {
-            if (showSummary) {
-                writeQuizReviewHistoryState("summary");
-            } else {
-                window.history.replaceState(
-                    buildQuizReviewHistoryState("summary"),
-                    "",
-                    window.location.href,
-                );
-                window.history.pushState(
-                    buildQuizReviewHistoryState("review", currentQuestionIndex),
-                    "",
-                    window.location.href,
-                );
-            }
-
-            hasInitializedReviewHistoryRef.current = true;
-            return;
-        }
-
-        writeQuizReviewHistoryState(
-            showSummary ? "summary" : "review",
-            showSummary ? undefined : currentQuestionIndex,
+        const nextIndex = Math.min(
+            Math.max(0, Number(lessonView.questionIndex ?? 0)),
+            Math.max(0, questions.length - 1),
         );
+        const submittedFallbackView = buildLessonHistoryView(
+            lessonId,
+            "quiz",
+            "summary",
+        );
+
+        switch (lessonView.quizMode ?? "intro") {
+            case "intro": {
+                if (submitted) {
+                    if (!showSummary) {
+                        setShowSummary(true);
+                    }
+                    requestLessonView(submittedFallbackView, "replace");
+                    return;
+                }
+                if (quizStarted) setQuizStarted(false);
+                if (submitted) setSubmitted(false);
+                if (showSummary) setShowSummary(false);
+                if (currentQuestionIndex !== 0) setCurrentQuestionIndex(0);
+                return;
+            }
+            case "question": {
+                if (submitted) {
+                    if (!showSummary) {
+                        setShowSummary(true);
+                    }
+                    requestLessonView(submittedFallbackView, "replace");
+                    return;
+                }
+                if (!quizStarted) setQuizStarted(true);
+                if (pendingDraft) setPendingDraft(null);
+                if (showSummary) setShowSummary(false);
+                if (currentQuestionIndex !== nextIndex) setCurrentQuestionIndex(nextIndex);
+                return;
+            }
+            case "summary": {
+                if (!quizStarted) setQuizStarted(true);
+                if (pendingDraft) setPendingDraft(null);
+                if (!submitted) return;
+                if (!showSummary) setShowSummary(true);
+                return;
+            }
+            case "review": {
+                if (!quizStarted) setQuizStarted(true);
+                if (pendingDraft) setPendingDraft(null);
+                if (!submitted) return;
+                if (showSummary) setShowSummary(false);
+                if (currentQuestionIndex !== nextIndex) setCurrentQuestionIndex(nextIndex);
+                return;
+            }
+        }
     }, [
-        buildQuizReviewHistoryState,
         currentQuestionIndex,
-        isActive,
+        lessonId,
+        lessonView,
+        pendingDraft,
+        questions.length,
         quizStarted,
         showSummary,
         submitted,
-        writeQuizReviewHistoryState,
     ]);
-
-    useEffect(() => {
-        if (!isActive || !quizStarted || !submitted) {
-            return;
-        }
-
-        const handlePopState = () => {
-            if (bypassSubmittedQuizGhostHistoryRef.current) {
-                bypassSubmittedQuizGhostHistoryRef.current = false;
-                return;
-            }
-
-            const historyState = window.history.state;
-            const rawView =
-                historyState
-                    && typeof historyState === "object"
-                    && "embeddedLessonQuizView" in historyState
-                    ? (historyState as {
-                        embeddedLessonQuizView?: {
-                            lessonId?: number;
-                            mode?: "summary" | "review";
-                            questionIndex?: number | null;
-                        };
-                    }).embeddedLessonQuizView
-                    : undefined;
-
-            if (!rawView || rawView.lessonId !== lessonId) {
-                if (lastEmbeddedHistoryViewModeRef.current !== null) {
-                    bypassSubmittedQuizGhostHistoryRef.current = true;
-                    window.history.back();
-                }
-                return;
-            }
-
-            if (rawView.mode === "summary") {
-                lastEmbeddedHistoryViewModeRef.current = "summary";
-                setShowSummary(true);
-                return;
-            }
-
-            if (rawView.mode === "review") {
-                const nextIndex = Number.isFinite(rawView.questionIndex)
-                    ? Math.min(
-                        Math.max(0, Number(rawView.questionIndex)),
-                        Math.max(0, questions.length - 1),
-                    )
-                    : 0;
-                lastEmbeddedHistoryViewModeRef.current = "review";
-                setCurrentQuestionIndex(nextIndex);
-                setShowSummary(false);
-            }
-        };
-
-        window.addEventListener("popstate", handlePopState);
-        return () => {
-            window.removeEventListener("popstate", handlePopState);
-        };
-    }, [isActive, lessonId, questions.length, quizStarted, submitted]);
 
     useEffect(() => {
         if (
@@ -3405,8 +3516,12 @@ function EmbeddedLessonQuiz({
 
     const handleStartQuiz = () => {
         setPendingDraft(null);
+        setCurrentQuestionIndex(0);
+        setSubmitted(false);
+        setShowSummary(false);
         setQuizStarted(true);
         kickoffNextLessonPreparation();
+        requestQuizView("question", 0, "push");
     };
 
     const handleResumeQuiz = () => {
@@ -3416,8 +3531,10 @@ function EmbeddedLessonQuiz({
         }
 
         setPendingDraft(null);
+        setShowSummary(false);
         setQuizStarted(true);
         kickoffNextLessonPreparation();
+        requestQuizView("question", currentQuestionIndex, "replace");
     };
 
     const handleStartOver = () => {
@@ -3431,6 +3548,7 @@ function EmbeddedLessonQuiz({
             clearEmbeddedLessonQuizDraft(userId, lessonId);
             clearEmbeddedLessonQuizCompletedSnapshot(userId, lessonId);
         }
+        requestQuizView("intro", undefined, "replace");
     };
 
     const handleRestart = () => {
@@ -3444,6 +3562,7 @@ function EmbeddedLessonQuiz({
             clearEmbeddedLessonQuizDraft(userId, lessonId);
             clearEmbeddedLessonQuizCompletedSnapshot(userId, lessonId);
         }
+        requestQuizView("intro", undefined, "replace");
     };
 
     const isQuestionCorrect = (question: EmbeddedQuizQuestion, index: number) =>
@@ -3514,7 +3633,7 @@ function EmbeddedLessonQuiz({
 
             setSubmitted(true);
             setPendingDraft(null);
-            openSummaryView(false);
+            openSummaryView("replace");
             setShowIncompleteWarning(false);
         } catch (submissionError) {
             setSaveError(
@@ -3547,7 +3666,58 @@ function EmbeddedLessonQuiz({
 
         setShowIncompleteWarning(false);
         setCurrentQuestionIndex(firstUnansweredQuestionIndex);
+        requestQuizView("question", firstUnansweredQuestionIndex, "push");
     };
+
+    const handleAdvanceQuestion = useCallback(() => {
+        if (savingAttempt || showIncompleteWarning) {
+            return;
+        }
+
+        if (submitted) {
+            if (!isLastQuestion) {
+                const nextIndex = Math.min(totalQuestions - 1, currentQuestionIndex + 1);
+                openReviewQuestion(nextIndex, "replace");
+                return;
+            }
+
+            const currentMode =
+                lessonView?.lessonId === lessonId
+                && lessonView.section === "quiz"
+                    ? lessonView.quizMode
+                    : undefined;
+
+            if (currentMode === "review") {
+                window.history.back();
+                return;
+            }
+
+            openSummaryView("replace");
+            return;
+        }
+
+        if (isLastQuestion) {
+            handleSubmitQuiz();
+            return;
+        }
+
+        const nextIndex = Math.min(totalQuestions - 1, currentQuestionIndex + 1);
+        setCurrentQuestionIndex(nextIndex);
+        requestQuizView("question", nextIndex, "push");
+    }, [
+        currentQuestionIndex,
+        handleSubmitQuiz,
+        isLastQuestion,
+        lessonId,
+        lessonView,
+        openReviewQuestion,
+        openSummaryView,
+        requestQuizView,
+        savingAttempt,
+        showIncompleteWarning,
+        submitted,
+        totalQuestions,
+    ]);
 
     const handleRevealHint = () => {
         if (submitted || !hintModeUnlocked) {
@@ -3560,6 +3730,45 @@ function EmbeddedLessonQuiz({
             [currentQuestionIndex]: getEmbeddedCorrectAnswer(currentQuestion),
         }));
     };
+
+    useEffect(() => {
+        if (!isActive) {
+            return;
+        }
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (
+                event.key !== "Enter"
+                || event.shiftKey
+                || event.ctrlKey
+                || event.altKey
+                || event.metaKey
+                || event.repeat
+                || showSummary
+            ) {
+                return;
+            }
+
+            const target = event.target instanceof HTMLElement ? event.target : null;
+            const tagName = target?.tagName;
+            if (
+                target?.isContentEditable
+                || tagName === "INPUT"
+                || tagName === "TEXTAREA"
+                || tagName === "SELECT"
+                || tagName === "BUTTON"
+                || tagName === "A"
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+            handleAdvanceQuestion();
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [handleAdvanceQuestion, isActive, showSummary]);
 
     const questionNavigator = (
         <div
@@ -3594,6 +3803,7 @@ function EmbeddedLessonQuiz({
 
                             setCurrentQuestionIndex(index);
                             setShowSummary(false);
+                            requestQuizView("question", index, "push");
                         }}
                         className={[
                             "flex h-10 w-10 min-w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold transition-colors",
@@ -4116,7 +4326,13 @@ function EmbeddedLessonQuiz({
                                             variant="outline"
                                             onClick={() => {
                                                 const nextIndex = Math.max(0, currentQuestionIndex - 1);
-                                                openReviewQuestion(nextIndex);
+                                                if (submitted) {
+                                                    openReviewQuestion(nextIndex, "replace");
+                                                    return;
+                                                }
+
+                                                setCurrentQuestionIndex(nextIndex);
+                                                requestQuizView("question", nextIndex, "push");
                                             }}
                                             disabled={currentQuestionIndex === 0 || savingAttempt}
                                         >
@@ -4129,10 +4345,7 @@ function EmbeddedLessonQuiz({
                                                 {!isLastQuestion ? (
                                                     <Button
                                                         className="w-full sm:w-auto"
-                                                        onClick={() => {
-                                                            const nextIndex = Math.min(totalQuestions - 1, currentQuestionIndex + 1);
-                                                            openReviewQuestion(nextIndex);
-                                                        }}
+                                                        onClick={handleAdvanceQuestion}
                                                     >
                                                         Next
                                                         <ChevronRight className="ml-2 h-4 w-4" />
@@ -4141,14 +4354,10 @@ function EmbeddedLessonQuiz({
                                                 <Button
                                                     className="w-full sm:w-auto"
                                                     onClick={() => {
-                                                        const historyState = window.history.state;
                                                         const currentMode =
-                                                            historyState
-                                                                && typeof historyState === "object"
-                                                                && "embeddedLessonQuizView" in historyState
-                                                                ? (historyState as {
-                                                                    embeddedLessonQuizView?: { mode?: "summary" | "review" };
-                                                                }).embeddedLessonQuizView?.mode
+                                                            lessonView?.lessonId === lessonId
+                                                            && lessonView.section === "quiz"
+                                                                ? lessonView.quizMode
                                                                 : undefined;
 
                                                         if (currentMode === "review") {
@@ -4156,7 +4365,7 @@ function EmbeddedLessonQuiz({
                                                             return;
                                                         }
 
-                                                        openSummaryView();
+                                                        openSummaryView("replace");
                                                     }}
                                                 >
                                                     View summary
@@ -4171,11 +4380,7 @@ function EmbeddedLessonQuiz({
                                         ) : (
                                             <Button
                                                 className="w-full sm:w-auto"
-                                                onClick={() =>
-                                                    setCurrentQuestionIndex((prev) =>
-                                                        Math.min(totalQuestions - 1, prev + 1),
-                                                    )
-                                                }
+                                                onClick={handleAdvanceQuestion}
                                                 disabled={savingAttempt}
                                             >
                                                 Next
@@ -4243,7 +4448,9 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [activeSection, setActiveSection] = useState<SidebarSectionKey>("scenario");
+    const [lessonView, setLessonView] = useState<LessonHistoryView>(
+        () => buildLessonHistoryView(lessonId, "scenario"),
+    );
     const [trackedStudyMinutesByDay, setTrackedStudyMinutesByDay] = useState<Record<string, number>>(
         () => (Number.isFinite(userId) ? getTrackedStudyMinutesByDay(userId) : {}),
     );
@@ -4256,48 +4463,39 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
     const [pendingSectionTarget, setPendingSectionTarget] = useState<SidebarSectionKey | null>(null);
     const [pendingMainNavTarget, setPendingMainNavTarget] = useState<string | null>(null);
     const [pendingNavigationKind, setPendingNavigationKind] = useState<"section" | "roadmap" | "browser" | "main-nav" | null>(null);
+    const lessonViewRef = useRef(lessonView);
+    const latestQuizViewRef = useRef<LessonHistoryView>(
+        buildLessonHistoryView(lessonId, "quiz", "intro"),
+    );
+    const pendingHistoryDestinationRef = useRef<LessonHistoryView | null>(null);
+    const currentLessonUrlRef = useRef("");
+    const isQuizNavigationGuardActiveRef = useRef(false);
     const bypassQuizBrowserGuardRef = useRef(false);
+    const isSkippingSubmittedQuizHistoryRef = useRef(false);
 
+    const activeSection = lessonView.section;
     const shouldGuardQuizNavigation =
-        activeSection === "quiz" && isQuizNavigationGuardActive;
+        activeSection === "quiz"
+        && lessonView.quizMode === "question"
+        && isQuizNavigationGuardActive;
 
     useEffect(() => {
-        setActiveSection("scenario");
+        const defaultView = buildLessonHistoryView(lessonId, "scenario");
+        setLessonView(defaultView);
+        lessonViewRef.current = defaultView;
+        latestQuizViewRef.current = buildLessonHistoryView(lessonId, "quiz", "intro");
+        pendingHistoryDestinationRef.current = null;
+        currentLessonUrlRef.current = window.location.href;
+        isSkippingSubmittedQuizHistoryRef.current = false;
     }, [lessonId]);
 
     useEffect(() => {
-        if (!Number.isFinite(userId)) {
-            return;
-        }
+        lessonViewRef.current = lessonView;
+    }, [lessonView]);
 
-        const syncQuizSectionFromHistory = () => {
-            const historyState = readBrowserHistoryState();
-            const quizView = readEmbeddedLessonQuizViewFromHistoryState(historyState);
-            const targetsCurrentLessonQuiz =
-                quizView?.lessonId === lessonId
-                || historyState.lessonQuizGuard === true;
-
-            if (!targetsCurrentLessonQuiz) {
-                return;
-            }
-
-            const hasSavedCompletedQuiz =
-                readEmbeddedLessonQuizCompletedSnapshot(userId, lessonId) !== null;
-            const hasSavedQuizDraft =
-                readEmbeddedLessonQuizDraft(userId, lessonId) !== null;
-
-            if (hasSavedCompletedQuiz || hasSavedQuizDraft) {
-                setActiveSection("quiz");
-            }
-        };
-
-        syncQuizSectionFromHistory();
-        window.addEventListener("popstate", syncQuizSectionFromHistory);
-
-        return () => {
-            window.removeEventListener("popstate", syncQuizSectionFromHistory);
-        };
-    }, [lessonId, userId]);
+    useEffect(() => {
+        isQuizNavigationGuardActiveRef.current = isQuizNavigationGuardActive;
+    }, [isQuizNavigationGuardActive]);
 
     useEffect(() => {
         if (!shouldGuardQuizNavigation) {
@@ -4305,6 +4503,7 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
             setPendingSectionTarget(null);
             setPendingMainNavTarget(null);
             setPendingNavigationKind(null);
+            pendingHistoryDestinationRef.current = null;
         }
     }, [shouldGuardQuizNavigation]);
 
@@ -4434,6 +4633,119 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
     const trackedStudiedTodayMinutes = trackedStudyMinutesByDay[todayDateKey] ?? 0;
     const todayLearnedMinutes = backendStudiedTodayMinutes + trackedStudiedTodayMinutes;
     const dailyStudyMinutes = profile?.daily_study_minutes ?? 0;
+    const quizHistorySourceQuestions = useMemo(
+        () => buildEmbeddedQuizQuestions(quiz),
+        [quiz],
+    );
+
+    const normalizeLessonView = useCallback(
+        (view: LessonHistoryView) =>
+            buildLessonHistoryView(
+                view.lessonId,
+                view.section,
+                view.quizMode,
+                view.questionIndex,
+            ),
+        [],
+    );
+
+    const resolveSavedQuizView = useCallback(() => {
+        if (!Number.isFinite(userId) || quizHistorySourceQuestions.length === 0) {
+            return buildLessonHistoryView(lessonId, "quiz", "intro");
+        }
+
+        const completedSnapshot = readEmbeddedLessonQuizCompletedSnapshot(userId, lessonId);
+        if (
+            completedSnapshot
+            && isEmbeddedLessonQuizCompletedSnapshotCompatible(
+                completedSnapshot,
+                lessonId,
+                quizHistorySourceQuestions,
+            )
+        ) {
+            return buildLessonHistoryView(
+                lessonId,
+                "quiz",
+                completedSnapshot.showSummary ? "summary" : "review",
+                completedSnapshot.showSummary
+                    ? null
+                    : completedSnapshot.currentQuestionIndex,
+            );
+        }
+
+        const savedDraft = readEmbeddedLessonQuizDraft(userId, lessonId);
+        if (
+            savedDraft
+            && isEmbeddedLessonQuizDraftCompatible(
+                savedDraft,
+                lessonId,
+                quizHistorySourceQuestions,
+            )
+        ) {
+            return buildLessonHistoryView(
+                lessonId,
+                "quiz",
+                "question",
+                savedDraft.currentQuestionIndex,
+            );
+        }
+
+        return buildLessonHistoryView(lessonId, "quiz", "intro");
+    }, [lessonId, quizHistorySourceQuestions, userId]);
+
+    const navigateLessonView = useCallback((
+        nextView: LessonHistoryView,
+        historyMode: "push" | "replace" = "push",
+    ) => {
+        const normalized = normalizeLessonView(nextView);
+        const nextState = {
+            ...stripLegacyLessonHistoryState(readBrowserHistoryState()),
+            lessonView: normalized,
+        };
+        const nextUrl = currentLessonUrlRef.current || window.location.href;
+
+        if (historyMode === "replace") {
+            window.history.replaceState(nextState, "", nextUrl);
+        } else {
+            window.history.pushState(nextState, "", nextUrl);
+        }
+
+        lessonViewRef.current = normalized;
+        if (normalized.section === "quiz") {
+            latestQuizViewRef.current = normalized;
+        }
+        setLessonView(normalized);
+    }, [normalizeLessonView]);
+
+    const handleLessonViewRequest = useCallback((
+        nextView: LessonHistoryView,
+        historyMode: "push" | "replace" = "replace",
+    ) => {
+        navigateLessonView(nextView, historyMode);
+    }, [navigateLessonView]);
+
+    const handleQuizViewStateChange = useCallback((view: LessonHistoryView) => {
+        latestQuizViewRef.current = normalizeLessonView(view);
+    }, [normalizeLessonView]);
+
+    const resolveQuizSectionView = useCallback(() => {
+        const currentView = lessonViewRef.current;
+        if (currentView.lessonId === lessonId && currentView.section === "quiz") {
+            return currentView;
+        }
+
+        const latestQuizView = latestQuizViewRef.current;
+        if (
+            latestQuizView.lessonId === lessonId
+            && latestQuizView.section === "quiz"
+            && latestQuizView.quizMode
+            && latestQuizView.quizMode !== "intro"
+        ) {
+            return latestQuizView;
+        }
+
+        return resolveSavedQuizView();
+    }, [lessonId, resolveSavedQuizView]);
 
     useEffect(() => {
         if (
@@ -4523,61 +4835,141 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
     }, [error, lessonLookup, loading, userId]);
 
     useEffect(() => {
-        if (!shouldGuardQuizNavigation) {
-            const currentState = readBrowserHistoryState();
-            if ("lessonQuizGuard" in currentState) {
-                window.history.replaceState(
-                    stripLessonQuizGuardState(currentState),
-                    "",
-                    window.location.href,
-                );
-            }
+        if (
+            !lessonLookup
+            || !lessonLookup.lesson.is_generated
+            || !lessonLookup.lesson.is_unlocked
+        ) {
             return;
         }
 
-        window.history.pushState(
-            {
-                ...stripEmbeddedLessonQuizViewState(
-                    stripLessonQuizGuardState(readBrowserHistoryState()),
-                ),
-                lessonQuizGuard: true,
-            },
-            "",
-            window.location.href,
+        currentLessonUrlRef.current = window.location.href;
+        const currentHistoryView = readLessonHistoryViewFromState(
+            readBrowserHistoryState(),
         );
+        const savedQuizView = resolveSavedQuizView();
+        latestQuizViewRef.current = savedQuizView;
 
+        const nextView =
+            currentHistoryView?.lessonId === lessonId
+                ? normalizeLessonView(currentHistoryView)
+                : savedQuizView.quizMode && savedQuizView.quizMode !== "intro"
+                    ? savedQuizView
+                    : buildLessonHistoryView(lessonId, "scenario");
+
+        navigateLessonView(nextView, "replace");
+    }, [
+        lessonId,
+        lessonLookup,
+        navigateLessonView,
+        normalizeLessonView,
+        resolveSavedQuizView,
+    ]);
+
+    useEffect(() => {
         const handlePopState = () => {
-            if (bypassQuizBrowserGuardRef.current) {
-                bypassQuizBrowserGuardRef.current = false;
+            const nextHistoryState = readBrowserHistoryState();
+            const nextHistoryView = readLessonHistoryViewFromState(nextHistoryState);
+            const nextView =
+                nextHistoryView?.lessonId === lessonId
+                    ? normalizeLessonView(nextHistoryView)
+                    : null;
+            const currentView = lessonViewRef.current;
+
+            const shouldSkipSubmittedQuizHistory =
+                currentView.lessonId === lessonId
+                && currentView.section === "quiz"
+                && (
+                    currentView.quizMode === "summary"
+                    || currentView.quizMode === "review"
+                )
+                && nextView?.lessonId === lessonId
+                && nextView.section === "quiz"
+                && (
+                    nextView.quizMode === "intro"
+                    || nextView.quizMode === "question"
+                );
+
+            if (shouldSkipSubmittedQuizHistory) {
+                isSkippingSubmittedQuizHistoryRef.current = true;
+                window.history.back();
                 return;
             }
 
-            window.history.pushState(
-                {
-                    ...stripEmbeddedLessonQuizViewState(
-                        stripLessonQuizGuardState(readBrowserHistoryState()),
-                    ),
-                    lessonQuizGuard: true,
-                },
-                "",
-                window.location.href,
-            );
-            setPendingSectionTarget(null);
-            setPendingMainNavTarget(null);
-            setPendingNavigationKind("browser");
-            setShowQuizLeaveWarning(true);
+            if (isSkippingSubmittedQuizHistoryRef.current) {
+                isSkippingSubmittedQuizHistoryRef.current = false;
+            }
+
+            if (bypassQuizBrowserGuardRef.current) {
+                bypassQuizBrowserGuardRef.current = false;
+                if (nextView) {
+                    lessonViewRef.current = nextView;
+                    if (nextView.section === "quiz") {
+                        latestQuizViewRef.current = nextView;
+                    }
+                    setLessonView(nextView);
+                }
+                return;
+            }
+
+            const shouldBlockBrowserExit =
+                isQuizNavigationGuardActiveRef.current
+                && currentView.lessonId === lessonId
+                && currentView.section === "quiz"
+                && currentView.quizMode === "question"
+                && (
+                    !nextView
+                    || nextView.section !== "quiz"
+                    || nextView.quizMode !== "question"
+                );
+
+            if (shouldBlockBrowserExit) {
+                pendingHistoryDestinationRef.current = nextView;
+                window.history.pushState(
+                    {
+                        ...stripLegacyLessonHistoryState(nextHistoryState),
+                        lessonView: currentView,
+                    },
+                    "",
+                    currentLessonUrlRef.current || window.location.href,
+                );
+                setPendingSectionTarget(null);
+                setPendingMainNavTarget(null);
+                setPendingNavigationKind("browser");
+                setShowQuizLeaveWarning(true);
+                return;
+            }
+
+            pendingHistoryDestinationRef.current = null;
+            if (!nextView) {
+                return;
+            }
+
+            lessonViewRef.current = nextView;
+            if (nextView.section === "quiz") {
+                latestQuizViewRef.current = nextView;
+            }
+            setLessonView(nextView);
         };
+
+        window.addEventListener("popstate", handlePopState);
+        return () => {
+            window.removeEventListener("popstate", handlePopState);
+        };
+    }, [lessonId, normalizeLessonView]);
+
+    useEffect(() => {
+        if (!shouldGuardQuizNavigation) {
+            return;
+        }
 
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
             event.preventDefault();
             event.returnValue = "";
         };
 
-        window.addEventListener("popstate", handlePopState);
         window.addEventListener("beforeunload", handleBeforeUnload);
-
         return () => {
-            window.removeEventListener("popstate", handlePopState);
             window.removeEventListener("beforeunload", handleBeforeUnload);
         };
     }, [shouldGuardQuizNavigation]);
@@ -4591,9 +4983,18 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
             return;
         }
 
+        const nextView =
+            sectionKey === "quiz"
+                ? resolveQuizSectionView()
+                : buildLessonHistoryView(lessonId, sectionKey);
+
+        if (areLessonHistoryViewsEqual(lessonViewRef.current, nextView)) {
+            return;
+        }
+
         window.scrollTo({ top: 0, behavior: "smooth" });
-        setActiveSection(sectionKey);
-    }, [shouldGuardQuizNavigation]);
+        navigateLessonView(nextView, "push");
+    }, [lessonId, navigateLessonView, resolveQuizSectionView, shouldGuardQuizNavigation]);
 
     const handleBackToRoadmap = useCallback(() => {
         if (shouldGuardQuizNavigation) {
@@ -4624,21 +5025,27 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
         setPendingSectionTarget(null);
         setPendingMainNavTarget(null);
         setPendingNavigationKind(null);
+        pendingHistoryDestinationRef.current = null;
     }, []);
 
     const handleConfirmQuizLeave = useCallback(() => {
         const pendingSection = pendingSectionTarget;
         const pendingMainNav = pendingMainNavTarget;
         const navigationKind = pendingNavigationKind;
+        const pendingHistoryDestination = pendingHistoryDestinationRef.current;
 
         setShowQuizLeaveWarning(false);
         setPendingSectionTarget(null);
         setPendingMainNavTarget(null);
         setPendingNavigationKind(null);
+        pendingHistoryDestinationRef.current = null;
 
         if (navigationKind === "section" && pendingSection) {
             window.scrollTo({ top: 0, behavior: "smooth" });
-            setActiveSection(pendingSection);
+            navigateLessonView(
+                buildLessonHistoryView(lessonId, pendingSection),
+                "push",
+            );
             return;
         }
 
@@ -4653,10 +5060,24 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
         }
 
         if (navigationKind === "browser") {
+            if (pendingHistoryDestination) {
+                if (pendingHistoryDestination.section !== "quiz") {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                }
+                navigateLessonView(pendingHistoryDestination, "replace");
+                return;
+            }
             bypassQuizBrowserGuardRef.current = true;
-            window.history.go(-2);
+            window.history.back();
         }
-    }, [navigate, pendingMainNavTarget, pendingNavigationKind, pendingSectionTarget]);
+    }, [
+        lessonId,
+        navigate,
+        navigateLessonView,
+        pendingMainNavTarget,
+        pendingNavigationKind,
+        pendingSectionTarget,
+    ]);
 
     const handleTakeBreakAfterGoal = () => {
         if (Number.isFinite(userId)) {
@@ -4866,10 +5287,14 @@ export function LessonPage({ lessonId }: { lessonId: number }) {
                     <div className="min-w-0">
                         <div className={activeSection === "quiz" ? "block" : "hidden"}>
                             <EmbeddedLessonQuiz
+                                key={lesson.id}
                                 lessonId={lesson.id}
                                 quiz={quiz}
                                 nextLesson={nextLessonLookup}
                                 isActive={activeSection === "quiz"}
+                                lessonView={lessonView}
+                                onLessonViewRequest={handleLessonViewRequest}
+                                onQuizViewStateChange={handleQuizViewStateChange}
                                 onNavigationGuardChange={setIsQuizNavigationGuardActive}
                             />
                         </div>

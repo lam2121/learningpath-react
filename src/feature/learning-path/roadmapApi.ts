@@ -1,6 +1,6 @@
 import { getStoredToken } from '@/common/context/AuthContext'
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api'
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api'
 
 function authHeaders(): HeadersInit {
 	const token = getStoredToken()
@@ -128,8 +128,14 @@ export async function fetchRoadmap(): Promise<RoadmapResponse> {
 	const res = await fetch(`${BASE_URL}/onboarding/roadmap`, {
 		method: 'GET',
 		headers: authHeaders(),
+		cache: 'no-store',
 	})
 	return handleResponse<RoadmapResponse>(res)
+}
+
+export function buildRoadmapNotificationStreamUrl(token: string): string {
+	const params = new URLSearchParams({ token })
+	return `${BASE_URL}/onboarding/roadmap/notifications/stream?${params.toString()}`
 }
 
 export async function kickoffRoadmapLessonGeneration(
