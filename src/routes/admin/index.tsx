@@ -50,7 +50,7 @@ function DashboardPage() {
 				const [dash, ks] = await Promise.all([
 					fetchDashboard(),
 					fetchKillSwitchState(),
-				]);
+				])
 				setData(dash);
 				setKillSwitchOn(ks.enabled);
 			} catch (error) {
@@ -58,7 +58,7 @@ function DashboardPage() {
 			} finally {
 				setLoading(false);
 			}
-		})();
+		})()
 	}, []);
 
 	if (loading) {

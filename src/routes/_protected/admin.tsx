@@ -55,11 +55,7 @@ function AdminSidebar() {
 
 export const Route = createFileRoute('/_protected/admin')({
 	beforeLoad: ({ context }) => {
-		const roleId = Number(context.auth.user?.role_id);
-		const roleStr = String(context.auth.user?.role || '').trim().toLowerCase();
-		const isAdmin = roleId === 2 || roleStr === 'admin' || roleStr === 'administrator';
-
-		if (!isAdmin) {
+		if (context.auth.user?.role_id !== 2) {
 			throw redirect({ to: '/onboarding/role-selection' })
 		}
 	},
