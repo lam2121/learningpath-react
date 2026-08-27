@@ -220,8 +220,20 @@ export function PlacementTestEngine() {
   const [visible, setVisible] = useState(true)
   const [showQuit, setShowQuit] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isAdvancing, setIsAdvancing] = useState(false)
+  const isAdvancingRef = useRef(false)
+  const transitionTimeoutRef = useRef<number | null>(null)
   const [remainingSeconds, setRemainingSeconds] = useState(TEST_DURATION_SECONDS)
   const timerDeadlineRef = useRef<number | null>(null)
+
+  // ── Cleanup transition timeout on unmount ───────────────────────────────────
+  useEffect(() => {
+    return () => {
+      if (transitionTimeoutRef.current !== null) {
+        window.clearTimeout(transitionTimeoutRef.current)
+      }
+    }
+  }, [])
 
   // ── 30-minute countdown timer ───────────────────────────────────────────────
   useEffect(() => {
@@ -310,7 +322,7 @@ export function PlacementTestEngine() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Enter' || event.repeat) return
-      if (isSubmitting || showQuit) return
+      if (isSubmitting || showQuit || isAdvancingRef.current) return
 
       const target = event.target as HTMLElement | null
       // Let the Next/Submit button's own Enter activation fire once (avoid double-advance).
@@ -324,11 +336,12 @@ export function PlacementTestEngine() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isSubmitting, showQuit, selectedId, currentQuestion])
+  }, [isSubmitting, showQuit, selectedId, currentQuestion, isAdvancing])
 
   // ─────────────────────────────────────────────────────────────────────────────
 
   function handleSelect(optionId: string) {
+    if (isAdvancingRef.current || isSubmitting) return
     setSelectedId(optionId)
   }
 
@@ -369,7 +382,9 @@ export function PlacementTestEngine() {
   }
 
   function handleNext() {
-    if (!selectedId || !currentQuestion || isSubmitting || !poolRef.current) return
+    if (isAdvancingRef.current || !selectedId || !currentQuestion || isSubmitting || !poolRef.current) return
+    isAdvancingRef.current = true
+    setIsAdvancing(true)
 
     const isCorrect = selectedId === currentQuestion.correctId
     const newResult: QuestionResult = {
@@ -407,12 +422,17 @@ export function PlacementTestEngine() {
 
     // Animate out → update state → animate in
     setVisible(false)
-    setTimeout(() => {
+    if (transitionTimeoutRef.current !== null) {
+      window.clearTimeout(transitionTimeoutRef.current)
+    }
+    transitionTimeoutRef.current = window.setTimeout(() => {
       setResults(updatedResults)
       setCurrentIndex(nextIndex)
       setCurrentQuestion(nextQ)
       setSelectedId(null)
       setVisible(true)
+      isAdvancingRef.current = false
+      setIsAdvancing(false)
     }, 250)
   }
 
@@ -556,12 +576,12 @@ export function PlacementTestEngine() {
           />
 
           {/* Next / Submit Button */}
-          <div className={`mt-5 transition-all duration-300 ${selectedId ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
+          <div className={`mt-5 transition-all duration-300 ${selectedId && !isAdvancing ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
             <button
               id="btn-next-question"
               type="button"
               onClick={handleNext}
-              disabled={!selectedId || isSubmitting}
+              disabled={!selectedId || isSubmitting || isAdvancing}
               className={`w-full py-4 px-6 rounded-xl font-bold text-base transition-all duration-300 flex items-center justify-center gap-2.5 shadow-lg
                 ${isSubmitting
                   ? 'bg-emerald-500/30 border border-emerald-400/40 text-emerald-300 cursor-default'
