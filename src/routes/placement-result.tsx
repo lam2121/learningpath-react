@@ -16,7 +16,7 @@ export const Route = createFileRoute('/placement-result')({
 		if (status.learning_status === 'enrolled') {
 			throw redirect({ to: '/profile' })
 		}
-		throw redirect({ to: '/onboarding/role-selection' })
+		
 
 	},
 	component: PlacementResultPage,
