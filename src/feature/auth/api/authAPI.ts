@@ -156,11 +156,11 @@ export async function refreshAccessToken(): Promise<{ access_token: string } | n
 }
 
 /**
- * Fetch CareerPath User Profile & Learning Roadmap from CareerPath Backend (Port 8000).
+ * Fetch CareerPath User Profile & Learning Roadmap from CareerPath Backend (Port 8005).
  */
 export async function fetchCurrentUserProfile(): Promise<UserProfileResponse> {
 	const cacheBuster = Date.now()
-	const res = await fetch(`${BASE_URL}/auth/me?_=${cacheBuster}`, {
+	const res = await fetch(`${BASE_URL}/user/me?_=${cacheBuster}`, {
 		method: 'GET',
 		headers: {
 			...authHeaders(),
@@ -169,38 +169,56 @@ export async function fetchCurrentUserProfile(): Promise<UserProfileResponse> {
 		},
 		cache: 'no-store',
 	})
-	return handleResponse<UserProfileResponse>(res)
+	return await handleResponse<UserProfileResponse>(res)
 }
 
 /**
- * Update daily study settings on CareerPath Backend (Port 8000).
+ * Update daily study time target (60, 120, 180, 240, 300, 360 mins)
  */
+export async function updateDailyStudyMinutes(minutes: number): Promise<UserProfileResponse> {
+	const res = await fetch(`${BASE_URL}/user/me/study-settings`, {
+		method: 'PATCH',
+		headers: {
+			'Content-Type': 'application/json',
+			...authHeaders(),
+		},
+		body: JSON.stringify({ daily_study_minutes: minutes }),
+	})
+	return await handleResponse<UserProfileResponse>(res)
+}
+
 export async function updateStudySettings(
 	data: StudySettingsUpdateRequest,
 ): Promise<UserProfileResponse> {
-	const res = await fetch(`${BASE_URL}/auth/me/study-settings`, {
-		method: 'PATCH',
-		headers: authHeaders(),
-		body: JSON.stringify(data),
-	})
-	return handleResponse<UserProfileResponse>(res)
+	return updateDailyStudyMinutes(data.daily_study_minutes)
 }
 
-export async function deleteCareerTrack(): Promise<void> {
-	const res = await fetch(`${BASE_URL}/auth/me/career-track`, {
+/**
+ * Reset career track / roadmap so the user can retake onboarding.
+ */
+export async function resetUserCareerTrack(): Promise<void> {
+	const res = await fetch(`${BASE_URL}/user/me/career-track`, {
 		method: 'DELETE',
 		headers: authHeaders(),
 	})
 	return handleEmptyResponse(res)
 }
 
-export async function generateAICoachMessage(
-	data: AICoachMessageRequest,
-): Promise<AICoachMessageResponse> {
-	const res = await fetch(`${BASE_URL}/auth/me/ai-coach-message`, {
+export async function deleteCareerTrack(): Promise<void> {
+	return resetUserCareerTrack()
+}
+
+/**
+ * Generate AI Coach weekly message from prompt E1 via backend.
+ */
+export async function generateAICoachMessage(payload: AICoachMessageRequest): Promise<AICoachMessageResponse> {
+	const res = await fetch(`${BASE_URL}/user/me/ai-coach-message`, {
 		method: 'POST',
-		headers: authHeaders(),
-		body: JSON.stringify(data),
+		headers: {
+			'Content-Type': 'application/json',
+			...authHeaders(),
+		},
+		body: JSON.stringify(payload),
 	})
-	return handleResponse<AICoachMessageResponse>(res)
+	return await handleResponse<AICoachMessageResponse>(res)
 }
