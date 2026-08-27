@@ -30,13 +30,20 @@ export function saveUserSession(data: UserSessionData): void {
     localStorage.setItem(TOKEN_KEY, token);
   }
 
+  const roleStr = String(data.role || data.user?.role || '').trim().toLowerCase();
+  const isAdmin = roleStr === 'admin' || roleStr === 'administrator' || Number(data.role_id) === 2 || Number(data.user?.role_id) === 2;
+  const roleId = isAdmin ? 2 : 1;
+
   const user: AuthUser = data.user ?? {
     id: data.user_id ?? data.id ?? "",
     username: data.username ?? data.name ?? "",
     email: data.email ?? "",
-    role: data.role,
-    role_id: data.role_id,
+    role: isAdmin ? 'admin' : 'employee',
+    role_id: roleId,
   } as AuthUser;
+
+  user.role_id = roleId;
+  user.role = isAdmin ? 'admin' : 'employee';
 
   localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
