@@ -4,6 +4,7 @@ import {
     Bell,
     BookOpen,
     FileText,
+    type LucideIcon,
 } from "lucide-react";
 
 import { getStoredToken, useAuth } from "@/common/context/AuthContext";
@@ -30,7 +31,7 @@ type NotificationItem = {
     time: string;
     unread: boolean;
     topicId?: number;
-    icon: typeof BookOpen;
+    icon: LucideIcon;
 };
 
 function getSeenStorageKey(userId: number) {
@@ -109,7 +110,6 @@ function buildNotifications(
 export function NotificationDropdown() {
     const auth = useAuth();
     const userId = Number(auth.user?.id);
-    const [open, setOpen] = useState(false);
     const [roadmap, setRoadmap] = useState<RoadmapResponse | null>(null);
     const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
     const hasViewedCurrentOpenRef = useRef(false);
@@ -184,11 +184,8 @@ export function NotificationDropdown() {
     const handleOpenChange = (nextOpen: boolean) => {
         if (nextOpen) {
             hasViewedCurrentOpenRef.current = true;
-            setOpen(true);
             return;
         }
-
-        setOpen(false);
 
         if (
             !hasViewedCurrentOpenRef.current
