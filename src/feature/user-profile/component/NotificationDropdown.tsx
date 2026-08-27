@@ -1,12 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
     Bell,
     BookOpen,
     FileText,
 } from "lucide-react";
 
-import { useAuth } from "@/common/context/AuthContext";
+import { getStoredToken, useAuth } from "@/common/context/AuthContext";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -17,7 +17,11 @@ import {
 } from "@/shadcn/component/ui/dropdown-menu";
 import { Button } from "@/shadcn/component/ui/button";
 import { isLessonReadyToStudy } from "@/feature/learning-path/lessonAccess";
-import { fetchRoadmap, type RoadmapResponse } from "@/feature/learning-path/roadmapApi";
+import {
+    buildRoadmapNotificationStreamUrl,
+    fetchRoadmap,
+    type RoadmapResponse,
+} from "@/feature/learning-path/roadmapApi";
 
 type NotificationItem = {
     id: string;
@@ -108,9 +112,12 @@ export function NotificationDropdown() {
     const [open, setOpen] = useState(false);
     const [roadmap, setRoadmap] = useState<RoadmapResponse | null>(null);
     const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
+    const hasViewedCurrentOpenRef = useRef(false);
 
     useEffect(() => {
         let isMounted = true;
+        let stream: EventSource | null = null;
+        let refreshTimer: number | null = null;
 
         if (!Number.isFinite(userId)) {
             setRoadmap(null);
@@ -135,8 +142,36 @@ export function NotificationDropdown() {
 
         void loadRoadmap();
 
+        refreshTimer = window.setInterval(() => {
+            void loadRoadmap();
+        }, 30_000);
+
+        const token = getStoredToken();
+        if (token) {
+            stream = new EventSource(buildRoadmapNotificationStreamUrl(token));
+            stream.addEventListener("roadmap_updated", () => {
+                void loadRoadmap();
+            });
+        }
+
+        const handleWindowFocus = () => {
+            if (document.visibilityState === "hidden") {
+                return;
+            }
+            void loadRoadmap();
+        };
+
+        window.addEventListener("focus", handleWindowFocus);
+        document.addEventListener("visibilitychange", handleWindowFocus);
+
         return () => {
             isMounted = false;
+            stream?.close();
+            if (refreshTimer !== null) {
+                window.clearInterval(refreshTimer);
+            }
+            window.removeEventListener("focus", handleWindowFocus);
+            document.removeEventListener("visibilitychange", handleWindowFocus);
         };
     }, [userId]);
 
@@ -145,13 +180,22 @@ export function NotificationDropdown() {
         [roadmap, seenIds],
     );
     const unreadCount = notifications.filter((item) => item.unread).length;
-    const unreadNotificationIds = useMemo(
-        () => notifications.filter((item) => item.unread).map((item) => item.id),
-        [notifications],
-    );
 
-    useEffect(() => {
-        if (!open || !Number.isFinite(userId) || unreadNotificationIds.length === 0) {
+    const handleOpenChange = (nextOpen: boolean) => {
+        if (nextOpen) {
+            hasViewedCurrentOpenRef.current = true;
+            setOpen(true);
+            return;
+        }
+
+        setOpen(false);
+
+        if (
+            !hasViewedCurrentOpenRef.current
+            || !Number.isFinite(userId)
+            || notifications.length === 0
+        ) {
+            hasViewedCurrentOpenRef.current = false;
             return;
         }
 
@@ -159,9 +203,9 @@ export function NotificationDropdown() {
             const next = new Set(current);
             let changed = false;
 
-            unreadNotificationIds.forEach((id) => {
-                if (!next.has(id)) {
-                    next.add(id);
+            notifications.forEach((item) => {
+                if (!next.has(item.id)) {
+                    next.add(item.id);
                     changed = true;
                 }
             });
@@ -173,10 +217,11 @@ export function NotificationDropdown() {
             writeSeenIds(userId, [...next]);
             return next;
         });
-    }, [open, unreadNotificationIds, userId]);
+        hasViewedCurrentOpenRef.current = false;
+    };
 
     return (
-        <DropdownMenu onOpenChange={setOpen}>
+        <DropdownMenu onOpenChange={handleOpenChange}>
             <DropdownMenuTrigger asChild>
                 <Button
                     variant="ghost"
@@ -220,8 +265,11 @@ export function NotificationDropdown() {
                             <DropdownMenuItem
                                 key={item.id}
                                 asChild
-                                className={`cursor-pointer items-start rounded-md px-3 py-3 ${item.unread ? "bg-blue-50" : ""
-                                    }`}
+                                className={`cursor-pointer items-start rounded-lg border px-3 py-3 transition-colors ${
+                                    item.unread
+                                        ? "border-blue-200 bg-blue-50 focus:bg-blue-100"
+                                        : "border-transparent bg-slate-50/70 focus:bg-slate-100"
+                                }`}
                             >
                                 <Link
                                     to="/lessons/learning-path"
@@ -232,12 +280,39 @@ export function NotificationDropdown() {
                                     }
                                     className="flex w-full gap-3"
                                 >
-                                    <Icon className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+                                    <div
+                                        className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                                            item.unread
+                                                ? "bg-blue-100 text-blue-700"
+                                                : "bg-slate-200 text-slate-500"
+                                        }`}
+                                    >
+                                        <Icon className="h-5 w-5" />
+                                    </div>
                                     <div className="min-w-0">
-                                        <p className="font-medium text-slate-900">
-                                            {item.title}
-                                        </p>
-                                        <p className="text-sm text-slate-500">
+                                        <div className="flex items-center gap-2">
+                                            <p
+                                                className={`font-medium ${
+                                                    item.unread
+                                                        ? "text-slate-950"
+                                                        : "text-slate-700"
+                                                }`}
+                                            >
+                                                {item.title}
+                                            </p>
+                                            {item.unread ? (
+                                                <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+                                                    New
+                                                </span>
+                                            ) : null}
+                                        </div>
+                                        <p
+                                            className={`text-sm ${
+                                                item.unread
+                                                    ? "text-slate-600"
+                                                    : "text-slate-500"
+                                            }`}
+                                        >
                                             {item.description}
                                         </p>
                                         <p className="mt-1 text-xs text-slate-400">

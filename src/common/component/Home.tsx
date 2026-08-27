@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import CareerpathIcon from "@/asset/image/careerpath_logo.png";
+import { useAuth } from "@/common/context/AuthContext";
 
 const journey = [
     { label: "Choose role", icon: BriefcaseBusiness },
@@ -80,6 +81,13 @@ function CareerPathRobot() {
 }
 
 export function Home() {
+    const { isAuthenticated, user } = useAuth();
+    const primaryTarget = isAuthenticated
+        ? user?.role_id === 2
+            ? "/admin"
+            : "/lessons/learning-path"
+        : "/login";
+
     return (
         <main className="relative min-h-[100svh] overflow-x-hidden bg-[#f5fbff] text-slate-950 lg:h-[100svh] lg:min-h-[700px] lg:overflow-hidden">
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(0,114,187,0.028)_1px,transparent_1px),linear-gradient(90deg,rgba(0,114,187,0.028)_1px,transparent_1px)] bg-[size:44px_44px]" />
@@ -109,10 +117,10 @@ export function Home() {
 
                     <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                         <Link
-                            to="/login"
+                            to={primaryTarget}
                             className="inline-flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#005596,#0072bb_60%,#009fc7)] px-6 text-base font-black text-white shadow-[0_18px_38px_rgba(0,114,187,0.26)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_42px_rgba(0,114,187,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0072bb] focus-visible:ring-offset-3"
                         >
-                            Start my placement test
+                            {isAuthenticated ? "Continue" : "Start my placement test"}
                             <ArrowRight className="h-5 w-5" />
                         </Link>
                         <Link
@@ -187,12 +195,12 @@ export function Home() {
                         </div>
 
                         {/* No longer absolute — now a normal flex child, so it can never overlap the robot */}
-                        <div className="relative z-10 flex items-center justify-between gap-3 rounded-2xl border border-white bg-[#005596]/95 px-4 py-3.5 text-white shadow-[0_16px_32px_rgba(0,85,150,0.24)] backdrop-blur">
+                        <div className="relative z-10 flex items-center justify-between gap-3 rounded-2xl border border-white bg-[#005596]/95 px-4 py-3.5 text-white shadow-[0_16px_32px_rgba(0,85,150,0.24)] backdrop-blur transition hover:-translate-y-0.5 hover:shadow-[0_22px_42px_rgba(0,114,187,0.32)]">
                             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/12 text-cyan-200 ring-1 ring-white/15">
-                                <Compass className="h-5.5 w-5.5" />
+                                <Compass className="h-5.3 w-5.3" />
                             </span>
-                            <Link to="/login">
-                                <div className="min-w-0 flex-1">
+                            <Link to={primaryTarget}>
+                                <div className="min-w-0 flex-1 ">
                                     <p className="text-[11px] font-black uppercase tracking-[0.14em] text-cyan-200">Your goal, your pace</p>
                                     <p className="mt-0.5 text-base font-bold text-white">Let’s take the first step together.</p>
                                 </div>

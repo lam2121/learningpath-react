@@ -24,6 +24,6 @@ function CostsPage() {
 	)
 }
 
-export const Route = createFileRoute('/admin/costs')({
+export const Route = createFileRoute('/_protected/admin/costs')({
 	component: CostsPage,
 });

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
 import {
     ArrowDownAZ,
@@ -1499,25 +1499,74 @@ export function LessonQuizHistoryCard({
 
 type LearningHistoryChartProps = {
     showLoginHistory?: boolean;
-    supplementaryPanelHeight?: number | null;
+    supplementaryPanelBottom?: number | null;
 };
 
 export function LearningHistoryChart({
     showLoginHistory = true,
-    supplementaryPanelHeight = null,
+    supplementaryPanelBottom = null,
 }: LearningHistoryChartProps) {
     const auth = useAuth();
     const userId = Number(auth.user?.id);
+    const layoutRef = useRef<HTMLDivElement | null>(null);
+    const panelsRowRef = useRef<HTMLDivElement | null>(null);
+    const [syncedPanelsHeight, setSyncedPanelsHeight] = useState<number | null>(null);
     const syncedPanelStyle =
-        showLoginHistory && supplementaryPanelHeight && supplementaryPanelHeight > 0
-            ? { height: `${supplementaryPanelHeight}px` }
+        showLoginHistory && syncedPanelsHeight && syncedPanelsHeight > 0
+            ? { height: `${syncedPanelsHeight}px` }
             : undefined;
 
-    return (
-        <div className="space-y-6">
-            <SkillsOverview />
+    useEffect(() => {
+        if (!showLoginHistory || !supplementaryPanelBottom || supplementaryPanelBottom <= 0) {
+            setSyncedPanelsHeight(null);
+            return;
+        }
 
-            <div className={`grid grid-cols-1 gap-4 ${showLoginHistory ? "items-stretch lg:grid-cols-2" : "items-start"}`}>
+        const panelsRowNode = panelsRowRef.current;
+        if (!panelsRowNode) {
+            setSyncedPanelsHeight(null);
+            return;
+        }
+
+        const updateHeight = () => {
+            if (window.innerWidth < 1024) {
+                setSyncedPanelsHeight(null);
+                return;
+            }
+
+            const panelsRowTop = panelsRowNode.getBoundingClientRect().top;
+            const remainingHeight =
+                supplementaryPanelBottom
+                - Math.round(panelsRowTop);
+
+            setSyncedPanelsHeight(remainingHeight > 0 ? remainingHeight : null);
+        };
+
+        updateHeight();
+
+        const observer = typeof ResizeObserver !== "undefined"
+            ? new ResizeObserver(updateHeight)
+            : null;
+
+        observer?.observe(panelsRowNode);
+        window.addEventListener("resize", updateHeight);
+
+        return () => {
+            observer?.disconnect();
+            window.removeEventListener("resize", updateHeight);
+        };
+    }, [showLoginHistory, supplementaryPanelBottom]);
+
+    return (
+        <div ref={layoutRef} className="space-y-6">
+            <div>
+                <SkillsOverview />
+            </div>
+
+            <div
+                ref={panelsRowRef}
+                className={`grid grid-cols-1 gap-4 ${showLoginHistory ? "items-stretch lg:grid-cols-2" : "items-start"}`}
+            >
                 {showLoginHistory ? (
                     <div className="min-w-0" style={syncedPanelStyle}>
                         <LoginHistoryCard stretch />

@@ -75,6 +75,16 @@ export function getLoginDays(userId: number): string[] {
     }
 }
 
+export function clearLoginDays(userId: number): void {
+    try {
+        localStorage.removeItem(getStorageKey(userId));
+    } catch {
+        // Ignore storage failures and keep the app usable.
+    }
+
+    emitLoginDaysUpdated(userId);
+}
+
 type StudyMinutesByDay = Record<string, number>;
 
 type StudyMinutesRemainder = {
@@ -156,6 +166,17 @@ export function getTrackedStudyMinutesTotal(userId: number): number {
         (total, minutes) => total + minutes,
         0,
     );
+}
+
+export function clearTrackedStudyActivity(userId: number): void {
+    try {
+        localStorage.removeItem(getStudyMinutesStorageKey(userId));
+        localStorage.removeItem(getStudyRemainderStorageKey(userId));
+    } catch {
+        // Ignore storage failures and keep the app usable.
+    }
+
+    emitStudyActivityUpdated(userId);
 }
 
 export function recordStudyTime(userId: number, elapsedMilliseconds: number): void {

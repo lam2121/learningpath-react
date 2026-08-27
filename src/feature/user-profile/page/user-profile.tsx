@@ -48,7 +48,7 @@ export function UserProfile() {
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isStudyPlanExpanded, setIsStudyPlanExpanded] = useState(false);
-    const [supplementaryPanelHeight, setSupplementaryPanelHeight] = useState<number | null>(null);
+    const [supplementaryPanelBottom, setSupplementaryPanelBottom] = useState<number | null>(null);
     const rightRailRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -98,24 +98,30 @@ export function UserProfile() {
 
     useEffect(() => {
         if (!isStudyPlanExpanded) {
-            setSupplementaryPanelHeight(null);
+            setSupplementaryPanelBottom(null);
             return;
         }
 
         const node = rightRailRef.current;
         if (!node) {
-            setSupplementaryPanelHeight(null);
+            setSupplementaryPanelBottom(null);
             return;
         }
 
         const updateHeight = () => {
             if (window.innerWidth < 1024) {
-                setSupplementaryPanelHeight(null);
+                setSupplementaryPanelBottom(null);
                 return;
             }
 
-            setSupplementaryPanelHeight(
-                Math.round(node.getBoundingClientRect().height),
+            const lastContentChild = node.lastElementChild as HTMLElement | null;
+            if (!lastContentChild) {
+                setSupplementaryPanelBottom(null);
+                return;
+            }
+
+            setSupplementaryPanelBottom(
+                Math.round(lastContentChild.getBoundingClientRect().bottom),
             );
         };
 
@@ -254,7 +260,7 @@ export function UserProfile() {
                             <div className="flex-1">
                                 <LearningHistoryChart
                                     showLoginHistory={isStudyPlanExpanded}
-                                    supplementaryPanelHeight={supplementaryPanelHeight}
+                                    supplementaryPanelBottom={supplementaryPanelBottom}
                                 />
                             </div>
                         </div>

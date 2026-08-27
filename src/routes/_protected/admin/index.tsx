@@ -146,6 +146,6 @@ function DashboardPage() {
 	)
 }
 
-export const Route = createFileRoute('/admin/')({
+export const Route = createFileRoute('/_protected/admin/')({
 	component: DashboardPage,
 });

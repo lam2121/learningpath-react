@@ -8,7 +8,6 @@ import {
 } from "@/shadcn/component/ui/alert-dialog";
 import { Button } from "@/shadcn/component/ui/button";
 import { Checkbox } from "@/shadcn/component/ui/checkbox";
-import { useNavigate } from "@tanstack/react-router";
 import {
     AlertTriangle,
     Check,
@@ -16,21 +15,24 @@ import {
 import { useState } from "react";
 
 type ChangeCareerAlertProps = {
-    onConfirm: () => void;
+    onConfirm: () => void | Promise<void>;
     onCancel: () => void;
+    isSubmitting?: boolean;
+    errorMessage?: string | null;
 };
 
 export function ChangeCareerAlert({
     onConfirm,
     onCancel,
+    isSubmitting = false,
+    errorMessage = null,
 }: ChangeCareerAlertProps) {
-    const navigate = useNavigate();
     const [confirmed, setConfirmed] = useState(false);
-    const handleChangeCareerTrack = () => {
-        if (!confirmed) return;
 
-        onConfirm();
-        navigate({ to: "/onboarding/role-selection" });
+    const handleChangeCareerTrack = () => {
+        if (!confirmed || isSubmitting) return;
+
+        void onConfirm();
     };
 
     return (
@@ -91,6 +93,7 @@ export function ChangeCareerAlert({
                         <Checkbox
                             id="confirm-career-change"
                             checked={confirmed}
+                            disabled={isSubmitting}
                             onCheckedChange={(value) => {
                                 setConfirmed(value === true);
                             }}
@@ -102,9 +105,16 @@ export function ChangeCareerAlert({
                         </span>
                     </label>
 
+                    {errorMessage ? (
+                        <p className="text-sm font-medium text-rose-700">
+                            {errorMessage}
+                        </p>
+                    ) : null}
+
                     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                         <AlertDialogCancel
                             onClick={onCancel}
+                            disabled={isSubmitting}
                             className="mt-0 border-slate-200 text-slate-700"
                         >
                             Keep Current Track
@@ -113,11 +123,11 @@ export function ChangeCareerAlert({
                         <Button
                             type="button"
                             variant="destructive"
-                            disabled={!confirmed}
+                            disabled={!confirmed || isSubmitting}
                             onClick={handleChangeCareerTrack}
                             className="bg-rose-600 font-semibold hover:bg-rose-700 disabled:bg-slate-300"
                         >
-                            Change Career Track
+                            {isSubmitting ? "Deleting..." : "Change Career Track"}
                         </Button>
                     </div>
                 </AlertDialogFooter>

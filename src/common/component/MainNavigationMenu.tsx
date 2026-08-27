@@ -48,6 +48,7 @@ import { APP_INFO } from "../const/appConst";
 import { CareerpathIcon } from "../../common/component/SocialMediaIcon";
 import { StreakDropdown } from "@/feature/user-profile/component/StreakDropdown";
 import { NotificationDropdown } from "@/feature/user-profile/component/NotificationDropdown";
+import { useCareerTrackReset } from "@/feature/user-profile/hook/useCareerTrackReset";
 
 function estimateDays(totalMinutes: number, dailyStudyMinutes: number) {
     if (totalMinutes <= 0 || dailyStudyMinutes <= 0) {
@@ -77,6 +78,12 @@ export function MainNavigationMenu({
     const [totalEstimatedMinutes, setTotalEstimatedMinutes] = useState(0);
     const [isSavingStudyTime, setIsSavingStudyTime] = useState(false);
     const [studyTimeError, setStudyTimeError] = useState<string | null>(null);
+    const {
+        clearResetError,
+        isResetting,
+        resetCareerTrack,
+        resetError,
+    } = useCareerTrackReset();
 
     useEffect(() => {
         if (!Number.isFinite(userId)) {
@@ -386,6 +393,7 @@ export function MainNavigationMenu({
                     studyHours={currentHour}
                     onCareerClick={() => {
                         setOpenSetting(false);
+                        clearResetError();
                         setOpenCareerAlert(true);
                     }}
                     onStudyTimeClick={() => {
@@ -396,12 +404,31 @@ export function MainNavigationMenu({
                 />
             </Dialog>
 
-            <AlertDialog open={openCareerAlert} onOpenChange={setOpenCareerAlert}>
+            <AlertDialog
+                open={openCareerAlert}
+                onOpenChange={(open) => {
+                    if (isResetting) {
+                        return;
+                    }
+                    if (!open) {
+                        clearResetError();
+                    }
+                    setOpenCareerAlert(open);
+                }}
+            >
                 <ChangeCareerAlert
-                    onCancel={() => setOpenCareerAlert(false)}
-                    onConfirm={() => {
+                    onCancel={() => {
+                        clearResetError();
                         setOpenCareerAlert(false);
                     }}
+                    onConfirm={async () => {
+                        const didReset = await resetCareerTrack();
+                        if (didReset) {
+                            setOpenCareerAlert(false);
+                        }
+                    }}
+                    isSubmitting={isResetting}
+                    errorMessage={resetError}
                 />
             </AlertDialog>
 
