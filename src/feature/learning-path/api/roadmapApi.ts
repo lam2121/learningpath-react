@@ -1,12 +1,11 @@
-import { getStoredToken } from '@/common/context/AuthContext'
+
+import { fetchWithAuthRetry } from "@/common/lib/authSession";
 
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api'
 
-function authHeaders(): HeadersInit {
-	const token = getStoredToken()
+function defaultHeaders(): HeadersInit {
 	return {
 		'Content-Type': 'application/json',
-		...(token ? { Authorization: `Bearer ${token}` } : {}),
 	}
 }
 
@@ -123,19 +122,27 @@ export interface LessonQuizResultDetailResponse {
 	answers: LessonQuizSavedAnswer[]
 	question_results: LessonQuizQuestionResult[]
 }
-
+export interface EvaluateAnswerRequest {
+	section_type: 'reading' | 'dialogue' | 'listening'
+	context: string
+	question: string
+	reference_answer: string
+	user_answer: string
+}
+export interface EvaluateAnswerResponse {
+	feedback_summary: string
+}
 export async function fetchRoadmap(): Promise<RoadmapResponse> {
-	const res = await fetch(`${BASE_URL}/onboarding/roadmap`, {
+	const res = await fetchWithAuthRetry(`${BASE_URL}/onboarding/roadmap`, {
 		method: 'GET',
-		headers: authHeaders(),
+		headers: defaultHeaders(),
 		cache: 'no-store',
 	})
 	return handleResponse<RoadmapResponse>(res)
 }
 
-export function buildRoadmapNotificationStreamUrl(token: string): string {
-	const params = new URLSearchParams({ token })
-	return `${BASE_URL}/onboarding/roadmap/notifications/stream?${params.toString()}`
+export function buildRoadmapNotificationStreamUrl(): string {
+	return `${BASE_URL}/onboarding/roadmap/notifications/stream`
 }
 
 export async function kickoffRoadmapLessonGeneration(
@@ -143,9 +150,9 @@ export async function kickoffRoadmapLessonGeneration(
 	force = false,
 ): Promise<LessonGenerateResponse> {
 	const suffix = force ? '?force=true' : ''
-	const res = await fetch(`${BASE_URL}/onboarding/roadmap/lessons/${lessonId}/generate${suffix}`, {
+	const res = await fetchWithAuthRetry(`${BASE_URL}/onboarding/roadmap/lessons/${lessonId}/generate${suffix}`, {
 		method: 'POST',
-		headers: authHeaders(),
+		headers: defaultHeaders(),
 	})
 	return handleResponse<LessonGenerateResponse>(res)
 }
@@ -153,9 +160,9 @@ export async function kickoffRoadmapLessonGeneration(
 export async function fetchLessonQuizState(
 	lessonId: number,
 ): Promise<LessonQuizStateResponse> {
-	const res = await fetch(`${BASE_URL}/onboarding/roadmap/lessons/${lessonId}/quiz`, {
+	const res = await fetchWithAuthRetry(`${BASE_URL}/onboarding/roadmap/lessons/${lessonId}/quiz`, {
 		method: 'GET',
-		headers: authHeaders(),
+		headers: defaultHeaders(),
 	})
 	return handleResponse<LessonQuizStateResponse>(res)
 }
@@ -167,11 +174,11 @@ export async function submitLessonQuiz(
 		answers: LessonQuizAnswerSubmission[]
 	},
 ): Promise<LessonQuizSubmitResponse> {
-	const res = await fetch(
+	const res = await fetchWithAuthRetry(
 		`${BASE_URL}/onboarding/roadmap/lessons/${lessonId}/quiz/submit`,
 		{
 			method: 'POST',
-			headers: authHeaders(),
+			headers: defaultHeaders(),
 			body: JSON.stringify(payload),
 		},
 	)
@@ -181,35 +188,23 @@ export async function submitLessonQuiz(
 export async function fetchLessonQuizResultDetail(
 	lessonId: number,
 ): Promise<LessonQuizResultDetailResponse> {
-	const res = await fetch(
+	const res = await fetchWithAuthRetry(
 		`${BASE_URL}/onboarding/roadmap/lessons/${lessonId}/quiz/result`,
 		{
 			method: 'GET',
-			headers: authHeaders(),
+			headers: defaultHeaders(),
 			cache: 'no-store',
 		},
 	)
 	return handleResponse<LessonQuizResultDetailResponse>(res)
 }
 
-export interface EvaluateAnswerRequest {
-	section_type: 'reading' | 'dialogue' | 'listening'
-	context: string
-	question: string
-	reference_answer: string
-	user_answer: string
-}
-
-export interface EvaluateAnswerResponse {
-	feedback_summary: string
-}
-
 export async function evaluateAnswer(
 	payload: EvaluateAnswerRequest,
 ): Promise<EvaluateAnswerResponse> {
-	const res = await fetch(`${BASE_URL}/onboarding/roadmap/evaluate-answer`, {
+	const res = await fetchWithAuthRetry(`${BASE_URL}/onboarding/roadmap/evaluate-answer`, {
 		method: 'POST',
-		headers: authHeaders(),
+		headers: defaultHeaders(),
 		body: JSON.stringify(payload),
 	})
 	return handleResponse<EvaluateAnswerResponse>(res)

@@ -35,21 +35,14 @@ export function RegisterForm() {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 
-		// if (form.password !== form.confirmPassword) {
-		// 	setError('Passwords do not match.')
-		// 	return
-		// }
-		// if (form.password.length < 6) {
-		// 	setError('Mật khẩu phải dài từ 6 ký tự')
-		// 	return
-		// }
-		// const passwordRegex =
-		// 	/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
-
-		// if (!passwordRegex.test(form.password)) {
-		// 	setError('Mật khẩu cần có ít nhất 1 chữ hoa, chữ thường và kí tự đặc biệt.')
-		// 	return
-		// }
+		if (form.password !== form.confirmPassword) {
+			setError('Passwords do not match.')
+			return
+		}
+		if (form.password.trim().length < 6) {
+			setError('Password must be at least 6 characters long.')
+			return
+		}
 
 		setIsLoading(true)
 		setError(null)
@@ -57,11 +50,12 @@ export function RegisterForm() {
 
 		try {
 			await registerUser({
-				email: form.email,
-				name: form.fullName,
+				email: form.email.trim(),
+				name: form.fullName.trim(),
 				password: form.password,
+				username: form.username.trim(),
 			})
-			await setSuccess('Đăng ký thành công')
+			setSuccess('Đăng ký thành công')
 			setTimeout(() => {
 				navigate({ to: "/login" });
 			}, 1000)

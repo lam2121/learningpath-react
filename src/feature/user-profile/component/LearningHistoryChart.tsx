@@ -48,7 +48,7 @@ import {
     fetchLessonQuizResultDetail,
     type LessonQuizQuestionResult,
     type LessonQuizResultDetailResponse,
-} from "@/feature/learning-path/roadmapApi";
+} from "@/feature/learning-path/api/roadmapApi";
 import { FillBlankQuestion } from "@/feature/quiz-engine/component/FillBlankQuestion";
 import { MultiSelectQuestion } from "@/feature/quiz-engine/component/MultiSelectQuestion";
 import { OrderingQuestion } from "@/feature/quiz-engine/component/OrderingQuestion";

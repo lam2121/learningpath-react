@@ -7,7 +7,7 @@ import {
     type LucideIcon,
 } from "lucide-react";
 
-import { getStoredToken, useAuth } from "@/common/context/AuthContext";
+import { useAuth } from "@/common/context/AuthContext";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -22,7 +22,7 @@ import {
     buildRoadmapNotificationStreamUrl,
     fetchRoadmap,
     type RoadmapResponse,
-} from "@/feature/learning-path/roadmapApi";
+} from "@/feature/learning-path/api/roadmapApi";
 
 type NotificationItem = {
     id: string;
@@ -118,6 +118,8 @@ export function NotificationDropdown() {
         let isMounted = true;
         let stream: EventSource | null = null;
         let refreshTimer: number | null = null;
+        let reconnectTimer: number | null = null;
+        let reconnectInFlight = false;
 
         if (!Number.isFinite(userId)) {
             setRoadmap(null);
@@ -140,19 +142,60 @@ export function NotificationDropdown() {
             }
         };
 
+        const scheduleReconnect = (delayMs: number) => {
+            if (!isMounted || reconnectTimer !== null) {
+                return;
+            }
+            reconnectTimer = window.setTimeout(async () => {
+                reconnectTimer = null;
+                if (!isMounted || reconnectInFlight) {
+                    return;
+                }
+                reconnectInFlight = true;
+                try {
+                    await loadRoadmap();
+                    if (!isMounted) {
+                        return;
+                    }
+                    connectStream();
+                } catch {
+                    if (isMounted) {
+                        scheduleReconnect(5_000);
+                    }
+                } finally {
+                    reconnectInFlight = false;
+                }
+            }, delayMs);
+        };
+
+        const connectStream = () => {
+            if (!isMounted || !Number.isFinite(userId)) {
+                return;
+            }
+
+            stream?.close();
+            stream = new EventSource(buildRoadmapNotificationStreamUrl(), {
+                withCredentials: true,
+            });
+
+            stream.addEventListener("roadmap_updated", () => {
+                void loadRoadmap();
+            });
+
+            stream.onerror = () => {
+                stream?.close();
+                stream = null;
+                scheduleReconnect(1_500);
+            };
+        };
+
         void loadRoadmap();
 
         refreshTimer = window.setInterval(() => {
             void loadRoadmap();
         }, 30_000);
 
-        const token = getStoredToken();
-        if (token) {
-            stream = new EventSource(buildRoadmapNotificationStreamUrl(token));
-            stream.addEventListener("roadmap_updated", () => {
-                void loadRoadmap();
-            });
-        }
+        connectStream();
 
         const handleWindowFocus = () => {
             if (document.visibilityState === "hidden") {
@@ -169,6 +212,9 @@ export function NotificationDropdown() {
             stream?.close();
             if (refreshTimer !== null) {
                 window.clearInterval(refreshTimer);
+            }
+            if (reconnectTimer !== null) {
+                window.clearTimeout(reconnectTimer);
             }
             window.removeEventListener("focus", handleWindowFocus);
             document.removeEventListener("visibilitychange", handleWindowFocus);
@@ -262,11 +308,10 @@ export function NotificationDropdown() {
                             <DropdownMenuItem
                                 key={item.id}
                                 asChild
-                                className={`cursor-pointer items-start rounded-lg border px-3 py-3 transition-colors ${
-                                    item.unread
-                                        ? "border-blue-200 bg-blue-50 focus:bg-blue-100"
-                                        : "border-transparent bg-slate-50/70 focus:bg-slate-100"
-                                }`}
+                                className={`cursor-pointer items-start rounded-lg border px-3 py-3 transition-colors ${item.unread
+                                    ? "border-blue-200 bg-blue-50 focus:bg-blue-100"
+                                    : "border-transparent bg-slate-50/70 focus:bg-slate-100"
+                                    }`}
                             >
                                 <Link
                                     to="/lessons/learning-path"
@@ -278,22 +323,20 @@ export function NotificationDropdown() {
                                     className="flex w-full gap-3"
                                 >
                                     <div
-                                        className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                                            item.unread
-                                                ? "bg-blue-100 text-blue-700"
-                                                : "bg-slate-200 text-slate-500"
-                                        }`}
+                                        className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${item.unread
+                                            ? "bg-blue-100 text-blue-700"
+                                            : "bg-slate-200 text-slate-500"
+                                            }`}
                                     >
                                         <Icon className="h-5 w-5" />
                                     </div>
                                     <div className="min-w-0">
                                         <div className="flex items-center gap-2">
                                             <p
-                                                className={`font-medium ${
-                                                    item.unread
-                                                        ? "text-slate-950"
-                                                        : "text-slate-700"
-                                                }`}
+                                                className={`font-medium ${item.unread
+                                                    ? "text-slate-950"
+                                                    : "text-slate-700"
+                                                    }`}
                                             >
                                                 {item.title}
                                             </p>
@@ -304,11 +347,10 @@ export function NotificationDropdown() {
                                             ) : null}
                                         </div>
                                         <p
-                                            className={`text-sm ${
-                                                item.unread
-                                                    ? "text-slate-600"
-                                                    : "text-slate-500"
-                                            }`}
+                                            className={`text-sm ${item.unread
+                                                ? "text-slate-600"
+                                                : "text-slate-500"
+                                                }`}
                                         >
                                             {item.description}
                                         </p>

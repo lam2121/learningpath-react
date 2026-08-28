@@ -2,7 +2,7 @@ import type {
 	RoadmapLesson,
 	RoadmapResponse,
 	RoadmapTopic,
-} from '@/feature/learning-path/roadmapApi'
+} from '@/feature/learning-path/api/roadmapApi'
 
 export function isLessonReadyToStudy(
 	lesson: RoadmapLesson | null | undefined,

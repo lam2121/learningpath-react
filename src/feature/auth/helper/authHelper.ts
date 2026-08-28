@@ -1,15 +1,8 @@
 import type { AuthUser } from "@/common/context/AuthContext";
 
 const USER_KEY = "auth_user";
-const TOKEN_KEY = "auth_access_token";
 
-/**
- * Shape returned by the login / guest-login API endpoints.
- * Extend as needed when the backend adds more fields.
- */
 export interface UserSessionData {
-  access_token?: string;
-  token?: string;
   user?: AuthUser;
   id?: number;
   username?: string;
@@ -21,15 +14,10 @@ export interface UserSessionData {
 }
 
 /**
- * Persist the user and token received from the API into localStorage
- * so that AuthContext can read them back via `refreshAuth()`.
+ * Persist the authenticated user profile into localStorage so that
+ * AuthContext can read it back via `refreshAuth()`.
  */
 export function saveUserSession(data: UserSessionData): void {
-  const token = data.access_token ?? data.token ?? null;
-  if (token) {
-    localStorage.setItem(TOKEN_KEY, token);
-  }
-
   const roleStr = String(data.role || data.user?.role || '').trim().toLowerCase();
   const isAdmin = roleStr === 'admin' || roleStr === 'administrator' || Number(data.role_id) === 2 || Number(data.user?.role_id) === 2;
   const roleId = isAdmin ? 2 : 1;
@@ -53,12 +41,4 @@ export function saveUserSession(data: UserSessionData): void {
  */
 export function clearUserSession(): void {
   localStorage.removeItem(USER_KEY);
-  localStorage.removeItem(TOKEN_KEY);
-}
-
-/**
- * Return the stored access token, or null if none exists.
- */
-export function getAccessToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
 }

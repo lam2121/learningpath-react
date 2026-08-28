@@ -15,8 +15,8 @@ function AdminSidebar() {
 	const { logout } = useAuth()
 	const navigate = useNavigate()
 
-	const handleSignOut = () => {
-		logout()
+	const handleSignOut = async () => {
+		await logout()
 		navigate({ to: '/login' })
 	}
 

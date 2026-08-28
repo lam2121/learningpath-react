@@ -1,15 +1,12 @@
-import { getStoredToken } from '@/common/context/AuthContext'
+import { fetchWithAuthRetry } from "@/common/lib/authSession";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Build headers with Authorization Bearer token when a session exists. */
-function authHeaders(): HeadersInit {
-  const token = getStoredToken()
+function jsonHeaders(): HeadersInit {
   return {
     'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
 }
 
@@ -29,10 +26,13 @@ export interface OnboardingStatus {
 }
 
 /** Check if the current user has finished the placement test. */
-export async function fetchOnboardingStatus(): Promise<OnboardingStatus> {
-  const res = await fetch(`${BASE_URL}/onboarding/status`, {
+export async function fetchOnboardingStatus(
+  options: { redirectOnAuthFailure?: boolean } = {},
+): Promise<OnboardingStatus> {
+  const res = await fetchWithAuthRetry(`${BASE_URL}/onboarding/status`, {
     method: 'GET',
-    headers: authHeaders(),
+    headers: jsonHeaders(),
+    redirectOnAuthFailure: options.redirectOnAuthFailure,
   })
   return handleResponse<OnboardingStatus>(res)
 }
@@ -58,9 +58,9 @@ export interface CompletePlacementTestPayload {
 export async function completePlacementTest(
   payload: CompletePlacementTestPayload,
 ): Promise<{ message: string; learning_status: 'enrolled' }> {
-  const res = await fetch(`${BASE_URL}/onboarding/placement-test/complete`, {
+  const res = await fetchWithAuthRetry(`${BASE_URL}/onboarding/placement-test/complete`, {
     method: 'POST',
-    headers: authHeaders(),
+    headers: jsonHeaders(),
     body: JSON.stringify(payload),
   })
   return handleResponse<{ message: string; learning_status: 'enrolled' }>(res)
@@ -154,9 +154,9 @@ export interface PlacementResult {
 
 /** Fetch the current user's placement test result (scores, starting level, per-question detail) */
 export async function fetchPlacementTestResult(): Promise<PlacementResult> {
-  const res = await fetch(`${BASE_URL}/onboarding/placement-test/result`, {
+  const res = await fetchWithAuthRetry(`${BASE_URL}/onboarding/placement-test/result`, {
     method: 'GET',
-    headers: authHeaders(),
+    headers: jsonHeaders(),
   })
   return handleResponse<PlacementResult>(res)
 }
@@ -168,11 +168,11 @@ export async function fetchPlacementTestResult(): Promise<PlacementResult> {
 export async function fetchPlacementTestQuestions(
   roleId: number,
 ): Promise<RawPlacementQuestionApi[]> {
-  const res = await fetch(
+  const res = await fetchWithAuthRetry(
     `${BASE_URL}/onboarding/placement-test/questions?role_id=${roleId}`,
     {
       method: 'GET',
-      headers: authHeaders(),
+      headers: jsonHeaders(),
     },
   )
   return handleResponse<RawPlacementQuestionApi[]>(res)

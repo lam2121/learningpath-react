@@ -6,12 +6,13 @@ export const Route = createFileRoute('/_protected/_user/onboarding')({
         const status = await fetchOnboardingStatus().catch(() => ({
             learning_status: 'none',
         }))
+        const isPlacementResultRoute = location.pathname.endsWith('/onboarding/placement-result')
 
         // The result page is shown immediately after the placement test completes,
         // so allow that route even though the backend has already flipped to enrolled.
         if (
             status.learning_status === 'enrolled' &&
-            !location.pathname.endsWith('/careerpath/onboarding/placement-result')
+            !isPlacementResultRoute
         ) {
             throw redirect({ to: '/profile' })
         }

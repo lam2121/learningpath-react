@@ -2,12 +2,6 @@ import { roadmap } from "@/feature/learning-path/data";
 import { TopicNode } from "./TopicNode";
 
 export function CurriculumRoadmap() {
-    const handleSelectTopic = (topicId: number) => {
-        console.log("Selected topic:", topicId);
-
-        // Có thể điều hướng hoặc mở Dialog/Drawer danh sách lesson tại đây.
-    };
-
     return (
         <section className="w-full min-w-0">
             <div className="mb-4 flex items-end justify-between gap-4">
@@ -36,7 +30,6 @@ export function CurriculumRoadmap() {
                     <TopicNode
                         key={topic.id}
                         {...topic}
-                        onClick={() => handleSelectTopic(topic.id)}
                     />
                 ))}
             </div>

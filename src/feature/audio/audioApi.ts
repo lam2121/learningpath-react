@@ -1,3 +1,5 @@
+import { fetchWithAuthRetry } from "@/common/lib/authSession";
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api'
 
 export interface VoiceProfile {
@@ -146,10 +148,45 @@ export const DEFAULT_VOICES: VoiceProfile[] = [
 export const DEFAULT_VOICE_ID = 'en-US-JennyNeural'
 export const DEFAULT_RATE = '-15%' // Slower default for optimal listening comprehension
 
+function resolveAudioUrl(audioUrl: string): string {
+  if (!audioUrl) {
+    return audioUrl
+  }
+
+  const apiBase = new URL(BASE_URL, window.location.origin)
+  const apiPrefix = apiBase.pathname.replace(/\/+$/, '')
+  const appOrigin = apiBase.origin
+
+  if (/^https?:\/\//i.test(audioUrl)) {
+    return audioUrl
+  }
+
+  if (audioUrl.startsWith('/career/static/')) {
+    return `${appOrigin}${apiPrefix}/static/${audioUrl.slice('/career/static/'.length)}`
+  }
+
+  if (audioUrl.startsWith('/api/static/')) {
+    const baseWithoutApi = apiPrefix.endsWith('/api')
+      ? apiPrefix.slice(0, -'/api'.length)
+      : ''
+    return `${appOrigin}${baseWithoutApi}${audioUrl}`
+  }
+
+  if (audioUrl.startsWith('/static/')) {
+    return `${appOrigin}${apiPrefix}${audioUrl}`
+  }
+
+  if (audioUrl.startsWith('/')) {
+    return `${appOrigin}${audioUrl}`
+  }
+
+  return `${appOrigin}${apiPrefix}/${audioUrl.replace(/^\/+/, '')}`
+}
+
 /** Fetch list of available multi-accent TOEIC English voices */
 export async function fetchVoices(): Promise<VoiceListResponse> {
   try {
-    const res = await fetch(`${BASE_URL}/audio/voices`)
+    const res = await fetchWithAuthRetry(`${BASE_URL}/audio/voices`)
     if (!res.ok) {
       return { voices: DEFAULT_VOICES, default_voice: DEFAULT_VOICE_ID }
     }
@@ -159,8 +196,7 @@ export async function fetchVoices(): Promise<VoiceListResponse> {
   }
 }
 
-/** Build direct audio streaming URL for instant playback */
-export function getTTSStreamUrl(
+function buildTTSStreamUrl(
   text: string,
   voice = DEFAULT_VOICE_ID,
   rate = DEFAULT_RATE,
@@ -175,11 +211,21 @@ export function getTTSStreamUrl(
   return `${BASE_URL}/audio/tts/stream?${params.toString()}`
 }
 
+/** Legacy direct stream URL builder. Prefer `prepareTTSPlaybackUrl()` for protected playback. */
+export function getTTSStreamUrl(
+  text: string,
+  voice = DEFAULT_VOICE_ID,
+  rate = DEFAULT_RATE,
+  pitch = '+0Hz'
+): string {
+  return buildTTSStreamUrl(text, voice, rate, pitch)
+}
+
 /** Generate and cache MP3 audio on the server */
 export async function generateTTSAudio(
   request: TTSGenerateRequest
 ): Promise<TTSGenerateResponse> {
-  const res = await fetch(`${BASE_URL}/audio/tts/generate`, {
+  const res = await fetchWithAuthRetry(`${BASE_URL}/audio/tts/generate`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -190,7 +236,27 @@ export async function generateTTSAudio(
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new Error(err.detail ?? 'Failed to generate audio')
   }
-  return res.json()
+  const result = await res.json() as TTSGenerateResponse
+  return {
+    ...result,
+    audio_url: resolveAudioUrl(result.audio_url),
+  }
+}
+
+/** Prepare an auth-safe playback URL by generating or reusing the cached MP3 file. */
+export async function prepareTTSPlaybackUrl(
+  text: string,
+  voice = DEFAULT_VOICE_ID,
+  rate = DEFAULT_RATE,
+  pitch = '+0Hz'
+): Promise<string> {
+  const result = await generateTTSAudio({
+    text,
+    voice,
+    rate,
+    pitch,
+  })
+  return result.audio_url
 }
 
 /** Upload recorded audio blob to server for STT and pronunciation scoring */
@@ -210,7 +276,7 @@ export async function uploadSTTAudio(
     formData.append('target_text', targetText.trim())
   }
 
-  const res = await fetch(`${BASE_URL}/audio/stt`, {
+  const res = await fetchWithAuthRetry(`${BASE_URL}/audio/stt`, {
     method: 'POST',
     body: formData,
   })

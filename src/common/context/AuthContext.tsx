@@ -6,7 +6,12 @@ import {
   useState,
 } from "react";
 import type { ReactNode } from "react";
+import type { UserProfileResponse } from "@/feature/auth/type/Auth";
 import { recordLoginDay } from "@/feature/user-profile/utils/StudyActivity";
+import {
+  fetchCurrentUserProfile,
+  logoutUser
+} from "@/feature/auth/api/authAPI";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,15 +25,15 @@ export interface AuthUser {
 
 export interface AuthContextValue {
   isAuthenticated: boolean;
+  isLoading: boolean;
   user: AuthUser | null;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshAuth: () => Promise<void>;
 }
 
 // ─── Storage helpers ───────────────────────────────────────────────────────────
 
 const USER_KEY = "auth_user";
-const TOKEN_KEY = "auth_access_token";
 
 export function getStoredUser(): AuthUser | null {
   try {
@@ -38,14 +43,29 @@ export function getStoredUser(): AuthUser | null {
     return null;
   }
 }
-
-export function getStoredToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+export function setStoredUser(user: AuthUser | null): void {
+  if (user) {
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(USER_KEY);
+  }
 }
 
 export function clearAuthStorage(): void {
   localStorage.removeItem(USER_KEY);
-  localStorage.removeItem(TOKEN_KEY);
+  // Optional cleanup for legacy tokens if any remain in client storage
+  localStorage.removeItem("auth_access_token");
+}
+
+function buildAuthUser(profile: UserProfileResponse): AuthUser {
+  const isAdmin = Number(profile.role_id) === 2;
+  return {
+    id: profile.id,
+    username: profile.name || profile.email,
+    email: profile.email,
+    role: isAdmin ? "admin" : "employee",
+    role_id: profile.role_id,
+  };
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -54,17 +74,41 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(getStoredUser);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const isAuthenticated = user !== null;
 
   // Sync state when another tab logs out / in
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (e.key === USER_KEY) {
-        setUser(e.newValue ? (JSON.parse(e.newValue) as AuthUser) : null);
+        try {
+          setUser(e.newValue ? (JSON.parse(e.newValue) as AuthUser) : null);
+        } catch {
+          setUser(null);
+        }
       }
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
+  }, []);
+  // Xác thực phiên làm việc thực tế từ Cookie server khi ứng dụng vừa mount
+  useEffect(() => {
+    const verifyServerSession = async () => {
+      try {
+        const serverUser = buildAuthUser(
+          await fetchCurrentUserProfile({ redirectOnAuthFailure: false }),
+        );
+        setUser(serverUser);
+        setStoredUser(serverUser);
+      } catch {
+        setUser(null);
+        clearAuthStorage();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    verifyServerSession();
   }, []);
 
   useEffect(() => {
@@ -109,23 +153,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [user?.id]);
 
-  const logout = useCallback(() => {
-    clearAuthStorage();
-    setUser(null);
+  const logout = useCallback(async (): Promise<void> => {
+    try {
+      await logoutUser();
+    } catch (error) {
+      console.error("Logout request failed:", error);
+    } finally {
+      clearAuthStorage();
+      setUser(null);
+    }
   }, []);
 
   /**
-   * Re-reads the persisted user from localStorage.
-   * Call this after a successful login / token refresh so that
-   * any component relying on AuthContext picks up the latest state.
+   * Re-reads the persisted user profile from localStorage.
+   * Call this after a successful login so that any component 
+   * relying on AuthContext picks up the latest user state.
    */
   const refreshAuth = useCallback(async (): Promise<void> => {
-    const stored = getStoredUser();
-    setUser(stored);
+    try {
+      const serverUser = buildAuthUser(
+        await fetchCurrentUserProfile({ redirectOnAuthFailure: false }),
+      );
+      setUser(serverUser);
+      setStoredUser(serverUser);
+    } catch {
+      setUser(null);
+      clearAuthStorage();
+    }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, logout, refreshAuth }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, user, logout, refreshAuth }}>
       {children}
     </AuthContext.Provider>
   );

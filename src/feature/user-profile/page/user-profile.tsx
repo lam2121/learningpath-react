@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/component/ui/
 import {
     fetchRoadmap,
     type RoadmapResponse,
-} from "@/feature/learning-path/roadmapApi";
+} from "@/feature/learning-path/api/roadmapApi";
 import { getNextAssignedLesson } from "@/feature/learning-path/lessonAccess";
 import { fetchCurrentUserProfile } from "@/feature/auth/api/authAPI";
 import type { UserProfileResponse } from "@/feature/auth/type/Auth";
