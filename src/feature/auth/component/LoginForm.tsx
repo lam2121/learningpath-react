@@ -18,6 +18,11 @@ export function LoginForm() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
+		if (!username.trim() || !password) {
+			setError('Username/email và mật khẩu là bắt buộc.')
+			return
+		}
+
 		setIsLoading(true)
 		setError(null)
 
@@ -77,30 +82,32 @@ export function LoginForm() {
 					<span className="login-input-icon">
 						<User size={16} className="icon-muted" />
 					</span>
-					<input
-						id="login-username"
-						type="text"
-						placeholder="Username or email"
-						value={username}
-						onChange={(e) => setUsername(e.target.value)}
-						className="login-input"
-						autoComplete="username"
-					/>
+						<input
+							id="login-username"
+							type="text"
+							placeholder="Username or email"
+							value={username}
+							onChange={(e) => setUsername(e.target.value)}
+							className="login-input"
+							autoComplete="username"
+							required
+						/>
 				</div>
 				{/* Password */}
 				<div className="login-input-wrapper">
 					<span className="login-input-icon">
 						<Lock size={16} className="icon-muted" />
 					</span>
-					<input
-						id="login-password"
-						type={showPassword ? 'text' : 'password'}
-						placeholder="Password"
-						value={password}
-						onChange={(e) => setPassword(e.target.value)}
-						className="login-input"
-						autoComplete="current-password"
-					/>
+						<input
+							id="login-password"
+							type={showPassword ? 'text' : 'password'}
+							placeholder="Password"
+							value={password}
+							onChange={(e) => setPassword(e.target.value)}
+							className="login-input"
+							autoComplete="current-password"
+							required
+						/>
 					<button
 						type="button"
 						className="login-eye-btn"
@@ -118,14 +125,14 @@ export function LoginForm() {
 					</p>
 				)}
 				{/* Submit */}
-				<button
-					id="login-submit-btn"
-					type="submit"
-					className={`login-btn${isLoading ? ' login-btn--loading' : ''}`}
-					disabled={isLoading}
-				>
-					{isLoading ? 'Signing in...' : 'Sign In'}
-				</button>
+						<button
+							id="login-submit-btn"
+							type="submit"
+							className={`login-btn${isLoading ? ' login-btn--loading' : ''}`}
+							disabled={!username.trim() || !password || isLoading}
+						>
+						{isLoading ? 'Signing in...' : 'Sign In'}
+					</button>
 			</form>
 			<div>
 				<br />

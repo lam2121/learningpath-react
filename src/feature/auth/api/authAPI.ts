@@ -22,10 +22,39 @@ function jsonHeaders(): HeadersInit {
 	}
 }
 
+function getErrorMessage(errorData: unknown, fallback: string): string {
+	if (typeof errorData === 'string') {
+		return errorData
+	}
+
+	if (errorData && typeof errorData === 'object') {
+		const detail = (errorData as { detail?: unknown }).detail
+		if (typeof detail === 'string') {
+			return detail
+		}
+		if (Array.isArray(detail)) {
+			return detail
+				.map((item) => {
+					if (typeof item === 'string') {
+						return item
+					}
+					if (item && typeof item === 'object' && 'msg' in item && typeof item.msg === 'string') {
+						return item.msg
+					}
+					return null
+				})
+				.filter((message): message is string => Boolean(message))
+				.join(', ') || fallback
+		}
+	}
+
+	return fallback
+}
+
 async function handleResponse<T>(res: Response): Promise<T> {
 	if (!res.ok) {
 		const errorData = await res.json().catch(() => ({ detail: res.statusText }))
-		throw new Error(errorData.detail ?? 'Đã có lỗi xảy ra.')
+		throw new Error(getErrorMessage(errorData, 'Đã có lỗi xảy ra.'))
 	}
 	return res.json() as Promise<T>
 }
@@ -33,7 +62,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
 async function handleEmptyResponse(res: Response): Promise<void> {
 	if (!res.ok) {
 		const errorData = await res.json().catch(() => ({ detail: res.statusText }))
-		throw new Error(errorData.detail ?? 'Đã có lỗi xảy ra.')
+		throw new Error(getErrorMessage(errorData, 'Đã có lỗi xảy ra.'))
 	}
 }
 

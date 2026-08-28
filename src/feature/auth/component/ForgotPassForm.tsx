@@ -38,7 +38,10 @@ export function ForgotPassForm() {
     // Step 2: Verify OTP
     const handleVerifyOtp = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!otp.trim()) return
+        if (otp.trim().length !== 6) {
+            setError('Mã OTP phải gồm đúng 6 chữ số.')
+            return
+        }
 
         setIsLoading(true)
         setError(null)
@@ -176,8 +179,8 @@ export function ForgotPassForm() {
                                 <button
                                     id="forgot-verify-btn"
                                     type="submit"
-                                    className={`forgot-btn${otp.trim().length >= 4 && !isLoading ? '' : ' forgot-btn--disabled'}`}
-                                    disabled={otp.trim().length < 4 || isLoading}
+                                    className={`forgot-btn${otp.trim().length === 6 && !isLoading ? '' : ' forgot-btn--disabled'}`}
+                                    disabled={otp.trim().length !== 6 || isLoading}
                                 >
                                     {isLoading ? <Loader2 size={16} className="animate-spin" /> : 'Xác nhận OTP'}
                                 </button>
