@@ -110,6 +110,42 @@ export async function refreshAccessToken(): Promise<void> {
 }
 
 /**
+ * Request Password Reset OTP from Central Auth Service.
+ */
+export async function requestPasswordOtp(credential: string): Promise<{ success: boolean; message: string; expires_in_minutes?: number }> {
+	const res = await fetch(`${AUTH_URL}/password/otp`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ credential, credential_type: 'email' }),
+	})
+	return await handleResponse<{ success: boolean; message: string; expires_in_minutes?: number }>(res)
+}
+
+/**
+ * Verify Password Reset OTP with Central Auth Service.
+ */
+export async function verifyPasswordOtp(email: string, otp: string): Promise<{ success: boolean; token: string; message: string }> {
+	const res = await fetch(`${AUTH_URL}/password/otp/verify`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ email, otp, purpose: 'reset_password' }),
+	})
+	return await handleResponse<{ success: boolean; token: string; message: string }>(res)
+}
+
+/**
+ * Reset Password using verified action token in Central Auth Service.
+ */
+export async function resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+	const res = await fetch(`${AUTH_URL}/password/reset`, {
+		method: 'PUT',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ token, new_password: newPassword }),
+	})
+	return await handleResponse<{ message: string }>(res)
+}
+
+/**
  * Fetch CareerPath User Profile & Learning Roadmap from CareerPath Backend (Port 8005).
  */
 export async function fetchCurrentUserProfile(
