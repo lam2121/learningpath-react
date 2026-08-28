@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Toaster } from '@/shadcn/component/ui/sonner';
 import { RoleCreationForm } from '@/feature/admin/component/RoleCreationForm';
 import { GenerationCenterDialog } from '@/feature/admin/component/GenerationCenterDialog';
+import { ResetTrackLearnersModal } from '@/feature/admin/component/GenerationConfirmModals';
 import {
 	activateTrack,
 	deleteTrack,
@@ -91,6 +92,7 @@ function TracksPage() {
 	const [summaryLoading, setSummaryLoading] = useState(false);
 	const [actionLoading, setActionLoading] = useState<ActionState>(null);
 	const [confirmWorkflow, setConfirmWorkflow] = useState<Workflow | null>(null);
+	const [confirmReset, setConfirmReset] = useState(false);
 	const [confirmDelete, setConfirmDelete] = useState<CareerTrack | null>(null);
 	const [mutating, setMutating] = useState(false);
 
@@ -195,6 +197,7 @@ function TracksPage() {
 
 	const handleResetLearners = async () => {
 		if (!selectedTrack) return;
+		setConfirmReset(false);
 		setActionLoading('reset');
 		try {
 			const result = await resetTrackLearners(selectedTrack.id);
@@ -386,8 +389,17 @@ function TracksPage() {
 				onClose={closeGenerationCenter}
 				onRequestGenerate={handleGenerateRequest}
 				onCancelConfirm={() => setConfirmWorkflow(null)}
-				onResetLearners={handleResetLearners}
+				onRequestResetLearners={() => setConfirmReset(true)}
 			/>
+
+			{confirmReset && (
+				<ResetTrackLearnersModal
+					track={selectedTrack}
+					loading={actionLoading === 'reset'}
+					onConfirm={handleResetLearners}
+					onClose={() => setConfirmReset(false)}
+				/>
+			)}
 
 			<Dialog open={Boolean(confirmDelete)} onOpenChange={open => { if (!open) setConfirmDelete(null); }}>
 				<DialogContent className="max-w-md">

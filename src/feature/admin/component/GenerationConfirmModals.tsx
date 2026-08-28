@@ -147,16 +147,18 @@ export function ResetTrackLearnersModal({ track, loading, onConfirm, onClose }: 
 						Reset Learners for {track.name}
 					</DialogTitle>
 					<DialogDescription>
-						This track has {count} active learner{count === 1 ? '' : 's'} with saved placement answers.
-						You must reset them before regenerating the placement questions or the course outline.
+						This track has {count} active learner{count === 1 ? '' : 's'}. You must reset them
+						before regenerating the placement questions or the course outline.
 					</DialogDescription>
 				</DialogHeader>
 				<div className="py-2">
 					<Alert variant="default" className="border-red-200 bg-red-50">
 						<AlertTriangle className="h-4 w-4" />
 						<AlertDescription className="text-sm">
-							Resetting will clear their saved placement answers and learning roadmap, and set
-							their enrollment status back to incomplete. They will need to retake the placement test.
+							Resetting will permanently clear their enrollment data: saved placement answers,
+							learning roadmap, lesson progress, skill (radar) scores, and spaced-repetition
+							review queue. Their enrollment status will be reset to incomplete and their track
+							removed, so they will need to retake the placement test from scratch. This cannot be undone.
 						</AlertDescription>
 					</Alert>
 				</div>

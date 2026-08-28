@@ -3112,6 +3112,7 @@ function EmbeddedLessonQuiz({
         return () => {
             cancelled = true;
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         lessonId,
         nextLesson?.lesson.id,
@@ -3267,6 +3268,7 @@ function EmbeddedLessonQuiz({
         pendingDraft,
         questions.length,
         quizStarted,
+        requestLessonView,
         showSummary,
         submitted,
     ]);
@@ -3415,15 +3417,6 @@ function EmbeddedLessonQuiz({
     }, [animateQuestionNavigatorScroll]);
 
     useEffect(() => stopQuestionNavigatorAnimation, [stopQuestionNavigatorAnimation]);
-
-    if (!quiz || questions.length === 0) {
-        return (
-            <EmptyPanel
-                title="Quiz"
-                message="This lesson does not have valid C-2 quiz content yet."
-            />
-        );
-    }
 
     const currentQuestion = questions[currentQuestionIndex];
     const currentAnswer = answers[currentQuestionIndex];
@@ -3589,7 +3582,7 @@ function EmbeddedLessonQuiz({
         ? displayedCorrectNoHintCount + displayedCorrectWithHintCount
         : correctCount;
 
-    const finalizeSubmission = async () => {
+    const finalizeSubmission = useCallback(async () => {
         if (savingAttempt) {
             return;
         }
@@ -3644,16 +3637,25 @@ function EmbeddedLessonQuiz({
         } finally {
             setSavingAttempt(false);
         }
-    };
+    }, [
+        answers,
+        hintedQuestions,
+        lessonId,
+        openSummaryView,
+        questions,
+        reinitializeRadar,
+        savingAttempt,
+        userId,
+    ]);
 
-    const handleSubmitQuiz = () => {
+    const handleSubmitQuiz = useCallback(() => {
         if (unansweredCount > 0) {
             setShowIncompleteWarning(true);
             return;
         }
 
         void finalizeSubmission();
-    };
+    }, [finalizeSubmission, unansweredCount]);
 
     const handleConfirmSubmitQuiz = () => {
         void finalizeSubmission();
@@ -3732,7 +3734,7 @@ function EmbeddedLessonQuiz({
     };
 
     useEffect(() => {
-        if (!isActive) {
+        if (!isActive || !quiz || questions.length === 0) {
             return;
         }
 
@@ -3768,7 +3770,16 @@ function EmbeddedLessonQuiz({
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [handleAdvanceQuestion, isActive, showSummary]);
+    }, [handleAdvanceQuestion, isActive, questions.length, quiz, showSummary]);
+
+    if (!quiz || questions.length === 0) {
+        return (
+            <EmptyPanel
+                title="Quiz"
+                message="This lesson does not have valid C-2 quiz content yet."
+            />
+        );
+    }
 
     const questionNavigator = (
         <div

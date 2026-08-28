@@ -19,7 +19,7 @@ interface GenerationCenterDialogProps {
 	onClose: () => void;
 	onRequestGenerate: (workflow: Workflow) => void;
 	onCancelConfirm: () => void;
-	onResetLearners: () => void;
+	onRequestResetLearners: () => void;
 }
 
 function formatDateTime(value: string | null): string {
@@ -97,7 +97,7 @@ export function GenerationCenterDialog({
 	onClose,
 	onRequestGenerate,
 	onCancelConfirm,
-	onResetLearners,
+	onRequestResetLearners,
 }: GenerationCenterDialogProps) {
 	if (!track) return null;
 
@@ -241,7 +241,7 @@ export function GenerationCenterDialog({
 												{placementBlocked ? (
 													<Button
 														variant="outline"
-														onClick={onResetLearners}
+														onClick={onRequestResetLearners}
 														disabled={actionLoading !== null || isAnythingRunning}
 														className="w-full sm:w-auto"
 													>
@@ -363,7 +363,7 @@ export function GenerationCenterDialog({
 												{courseBlocked ? (
 													<Button
 														variant="outline"
-														onClick={onResetLearners}
+														onClick={onRequestResetLearners}
 														disabled={actionLoading !== null || isAnythingRunning}
 														className="w-full sm:w-auto"
 													>
