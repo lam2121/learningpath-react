@@ -17,7 +17,7 @@ import {
     fetchRoadmap,
     type RoadmapLesson,
     type RoadmapTopic,
-} from "@/feature/learning-path/roadmapApi";
+} from "@/feature/learning-path/api/roadmapApi";
 import {
     findLatestReadyLessonInTopic,
     isLessonGeneratedButLocked,
@@ -179,8 +179,8 @@ function LessonCard({ lesson }: { lesson: RoadmapLesson }) {
                             !lesson.is_generated
                                 ? "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"
                                 : isReadyToStudy
-                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
-                                : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
+                                    : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
                         ].join(" ")}
                     >
                         {!lesson.is_generated
@@ -209,8 +209,8 @@ function LessonCard({ lesson }: { lesson: RoadmapLesson }) {
                     {!lesson.is_generated
                         ? "This lesson exists in the roadmap but its content has not been generated yet."
                         : isGeneratedButLocked
-                        ? "This lesson is generated, but you need to pass the previous lesson in this topic to unlock it."
-                        : "Theory and quiz content are ready for this lesson."}
+                            ? "This lesson is generated, but you need to pass the previous lesson in this topic to unlock it."
+                            : "Theory and quiz content are ready for this lesson."}
                 </p>
             </div>
 

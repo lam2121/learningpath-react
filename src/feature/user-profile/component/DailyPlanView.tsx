@@ -22,7 +22,7 @@ import { Button } from "@/shadcn/component/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/component/ui/card";
 import { Dialog } from "@/shadcn/component/ui/dialog";
 import { Progress } from "@/shadcn/component/ui/progress";
-import type { RoadmapLesson, RoadmapTopic } from "@/feature/learning-path/roadmapApi";
+import type { RoadmapLesson, RoadmapTopic } from "@/feature/learning-path/api/roadmapApi";
 import { isLessonReadyToStudy } from "@/feature/learning-path/lessonAccess";
 import { getTrackedStudyMinutesByDay, calculateLongestStreak, getLoginDays } from "@/feature/user-profile/utils/StudyActivity";
 import {

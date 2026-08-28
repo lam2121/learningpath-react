@@ -225,6 +225,7 @@ export function PlacementTestEngine() {
   const transitionTimeoutRef = useRef<number | null>(null)
   const [remainingSeconds, setRemainingSeconds] = useState(TEST_DURATION_SECONDS)
   const timerDeadlineRef = useRef<number | null>(null)
+  const timedOutSubmissionAttemptedRef = useRef(false)
 
   // ── Cleanup transition timeout on unmount ───────────────────────────────────
   useEffect(() => {
@@ -269,7 +270,6 @@ export function PlacementTestEngine() {
 
     fetchPlacementTestQuestions(roleId)
       .then((data) => {
-        console.log('Fetched questions:', data?.length)
         if (!data || data.length === 0) {
           console.warn('Data is empty or null')
           setLoadState('empty')
@@ -277,7 +277,6 @@ export function PlacementTestEngine() {
         }
         const pool = buildPool(data)
         poolRef.current = pool
-        console.log('Built pool:', pool)
 
         // Pick the very first question (axis D, level Easy)
         const firstAxis = AXIS_SEQUENCE[0]
@@ -322,7 +321,7 @@ export function PlacementTestEngine() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Enter' || event.repeat) return
-      if (isSubmitting || showQuit || isAdvancingRef.current) return
+      if (isSubmitting || showQuit || isAdvancingRef.current || remainingSeconds === 0) return
 
       const target = event.target as HTMLElement | null
       // Let the Next/Submit button's own Enter activation fire once (avoid double-advance).
@@ -336,23 +335,60 @@ export function PlacementTestEngine() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isSubmitting, showQuit, selectedId, currentQuestion, isAdvancing])
+  }, [isSubmitting, showQuit, selectedId, currentQuestion, isAdvancing, remainingSeconds])
 
   // ─────────────────────────────────────────────────────────────────────────────
 
+  function buildCurrentQuestionResult(): QuestionResult | null {
+    if (!selectedId || !currentQuestion) {
+      return null
+    }
+
+    return {
+      questionId: currentQuestion.id,
+      axis: currentQuestion.axis,
+      difficulty: currentQuestion.difficulty,
+      selectedId,
+      isCorrect: selectedId === currentQuestion.correctId,
+      questionText: currentQuestion.question,
+      options: currentQuestion.options,
+      correctId: currentQuestion.correctId,
+    }
+  }
+
+  function buildSubmissionResults(baseResults: QuestionResult[] = results): QuestionResult[] {
+    const pendingResult = buildCurrentQuestionResult()
+    if (!pendingResult) {
+      return baseResults
+    }
+
+    if (baseResults.some((result) => result.questionId === pendingResult.questionId)) {
+      return baseResults
+    }
+
+    return [...baseResults, pendingResult]
+  }
+
   function handleSelect(optionId: string) {
-    if (isAdvancingRef.current || isSubmitting) return
+    if (isAdvancingRef.current || isSubmitting || remainingSeconds === 0) return
     setSelectedId(optionId)
   }
 
-  function submitTest(finalResults: QuestionResult[]) {
+  async function submitTest(finalResults: QuestionResult[], timedOut = false) {
+    if (isSubmitting) {
+      return
+    }
+
     setIsSubmitting(true)
+    setFetchError(null)
 
     const rawRoleId = localStorage.getItem('pending_role_id')
     const roleId = rawRoleId ? parseInt(rawRoleId, 10) : null
 
     if (!roleId) {
       setIsSubmitting(false)
+      isAdvancingRef.current = false
+      setIsAdvancing(false)
       setFetchError('No role selected. Please go back and choose a role.')
       navigate({ to: returnPath })
       return
@@ -371,38 +407,72 @@ export function PlacementTestEngine() {
       difficulty: r.difficulty,
     }))
 
-    completePlacementTest({ role_id: roleId, placement_test_answers: formattedResults })
-      .then(() => reinitializeRadar(true))
-      .catch((err) => console.warn('Failed to commit placement test:', err))
-      .finally(() => {
-        localStorage.removeItem('pending_survey_answers')
-        localStorage.removeItem('pending_role_id')
-        navigate({ to: '/onboarding/placement-result', state: { results: finalResults } as HistoryState })
-      })
+    try {
+      await completePlacementTest({ role_id: roleId, placement_test_answers: formattedResults })
+      try {
+        await reinitializeRadar(true)
+      } catch (radarError) {
+        console.warn('Failed to refresh radar state after placement completion:', radarError)
+      }
+
+      localStorage.removeItem('pending_survey_answers')
+      localStorage.removeItem('pending_role_id')
+      navigate({ to: '/onboarding/placement-result', state: { results: finalResults } as HistoryState })
+    } catch (err) {
+      console.warn('Failed to commit placement test:', err)
+      setFetchError(
+        timedOut
+          ? 'Time is up, but we could not save your placement test. Retry submission.'
+          : err instanceof Error
+            ? err.message
+            : 'Failed to save your placement test. Please try again.',
+      )
+      setIsSubmitting(false)
+      isAdvancingRef.current = false
+      setIsAdvancing(false)
+    }
   }
 
+  useEffect(() => {
+    if (
+      loadState !== 'ready'
+      || remainingSeconds !== 0
+      || isSubmitting
+      || timedOutSubmissionAttemptedRef.current
+    ) {
+      return
+    }
+
+    timedOutSubmissionAttemptedRef.current = true
+    void submitTest(buildSubmissionResults(), true)
+  }, [loadState, remainingSeconds, isSubmitting, results, selectedId, currentQuestion])
+
   function handleNext() {
-    if (isAdvancingRef.current || !selectedId || !currentQuestion || isSubmitting || !poolRef.current) return
+    if (
+      isAdvancingRef.current
+      || !selectedId
+      || !currentQuestion
+      || isSubmitting
+      || !poolRef.current
+      || remainingSeconds === 0
+    ) {
+      return
+    }
     isAdvancingRef.current = true
     setIsAdvancing(true)
 
-    const isCorrect = selectedId === currentQuestion.correctId
-    const newResult: QuestionResult = {
-      questionId: currentQuestion.id,
-      axis: currentQuestion.axis,
-      difficulty: currentQuestion.difficulty,
-      selectedId,
-      isCorrect,
-      questionText: currentQuestion.question,
-      options: currentQuestion.options,
-      correctId: currentQuestion.correctId,
+    const newResult = buildCurrentQuestionResult()
+    if (!newResult) {
+      isAdvancingRef.current = false
+      setIsAdvancing(false)
+      return
     }
     const updatedResults = [...results, newResult]
 
     const isLastQuestion = currentIndex === TOTAL_QUESTIONS - 1
 
     if (isLastQuestion) {
-      submitTest(updatedResults)
+      void submitTest(updatedResults)
       return
     }
 
@@ -453,7 +523,9 @@ export function PlacementTestEngine() {
   const current = currentQuestion!
   const timerMinutes = Math.floor(remainingSeconds / 60)
   const timerSeconds = remainingSeconds % 60
+  const hasTimedOut = remainingSeconds === 0
   const isTimeRunningLow = remainingSeconds <= 5 * 60
+  const showPrimaryAction = (!hasTimedOut && selectedId && !isAdvancing) || (hasTimedOut && !isSubmitting)
 
   return (
     <div className="min-h-screen relative bg-slate-50">
@@ -576,12 +648,19 @@ export function PlacementTestEngine() {
           />
 
           {/* Next / Submit Button */}
-          <div className={`mt-5 transition-all duration-300 ${selectedId && !isAdvancing ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
+          <div className={`mt-5 transition-all duration-300 ${showPrimaryAction ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
             <button
               id="btn-next-question"
               type="button"
-              onClick={handleNext}
-              disabled={!selectedId || isSubmitting || isAdvancing}
+              onClick={() => {
+                if (hasTimedOut) {
+                  void submitTest(buildSubmissionResults(), true)
+                  return
+                }
+
+                handleNext()
+              }}
+              disabled={isSubmitting || (!hasTimedOut && (!selectedId || isAdvancing))}
               className={`w-full py-4 px-6 rounded-xl font-bold text-base transition-all duration-300 flex items-center justify-center gap-2.5 shadow-lg
                 ${isSubmitting
                   ? 'bg-emerald-500/30 border border-emerald-400/40 text-emerald-300 cursor-default'
@@ -596,6 +675,8 @@ export function PlacementTestEngine() {
                   </svg>
                   <span>Compiling results...</span>
                 </>
+              ) : hasTimedOut ? (
+                <span>Retry Submission</span>
               ) : isLastQuestion ? (
                 <>
                   <span>Submit</span>
@@ -611,7 +692,7 @@ export function PlacementTestEngine() {
               )}
             </button>
 
-            {!isLastQuestion && (
+            {!isLastQuestion && !hasTimedOut && (
               <p className="text-center text-[11px] text-gray-400 mt-2">
                 🔒 You cannot go back — choose carefully
               </p>

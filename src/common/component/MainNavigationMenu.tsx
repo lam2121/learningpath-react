@@ -145,7 +145,7 @@ export function MainNavigationMenu({
         }
 
         try {
-            auth.logout();
+            await auth.logout();
             await router.invalidate();
             await navigate({ to: "/" });
         } catch (error) {
@@ -492,7 +492,7 @@ function MobileNav({
         }
 
         try {
-            auth.logout();
+            await auth.logout();
             await router.invalidate();
             await navigate({ to: "/" });
         } catch (error) {

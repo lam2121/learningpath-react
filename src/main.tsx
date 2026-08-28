@@ -22,7 +22,6 @@ if (import.meta.env.DEV && BYPASS_AUTH) {
       role: 'admin',
       role_id: 2,
     }))
-    localStorage.setItem('auth_access_token', 'dev-bypass-token')
   } else {
     try {
       const parsed = JSON.parse(existing)

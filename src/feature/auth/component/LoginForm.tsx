@@ -25,9 +25,8 @@ export function LoginForm() {
 			// 1. Call the API
 			const data = await loginUser({ identifier: username, password })
 
-			// 2. Persist token + user info from login response
+			// 2. Persist user info from login response
 			saveUserSession({
-				access_token: data.access_token,
 				email: data.email,
 				username: data.name,
 				role_id: data.role_id,

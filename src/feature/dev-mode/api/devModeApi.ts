@@ -1,15 +1,12 @@
-import { getStoredToken } from '@/common/context/AuthContext'
+import { fetchWithAuthRetry } from "@/common/lib/authSession";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Build headers with Authorization Bearer token when a session exists. */
-function authHeaders(): HeadersInit {
-  const token = getStoredToken()
+function jsonHeaders(): HeadersInit {
   return {
     'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
 }
 
@@ -74,9 +71,9 @@ export async function devGenerateCourse(
   roleId: number,
   skills: SkillScores,
 ): Promise<DevRoadmap> {
-  const res = await fetch(`${BASE_URL}/onboarding/roadmap/select`, {
+  const res = await fetchWithAuthRetry(`${BASE_URL}/onboarding/roadmap/select`, {
     method: 'POST',
-    headers: authHeaders(),
+    headers: jsonHeaders(),
     body: JSON.stringify({ role_id: roleId, skills }),
   })
   return handleResponse<DevRoadmap>(res)
@@ -84,9 +81,9 @@ export async function devGenerateCourse(
 
 /** Fetch the current user's roadmap with lessons inline (auto-computes when empty). */
 export async function fetchDevRoadmap(): Promise<DevRoadmap> {
-  const res = await fetch(`${BASE_URL}/onboarding/roadmap`, {
+  const res = await fetchWithAuthRetry(`${BASE_URL}/onboarding/roadmap`, {
     method: 'GET',
-    headers: authHeaders(),
+    headers: jsonHeaders(),
   })
   return handleResponse<DevRoadmap>(res)
 }
@@ -100,11 +97,11 @@ export async function generateDevLesson(
   lessonId: number,
   force = false,
 ): Promise<GenerateLessonResult> {
-  const res = await fetch(
+  const res = await fetchWithAuthRetry(
     `${BASE_URL}/onboarding/roadmap/lessons/${lessonId}/generate${force ? '?force=true' : ''}`,
     {
       method: 'POST',
-      headers: authHeaders(),
+      headers: jsonHeaders(),
     },
   )
   return handleResponse<GenerateLessonResult>(res)

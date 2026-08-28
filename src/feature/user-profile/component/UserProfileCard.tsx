@@ -17,7 +17,7 @@ import tmaLogo from "@/asset/image/tma_logo.png";
 import { useAuth } from "@/common/context/AuthContext";
 import { fetchCurrentUserProfile } from "@/feature/auth/api/authAPI";
 import type { UserProfileResponse } from "@/feature/auth/type/Auth";
-import { fetchRoadmap, type RoadmapResponse } from "@/feature/learning-path/roadmapApi";
+import { fetchRoadmap, type RoadmapResponse } from "@/feature/learning-path/api/roadmapApi";
 import {
     fetchJobRoles,
     fetchPlacementTestResult,

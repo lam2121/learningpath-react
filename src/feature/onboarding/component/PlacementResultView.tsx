@@ -146,8 +146,8 @@ export function PlacementResultView() {
   const navigate = useNavigate()
   const { logout } = useAuth()
   const routerState = useRouterState({ select: (s) => s.location.state })
-  const handleSignOut = () => {
-    logout()
+  const handleSignOut = async () => {
+    await logout()
     navigate({ to: '/login' })
   }
 

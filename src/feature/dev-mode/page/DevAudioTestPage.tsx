@@ -51,7 +51,7 @@ import { Textarea } from '@/shadcn/component/ui/textarea'
 import {
   fetchVoices,
   generateTTSAudio,
-  getTTSStreamUrl,
+  prepareTTSPlaybackUrl,
   uploadSTTAudio,
   type STTResponse,
   type TTSGenerateResponse,
@@ -156,16 +156,20 @@ export function DevAudioTestPage() {
   const formattedRate = `${ratePercent >= 0 ? '+' : ''}${ratePercent}%`
 
   // Handle TTS Live Stream Playback
-  const handlePlayLiveStream = () => {
+  const handlePlayLiveStream = async () => {
     if (!ttsText.trim()) return
+    setTtsLoading(true)
     setTtsError(null)
-    const streamUrl = getTTSStreamUrl(ttsText, selectedVoice, formattedRate)
-
-    if (audioRef.current) {
-      audioRef.current.src = streamUrl
-      audioRef.current.play().catch((err) => {
-        setTtsError(`Audio playback error: ${err.message}`)
-      })
+    try {
+      const playbackUrl = await prepareTTSPlaybackUrl(ttsText, selectedVoice, formattedRate)
+      if (audioRef.current) {
+        audioRef.current.src = playbackUrl
+        await audioRef.current.play()
+      }
+    } catch (err) {
+      setTtsError(`Audio playback error: ${(err as Error).message}`)
+    } finally {
+      setTtsLoading(false)
     }
   }
 

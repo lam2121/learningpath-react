@@ -40,7 +40,7 @@ import {
     type RoadmapLesson,
     type RoadmapResponse,
     type RoadmapTopic,
-} from "@/feature/learning-path/roadmapApi";
+} from "@/feature/learning-path/api/roadmapApi";
 import { useRadar } from "@/feature/radar";
 import { DailyStudyGoalDialog } from "@/feature/user-profile/component/DailyStudyGoalDialog";
 import { getTrackedStudyMinutesByDay, recordStudyTime } from "@/feature/user-profile/utils/StudyActivity";
@@ -74,9 +74,10 @@ import type {
 } from "@/feature/quiz-engine/type/Quiz";
 import { LessonSkeleton } from "../component/LessonSkeleton";
 import { ListeningAudioPlayer } from "../component/ListeningAudioPlayer";
-import { getTTSStreamUrl } from "@/feature/audio/audioApi";
+import { prepareTTSPlaybackUrl } from "@/feature/audio/audioApi";
 
 let activeGlobalAudio: HTMLAudioElement | null = null;
+let activeSpeechRequestId = 0;
 
 type BrowserHistoryState = Record<string, unknown>;
 type LessonQuizMode = "intro" | "question" | "summary" | "review";
@@ -225,6 +226,7 @@ function readEmbeddedLessonQuizViewFromHistoryState(state: BrowserHistoryState) 
     return view;
 }
 function stopSpeech() {
+    activeSpeechRequestId += 1;
     if (activeGlobalAudio) {
         activeGlobalAudio.pause();
         activeGlobalAudio.currentTime = 0;
@@ -235,8 +237,10 @@ function stopSpeech() {
     }
 }
 
-function speakText(text: string, onEnd?: () => void, voiceOverride?: string) {
+async function speakText(text: string, onEnd?: () => void, voiceOverride?: string) {
+    const requestId = activeSpeechRequestId + 1;
     stopSpeech();
+    activeSpeechRequestId = requestId;
     const defaultSavedVoice =
         (typeof window !== "undefined" &&
             localStorage.getItem("toeic_audio_voice")) ||
@@ -250,15 +254,13 @@ function speakText(text: string, onEnd?: () => void, voiceOverride?: string) {
     const rateNum = parseInt(savedRate, 10);
     const formattedRate = `${rateNum >= 0 ? "+" : ""}${rateNum}%`;
 
-    // Try Neural TTS stream first
-    const streamUrl = getTTSStreamUrl(text, selectedVoice, formattedRate);
-    const audio = new Audio(streamUrl);
-    activeGlobalAudio = audio;
-
     let fallbackTriggered = false;
     const triggerFallback = () => {
         if (fallbackTriggered) return;
         fallbackTriggered = true;
+        if (requestId !== activeSpeechRequestId) {
+            return;
+        }
         if (typeof window === "undefined" || !("speechSynthesis" in window)) {
             onEnd?.();
             return;
@@ -273,6 +275,19 @@ function speakText(text: string, onEnd?: () => void, voiceOverride?: string) {
         }
         window.speechSynthesis.speak(utterance);
     };
+
+    let audio: HTMLAudioElement;
+    try {
+        const audioUrl = await prepareTTSPlaybackUrl(text, selectedVoice, formattedRate);
+        if (requestId !== activeSpeechRequestId) {
+            return;
+        }
+        audio = new Audio(audioUrl);
+        activeGlobalAudio = audio;
+    } catch {
+        triggerFallback();
+        return;
+    }
 
     audio.onended = () => {
         activeGlobalAudio = null;
@@ -356,7 +371,7 @@ function AudioSpeakButton({
             return;
         }
         setIsPlaying(true);
-        speakText(text, () => setIsPlaying(false), voice);
+        void speakText(text, () => setIsPlaying(false), voice);
     };
 
     return (
@@ -3683,7 +3698,7 @@ function EmbeddedLessonQuiz({
 
             const currentMode =
                 lessonView?.lessonId === lessonId
-                && lessonView.section === "quiz"
+                    && lessonView.section === "quiz"
                     ? lessonView.quizMode
                     : undefined;
 
@@ -4356,7 +4371,7 @@ function EmbeddedLessonQuiz({
                                                     onClick={() => {
                                                         const currentMode =
                                                             lessonView?.lessonId === lessonId
-                                                            && lessonView.section === "quiz"
+                                                                && lessonView.section === "quiz"
                                                                 ? lessonView.quizMode
                                                                 : undefined;
 

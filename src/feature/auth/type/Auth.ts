@@ -64,8 +64,6 @@ export interface StudySettingsUpdateRequest {
 }
 
 export interface LoginResponse {
-	access_token: string
-	token_type: string
 	user_id: number
 	email: string
 	name: string
@@ -83,4 +81,3 @@ export interface AICoachMessageRequest {
 export interface AICoachMessageResponse {
 	feedback_summary: string
 }
-

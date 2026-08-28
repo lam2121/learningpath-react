@@ -18,7 +18,7 @@ import {
   DEFAULT_VOICE_ID,
   DEFAULT_VOICES,
   fetchVoices,
-  getTTSStreamUrl,
+  prepareTTSPlaybackUrl,
   type VoiceProfile,
 } from '@/feature/audio/audioApi'
 import { Badge } from '@/shadcn/component/ui/badge'
@@ -80,6 +80,8 @@ export function ListeningAudioPlayer({
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const isScrubbingRef = useRef(false)
   const loadTokenRef = useRef(0)
+  const sourceKeyRef = useRef<string>('')
+  const sourceUrlRef = useRef<string>('')
 
   // Fetch available voices on mount
   useEffect(() => {
@@ -105,43 +107,74 @@ export function ListeningAudioPlayer({
   // Get active voice object
   const activeVoice = voices.find((v) => v.id === selectedVoiceId) ?? voices[0]
 
-  // Setup current stream URL
-  const currentStreamUrl = getTTSStreamUrl(scriptText, selectedVoiceId, formattedRate)
+  const buildSourceKey = (voiceId: string, rate: number) => {
+    const normalizedRate = `${rate >= 0 ? '+' : ''}${rate}%`
+    return `${scriptText}::${voiceId}::${normalizedRate}`
+  }
 
-  // Robust audio source switcher with token guards and one-time listeners
-  const switchAudioTrack = (newVoiceId: string, newRate: number) => {
-    const audio = audioRef.current
-    if (!audio) return
-
-    const newFormattedRate = `${newRate >= 0 ? '+' : ''}${newRate}%`
-    const newUrl = getTTSStreamUrl(scriptText, newVoiceId, newFormattedRate)
-
-    const wasPlaying = isPlaying
-    const prevTime = audio.currentTime
-    const prevDuration = duration
-    const currentToken = ++loadTokenRef.current
-
-    if (wasPlaying) {
-      audio.pause()
-      setIsLoading(true)
-    }
-
-    setStreamError(null)
-    audio.src = newUrl
-    audio.load()
-
-    const onReady = () => {
-      // Ignore if a newer switch request occurred
-      if (loadTokenRef.current !== currentToken) return
-
-      audio.removeEventListener('loadeddata', onReady)
-      audio.removeEventListener('canplay', onReady)
-
-      if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
-        setDuration(audio.duration)
+  const waitForAudioReady = (audio: HTMLAudioElement) =>
+    new Promise<void>((resolve, reject) => {
+      const onReady = () => {
+        cleanup()
+        resolve()
+      }
+      const onError = () => {
+        cleanup()
+        reject(new Error('Audio playback source could not be loaded.'))
+      }
+      const cleanup = () => {
+        audio.removeEventListener('loadeddata', onReady)
+        audio.removeEventListener('canplay', onReady)
+        audio.removeEventListener('error', onError)
       }
 
-      // Proportional position mapping across rate/voice changes
+      audio.addEventListener('loadeddata', onReady, { once: true })
+      audio.addEventListener('canplay', onReady, { once: true })
+      audio.addEventListener('error', onError, { once: true })
+    })
+
+  const ensureAudioSource = async (
+    voiceId: string,
+    rate: number,
+    options?: {
+      prevTime?: number
+      prevDuration?: number
+      autoPlay?: boolean
+    },
+  ) => {
+    const audio = audioRef.current
+    if (!audio) return false
+
+    const sourceKey = buildSourceKey(voiceId, rate)
+    if (sourceKeyRef.current === sourceKey && sourceUrlRef.current) {
+      return true
+    }
+
+    const prevTime = options?.prevTime ?? 0
+    const prevDuration = options?.prevDuration ?? 0
+    const autoPlay = options?.autoPlay ?? false
+    const nextRate = `${rate >= 0 ? '+' : ''}${rate}%`
+    const currentToken = ++loadTokenRef.current
+
+    setIsLoading(true)
+    setStreamError(null)
+
+    try {
+      const sourceUrl = await prepareTTSPlaybackUrl(scriptText, voiceId, nextRate)
+      if (loadTokenRef.current !== currentToken) {
+        return false
+      }
+
+      sourceKeyRef.current = sourceKey
+      sourceUrlRef.current = sourceUrl
+      audio.src = sourceUrl
+      audio.load()
+      await waitForAudioReady(audio)
+
+      if (loadTokenRef.current !== currentToken) {
+        return false
+      }
+
       if (prevTime > 0 && audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
         const ratio = prevDuration > 0 ? prevTime / prevDuration : 0
         const targetTime =
@@ -152,41 +185,55 @@ export function ListeningAudioPlayer({
         setCurrentTime(Math.max(0, targetTime))
       }
 
-      if (wasPlaying) {
-        audio
-          .play()
-          .then(() => {
-            if (loadTokenRef.current === currentToken) {
-              setIsPlaying(true)
-              setIsLoading(false)
-            }
-          })
-          .catch((err) => {
-            if (err?.name !== 'AbortError') {
-              console.warn('Playback resume failed:', err)
-              setIsPlaying(false)
-            }
-            setIsLoading(false)
-          })
-      } else {
+      if (autoPlay) {
+        await audio.play()
+      }
+
+      setIsLoading(false)
+      return true
+    } catch {
+      if (loadTokenRef.current === currentToken) {
         setIsLoading(false)
       }
+      return false
+    }
+  }
+
+  // Robust audio source switcher with token guards and one-time listeners
+  const switchAudioTrack = async (newVoiceId: string, newRate: number) => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    const wasPlaying = isPlaying
+    const prevTime = audio.currentTime
+    const prevDuration = duration
+
+    if (wasPlaying) {
+      audio.pause()
     }
 
-    audio.addEventListener('loadeddata', onReady, { once: true })
-    audio.addEventListener('canplay', onReady, { once: true })
+    const loaded = await ensureAudioSource(newVoiceId, newRate, {
+      prevTime,
+      prevDuration,
+      autoPlay: wasPlaying,
+    })
+
+    if (!loaded && wasPlaying) {
+      console.warn('Playback resume failed: could not prepare a refreshed audio source.')
+      setIsPlaying(false)
+    }
   }
 
   // Handle Voice Change
   const handleVoiceChange = (voiceId: string) => {
     setSelectedVoiceId(voiceId)
-    switchAudioTrack(voiceId, ratePercent)
+    void switchAudioTrack(voiceId, ratePercent)
   }
 
   // Handle Rate Change
   const handleRateChange = (newRate: number) => {
     setRatePercent(newRate)
-    switchAudioTrack(selectedVoiceId, newRate)
+    void switchAudioTrack(selectedVoiceId, newRate)
   }
 
   // Play / Pause Toggle
@@ -204,10 +251,31 @@ export function ListeningAudioPlayer({
     setIsLoading(true)
     setStreamError(null)
 
-    // Ensure audio src is current
-    if (!audio.src || audio.src !== currentStreamUrl) {
-      audio.src = currentStreamUrl
-      audio.load()
+    const prepared = await ensureAudioSource(selectedVoiceId, ratePercent)
+    if (!prepared) {
+      console.error('Audio stream play error, falling back to Web Speech API: source preparation failed')
+      setStreamError('Network stream unavailable. Using browser speech synthesis fallback.')
+
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+        const utterance = new SpeechSynthesisUtterance(scriptText)
+        utterance.lang = activeVoice.locale || 'en-US'
+        utterance.rate = Math.max(0.6, Math.min(1.4, 1 + ratePercent / 100))
+        utterance.onend = () => {
+          setIsPlaying(false)
+          setIsLoading(false)
+        }
+        utterance.onerror = () => {
+          setIsPlaying(false)
+          setIsLoading(false)
+        }
+        window.speechSynthesis.speak(utterance)
+        setIsPlaying(true)
+      } else {
+        setIsLoading(false)
+        setIsPlaying(false)
+      }
+      return
     }
 
     try {
@@ -346,6 +414,8 @@ export function ListeningAudioPlayer({
       audio.removeEventListener('canplay', handleCanPlay)
       audio.removeEventListener('error', handleError)
       audio.pause()
+      sourceKeyRef.current = ''
+      sourceUrlRef.current = ''
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel()
       }

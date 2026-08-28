@@ -10,5 +10,13 @@ export function MainApp({ router, queryClient }: { router: AnyRouter; queryClien
 		return { queryClient, auth };
 	}, [auth, queryClient]);
 
+	if (auth.isLoading) {
+		return (
+			<div className="flex min-h-screen items-center justify-center bg-[#f5fbff] text-sm font-medium text-slate-600">
+				Restoring your session...
+			</div>
+		);
+	}
+
 	return <RouterProvider router={router} context={routerContext} />;
 }
