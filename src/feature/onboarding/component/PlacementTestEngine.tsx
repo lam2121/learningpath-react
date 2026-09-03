@@ -8,6 +8,7 @@ import { SKILL_TO_AXIS, ORDERED_LEVELS } from '../api/placementTestTypes'
 import { useRadar } from '@/feature/radar'
 import { completePlacementTest, fetchPlacementTestQuestions } from '../api/onboardingApi'
 import type { RawPlacementQuestionApi } from '../api/onboardingApi'
+import { onboardingTexts } from '../onboardingTexts'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -127,9 +128,9 @@ function QuitModal({ onStay, onQuit }: { onStay: () => void; onQuit: () => void 
         <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-rose-500/15 border border-rose-400/30 flex items-center justify-center text-2xl">
           ⚠️
         </div>
-        <h3 className="text-lg font-bold text-white text-center mb-2">Exit the test?</h3>
+        <h3 className="text-lg font-bold text-white text-center mb-2">{onboardingTexts.placementTest.quitModal.title}</h3>
         <p className="text-sm text-white/60 text-center mb-6 leading-relaxed">
-          Your test progress will be <span className="text-rose-300 font-semibold">completely lost</span> if you exit. Are you sure?
+          {onboardingTexts.placementTest.quitModal.bodyStart}<span className="text-rose-300 font-semibold">{onboardingTexts.placementTest.quitModal.bodyHighlight}</span>{onboardingTexts.placementTest.quitModal.bodyEnd}
         </p>
         <div className="flex gap-3">
           <button
@@ -137,14 +138,14 @@ function QuitModal({ onStay, onQuit }: { onStay: () => void; onQuit: () => void 
             onClick={onStay}
             className="flex-1 py-3 rounded-xl bg-blue-500/30 border border-blue-400/40 text-blue-300 hover:bg-blue-500/40 font-bold text-sm transition-all"
           >
-            Continue Test
+            {onboardingTexts.placementTest.quitModal.stayButton}
           </button>
           <button
             id="btn-quit-confirm"
             onClick={onQuit}
             className="flex-1 py-3 rounded-xl border border-white/20 text-white/60 hover:bg-white/10 font-medium text-sm transition-all"
           >
-            Exit
+            {onboardingTexts.placementTest.quitModal.exitButton}
           </button>
         </div>
       </div>
@@ -162,7 +163,7 @@ function LoadingScreen() {
       <div className="fixed inset-0 bg-blue-700/80" />
       <div className="relative z-10 flex flex-col items-center gap-5">
         <div className="w-16 h-16 rounded-full border-4 border-blue-300/30 border-t-blue-300 animate-spin" />
-        <p className="text-white/70 text-sm font-medium">Loading questions...</p>
+        <p className="text-white/70 text-sm font-medium">{onboardingTexts.placementTest.loadingText}</p>
       </div>
     </div>
   )
@@ -181,9 +182,9 @@ function NoQuestionsScreen({ onBack }: { onBack: () => void }) {
           📭
         </div>
         <div>
-          <h2 className="text-xl font-bold text-white mb-2">No Questions Available</h2>
+          <h2 className="text-xl font-bold text-white mb-2">{onboardingTexts.placementTest.noQuestionsTitle}</h2>
           <p className="text-white/60 text-sm leading-relaxed">
-            There are no questions for this role yet. Please check back later or select a different role.
+            {onboardingTexts.placementTest.noQuestionsDescription}
           </p>
         </div>
         <button
@@ -191,7 +192,7 @@ function NoQuestionsScreen({ onBack }: { onBack: () => void }) {
           onClick={onBack}
           className="px-6 py-3 rounded-xl bg-white/15 border border-white/25 text-white font-semibold text-sm hover:bg-white/25 transition-all"
         >
-          ← Back to Role Selection
+          {onboardingTexts.placementTest.backToRoleSelection}
         </button>
       </div>
     </div>
@@ -262,7 +263,7 @@ export function PlacementTestEngine() {
     const roleId = rawRoleId ? parseInt(rawRoleId, 10) : null
 
     if (!roleId) {
-      setFetchError('No role selected. Please go back and choose a role.')
+      setFetchError(onboardingTexts.placementTest.noRoleError)
       setLoadState('empty')
       return
     }
@@ -353,7 +354,7 @@ export function PlacementTestEngine() {
 
     if (!roleId) {
       setIsSubmitting(false)
-      setFetchError('No role selected. Please go back and choose a role.')
+      setFetchError(onboardingTexts.placementTest.noRoleError)
       navigate({ to: returnPath })
       return
     }
@@ -469,7 +470,7 @@ export function PlacementTestEngine() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          <span>Back to Role Selection</span>
+          <span>{onboardingTexts.placementTest.exitButton}</span>
         </button>
       </div>
 
@@ -495,7 +496,7 @@ export function PlacementTestEngine() {
           <svg className={`h-4 w-4 ${isTimeRunningLow ? 'text-rose-500' : 'text-blue-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span className="hidden sm:inline">Time left</span>
+          <span className="hidden sm:inline">{onboardingTexts.placementTest.timeLeftLabel}</span>
         </div>
         <div className={`font-mono text-xl sm:text-3xl sm:mt-2 font-bold tabular-nums ${isTimeRunningLow ? 'text-rose-600' : 'text-slate-800'}`}>
           {String(timerMinutes).padStart(2, '0')}:{String(timerSeconds).padStart(2, '0')}
@@ -507,7 +508,7 @@ export function PlacementTestEngine() {
           />
         </div>
         {remainingSeconds === 0 && (
-          <p className="mt-2 text-xs font-semibold text-rose-600">Time is up</p>
+          <p className="mt-2 text-xs font-semibold text-rose-600">{onboardingTexts.placementTest.timeUpText}</p>
         )}
       </aside>
 
@@ -538,7 +539,7 @@ export function PlacementTestEngine() {
             <div className="flex justify-center w-full">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-sm font-medium">
                 <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-                Step 2 / 3 — Placement Test
+                {onboardingTexts.placementTest.stepIndicator}
               </div>
             </div>
           </div>
@@ -594,16 +595,16 @@ export function PlacementTestEngine() {
                   <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
-                  <span>Compiling results...</span>
+                  <span>{onboardingTexts.placementTest.compilingResults}</span>
                 </>
               ) : isLastQuestion ? (
                 <>
-                  <span>Submit</span>
+                  <span>{onboardingTexts.placementTest.submitButton}</span>
                   <span>🎉</span>
                 </>
               ) : (
                 <>
-                  <span>Next Question</span>
+                  <span>{onboardingTexts.placementTest.nextQuestion}</span>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
@@ -613,7 +614,7 @@ export function PlacementTestEngine() {
 
             {!isLastQuestion && (
               <p className="text-center text-[11px] text-gray-400 mt-2">
-                🔒 You cannot go back — choose carefully
+                {onboardingTexts.placementTest.cannotGoBack}
               </p>
             )}
           </div>

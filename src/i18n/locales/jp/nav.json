@@ -1,0 +1,15 @@
+{
+  "home": "ホーム",
+  "path": "パス",
+  "howItWorks": "使い方",
+  "profile": "プロフィール",
+  "history": "履歴",
+  "studySettings": "学習設定",
+  "logout": "ログアウト",
+  "login": "ログイン",
+  "languages": {
+    "en": "English",
+    "vi": "Tiếng Việt",
+    "jp": "日本語"
+  }
+}

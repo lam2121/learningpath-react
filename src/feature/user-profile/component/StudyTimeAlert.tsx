@@ -12,6 +12,8 @@ import {
     TrendingDown,
     Clock3,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { userProfileTexts } from "../userProfileTexts";
 
 type StudyTimeAlertProps = {
     currentHour: number;
@@ -34,7 +36,7 @@ export function StudyTimeAlert({
     onCancel,
     onConfirm,
 }: StudyTimeAlertProps) {
-
+    const { t } = useTranslation("profile");
     const isIncrease = newHour > currentHour;
 
     return (
@@ -47,12 +49,12 @@ export function StudyTimeAlert({
                     {isIncrease ? (
                         <>
                             <TrendingUp className="h-5 w-5 text-green-600" />
-                            Increase Daily Study Time
+                            {userProfileTexts.increaseDailyStudyTime()}
                         </>
                     ) : (
                         <>
                             <TrendingDown className="h-5 w-5 text-orange-600" />
-                            Reduce Daily Study Time
+                            {userProfileTexts.reduceDailyStudyTime()}
                         </>
                     )}
 
@@ -69,11 +71,11 @@ export function StudyTimeAlert({
                                 <Clock3 className="mx-auto mb-2 h-6 w-6 text-blue-600" />
 
                                 <p className="text-xs text-slate-500">
-                                    Current
+                                    {userProfileTexts.current()}
                                 </p>
 
                                 <p className="font-semibold">
-                                    {currentHour} Hours / Day
+                                    {userProfileTexts.hoursPerDay(currentHour)}
                                 </p>
 
                             </div>
@@ -88,7 +90,7 @@ export function StudyTimeAlert({
                                 />
 
                                 <p className="text-xs text-slate-500">
-                                    New
+                                    {userProfileTexts.new()}
                                 </p>
 
                                 <p
@@ -97,7 +99,7 @@ export function StudyTimeAlert({
                                         : "text-orange-600"
                                         }`}
                                 >
-                                    {newHour} Hours / Day
+                                    {userProfileTexts.hoursPerDay(newHour)}
                                 </p>
 
                             </div>
@@ -114,24 +116,19 @@ export function StudyTimeAlert({
                     >
 
                         <p className="font-semibold mb-3">
-
-                            Estimated Completion
-
+                            {userProfileTexts.targetFinish()}
                         </p>
 
                         <div className="flex justify-between">
-
-                            <span>Current Plan</span>
+                            <span>{t("currentPlan", { defaultValue: "Current Plan" })}</span>
 
                             <span className="font-semibold">
-                                {currentDays == null ? "Estimate pending" : `${currentDays} Days`}
+                                {currentDays == null ? userProfileTexts.estimatePending() : `${currentDays} ${t("days", { defaultValue: "Days" })}`}
                             </span>
-
                         </div>
 
                         <div className="flex justify-between mt-2">
-
-                            <span>New Plan</span>
+                            <span>{t("newPlan", { defaultValue: "New Plan" })}</span>
 
                             <span
                                 className={`font-semibold ${isIncrease
@@ -139,9 +136,8 @@ export function StudyTimeAlert({
                                     : "text-orange-600"
                                     }`}
                             >
-                                {newDays == null ? "Estimate pending" : `${newDays} Days`}
+                                {newDays == null ? userProfileTexts.estimatePending() : `${newDays} ${t("days", { defaultValue: "Days" })}`}
                             </span>
-
                         </div>
 
                     </div>
@@ -171,7 +167,7 @@ export function StudyTimeAlert({
                     onClick={onCancel}
                     disabled={isSaving}
                 >
-                    Cancel
+                    {userProfileTexts.cancel()}
                 </Button>
 
                 <Button
@@ -183,7 +179,7 @@ export function StudyTimeAlert({
                             : "bg-orange-600 hover:bg-orange-700"
                     }
                 >
-                    {isSaving ? "Saving..." : "Update Plan"}
+                    {isSaving ? userProfileTexts.saving() : t("updatePlan", { defaultValue: "Update Plan" })}
                 </Button>
 
             </AlertDialogFooter>

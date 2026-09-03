@@ -18,6 +18,8 @@ import {
     LoginHistoryCard,
 } from "@/feature/user-profile/component/LearningHistoryChart";
 import { UserProfileCard } from "@/feature/user-profile/component/UserProfileCard";
+import { useTranslation } from "react-i18next";
+import { userProfileTexts } from "../userProfileTexts";
 
 function formatLabel(value: string) {
     return value
@@ -44,6 +46,7 @@ function formatHours(minutes: number | null | undefined) {
 }
 
 export function UserProfile() {
+    useTranslation("profile");
     const [roadmap, setRoadmap] = useState<RoadmapResponse | null>(null);
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -190,13 +193,13 @@ export function UserProfile() {
                                     <div className="flex items-start justify-between gap-4">
                                         <div>
                                             <p className="inline-flex rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white shadow-sm">
-                                                Your next step
+                                                {userProfileTexts.nextStepBadge()}
                                             </p>
                                             <CardTitle className="mt-3 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
-                                                Explore your Learning Path
+                                                {userProfileTexts.exploreLearningPath()}
                                             </CardTitle>
                                             <p className="mt-3 max-w-2xl text-base font-medium leading-7 text-slate-600">
-                                                Continue where your roadmap is already prepared for you.
+                                                {userProfileTexts.continueRoadmap()}
                                             </p>
                                         </div>
                                         <div className="rounded-2xl bg-white p-3 shadow-[0_12px_30px_rgba(37,99,235,0.18)] ring-1 ring-blue-100">
@@ -209,7 +212,7 @@ export function UserProfile() {
                                     {isLoading ? (
                                         <div className="flex min-h-[120px] items-center gap-3 rounded-2xl border border-blue-100 bg-white/85 px-5 text-slate-500">
                                             <Loader2 className="h-5 w-5 animate-spin" />
-                                            Loading your learning path...
+                                            {userProfileTexts.loadingLearningPath()}
                                         </div>
                                     ) : (
                                         <div className="rounded-3xl border border-white/80 bg-white/[0.88] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-sm">
@@ -222,7 +225,7 @@ export function UserProfile() {
                                                                     {formatLabel(roadmap.track)}
                                                                 </span>
                                                                 <span className="rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-700">
-                                                                    {roadmap.topics.length} topics
+                                                                    {userProfileTexts.topicsCount(roadmap.topics.length)}
                                                                 </span>
                                                                 {roadmap.total_estimated_minutes > 0 ? (
                                                                     <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-700">
@@ -233,21 +236,21 @@ export function UserProfile() {
                                                             </>
                                                         ) : (
                                                             <span className="rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-700">
-                                                                Explore roadmap topics
+                                                                {userProfileTexts.exploreTopics()}
                                                             </span>
                                                         )}
                                                     </div>
 
                                                     <p className="max-w-4xl text-base leading-8 text-slate-600">
                                                         {roadmap?.topics.length
-                                                            ? "Open your roadmap to review assigned topics, see lesson order, and choose where to continue."
-                                                            : "Open your learning path to review your assigned roadmap as soon as it is available."}
+                                                            ? userProfileTexts.openRoadmapDesc()
+                                                            : userProfileTexts.openRoadmapPendingDesc()}
                                                     </p>
                                                 </div>
 
                                                 <Button asChild className="h-14 min-w-[240px] rounded-2xl bg-blue-600 text-base font-semibold shadow-[0_18px_40px_rgba(37,99,235,0.35)] transition hover:bg-blue-700 hover:shadow-[0_22px_48px_rgba(29,78,216,0.42)]">
                                                     <Link to="/lessons/learning-path">
-                                                        Open Learning Path
+                                                        {userProfileTexts.openLearningPath()}
                                                         <ArrowRight className="ml-2 h-5 w-5" />
                                                     </Link>
                                                 </Button>

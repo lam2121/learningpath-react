@@ -13,6 +13,8 @@ import {
     Check,
 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { userProfileTexts } from "../userProfileTexts";
 
 type ChangeCareerAlertProps = {
     onConfirm: () => void | Promise<void>;
@@ -27,6 +29,7 @@ export function ChangeCareerAlert({
     isSubmitting = false,
     errorMessage = null,
 }: ChangeCareerAlertProps) {
+    useTranslation("profile");
     const [confirmed, setConfirmed] = useState(false);
 
     const handleChangeCareerTrack = () => {
@@ -44,44 +47,38 @@ export function ChangeCareerAlert({
                             <AlertTriangle className="h-5 w-5 text-amber-700" />
                         </span>
 
-                        Change career track?
+                        {userProfileTexts.changeCareerTitle()}
                     </AlertDialogTitle>
 
                     <AlertDialogDescription className="pt-2 text-sm font-medium leading-6 text-slate-600">
-                        This will reset your current learning journey.
+                        {userProfileTexts.resetJourneyDesc()}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
 
                 <div className="mt-5 rounded-xl border border-amber-200/80 bg-amber-50/70 p-4">
                     <p className="mb-3 font-semibold text-slate-900">
-                        Before you continue:
+                        {userProfileTexts.beforeYouContinue()}
                     </p>
 
                     <ul className="space-y-3 text-sm font-medium leading-5 text-slate-700">
                         <li className="flex items-start gap-2.5">
                             <Check className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-                            <span>You must retake the placement test.</span>
+                            <span>{userProfileTexts.retakePlacement()}</span>
                         </li>
 
                         <li className="flex items-start gap-2.5">
                             <Check className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-                            <span>
-                                Your roadmap and learning progress will be
-                                permanently deleted.
-                            </span>
+                            <span>{userProfileTexts.progressDeleted()}</span>
                         </li>
 
                         <li className="flex items-start gap-2.5">
                             <Check className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-                            <span>
-                                A new roadmap will be created from your new
-                                results.
-                            </span>
+                            <span>{userProfileTexts.newRoadmapCreated()}</span>
                         </li>
                     </ul>
 
                     <p className="mt-4 border-t border-amber-200 pt-3 text-sm font-bold text-rose-700">
-                        This action cannot be undone.
+                        {userProfileTexts.actionCannotUndone()}
                     </p>
                 </div>
 
@@ -101,7 +98,7 @@ export function ChangeCareerAlert({
                         />
 
                         <span className="text-sm font-semibold leading-5 text-slate-700">
-                            I understand my current progress will be deleted.
+                            {userProfileTexts.understandDeleted()}
                         </span>
                     </label>
 
@@ -117,7 +114,7 @@ export function ChangeCareerAlert({
                             disabled={isSubmitting}
                             className="mt-0 border-slate-200 text-slate-700"
                         >
-                            Keep Current Track
+                            {userProfileTexts.keepCurrentTrack()}
                         </AlertDialogCancel>
 
                         <Button
@@ -127,7 +124,7 @@ export function ChangeCareerAlert({
                             onClick={handleChangeCareerTrack}
                             className="bg-rose-600 font-semibold hover:bg-rose-700 disabled:bg-slate-300"
                         >
-                            {isSubmitting ? "Deleting..." : "Change Career Track"}
+                            {isSubmitting ? userProfileTexts.deleting() : userProfileTexts.changeTrack()}
                         </Button>
                     </div>
                 </AlertDialogFooter>

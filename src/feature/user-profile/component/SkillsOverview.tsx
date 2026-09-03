@@ -8,6 +8,7 @@ import type { UserProfileResponse } from "@/feature/auth/type/Auth";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/shadcn/component/ui/hover-card";
 import { Button } from "@/shadcn/component/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/component/ui/card";
+import { useTranslation } from "react-i18next";
 import {
     fetchJobRoles,
     fetchPlacementTestResult,
@@ -128,6 +129,7 @@ function formatScore(value: number) {
 }
 
 export function SkillsOverview() {
+    const { t } = useTranslation("profile");
     const [initialSkillScores, setInitialSkillScores] = useState<Record<string, number> | null>(null);
     const [currentSkillScores, setCurrentSkillScores] = useState<Record<string, number> | null>(null);
     const [selectedRole, setSelectedRole] = useState<JobRole | null>(null);
@@ -226,7 +228,7 @@ export function SkillsOverview() {
                 <div className="flex items-center justify-between gap-4">
                     <div>
                         <CardTitle className="text-lg text-slate-950">
-                            Skills Overview
+                            {t("skillsOverview", { defaultValue: "Skills Overview" })}
                         </CardTitle>
                         <p className="mt-1 text-sm text-slate-500">
                             Compare your starting skill scores with your current progress.
@@ -248,7 +250,7 @@ export function SkillsOverview() {
                 <div className="rounded-3xl border border-slate-200 bg-slate-50/70 px-4 py-6 sm:px-6">
                     <div className="mb-5 flex items-center justify-between gap-4">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                            Initial and Current Score By Skill
+                            {t("skillProficiency", { defaultValue: "Initial and Current Score By Skill" })}
                         </p>
                         <div className="hidden items-center gap-4 sm:flex">
                             {SKILL_META.map((skill) => (

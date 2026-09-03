@@ -16,6 +16,8 @@ import {
     ChevronRight,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { userProfileTexts } from "../userProfileTexts";
 import {
     fetchJobRoles,
     fetchPlacementTestResult,
@@ -31,6 +33,7 @@ export function StudySettingsDialog({
     onCareerClick,
     onStudyTimeClick,
 }: StudySettingsDialogProps) {
+    useTranslation("profile");
     const [careerName, setCareerName] = useState<string>("Career Track");
     useEffect(() => {
         let isMounted = true;
@@ -76,10 +79,10 @@ export function StudySettingsDialog({
     return (
         <DialogContent className="sm:max-w-md">
             <DialogHeader>
-                <DialogTitle>Study Settings</DialogTitle>
+                <DialogTitle>{userProfileTexts.studySettings()}</DialogTitle>
 
                 <DialogDescription>
-                    Update your learning preferences.
+                    {userProfileTexts.updatePreferences()}
                 </DialogDescription>
             </DialogHeader>
 
@@ -97,11 +100,11 @@ export function StudySettingsDialog({
 
                             <div>
                                 <p className="font-semibold">
-                                    Change Career Track
+                                    {userProfileTexts.changeTrack()}
                                 </p>
 
                                 <p className="text-sm text-slate-500">
-                                    {careerName}
+                                    {careerName === "Career Track" ? userProfileTexts.careerTrack() : careerName}
                                 </p>
                             </div>
                         </div>
@@ -123,11 +126,11 @@ export function StudySettingsDialog({
 
                             <div>
                                 <p className="font-semibold">
-                                    Daily Study Time
+                                    {userProfileTexts.dailyStudyTime()}
                                 </p>
 
                                 <p className="text-sm text-slate-500">
-                                    {studyHours} {studyHours === 1 ? "Hour" : "Hours"} / Day
+                                    {userProfileTexts.hoursPerDay(studyHours)}
                                 </p>
                             </div>
                         </div>

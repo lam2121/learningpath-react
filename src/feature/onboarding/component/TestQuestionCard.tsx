@@ -1,4 +1,5 @@
 import type { TestQuestion } from '../api/placementTestTypes'
+import { onboardingTexts } from '../onboardingTexts'
 
 const AXIS_META: Record<string, { label: string; color: string; bg: string; dot: string }> = {
   D_doc: { label: 'Documentation', color: 'text-blue-700', bg: 'bg-blue-50', dot: 'bg-blue-500' },
@@ -18,9 +19,9 @@ function getDifficultyTier(level: string): 1 | 2 | 3 {
 }
 
 const TIER_LABEL: Record<1 | 2 | 3, string> = {
-  1: 'Easy',
-  2: 'Medium',
-  3: 'Hard',
+  1: onboardingTexts.testQuestionCard.tierLabels[1],
+  2: onboardingTexts.testQuestionCard.tierLabels[2],
+  3: onboardingTexts.testQuestionCard.tierLabels[3],
 }
 
 const TIER_COLOR: Record<1 | 2 | 3, string> = {
@@ -122,7 +123,7 @@ export function TestQuestionCard({
 
       {/* Progress sub-text */}
       <p className="text-center text-xs text-gray-400 mt-4">
-        Question {questionNumber} / {total} — Select an answer to continue
+        {onboardingTexts.testQuestionCard.progressText(questionNumber, total)}
       </p>
     </div>
   )

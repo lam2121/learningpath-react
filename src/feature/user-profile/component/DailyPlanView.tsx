@@ -22,6 +22,7 @@ import { Button } from "@/shadcn/component/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/component/ui/card";
 import { Dialog } from "@/shadcn/component/ui/dialog";
 import { Progress } from "@/shadcn/component/ui/progress";
+import { useTranslation } from "react-i18next";
 import type { RoadmapLesson, RoadmapTopic } from "@/feature/learning-path/roadmapApi";
 import { isLessonReadyToStudy } from "@/feature/learning-path/lessonAccess";
 import { getTrackedStudyMinutesByDay, calculateLongestStreak, getLoginDays } from "@/feature/user-profile/utils/StudyActivity";
@@ -116,8 +117,9 @@ export function DailyPlanView({
     allAssignedLessonsCompleted,
     onStudyPlanExpandedChange,
 }: DailyPlanViewProps) {
-    const auth = useAuth();
-    const userId = Number(auth.user?.id);
+    const { t } = useTranslation("profile");
+    const { user } = useAuth();
+    const userId = Number(user?.id);
     const [isStudyPlanExpanded, setIsStudyPlanExpanded] = useState(false);
     const [openSetting, setOpenSetting] = useState(false);
     const [openStudyTime, setOpenStudyTime] = useState(false);
@@ -334,7 +336,7 @@ export function DailyPlanView({
                             <div className="flex items-start justify-between gap-4">
                                 <div className="space-y-2">
                                     <p className="text-sm font-medium text-blue-700">
-                                        Today's Study Plan
+                                        {t("dailyPlan", { defaultValue: "Today's Study Plan" })}
                                     </p>
                                     <CardTitle className="text-3xl font-bold tracking-tight text-slate-950">
                                         {allAssignedLessonsCompleted
@@ -371,7 +373,7 @@ export function DailyPlanView({
                             <div className={budgetCardClass}>
                                 <div className="flex items-center justify-between text-base text-slate-500">
                                     <span className={hasMetTodayGoal ? "font-semibold text-emerald-700" : ""}>
-                                        Today's time budget
+                                        {t("todayTimeBudget", { defaultValue: "Today's time budget" })}
                                     </span>
                                     <span className={`font-semibold ${hasMetTodayGoal ? "text-emerald-700" : "text-slate-900"}`}>
                                         {formatProgressMinutes(todayLearnedMinutes)} of {currentHour}h
@@ -380,7 +382,7 @@ export function DailyPlanView({
                                 {hasMetTodayGoal ? (
                                     <div className="flex items-center gap-2 rounded-2xl bg-white/80 px-3 py-2 text-sm font-semibold text-emerald-700 shadow-sm ring-1 ring-emerald-100">
                                         <CheckCircle2 className="h-4 w-4" />
-                                        Daily goal reached
+                                        {t("dailyGoalReached", { defaultValue: "Daily goal reached" })}
                                     </div>
                                 ) : null}
                                 <Progress
@@ -391,7 +393,7 @@ export function DailyPlanView({
                                 <div className="grid gap-3 pt-1 sm:grid-cols-3">
                                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
                                         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                                            Planned Today
+                                            {t("plannedToday", { defaultValue: "Planned Today" })}
                                         </p>
                                         <p className="mt-1 text-base font-bold text-slate-900">
                                             {currentHour}h
@@ -399,7 +401,7 @@ export function DailyPlanView({
                                     </div>
                                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
                                         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                                            Learned Today
+                                            {t("learnedToday", { defaultValue: "Learned Today" })}
                                         </p>
                                         <p className="mt-1 text-base font-bold text-slate-900">
                                             {formatProgressMinutes(todayLearnedMinutes)}
@@ -407,7 +409,7 @@ export function DailyPlanView({
                                     </div>
                                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
                                         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                                            {hasMetTodayGoal ? "Bonus Time" : "Remaining"}
+                                            {hasMetTodayGoal ? t("bonusTime", { defaultValue: "Bonus Time" }) : t("remaining", { defaultValue: "Remaining" })}
                                         </p>
                                         <p className="mt-1 text-base font-bold text-slate-900">
                                             {hasMetTodayGoal
@@ -473,7 +475,7 @@ export function DailyPlanView({
                                         </div>
 
                                         <div className="min-w-0 flex-1">
-                                            <h3 className="text-lg font-semibold text-slate-900">New Lesson</h3>
+                                            <h3 className="text-lg font-semibold text-slate-900">{t("newLesson", { defaultValue: "New Lesson" })}</h3>
                                             <p className="mt-1 text-base text-slate-700">
                                                 {lessonDescription}
                                             </p>
@@ -525,7 +527,7 @@ export function DailyPlanView({
                                             </div>
 
                                             <div className="min-w-0 flex-1">
-                                                <h3 className="text-lg font-semibold text-slate-900">Review</h3>
+                                                <h3 className="text-lg font-semibold text-slate-900">{t("review", { defaultValue: "Review" })}</h3>
                                                 <p className="mt-1 text-base text-slate-700">
                                                     {nextTopic
                                                         ? `Review for ${nextTopic.name} will appear here after you complete lessons and quizzes in this topic.`
@@ -651,20 +653,20 @@ export function DailyPlanView({
 
                             <div>
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <p className="text-lg font-semibold text-slate-900">Study Settings</p>
+                                    <p className="text-lg font-semibold text-slate-900">{t("studySettings", { defaultValue: "Study Settings" })}</p>
                                     <span className="rounded-full bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">
-                                        Change Career
+                                        {t("changeTrack", { defaultValue: "Change Career" })}
                                     </span>
                                     <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700 ring-1 ring-emerald-100">
-                                        Study Time
+                                        {t("studyTime", { defaultValue: "Study Time" })}
                                     </span>
                                 </div>
                                 <p className="mt-1 text-base text-slate-700">
-                                    {currentHour}h/day
-                                    {estimatedFinishLabel ? ` · Finish by ${estimatedFinishLabel}` : ""}
+                                    {currentHour}h / {t("day", { defaultValue: "day" })}
+                                    {estimatedFinishLabel ? ` · ${t("finishBy", { date: estimatedFinishLabel, defaultValue: `Finish by ${estimatedFinishLabel}` })}` : ""}
                                 </p>
                                 <p className="mt-1 text-base text-slate-500">
-                                    Open settings to change career direction or update your daily study time.
+                                    {t("studySettingsCardDesc", { defaultValue: "Open settings to change career direction or update your daily study time." })}
                                 </p>
                             </div>
                         </div>
