@@ -22,7 +22,7 @@ import {
 	type GenerationSummary,
 } from '@/feature/admin/api/adminApi';
 
-type Workflow = 'placement' | 'course';
+type Workflow = 'placement' | 'course' | 'course-resume';
 type ActionState = Workflow | 'reset' | null;
 
 function getRowStatus(track: CareerTrack): { label: string; className: string } {
@@ -176,6 +176,9 @@ function TracksPage() {
 			if (workflow === 'placement') {
 				await generatePlacement(selectedTrack.id, hasAssets);
 				toast.success(hasAssets ? 'Placement regeneration started.' : 'Placement generation started.');
+			} else if (workflow === 'course-resume') {
+				await generateCourse(selectedTrack.id, false, true);
+				toast.success('Course resume started — only missing lesson shells will be regenerated.');
 			} else {
 				await generateCourse(selectedTrack.id, hasAssets);
 				toast.success(hasAssets ? 'Course regeneration started.' : 'Course generation started.');

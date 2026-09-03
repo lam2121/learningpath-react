@@ -1,4 +1,4 @@
-import { AlertTriangle, FileText, Layers3, Loader2, RefreshCw, Sparkles } from 'lucide-react';
+import { AlertTriangle, FileText, Layers3, Loader2, Play, RefreshCw, Sparkles } from 'lucide-react';
 import { Alert, AlertDescription } from '@/shadcn/component/ui/alert';
 import { Badge } from '@/shadcn/component/ui/badge';
 import { Button } from '@/shadcn/component/ui/button';
@@ -8,7 +8,7 @@ import { Progress } from '@/shadcn/component/ui/progress';
 import type { CareerTrack } from '../api/adminApi';
 import type { GenerationSummary } from '../type/Admin';
 
-type Workflow = 'placement' | 'course';
+type Workflow = 'placement' | 'course' | 'course-resume';
 
 interface GenerationCenterDialogProps {
 	track: CareerTrack | null;
@@ -110,6 +110,10 @@ export function GenerationCenterDialog({
 	const courseMeta = statusMeta(summary?.course.lastStatus ?? 'empty', courseBlocked);
 	const placementReady = (summary?.placement.questionCount ?? 0) > 0;
 	const courseReady = (summary?.course.topicsCount ?? 0) > 0 || (summary?.course.lessonsCount ?? 0) > 0;
+	const canResumeCourse =
+		summary?.course.lastStatus === 'failed' &&
+		(summary?.course.topicsCount ?? 0) > 0 &&
+		(summary?.course.lessonsCount ?? 0) < (summary?.course.targetLessons ?? 0);
 	const killSwitchOn = Boolean(summary?.blockers.killSwitchOn);
 
 	return (
@@ -357,7 +361,9 @@ export function GenerationCenterDialog({
 									<CardFooter className="border-t bg-slate-50/60">
 										<div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 											<p className="text-xs text-slate-500">
-												Lesson shells are metadata only. Theory and quiz content are still generated lazily per lesson.
+												{canResumeCourse
+													? 'Resume only regenerates the lesson shells that are still missing. Existing topics and completed shells are kept.'
+													: 'Lesson shells are metadata only. Theory and quiz content are still generated lazily per lesson.'}
 											</p>
 											<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
 												{courseBlocked ? (
@@ -382,6 +388,40 @@ export function GenerationCenterDialog({
 														>
 															{actionLoading === 'course' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
 															Confirm regenerate
+														</Button>
+													</>
+												) : confirmWorkflow === 'course-resume' ? (
+													<>
+														<Button variant="outline" onClick={onCancelConfirm} disabled={actionLoading !== null}>
+															Cancel
+														</Button>
+														<Button
+															onClick={() => onRequestGenerate('course-resume')}
+															disabled={actionLoading !== null || killSwitchOn || isAnythingRunning}
+															className="bg-emerald-600 hover:bg-emerald-700"
+														>
+															{actionLoading === 'course-resume' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+															Confirm resume
+														</Button>
+													</>
+												) : canResumeCourse ? (
+													<>
+														<Button
+															onClick={() => onRequestGenerate('course-resume')}
+															disabled={actionLoading !== null || killSwitchOn || isAnythingRunning}
+															className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700"
+														>
+															{actionLoading === 'course-resume' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+															Resume
+														</Button>
+														<Button
+															variant="outline"
+															onClick={() => onRequestGenerate('course')}
+															disabled={actionLoading !== null || killSwitchOn || isAnythingRunning}
+															className="w-full sm:w-auto"
+														>
+															<RefreshCw className="mr-2 h-4 w-4" />
+															Regenerate
 														</Button>
 													</>
 												) : (
