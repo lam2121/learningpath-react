@@ -1,0 +1,15 @@
+{
+  "home": "Home",
+  "path": "Path",
+  "howItWorks": "How It Works",
+  "profile": "Profile",
+  "history": "History",
+  "studySettings": "Study Settings",
+  "logout": "Log out",
+  "login": "Log-in",
+  "languages": {
+    "en": "English",
+    "vi": "Tiếng Việt",
+    "jp": "日本語"
+  }
+}

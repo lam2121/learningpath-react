@@ -51,6 +51,19 @@ function getErrorMessage(errorData: unknown, fallback: string): string {
     return fallback
 }
  
+// Internal response shape from Auth Service login endpoint
+interface AuthLoginResponse {
+    message?: string
+    user: {
+        id: number
+        email: string
+        username?: string
+        full_name?: string
+        role: string
+        role_id?: number
+    }
+}
+
 async function handleResponse<T>(res: Response): Promise<T> {
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ detail: res.statusText }))
@@ -99,20 +112,11 @@ export async function loginUser(data: LoginRequest): Promise<LoginResponse> {
             password: data.password,
         }),
     })
-    const authData = await handleResponse<{
-        message?: string
-        user: {
-            id: number
-            email: string
-            username?: string
-            full_name?: string
-            role: string
-        }
-    }>(res)
- 
-    const rawRole = String(authData.user?.role || (authData as any).role || '').trim().toLowerCase();
-    const isAdmin = rawRole === 'admin' || rawRole === 'administrator' || (authData as any).role_id === 2 || (authData.user as any)?.role_id === 2;
- 
+    const authData = await handleResponse<AuthLoginResponse>(res)
+
+    const rawRole = String(authData.user?.role || '').trim().toLowerCase();
+    const isAdmin = rawRole === 'admin' || rawRole === 'administrator' || authData.user.role_id === 2;
+
     return {
         user_id: authData.user.id,
         email: authData.user.email,

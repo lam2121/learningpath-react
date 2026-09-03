@@ -6,6 +6,8 @@ import { useAuth } from '@/common/context/AuthContext'
 import { useRadar } from '@/feature/radar'
 import type { QuestionResult, SkillAxis, DifficultyLevel } from '../api/placementTestTypes'
 import { fetchPlacementTestResult, type PlacementResult, type PlacementAnswerDetail } from '../api/onboardingApi'
+import { onboardingTexts } from '../onboardingTexts'
+import i18n from '@/i18n/i18n'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -38,7 +40,7 @@ function computeAxisScores(results: QuestionResult[]): Record<SkillAxis, number>
     const earnedWeight = relevant
       .filter((r) => r.isCorrect)
       .reduce((sum, r) => sum + (DIFFICULTY_WEIGHT[r.difficulty] ?? 1), 0)
-    scores[axis] = Math.round((earnedWeight / MAX_SKILL_WEIGHT) * 100)
+    scores[axis] = Number(((earnedWeight / MAX_SKILL_WEIGHT) * 100).toFixed(2))
   })
 
   return scores
@@ -89,17 +91,17 @@ const LEVEL_CONFIG: Record<StartingLevel, {
   color: string
 }> = {
   basic: {
-    label: 'Basic Track',
+    label: onboardingTexts.placementResult.trackLabels.basic ?? 'Basic Track',
     hours: 48,
     color: 'text-slate-700',
   },
   intermediate: {
-    label: 'Intermediate Track',
+    label: onboardingTexts.placementResult.trackLabels.intermediate ?? 'Intermediate Track',
     hours: 96,
     color: 'text-blue-700',
   },
   advanced: {
-    label: 'Advanced Track',
+    label: onboardingTexts.placementResult.trackLabels.advanced ?? 'Advanced Track',
     hours: 144,
     color: 'text-emerald-700',
   },
@@ -175,7 +177,7 @@ export function PlacementResultView() {
         }
       } catch (err) {
         console.error('Failed to fetch placement test result:', err)
-        setError('Failed to load your results. Please try again.')
+        setError(i18n.t('placementResult.failedToLoad', { ns: 'onboarding' }))
       } finally {
         setLoading(false)
       }
@@ -205,7 +207,7 @@ export function PlacementResultView() {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
         <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
-        <p className="mt-4 text-lg font-medium text-slate-600">Loading your results...</p>
+        <p className="mt-4 text-lg font-medium text-slate-600">{onboardingTexts.placementResult.loadingText}</p>
       </div>
     )
   }
@@ -215,18 +217,18 @@ export function PlacementResultView() {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4">
         <div className="w-full max-w-4xl text-center">
-          <div className="text-6xl mb-4 animate-in zoom-in-50 duration-500">📊</div>
+          <div className="text-6xl mb-4 animate-in zoom-in-50 duration-500">{onboardingTexts.placementResult.noResultsEmoji}</div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 mb-3">
-            No Results Yet
+            {onboardingTexts.placementResult.noResultsTitle}
           </h1>
           <p className="text-slate-600 text-base font-medium mb-8">
-            Complete the placement test to see your personalized IT communication skill profile.
+            {onboardingTexts.placementResult.noResultsDescription}
           </p>
           <button
             onClick={() => navigate({ to: '/onboarding/role-selection' })}
             className="py-4 px-8 rounded-2xl bg-[#007aff] hover:bg-blue-600 text-white font-extrabold text-lg shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
           >
-            Start Placement Test
+            {onboardingTexts.placementResult.startPlacementTest}
           </button>
         </div>
       </div>
@@ -260,13 +262,14 @@ export function PlacementResultView() {
   const overallPct = useBackend ? result.overall_percent : Math.round((totalCorrect / totalQuestions) * 100)
   const scoreOutOf10 = ((totalCorrect / totalQuestions) * 10).toFixed(1)
 
-  // Compute axis scores from backend or fallback
-  const actualScores = useBackend ? {
-    D_doc: result.skill_scores.D_doc || 0,
-    C_comm: result.skill_scores.C_comm || 0,
-    T_trouble: result.skill_scores.T_trouble || 0,
-    G_custom: result.skill_scores.G_custom || 0,
-  } : computeAxisScores(resultsToUse)
+  // Compute axis scores from resultsToUse (difficulty-weighted accuracy) or backend fallback
+  const computedScores = computeAxisScores(resultsToUse)
+  const actualScores = {
+    D_doc: resultsToUse.some((r) => r.axis === 'D_doc') ? computedScores.D_doc : (result?.skill_scores?.D_doc || 0),
+    C_comm: resultsToUse.some((r) => r.axis === 'C_comm') ? computedScores.C_comm : (result?.skill_scores?.C_comm || 0),
+    T_trouble: resultsToUse.some((r) => r.axis === 'T_trouble') ? computedScores.T_trouble : (result?.skill_scores?.T_trouble || 0),
+    G_custom: resultsToUse.some((r) => r.axis === 'G_custom') ? computedScores.G_custom : (result?.skill_scores?.G_custom || 0),
+  }
 
   // Target bars: use role baseline if available, otherwise fallback to demo targets
   const roleBaseline = useBackend && result.baseline ? {
@@ -283,14 +286,23 @@ export function PlacementResultView() {
     G_custom: { actual: actualScores.G_custom, target: normalizeTarget(roleBaseline.G_custom) },
   }
 
-  // Hàm tính toán số câu đúng / tổng số câu và điểm phần trăm theo trọng số
+  // Hàm tính toán số câu đúng / tổng số câu, earned weight và điểm scale [0-100]
   const getAxisStats = (axis: SkillAxis) => {
     const relevant = resultsToUse.filter((r: QuestionResult) => r.axis === axis)
     const correct = relevant.filter((r: QuestionResult) => r.isCorrect).length
     const total = useBackend ? relevant.length : (totalQuestions / 4)
-    // Percentage always uses the weighted accuracy (from backend or computeAxisScores)
-    const percentage = axisMap[axis].actual
-    return { correct, total, percentage }
+    const earnedWeight = relevant
+      .filter((r: QuestionResult) => r.isCorrect)
+      .reduce((sum, r) => sum + (DIFFICULTY_WEIGHT[r.difficulty] ?? 1), 0)
+
+    // Formula: Earned Weight / 24 * 100
+    const rawScore = relevant.length > 0
+      ? (earnedWeight / MAX_SKILL_WEIGHT) * 100
+      : axisMap[axis].actual
+    const score = Number(rawScore.toFixed(0))
+    const formattedScore = score % 1 === 0 ? score.toString() : score.toFixed(2)
+
+    return { correct, total, earnedWeight, score, formattedScore, percentage: score }
   }
 
    const aiSummary = generateAISummary(actualScores)
@@ -314,10 +326,10 @@ export function PlacementResultView() {
   }
 
   function gradeLabel(pct: number): { label: string; color: string } {
-    if (pct >= 80) return { label: 'Excellent', color: 'text-emerald-600' }
-    if (pct >= 60) return { label: 'Good', color: 'text-blue-600' }
-    if (pct >= 40) return { label: 'Needs Work', color: 'text-amber-600' }
-    return { label: 'Keep Practicing', color: 'text-rose-600' }
+    if (pct >= 80) return { label: onboardingTexts.placementResult.gradeLabels.excellent, color: 'text-emerald-600' }
+    if (pct >= 60) return { label: onboardingTexts.placementResult.gradeLabels.good, color: 'text-blue-600' }
+    if (pct >= 40) return { label: onboardingTexts.placementResult.gradeLabels.needsWork, color: 'text-amber-600' }
+    return { label: onboardingTexts.placementResult.gradeLabels.keepPracticing, color: 'text-rose-600' }
   }
 
   return (
@@ -331,7 +343,7 @@ export function PlacementResultView() {
           className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors text-sm font-medium flex items-center gap-2"
         >
           <LogOut className="w-4 h-4" />
-          <span>Logout</span>
+          <span>{onboardingTexts.placementResult.logoutButton}</span>
         </button>
       </header>
 
@@ -341,12 +353,12 @@ export function PlacementResultView() {
 
           {/* Celebration header */}
           <div className="text-center mb-10">
-            <div className="text-6xl mb-4 animate-in zoom-in-50 duration-500">🎉</div>
+            <div className="text-6xl mb-4 animate-in zoom-in-50 duration-500">{onboardingTexts.placementResult.celebrationEmoji}</div>
             <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 mb-3">
-              Placement Test Complete!
+              {onboardingTexts.placementResult.testCompleteTitle}
             </h1>
             <p className="text-slate-600 text-base font-medium">
-              This is your IT communication skill profile — measured across {totalQuestions} real-world questions.
+              {onboardingTexts.placementResult.testCompleteSubtitle(totalQuestions)}
             </p>
 
           </div>
@@ -378,7 +390,7 @@ export function PlacementResultView() {
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-5xl font-black text-slate-800">{scoreOutOf10}</span>
-                  <span className="text-base font-bold text-slate-400 mt-1">/10</span>
+                  <span className="text-base font-bold text-slate-400 mt-1">{onboardingTexts.placementResult.outOf10}</span>
                 </div>
               </div>
 
@@ -388,7 +400,7 @@ export function PlacementResultView() {
                   {gradeLabel(overallPct).label}
                 </div>
                 <div className="text-slate-600 text-lg font-bold bg-slate-50 inline-flex px-4 py-2 rounded-xl border border-slate-100 whitespace-nowrap">
-                  {totalCorrect} / {totalQuestions} correct overall
+                  {onboardingTexts.placementResult.correctOverall(totalCorrect, totalQuestions)}
                 </div>
               </div>
             </div>
@@ -401,7 +413,7 @@ export function PlacementResultView() {
             <div className="flex-1 flex items-center justify-center pl-0 md:pl-8">
               <div className="w-full text-center flex flex-col items-center justify-center">
                  <p className={`text-sm ${LEVEL_CONFIG[startingLevel].color} font-bold uppercase tracking-widest mb-3 opacity-90`}>
-                   RECOMMENDED TRACK
+                   {onboardingTexts.placementResult.recommendedTrack}
                  </p>
                  <h2 className={`text-4xl font-black ${LEVEL_CONFIG[startingLevel].color}`}>
                    {LEVEL_CONFIG[startingLevel].label}
@@ -415,17 +427,17 @@ export function PlacementResultView() {
           <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-8 mb-6">
             <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
               <p className="text-sm text-slate-500 font-bold uppercase tracking-widest">
-                SKILL BREAKDOWN — ACTUAL VS TARGET
+                {onboardingTexts.placementResult.skillBreakdownHeader}
               </p>
               {/* Legend */}
               <div className="flex gap-5 mt-4 sm:mt-0">
                 <div className="flex items-center gap-2 text-sm text-slate-600 font-semibold">
                   <div className="w-5 h-4 bg-blue-400 rounded-sm" />
-                  Actual Score
+                  {onboardingTexts.placementResult.actualScoreLegend}
                 </div>
                 <div className="flex items-center gap-2 text-sm text-slate-600 font-semibold">
                   <div className="w-5 h-0.5 bg-slate-400 border-0" style={{ borderTop: '2px dashed #94a3b8' }} />
-                  Target Level
+                  {onboardingTexts.placementResult.targetLevelLegend}
                 </div>
               </div>
             </div>
@@ -439,13 +451,16 @@ export function PlacementResultView() {
                 return (
                   <div key={ax.key} className="flex flex-col items-center flex-1">
 
-                    {/* Phần hiển thị điểm số ở trên đầu cột */}
-                    <div className="mb-3 text-center">
-                      <span className={`text-3xl font-black ${ax.color}`}>
-                        {stats.correct}
+                    {/* Phần hiển thị điểm số ở trên đầu cột: scale 0-100 */}
+                    <div
+                      className="mb-3 text-center whitespace-nowrap"
+                      title={`Earned weight: ${stats.earnedWeight}/${MAX_SKILL_WEIGHT} (${stats.correct}/${stats.total} questions correct)`}
+                    >
+                      <span className={`text-2xl sm:text-3xl font-black ${ax.color}`}>
+                        {stats.formattedScore}
                       </span>
-                      <span className="text-xl font-bold text-slate-400">
-                        /{stats.total}
+                      <span className="text-base sm:text-xl font-bold text-slate-400">
+                        {onboardingTexts.placementResult.outOf100}
                       </span>
                     </div>
 
@@ -457,7 +472,7 @@ export function PlacementResultView() {
                         style={{ bottom: `${target}%` }}
                       >
                         <span className="absolute -top-5 left-1 text-[10px] font-bold text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                          Target
+                          {onboardingTexts.placementResult.targetLabel}
                         </span>
                       </div>
 
@@ -486,7 +501,7 @@ export function PlacementResultView() {
                 onClick={openDetails}
                 className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-sm rounded-xl border border-slate-200 transition-colors"
               >
-                View Detailed Results
+                {onboardingTexts.placementResult.viewDetailedResults}
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                 </svg>
@@ -497,7 +512,7 @@ export function PlacementResultView() {
           {/* ── AI Summary ─────────────────────────────────────────────── */}
           <div className="bg-blue-50/60 border border-blue-100 shadow-sm rounded-3xl p-8 mb-8">
             <p className="text-sm text-blue-600 font-bold uppercase tracking-wider mb-3">
-              ADVISOR · PERSONAL FEEDBACK
+              {onboardingTexts.placementResult.advisorHeader}
             </p>
             <p className="text-base text-slate-700 font-medium leading-relaxed italic">
               "{aiSummary}"
@@ -510,10 +525,10 @@ export function PlacementResultView() {
             <div className="bg-white border border-slate-200/80 shadow-sm rounded-3xl p-8">
               <div className="flex items-center justify-between mb-8">
                 <p className="text-sm text-slate-700 font-bold uppercase tracking-wider">
-                  WEEKLY STUDY HOURS
+                  {onboardingTexts.placementResult.weeklyStudyHoursHeader}
                 </p>
                 <div className="px-4 py-1.5 rounded-xl text-sm font-black bg-blue-50 text-[#007aff] border border-blue-200">
-                  {hoursPerWeek}h / week
+                  {onboardingTexts.placementResult.hoursPerWeek(hoursPerWeek)}
                 </div>
               </div>
 
@@ -536,28 +551,27 @@ export function PlacementResultView() {
                 />
               </div>
               <div className="flex justify-between text-[11px] text-slate-500 font-bold mt-3">
-                <span>1h (Relaxed)</span>
-                <span>10h (Balanced)</span>
-                <span>20h (Intensive)</span>
+                <span>{onboardingTexts.placementResult.paceRelaxed}</span>
+                <span>{onboardingTexts.placementResult.paceBalanced}</span>
+                <span>{onboardingTexts.placementResult.paceIntensive}</span>
               </div>
             </div>
 
             {/* Estimated Completion Time Card */}
             <div className="bg-white border border-slate-200/80 shadow-sm rounded-3xl p-8 text-center">
               <p className="text-sm text-slate-500 font-bold uppercase tracking-wider mb-4">
-                ESTIMATED COMPLETION TIME
+                {onboardingTexts.placementResult.estimatedCompletionHeader}
               </p>
 
               <div className="flex items-end justify-center gap-2 mb-2">
                 <span className="text-5xl font-black text-indigo-700">
                   {weeks}
                 </span>
-                <span className="text-slate-500 text-lg font-bold mb-1">weeks</span>
+                <span className="text-slate-500 text-lg font-bold mb-1">{onboardingTexts.placementResult.weeksLabel}</span>
               </div>
 
               <p className="text-slate-600 text-sm mb-6 font-semibold">
-                ≈ <span className="text-slate-900 font-black">{months}</span> months at{' '}
-                <span className="text-slate-900 font-black">{hoursPerWeek}h/week</span>
+                {onboardingTexts.placementResult.monthsAt(months, hoursPerWeek)}
               </p>
 
               <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-slate-100 border border-slate-200/60 mb-3">
@@ -575,10 +589,10 @@ export function PlacementResultView() {
 
               <div className="text-sm text-slate-600 font-semibold">
                 {hoursPerWeek >= 14
-                  ? 'Great learning pace!'
+                  ? onboardingTexts.placementResult.paceGreat
                   : hoursPerWeek >= 8
-                    ? 'Steady progress, on the right track.'
-                    : 'Adding a few more hours/week will get you to your goal much faster.'}
+                    ? onboardingTexts.placementResult.paceSteady
+                    : onboardingTexts.placementResult.paceAddMore}
               </div>
             </div>
           </div>
@@ -593,14 +607,14 @@ export function PlacementResultView() {
             }}
             className="w-full py-5 px-6 rounded-2xl bg-[#007aff] hover:bg-blue-600 text-white font-extrabold text-xl shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-3"
           >
-            <span>Create My Course</span>
+            <span>{onboardingTexts.placementResult.createMyCourse}</span>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
           </button>
 
            <p className="text-center text-sm font-semibold text-slate-400 mt-5">
-             AI will generate 24 fully personalized lessons for your career track
+             {onboardingTexts.placementResult.aiFooter}
            </p>
            {error && (
              <p className="mt-4 text-center text-sm text-red-500">{error}</p>
@@ -614,7 +628,7 @@ export function PlacementResultView() {
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={closeDetails} />
           <div className="relative z-10 bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl animate-in zoom-in-95 fade-in duration-200">
             <div className="flex items-center justify-between p-6 border-b border-slate-100">
-              <h2 className="text-2xl font-extrabold text-slate-800">Detailed Results ({totalCorrect}/{totalQuestions})</h2>
+              <h2 className="text-2xl font-extrabold text-slate-800">{onboardingTexts.placementResult.detailedResultsTitle(totalCorrect, totalQuestions)}</h2>
               <button onClick={closeDetails} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -684,12 +698,12 @@ export function PlacementResultView() {
                                 {r.isCorrect ? (
                                   <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-100">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                                    Correct
+                                    {onboardingTexts.placementResult.correctBadge}
                                   </span>
                                 ) : (
                                   <span className="flex items-center gap-1.5 text-rose-600 text-xs font-bold bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-100">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
-                                    Incorrect
+                                    {onboardingTexts.placementResult.incorrectBadge}
                                   </span>
                                 )}
                               </div>

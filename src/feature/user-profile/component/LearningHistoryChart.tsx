@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
+import { useTranslation } from "react-i18next";
 import {
     ArrowDownAZ,
     ArrowUpDown,
@@ -383,6 +384,7 @@ export function LoginHistoryCard({
     compact = false,
     stretch = false,
 }: LoginHistoryCardProps) {
+    const { t } = useTranslation("profile");
     const auth = useAuth();
     const userId = Number(auth.user?.id);
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
@@ -486,7 +488,7 @@ export function LoginHistoryCard({
         <Card className={`flex min-w-0 flex-col overflow-hidden border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.07)] ${shouldStretch ? "h-full" : "h-fit self-start"}`}>
             <CardHeader className={cardHeaderClassName}>
                 <CardTitle className="text-base text-slate-950 sm:text-lg">
-                    Study Time History
+                    {t("studyActivity", { defaultValue: "Study Time History" })}
                 </CardTitle>
                 <p className="text-xs leading-5 text-slate-500 sm:text-sm">
                     A monthly view of the time you have already logged from completed lessons.
@@ -581,6 +583,7 @@ export function LessonQuizHistoryCard({
     compact = false,
     excludedStatuses = [],
 }: LessonQuizHistoryCardProps) {
+    const { t } = useTranslation("profile");
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
     const [sortOption, setSortOption] = useState<SortOption>("topic-asc");
     const [searchTerm, setSearchTerm] = useState("");
@@ -900,7 +903,7 @@ export function LessonQuizHistoryCard({
         return (
             <Card className="flex min-w-0 flex-col border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.07)]">
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-xl text-slate-950">Best Lesson Quiz Scores</CardTitle>
+                    <CardTitle className="text-xl text-slate-950">{t("quizHistory", { defaultValue: "Best Lesson Quiz Scores" })}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 space-y-3">
                     {paginatedHistory.map((entry: LessonQuizHistoryEntryResponse) => (
@@ -1506,6 +1509,7 @@ export function LearningHistoryChart({
     showLoginHistory = true,
     supplementaryPanelBottom = null,
 }: LearningHistoryChartProps) {
+    const { t } = useTranslation("profile");
     const auth = useAuth();
     const userId = Number(auth.user?.id);
     const layoutRef = useRef<HTMLDivElement | null>(null);
@@ -1576,7 +1580,7 @@ export function LearningHistoryChart({
                 <div className="min-w-0" style={syncedPanelStyle}>
                     <Card className="flex h-full min-w-0 flex-col border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.07)]">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-xl">Learning Calendar</CardTitle>
+                            <CardTitle className="text-xl">{t("learningCalendar", { defaultValue: "Learning Calendar" })}</CardTitle>
                         </CardHeader>
 
                         <CardContent className="flex flex-1 flex-col pt-0">
