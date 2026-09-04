@@ -1,0 +1,74 @@
+{
+  "badge": "TMA AI English Learning Path",
+  "headerTitle": "How It Works",
+  "headerDescription": "Learn how AI creates your personalized English learning journey—from assessing your current level to generating lessons, quizzes, and daily study plans.",
+  "section1": {
+    "title": "About TMA AI English Learning Path",
+    "description": "<strong>{{name}}</strong> is an intelligent platform designed to help learners improve their English through personalized learning experiences. By analyzing your current proficiency and learning goals, AI generates a customized learning path with interactive lessons, quizzes, and daily study plans to support continuous progress."
+  },
+  "section2": {
+    "title": "Learning Experience",
+    "practice": {
+      "title": "Practice",
+      "badge": "Personalized Lessons",
+      "description": "Study AI-generated lessons that match your current English level. Each lesson includes vocabulary, grammar, reading, listening, and practical examples to build real communication skills."
+    },
+    "exam": {
+      "title": "Exam",
+      "badge": "Adaptive Quizzes",
+      "description": "After each lesson, complete interactive quizzes to reinforce your knowledge. AI adapts future content based on your performance and learning progress."
+    }
+  },
+  "section3": {
+    "title": "Your AI-Powered Learning Journey",
+    "steps": [
+      { "number": "01", "label": "Choose Career" },
+      { "number": "02", "label": "Placement Test" },
+      { "number": "03", "label": "AI Learning Path" },
+      { "number": "04", "label": "View Results" }
+    ],
+    "stepDetails": [
+      {
+        "label": "Step 1",
+        "title": "Career Path",
+        "description": "Choose the <strong>{{title}}</strong> that matches your interests and future goals. Whether you want to become a Software Engineer, Project Manager, Business Analyst, or another professional, your learning journey begins here."
+      },
+      {
+        "label": "Step 2",
+        "title": "Placement Test",
+        "description": "Take an AI-powered English <strong>{{title}}</strong> to evaluate your current proficiency in vocabulary, grammar, reading, listening, and other essential language skills."
+      },
+      {
+        "label": "Step 3",
+        "title": "Personalized English Learning Path",
+        "description": "Based on your career choice and placement test results, AI generates a <strong>{{title}}</strong> with structured topics, interactive lessons, quizzes, and daily learning recommendations tailored to your goals."
+      },
+      {
+        "label": "Step 4",
+        "title": "View Results",
+        "description": "Open <strong>{{title}}</strong> to review your test outcome, learning progress, completed lessons, quiz performance, and personalized recommendations."
+      }
+    ]
+  },
+  "section4": {
+    "title": "Learning Progress",
+    "description": "The <strong>{{title}}</strong> page gives you a complete overview of your learning journey. Monitor completed lessons, quiz performance, learning streaks, and overall improvement as you move toward your English goals.",
+    "items": [
+      "Review completed lessons and quizzes",
+      "Monitor vocabulary and grammar improvement",
+      "Track daily learning streaks and achievements",
+      "Receive personalized AI recommendations",
+      "View your overall learning statistics"
+    ]
+  },
+  "cta": {
+    "title": "Ready to Start Learning?",
+    "description": "<1>Start Now</1> to begin your personalized English learning journey today and let AI guide you through lessons, quizzes, and daily practice designed just for you.",
+    "startNow": "Start Now"
+  },
+  "feedback": {
+    "title": "Have suggestions or feedback?",
+    "description": "We'd love to hear your ideas and continuously improve your learning experience.",
+    "contactPrefix": "Contact us anytime at:"
+  }
+}

@@ -355,12 +355,12 @@ export function CurriculumRoadmapPage() {
 
             const target = event.target instanceof HTMLElement ? event.target : null;
             const tagName = target?.tagName;
+            // Allow arrow keys on buttons for topic navigation, but block form inputs
             if (
                 target?.isContentEditable
                 || tagName === "INPUT"
                 || tagName === "TEXTAREA"
                 || tagName === "SELECT"
-                || tagName === "BUTTON"
                 || tagName === "A"
             ) {
                 return;

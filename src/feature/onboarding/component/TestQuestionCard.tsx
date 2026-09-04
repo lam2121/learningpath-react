@@ -18,11 +18,11 @@ function getDifficultyTier(level: string): 1 | 2 | 3 {
   }
 }
 
-const TIER_LABEL: Record<1 | 2 | 3, string> = {
+const TIER_LABEL: () => Record<1 | 2 | 3, string> = () => ({
   1: onboardingTexts.testQuestionCard.tierLabels[1],
   2: onboardingTexts.testQuestionCard.tierLabels[2],
   3: onboardingTexts.testQuestionCard.tierLabels[3],
-}
+})
 
 const TIER_COLOR: Record<1 | 2 | 3, string> = {
   1: 'text-emerald-600',
@@ -78,7 +78,7 @@ export function TestQuestionCard({
               )
             })}
             <span className={`text-xs font-semibold ml-1 ${TIER_COLOR[getDifficultyTier(question.difficulty)]}`}>
-              {TIER_LABEL[getDifficultyTier(question.difficulty)]}
+              {TIER_LABEL()[getDifficultyTier(question.difficulty)]}
             </span>
           </div>
         </div>

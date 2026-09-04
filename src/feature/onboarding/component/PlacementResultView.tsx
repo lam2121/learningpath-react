@@ -8,6 +8,8 @@ import type { QuestionResult, SkillAxis, DifficultyLevel } from '../api/placemen
 import { fetchPlacementTestResult, type PlacementResult, type PlacementAnswerDetail } from '../api/onboardingApi'
 import { onboardingTexts } from '../onboardingTexts'
 import i18n from '@/i18n/i18n'
+import { LanguageSwitcher } from '@/common/component/LanguageSwitcher'
+import { useTranslation } from 'react-i18next'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -86,22 +88,22 @@ function generateAISummary(scores: Record<SkillAxis, number>): string {
 type StartingLevel = 'basic' | 'intermediate' | 'advanced'
 
 const LEVEL_CONFIG: Record<StartingLevel, {
-  label: string
+  get label(): string
   hours: number
   color: string
 }> = {
   basic: {
-    label: onboardingTexts.placementResult.trackLabels.basic ?? 'Basic Track',
+    get label() { return onboardingTexts.placementResult.trackLabels.basic ?? 'Basic Track' },
     hours: 48,
     color: 'text-slate-700',
   },
   intermediate: {
-    label: onboardingTexts.placementResult.trackLabels.intermediate ?? 'Intermediate Track',
+    get label() { return onboardingTexts.placementResult.trackLabels.intermediate ?? 'Intermediate Track' },
     hours: 96,
     color: 'text-blue-700',
   },
   advanced: {
-    label: onboardingTexts.placementResult.trackLabels.advanced ?? 'Advanced Track',
+    get label() { return onboardingTexts.placementResult.trackLabels.advanced ?? 'Advanced Track' },
     hours: 144,
     color: 'text-emerald-700',
   },
@@ -145,6 +147,7 @@ const AXIS_META_DISPLAY = [
 // ─── Main Result View ─────────────────────────────────────────────────────────
 
 export function PlacementResultView() {
+  useTranslation('onboarding')
   const navigate = useNavigate()
   const { logout } = useAuth()
   const routerState = useRouterState({ select: (s) => s.location.state })
@@ -337,7 +340,14 @@ export function PlacementResultView() {
 
       {/* Header */}
       <header className="w-full bg-[#007aff] px-6 py-4 flex items-center justify-between shadow-sm z-20">
-        <img src={tmaLogo} alt="TMA Solutions" className="w-36 h-auto" />
+        <div className="flex items-center gap-3">
+          <img src={tmaLogo} alt="TMA Solutions" className="h-8 w-auto" />
+          <LanguageSwitcher
+            variant="ghost"
+            showLabel
+            className="text-white shadow-md border border-white/30 hover:bg-white/10 [&_svg]:text-white [&_span]:text-white"
+          />
+        </div>
         <button
           onClick={handleSignOut}
           className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors text-sm font-medium flex items-center gap-2"

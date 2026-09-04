@@ -9,6 +9,8 @@ import { useRadar } from '@/feature/radar'
 import { completePlacementTest, fetchPlacementTestQuestions } from '../api/onboardingApi'
 import type { RawPlacementQuestionApi } from '../api/onboardingApi'
 import { onboardingTexts } from '../onboardingTexts'
+import { LanguageSwitcher } from '@/common/component/LanguageSwitcher'
+import { useTranslation } from 'react-i18next'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -202,6 +204,7 @@ function NoQuestionsScreen({ onBack }: { onBack: () => void }) {
 // ─── Main Engine Component ────────────────────────────────────────────────────
 
 export function PlacementTestEngine() {
+  useTranslation('onboarding')
   const navigate = useNavigate()
   const { reinitialize: reinitializeRadar } = useRadar()
   const returnPath = '/onboarding/role-selection'
@@ -538,7 +541,14 @@ export function PlacementTestEngine() {
     <div className="min-h-screen relative bg-slate-50">
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 h-16 bg-[#0072FF] z-40 flex items-center justify-between px-6 shadow-md">
-        <img src={tmaLogo} alt="TMA Solutions" className="h-8 w-auto" />
+        <div className="flex items-center gap-3">
+          <img src={tmaLogo} alt="TMA Solutions" className="h-8 w-auto" />
+          <LanguageSwitcher
+            variant="ghost"
+            showLabel
+            className="text-white shadow-md border border-white/30 hover:bg-white/10 [&_svg]:text-white [&_span]:text-white"
+          />
+        </div>
         <button
           id="btn-exit-test"
           type="button"

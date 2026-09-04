@@ -4,6 +4,8 @@ import tmaLogo from '@/asset/image/tma_logo.png'
 import { fetchJobRoles, type JobRole, type JobRoleSkillDefinitions } from '../api/onboardingApi'
 import { useAuth } from '@/common/context/AuthContext'
 import { useRadar } from '@/feature/radar/context/RadarContext'
+import { LanguageSwitcher } from '@/common/component/LanguageSwitcher'
+import { useTranslation } from 'react-i18next'
 import { devGenerateCourse, type SkillScores, type SkillDifficultyBreakdown } from '../../dev-mode/api/devModeApi'
 import { onboardingTexts } from '../onboardingTexts'
 
@@ -666,6 +668,7 @@ function DevPlacementPanel({
 }
 
 export function RoleSelectionGrid() {
+  useTranslation('onboarding')
   const [roles, setRoles] = useState<JobRole[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -775,7 +778,14 @@ export function RoleSelectionGrid() {
       )}
       {/* Top Header Bar */}
       <header className="w-full bg-[#0072FF] px-6 py-3.5 flex items-center justify-between shadow-md sticky top-0 z-30">
-        <img src={tmaLogo} alt="TMA Solutions" className="h-9 w-auto" />
+        <div className="flex items-center gap-3">
+          <img src={tmaLogo} alt="TMA Solutions" className="h-8 w-auto" />
+          <LanguageSwitcher
+            variant="ghost"
+            showLabel
+            className="text-white shadow-md border border-white/30 hover:bg-white/10 [&_svg]:text-white [&_span]:text-white"
+          />
+        </div>
         {isAuthenticated ? (
           <button
             id="btn-logout-role-selection"
