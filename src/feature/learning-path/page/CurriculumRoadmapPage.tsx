@@ -348,6 +348,41 @@ export function CurriculumRoadmapPage() {
         [topics, selectedTopicId],
     );
 
+    // Keyboard navigation for topics (circular: ArrowUp/ArrowDown)
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+
+            const target = event.target instanceof HTMLElement ? event.target : null;
+            const tagName = target?.tagName;
+            if (
+                target?.isContentEditable
+                || tagName === "INPUT"
+                || tagName === "TEXTAREA"
+                || tagName === "SELECT"
+                || tagName === "BUTTON"
+                || tagName === "A"
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+
+            if (topics.length === 0) return;
+            const currentIndex = topics.findIndex((t) => t.id === selectedTopicId);
+            if (currentIndex === -1) return;
+
+            const nextIndex = event.key === "ArrowUp"
+                ? (currentIndex - 1 + topics.length) % topics.length
+                : (currentIndex + 1) % topics.length;
+
+            setSelectedTopicId(topics[nextIndex].id);
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [topics, selectedTopicId]);
+
     const summary = useMemo(() => {
         const totalLessons = topics.reduce(
             (sum, topic) => sum + topic.lessons.length,

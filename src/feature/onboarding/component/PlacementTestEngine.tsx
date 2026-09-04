@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, type HistoryState } from '@tanstack/react-router'
 import tmaLogo from '@/asset/image/tma_logo.png'
 import bannerBg from '@/asset/image/banner_background.png'
@@ -340,7 +340,7 @@ export function PlacementTestEngine() {
 
   // ─────────────────────────────────────────────────────────────────────────────
 
-  function buildCurrentQuestionResult(): QuestionResult | null {
+  const buildCurrentQuestionResult = useCallback((): QuestionResult | null => {
     if (!selectedId || !currentQuestion) {
       return null
     }
@@ -355,84 +355,90 @@ export function PlacementTestEngine() {
       options: currentQuestion.options,
       correctId: currentQuestion.correctId,
     }
-  }
+  }, [selectedId, currentQuestion])
 
-  function buildSubmissionResults(baseResults: QuestionResult[] = results): QuestionResult[] {
-    const pendingResult = buildCurrentQuestionResult()
-    if (!pendingResult) {
-      return baseResults
-    }
-
-    if (baseResults.some((result) => result.questionId === pendingResult.questionId)) {
-      return baseResults
-    }
-
-    return [...baseResults, pendingResult]
-  }
-
-  function handleSelect(optionId: string) {
-    if (isAdvancingRef.current || isSubmitting || remainingSeconds === 0) return
-    setSelectedId(optionId)
-  }
-
-  async function submitTest(finalResults: QuestionResult[], timedOut = false) {
-    if (isSubmitting) {
-      return
-    }
-
-    setIsSubmitting(true)
-    setFetchError(null)
-
-    const rawRoleId = localStorage.getItem('pending_role_id')
-    const roleId = rawRoleId ? parseInt(rawRoleId, 10) : null
-
-    if (!roleId) {
-      setIsSubmitting(false)
-      isAdvancingRef.current = false
-      setIsAdvancing(false)
-      setFetchError('No role selected. Please go back and choose a role.')
-      navigate({ to: returnPath })
-      return
-    }
-
-    type AnsweredResult = QuestionResult & { selectedId: string }
-    const answeredResults = finalResults.filter(
-      (r): r is AnsweredResult => r.selectedId !== null,
-    )
-    const formattedResults = answeredResults.map((r) => ({
-      question_id: parseInt(r.questionId, 10),
-      selected_id: r.selectedId,
-      selected_text: r.options?.find((o) => o.id === r.selectedId)?.text ?? '',
-      is_correct: r.isCorrect,
-      axis: r.axis,
-      difficulty: r.difficulty,
-    }))
-
-    try {
-      await completePlacementTest({ role_id: roleId, placement_test_answers: formattedResults })
-      try {
-        await reinitializeRadar(true)
-      } catch (radarError) {
-        console.warn('Failed to refresh radar state after placement completion:', radarError)
+  const buildSubmissionResults = useCallback(
+    (baseResults: QuestionResult[] = results): QuestionResult[] => {
+      const pendingResult = buildCurrentQuestionResult()
+      if (!pendingResult) {
+        return baseResults
       }
 
-      localStorage.removeItem('pending_survey_answers')
-      localStorage.removeItem('pending_role_id')
-      navigate({ to: '/onboarding/placement-result', state: { results: finalResults } as HistoryState })
-    } catch (err) {
-      console.warn('Failed to commit placement test:', err)
-      setFetchError(
-        timedOut
-          ? 'Time is up, but we could not save your placement test. Retry submission.'
-          : err instanceof Error
-            ? err.message
-            : 'Failed to save your placement test. Please try again.',
+      if (baseResults.some((result) => result.questionId === pendingResult.questionId)) {
+        return baseResults
+      }
+
+      return [...baseResults, pendingResult]
+    },
+    [buildCurrentQuestionResult, results],
+  )
+
+  const handleSelect = useCallback((optionId: string) => {
+    if (isAdvancingRef.current || isSubmitting || remainingSeconds === 0) return
+    setSelectedId(optionId)
+  }, [isSubmitting, remainingSeconds])
+
+  const submitTest = useCallback(
+    async (finalResults: QuestionResult[], timedOut = false) => {
+      if (isSubmitting) {
+        return
+      }
+
+      setIsSubmitting(true)
+      setFetchError(null)
+
+      const rawRoleId = localStorage.getItem('pending_role_id')
+      const roleId = rawRoleId ? parseInt(rawRoleId, 10) : null
+
+      if (!roleId) {
+        setIsSubmitting(false)
+        isAdvancingRef.current = false
+        setIsAdvancing(false)
+        setFetchError('No role selected. Please go back and choose a role.')
+        navigate({ to: returnPath })
+        return
+      }
+
+      type AnsweredResult = QuestionResult & { selectedId: string }
+      const answeredResults = finalResults.filter(
+        (r): r is AnsweredResult => r.selectedId !== null,
       )
-      setIsSubmitting(false)
-      isAdvancingRef.current = false
-      setIsAdvancing(false)
-    }
-  }
+      const formattedResults = answeredResults.map((r) => ({
+        question_id: parseInt(r.questionId, 10),
+        selected_id: r.selectedId,
+        selected_text: r.options?.find((o) => o.id === r.selectedId)?.text ?? '',
+        is_correct: r.isCorrect,
+        axis: r.axis,
+        difficulty: r.difficulty,
+      }))
+
+      try {
+        await completePlacementTest({ role_id: roleId, placement_test_answers: formattedResults })
+        try {
+          await reinitializeRadar(true)
+        } catch (radarError) {
+          console.warn('Failed to refresh radar state after placement completion:', radarError)
+        }
+
+        localStorage.removeItem('pending_survey_answers')
+        localStorage.removeItem('pending_role_id')
+        navigate({ to: '/onboarding/placement-result', state: { results: finalResults } as HistoryState })
+      } catch (err) {
+        console.warn('Failed to commit placement test:', err)
+        setFetchError(
+          timedOut
+            ? 'Time is up, but we could not save your placement test. Retry submission.'
+            : err instanceof Error
+              ? err.message
+              : 'Failed to save your placement test. Please try again.',
+        )
+        setIsSubmitting(false)
+        isAdvancingRef.current = false
+        setIsAdvancing(false)
+      }
+    },
+    [isSubmitting, navigate, returnPath, reinitializeRadar],
+  )
 
   useEffect(() => {
     if (
@@ -446,7 +452,7 @@ export function PlacementTestEngine() {
 
     timedOutSubmissionAttemptedRef.current = true
     void submitTest(buildSubmissionResults(), true)
-  }, [loadState, remainingSeconds, isSubmitting, results, selectedId, currentQuestion])
+  }, [loadState, remainingSeconds, isSubmitting, buildSubmissionResults, submitTest])
 
   function handleNext() {
     if (
