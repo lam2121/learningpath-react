@@ -1,9 +1,11 @@
 import { History, Medal } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { MainNavigationMenu } from "@/common/component/MainNavigationMenu";
 import { LessonQuizHistoryCard } from "@/feature/user-profile/component/LearningHistoryChart";
 
 export function HistoryPage() {
+    const { t } = useTranslation("history");
     return (
         <div className="min-h-screen w-full bg-[radial-gradient(circle_at_top_left,_rgba(96,165,250,0.12),_transparent_28%),linear-gradient(180deg,_#fbfdff_0%,_#f2f7ff_100%)]">
             <MainNavigationMenu />
@@ -16,13 +18,13 @@ export function HistoryPage() {
                         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                             <div className="max-w-3xl">
                                 <p className="inline-flex rounded-full bg-cyan-600 px-3 py-1 text-sm font-semibold uppercase tracking-[0.14em] text-white shadow-sm">
-                                    History
+                                    {t("page.badge")}
                                 </p>
                                 <h1 className="mt-3 text-5xl font-black tracking-tight text-slate-950 sm:text-6xl">
-                                    Best lesson quiz scores
+                                    {t("page.title")}
                                 </h1>
                                 <p className="mt-3 text-lg font-medium leading-8 text-slate-600 sm:text-xl">
-                                    Review the highest weighted score saved for each lesson, grouped more tightly so you can scan topic progress faster.
+                                    {t("page.subtitle")}
                                 </p>
                             </div>
 

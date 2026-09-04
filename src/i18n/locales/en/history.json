@@ -1,0 +1,87 @@
+{
+  "page": {
+    "badge": "History",
+    "title": "Best lesson quiz scores",
+    "subtitle": "Review the highest weighted score saved for each lesson, grouped more tightly so you can scan topic progress faster."
+  },
+  "studyActivity": "Study Activity",
+  "quizHistory": "Quiz History",
+  "lessonQuizHistory": "Lesson Quiz History",
+  "loginHistory": {
+    "subtitle": "A monthly view of the time you have already logged from completed lessons.",
+    "emptyTitle": "No study time yet",
+    "emptyDesc": "Complete your first lesson to start building your study-time history.",
+    "studiedToday": "Studied today",
+    "loggedSoFar": "Logged so far today",
+    "noneToday": "No study time logged today yet",
+    "shortest": "Shortest time: {{duration}}",
+    "longest": "Longest time: {{duration}}"
+  },
+  "filters": {
+    "title": "Search & Filter",
+    "reset": "Reset",
+    "search": "Search",
+    "searchPlaceholder": "Search topic, lesson...",
+    "sortBy": "Sort By",
+    "filterBySkill": "Filter by Skill",
+    "all": "All"
+  },
+  "sort": {
+    "aToZ": "A → Z (Alphabetical)",
+    "zToA": "Z → A (Alphabetical)",
+    "newest": "Newest First",
+    "oldest": "Oldest First",
+    "topicAsc": "Topic 1 → 8",
+    "topicDesc": "Topic 8 → 1"
+  },
+  "list": {
+    "title": "Best Lesson Quiz Scores",
+    "subtitle": "Highest weighted score saved for each lesson, including hint mode.",
+    "lessonCount_one": "{{count}} lesson",
+    "lessonCount_other": "{{count}} lessons",
+    "allTopics": "All Topics",
+    "topic_one": "Topic {{count}}",
+    "topic_other": "Topic {{count}}",
+    "topicFallback": "Topic",
+    "best": "Best",
+    "attempts": "{{count}} attempts",
+    "failed": "{{count}} failed",
+    "noHint": "No hint: {{correct}}/{{total}}",
+    "withHint": "With hint: {{correct}}/{{total}}",
+    "unknown": "Unknown"
+  },
+  "empty": {
+    "noScoresTitle": "No quiz score history yet",
+    "noScoresDesc": "Pass or retry lesson quizzes to start building your best-score history.",
+    "noMatchTitle": "No matching lessons found",
+    "noMatchDesc": "No lessons match your current search &amp; filter criteria.",
+    "resetFilters": "Reset Filters"
+  },
+  "pagination": {
+    "showing": "Showing {{start}}–{{end}} of {{total}} lessons",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "detail": {
+    "title": "Saved lesson quiz answers",
+    "loadingDesc": "Loading the saved lesson quiz result from the database.",
+    "loading": "Loading saved quiz answers...",
+    "status": "Status",
+    "bestScore": "Best score",
+    "attempts": "Attempts",
+    "failedAttempts": "Failed attempts",
+    "correctNoHint": "Correct no hint",
+    "correctWithHint": "Correct with hint",
+    "recorded": "Recorded",
+    "unknown": "Unknown",
+    "noQuestionResults": "No saved question results are available for this lesson yet.",
+    "question_one": "Question {{count}}",
+    "question_other": "Question {{count}}",
+    "correct": "Correct",
+    "incorrect": "Incorrect",
+    "hintUsed": "Hint used",
+    "noHint": "No hint",
+    "questionTextUnavailable": "Question text unavailable",
+    "viewDetailsAria": "View quiz details for {{title}}"
+  }
+}

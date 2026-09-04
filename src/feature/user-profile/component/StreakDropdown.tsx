@@ -6,6 +6,7 @@ import {
     DropdownMenuTrigger,
 } from "@/shadcn/component/ui/dropdown-menu";
 import { Flame } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { LearningCalendar } from "./LearningCalendar";
 import { useAuth } from "@/common/context/AuthContext";
@@ -16,6 +17,7 @@ import {
 } from "@/feature/user-profile/utils/StudyActivity";
 
 export function StreakDropdown() {
+    const { t } = useTranslation("nav");
     const auth = useAuth();
     const userId = Number(auth.user?.id);
     const [loginDays, setLoginDays] = useState<string[]>([]);
@@ -69,7 +71,7 @@ export function StreakDropdown() {
                     </span>
 
                     <span className="hidden text-sm text-slate-600 sm:inline">
-                        day streak
+                        {t("dayStreak", { defaultValue: "day streak" })}
                     </span>
                 </Button>
             </DropdownMenuTrigger>

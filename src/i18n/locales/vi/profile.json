@@ -44,9 +44,6 @@
   "days": "ngày",
   "editGoal": "Chỉnh Sửa Mục Tiêu",
   "noRoadmap": "Chưa có lộ trình học tập",
-  "studyActivity": "Hoạt Động Học Tập",
-  "quizHistory": "Lịch Sử Kiểm Tra",
-  "lessonQuizHistory": "Lịch Sử Kiểm Tra Bài Học",
   "totalStudyTime": "Tổng Thời Gian Học",
   "averageScore": "Điểm Trung Bình",
   "passedLessons": "Bài Học Đã Đạt",
@@ -103,5 +100,26 @@
   "confirmNewSchedule": "Xác Nhận Lịch Mới",
   "day": "ngày",
   "finishBy": "Hoàn thành trước {{date}}",
-  "studySettingsCardDesc": "Mở cài đặt để đổi định hướng nghề nghiệp hoặc cập nhật thời gian học hàng ngày."
+  "studySettingsCardDesc": "Mở cài đặt để đổi định hướng nghề nghiệp hoặc cập nhật thời gian học hàng ngày.",
+  "average": "Trung Bình",
+  "initial": "Ban Đầu",
+  "skillsCompareDesc": "So sánh điểm kỹ năng ban đầu của bạn với tiến trình hiện tại của bạn.",
+  "unlockSkillTitle": "Mở khóa hướng dẫn kỹ năng chỉ trong một bước",
+  "unlockSkillDesc": "Làm bài kiểm tra xếp lớp một lần để thay thế tất cả điểm kỹ năng trạng thái ban đầu bằng hồ sơ được cá nhân hóa của bạn.",
+  "takePlacementTest": "Làm bài kiểm tra xếp lớp",
+  "learningCalendar": {
+    "cardTitle": "Lịch Học Tập",
+    "activityCalendar": "Lịch Hoạt Động",
+    "title": "Nhịp điệu học tập",
+    "subtitle": "Nuôi dưỡng thành công nhỏ, phát triển chuỗi mỗi ngày.",
+    "activeDays": "Hoạt Động {{count}}",
+    "streak": "Chuỗi {{count}}",
+    "today": "Hôm nay",
+    "noActivity": "Không hoạt động",
+    "learningActivity": "Hoạt động học tập",
+    "tooltipTodayWithActivity": "{{day}}: hôm nay có hoạt động học tập",
+    "tooltipToday": "{{day}}: hôm nay",
+    "tooltipLoggedIn": "{{day}}: đã đăng nhập",
+    "tooltipNoLogin": "{{day}}: chưa đăng nhập"
+  }
 }

@@ -1,0 +1,87 @@
+{
+  "page": {
+    "badge": "履歴",
+    "title": "最高のレッスンクイズスコア",
+    "subtitle": "各レッスンに保存された最高の加重スコアを、トピックの進捗をより速く確認できるようにコンパクトにまとめて確認できます。"
+  },
+  "studyActivity": "学習活動",
+  "quizHistory": "クイズ履歴",
+  "lessonQuizHistory": "レッスンクイズ履歴",
+  "loginHistory": {
+    "subtitle": "完了したレッスンから記録した学習時間の月間ビューです。",
+    "emptyTitle": "まだ学習時間がありません",
+    "emptyDesc": "最初のレッスンを完了して、学習時間の履歴を作成しましょう。",
+    "studiedToday": "今日の学習",
+    "loggedSoFar": "今日記録された時間",
+    "noneToday": "今日はまだ学習時間が記録されていません",
+    "shortest": "最短時間: {{duration}}",
+    "longest": "最長時間: {{duration}}"
+  },
+  "filters": {
+    "title": "検索とフィルター",
+    "reset": "リセット",
+    "search": "検索",
+    "searchPlaceholder": "トピック、レッスンを検索...",
+    "sortBy": "並び替え",
+    "filterBySkill": "スキルでフィルター",
+    "all": "すべて"
+  },
+  "sort": {
+    "aToZ": "A → Z (アルファベット順)",
+    "zToA": "Z → A (アルファベット順)",
+    "newest": "新しい順",
+    "oldest": "古い順",
+    "topicAsc": "トピック 1 → 8",
+    "topicDesc": "トピック 8 → 1"
+  },
+  "list": {
+    "title": "最高のレッスンクイズスコア",
+    "subtitle": "各レッスンに保存された最高の加重スコア（ヒントモードを含む）。",
+    "lessonCount_one": "{{count}} レッスン",
+    "lessonCount_other": "{{count}} レッスン",
+    "allTopics": "すべてのトピック",
+    "topic_one": "トピック {{count}}",
+    "topic_other": "トピック {{count}}",
+    "topicFallback": "トピック",
+    "best": "最高",
+    "attempts": "{{count}} 回の挑戦",
+    "failed": "{{count}} 回失敗",
+    "noHint": "ヒントなし: {{correct}}/{{total}}",
+    "withHint": "ヒントあり: {{correct}}/{{total}}",
+    "unknown": "不明"
+  },
+  "empty": {
+    "noScoresTitle": "まだクイズスコアの履歴がありません",
+    "noScoresDesc": "レッスンクイズに合格するか再挑戦して、最高スコア履歴の作成を始めましょう。",
+    "noMatchTitle": "一致するレッスンが見つかりません",
+    "noMatchDesc": "現在の検索およびフィルター条件に一致するレッスンはありません。",
+    "resetFilters": "フィルターをリセット"
+  },
+  "pagination": {
+    "showing": "全 {{total}} レッスンのうち {{start}}–{{end}} を表示中",
+    "previous": "前へ",
+    "next": "次へ"
+  },
+  "detail": {
+    "title": "保存されたレッスンクイズの回答",
+    "loadingDesc": "データベースから保存されたレッスンクイズの結果を読み込んでいます。",
+    "loading": "保存された回答を読み込み中...",
+    "status": "ステータス",
+    "bestScore": "最高スコア",
+    "attempts": "挑戦回数",
+    "failedAttempts": "失敗回数",
+    "correctNoHint": "ヒントなし正解",
+    "correctWithHint": "ヒントあり正解",
+    "recorded": "記録日",
+    "unknown": "不明",
+    "noQuestionResults": "このレッスンでは保存された問題の結果はまだありません。",
+    "question_one": "問題 {{count}}",
+    "question_other": "問題 {{count}}",
+    "correct": "正解",
+    "incorrect": "不正解",
+    "hintUsed": "ヒント使用",
+    "noHint": "ヒントなし",
+    "questionTextUnavailable": "問題文を利用できません",
+    "viewDetailsAria": "{{title}} のクイズ詳細を表示"
+  }
+}

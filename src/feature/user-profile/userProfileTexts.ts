@@ -63,9 +63,9 @@ export const userProfileTexts = {
   studySettingsCardDesc: () => t('studySettingsCardDesc'),
 
   // ─── LearningHistoryChart ───────────────────────────────────────────────────
-  studyActivity: () => t('studyActivity'),
-  quizHistory: () => t('quizHistory'),
-  lessonQuizHistory: () => t('lessonQuizHistory'),
+  studyActivity: () => i18n.t('studyActivity', { ns: 'history' }),
+  quizHistory: () => i18n.t('quizHistory', { ns: 'history' }),
+  lessonQuizHistory: () => i18n.t('lessonQuizHistory', { ns: 'history', defaultValue: 'Lesson Quiz History' }),
   totalStudyTime: () => t('totalStudyTime'),
   averageScore: () => t('averageScore'),
   passedLessons: () => t('passedLessons'),

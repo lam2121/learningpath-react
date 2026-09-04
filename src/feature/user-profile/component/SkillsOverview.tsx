@@ -231,13 +231,13 @@ export function SkillsOverview() {
                             {t("skillsOverview", { defaultValue: "Skills Overview" })}
                         </CardTitle>
                         <p className="mt-1 text-sm text-slate-500">
-                            Compare your starting skill scores with your current progress.
+                            {t("skillsCompareDesc")}
                         </p>
                     </div>
 
                     <div className="rounded-2xl bg-blue-50 px-4 py-3 text-right">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-700">
-                            Average
+                            {t("average")}
                         </p>
                         <p className="mt-1 text-lg font-bold text-slate-950">
                             {averageScore}%
@@ -284,7 +284,7 @@ export function SkillsOverview() {
                                         <div className="mb-3 grid w-full max-w-[9.5rem] cursor-help grid-cols-2 gap-2.5 sm:max-w-[10.5rem] sm:gap-3">
                                             <div className="flex flex-col items-center">
                                                 <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
-                                                    Initial
+                                                    {t("initial")}
                                                 </p>
                                                 <div
                                                     className={`relative flex h-44 w-full items-end overflow-hidden rounded-t-2xl border border-slate-100 ${skill.track} sm:h-52 lg:h-56`}
@@ -300,7 +300,7 @@ export function SkillsOverview() {
                                             </div>
                                             <div className="flex flex-col items-center">
                                                 <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
-                                                    Current
+                                                    {t("current")}
                                                 </p>
                                                 <div
                                                     className={`relative flex h-44 w-full items-end overflow-hidden rounded-t-2xl border border-slate-100 ${skill.track} sm:h-52 lg:h-56`}
@@ -348,14 +348,14 @@ export function SkillsOverview() {
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="font-semibold text-slate-900">
-                                    Unlock skill guidance in one step
+                                    {t("unlockSkillTitle")}
                                 </p>
                                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                                    Take the placement test once to replace all zero-state skill scores with your personalized profile.
+                                    {t("unlockSkillDesc")}
                                 </p>
                             </div>
                             <Button asChild variant="outline" className="shrink-0 border-slate-300">
-                                <Link to="/onboarding/placement-test">Take placement test</Link>
+                                <Link to="/onboarding/placement-test">{t("takePlacementTest")}</Link>
                             </Button>
                         </div>
                     </div>

@@ -1,0 +1,87 @@
+{
+  "page": {
+    "badge": "Lịch Sử",
+    "title": "Điểm bài kiểm tra cao nhất",
+    "subtitle": "Xem lại điểm số có trọng số cao nhất được lưu cho mỗi bài học, được nhóm gọn hơn để bạn có thể xem nhanh tiến độ theo chủ đề."
+  },
+  "studyActivity": "Hoạt Động Học Tập",
+  "quizHistory": "Lịch Sử Kiểm Tra",
+  "lessonQuizHistory": "Lịch Sử Kiểm Tra Bài Học",
+  "loginHistory": {
+    "subtitle": "Tổng quan theo tháng về thời gian bạn đã ghi nhận từ các bài học đã hoàn thành.",
+    "emptyTitle": "Chưa có thời gian học",
+    "emptyDesc": "Hoàn thành bài học đầu tiên để bắt đầu xây dựng lịch sử thời gian học của bạn.",
+    "studiedToday": "Đã học hôm nay",
+    "loggedSoFar": "Đã ghi nhận hôm nay",
+    "noneToday": "Chưa có thời gian học nào được ghi nhận hôm nay",
+    "shortest": "Thời gian ngắn nhất: {{duration}}",
+    "longest": "Thời gian dài nhất: {{duration}}"
+  },
+  "filters": {
+    "title": "Tìm Kiếm & Lọc",
+    "reset": "Đặt lại",
+    "search": "Tìm kiếm",
+    "searchPlaceholder": "Tìm chủ đề, bài học...",
+    "sortBy": "Sắp Xếp Theo",
+    "filterBySkill": "Lọc Theo Kỹ Năng",
+    "all": "Tất Cả"
+  },
+  "sort": {
+    "aToZ": "A → Z (Theo bảng chữ cái)",
+    "zToA": "Z → A (Theo bảng chữ cái)",
+    "newest": "Mới Nhất Trước",
+    "oldest": "Cũ Nhất Trước",
+    "topicAsc": "Chủ đề 1 → 8",
+    "topicDesc": "Chủ đề 8 → 1"
+  },
+  "list": {
+    "title": "Điểm Bài Kiểm Tra Cao Nhất",
+    "subtitle": "Điểm trọng số cao nhất được lưu cho mỗi bài học, bao gồm cả chế độ gợi ý.",
+    "lessonCount_one": "{{count}} bài học",
+    "lessonCount_other": "{{count}} bài học",
+    "allTopics": "Tất Cả Chủ Đề",
+    "topic_one": "Chủ đề {{count}}",
+    "topic_other": "Chủ đề {{count}}",
+    "topicFallback": "Chủ đề",
+    "best": "Tốt Nhất",
+    "attempts": "{{count}} lần làm",
+    "failed": "{{count}} lần trượt",
+    "noHint": "Không gợi ý: {{correct}}/{{total}}",
+    "withHint": "Có gợi ý: {{correct}}/{{total}}",
+    "unknown": "Không xác định"
+  },
+  "empty": {
+    "noScoresTitle": "Chưa có lịch sử điểm",
+    "noScoresDesc": "Vượt qua hoặc làm lại bài kiểm tra bài học để bắt đầu xây dựng lịch sử điểm cao nhất của bạn.",
+    "noMatchTitle": "Không tìm thấy bài học phù hợp",
+    "noMatchDesc": "Không có bài học nào khớp với điều kiện tìm kiếm &amp; lọc hiện tại.",
+    "resetFilters": "Đặt Lại Bộ Lọc"
+  },
+  "pagination": {
+    "showing": "Đang hiển thị {{start}}–{{end}} trong tổng số {{total}} bài học",
+    "previous": "Trước",
+    "next": "Tiếp Theo"
+  },
+  "detail": {
+    "title": "Câu trả lời bài kiểm tra bài học đã lưu",
+    "loadingDesc": "Đang tải kết quả bài kiểm tra bài học đã lưu từ cơ sở dữ liệu.",
+    "loading": "Đang tải câu trả lời đã lưu...",
+    "status": "Trạng thái",
+    "bestScore": "Điểm cao nhất",
+    "attempts": "Số lần làm",
+    "failedAttempts": "Số lần trượt",
+    "correctNoHint": "Đúng không gợi ý",
+    "correctWithHint": "Đúng có gợi ý",
+    "recorded": "Đã ghi nhận",
+    "unknown": "Không xác định",
+    "noQuestionResults": "Chưa có kết quả câu hỏi đã lưu cho bài học này.",
+    "question_one": "Câu hỏi {{count}}",
+    "question_other": "Câu hỏi {{count}}",
+    "correct": "Đúng",
+    "incorrect": "Sai",
+    "hintUsed": "Đã dùng gợi ý",
+    "noHint": "Không gợi ý",
+    "questionTextUnavailable": "Không có nội dung câu hỏi",
+    "viewDetailsAria": "Xem chi tiết bài kiểm tra của {{title}}"
+  }
+}

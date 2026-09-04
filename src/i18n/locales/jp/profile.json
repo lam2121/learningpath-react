@@ -44,9 +44,6 @@
   "days": "日",
   "editGoal": "目標を編集",
   "noRoadmap": "有効なロードマップがありません",
-  "studyActivity": "学習活動",
-  "quizHistory": "クイズ履歴",
-  "lessonQuizHistory": "レッスンクイズ履歴",
   "totalStudyTime": "総学習時間",
   "averageScore": "平均スコア",
   "passedLessons": "合格したレッスン",
@@ -103,5 +100,26 @@
   "confirmNewSchedule": "新しいスケジュールを確定",
   "day": "日",
   "finishBy": "{{date}} までに完了",
-  "studySettingsCardDesc": "設定を開いて、キャリアの方向性を変更するか、毎日の学習時間を更新してください。"
+  "studySettingsCardDesc": "設定を開いて、キャリアの方向性を変更するか、毎日の学習時間を更新してください。",
+  "average": "平均",
+  "initial": "初期",
+  "skillsCompareDesc": "開始時のスキルスコアと現在の進捗を比較します。",
+  "unlockSkillTitle": "ワンステップでスキルガイダンスを解除",
+  "unlockSkillDesc": "プレイスメントテストを一度受けて、ゼロ状態のスキルスコアをあなたのパーソナライズされたプロフィールに置き換えましょう。",
+  "takePlacementTest": "プレイスメントテストを受ける",
+  "learningCalendar": {
+    "cardTitle": "学習カレンダー",
+    "activityCalendar": "活動カレンダー",
+    "title": "学習リズム",
+    "subtitle": "小さな毎日の成果を見えるようにし、連続記録を自然に伸ばしましょう。",
+    "activeDays": "活動 {{count}}",
+    "streak": "連続 {{count}}",
+    "today": "今日",
+    "noActivity": "活動なし",
+    "learningActivity": "学習活動",
+    "tooltipTodayWithActivity": "{{day}}: 今日は学習活動あり",
+    "tooltipToday": "{{day}}: 今日",
+    "tooltipLoggedIn": "{{day}}: ログイン済み",
+    "tooltipNoLogin": "{{day}}: ログインなし"
+  }
 }

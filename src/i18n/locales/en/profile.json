@@ -44,9 +44,6 @@
   "days": "days",
   "editGoal": "Edit Goal",
   "noRoadmap": "No active roadmap available",
-  "studyActivity": "Study Activity",
-  "quizHistory": "Quiz History",
-  "lessonQuizHistory": "Lesson Quiz History",
   "totalStudyTime": "Total Study Time",
   "averageScore": "Average Score",
   "passedLessons": "Passed Lessons",
@@ -103,5 +100,26 @@
   "confirmNewSchedule": "Confirm New Schedule",
   "day": "day",
   "finishBy": "Finish by {{date}}",
-  "studySettingsCardDesc": "Open settings to change career direction or update your daily study time."
+  "studySettingsCardDesc": "Open settings to change career direction or update your daily study time.",
+  "average": "Average",
+  "initial": "Initial",
+  "skillsCompareDesc": "Compare your starting skill scores with your current progress.",
+  "unlockSkillTitle": "Unlock skill guidance in one step",
+  "unlockSkillDesc": "Take the placement test once to replace all zero-state skill scores with your personalized profile.",
+  "takePlacementTest": "Take placement test",
+  "learningCalendar": {
+    "cardTitle": "Learning Calendar",
+    "activityCalendar": "Activity Calendar",
+    "title": "Study rhythm",
+    "subtitle": "Keep small daily wins visible and let your streak build naturally.",
+    "activeDays": "Active {{count}}",
+    "streak": "Streak {{count}}",
+    "today": "Today",
+    "noActivity": "No activity",
+    "learningActivity": "Learning activity",
+    "tooltipTodayWithActivity": "{{day}}: today with learning activity",
+    "tooltipToday": "{{day}}: today",
+    "tooltipLoggedIn": "{{day}}: logged in",
+    "tooltipNoLogin": "{{day}}: no login"
+  }
 }
