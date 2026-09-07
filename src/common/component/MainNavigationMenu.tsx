@@ -19,6 +19,8 @@ import {
 } from "@/shadcn/component/ui/dropdown-menu";
 import { Button } from "../../shadcn/component/ui/button";
 import { Dialog } from "@/shadcn/component/ui/dialog";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import {
     Sheet,
     SheetContent,
@@ -65,6 +67,7 @@ export function MainNavigationMenu({
     onNavigateIntent?: (to: string) => boolean;
     disableStudySettings?: boolean;
 }) {
+    const { t } = useTranslation(["nav", "profile"]);
     const router = useRouter();
     const navigate = useNavigate();
     const auth = useAuth();
@@ -182,45 +185,48 @@ export function MainNavigationMenu({
         }
     };
 
-    const NavigationItems = () => (
-        <>
-            <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                    <Link
-                        to="/"
-                        onClick={(event) => handleNavigationClick(event, "/")}
-                        className="!bg-white px-4 py-2 !text-base font-medium"
-                    >
-                        Home
-                    </Link>
-                </NavigationMenuLink>
-            </NavigationMenuItem>
+    const NavigationItems = () => {
+        const { t } = useTranslation(["nav", "profile"]);
+        return (
+            <>
+                <NavigationMenuItem>
+                    <NavigationMenuLink asChild>
+                        <Link
+                            to="/"
+                            onClick={(event) => handleNavigationClick(event, "/")}
+                            className="!bg-white px-4 py-2 !text-base font-medium"
+                        >
+                            {t("home", { ns: "nav", defaultValue: "Home" })}
+                        </Link>
+                    </NavigationMenuLink>
+                </NavigationMenuItem>
 
-            <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                    <Link
-                        to="/lessons/learning-path"
-                        onClick={(event) => handleNavigationClick(event, "/lessons/learning-path")}
-                        className="!bg-white px-4 py-2 !text-base font-medium"
-                    >
-                        Path
-                    </Link>
-                </NavigationMenuLink>
-            </NavigationMenuItem>
+                <NavigationMenuItem>
+                    <NavigationMenuLink asChild>
+                        <Link
+                            to="/lessons/learning-path"
+                            onClick={(event) => handleNavigationClick(event, "/lessons/learning-path")}
+                            className="!bg-white px-4 py-2 !text-base font-medium"
+                        >
+                            {t("path", { ns: "nav", defaultValue: "Path" })}
+                        </Link>
+                    </NavigationMenuLink>
+                </NavigationMenuItem>
 
-            <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                    <Link
-                        to="/guide"
-                        onClick={(event) => handleNavigationClick(event, "/guide")}
-                        className="!bg-white px-4 py-2 !text-base font-medium"
-                    >
-                        How It Works
-                    </Link>
-                </NavigationMenuLink>
-            </NavigationMenuItem>
-        </>
-    );
+                <NavigationMenuItem>
+                    <NavigationMenuLink asChild>
+                        <Link
+                            to="/guide"
+                            onClick={(event) => handleNavigationClick(event, "/guide")}
+                            className="!bg-white px-4 py-2 !text-base font-medium"
+                        >
+                            {t("howItWorks", { ns: "nav", defaultValue: "How It Works" })}
+                        </Link>
+                    </NavigationMenuLink>
+                </NavigationMenuItem>
+            </>
+        );
+    };
 
     return (
         <div>
@@ -248,7 +254,9 @@ export function MainNavigationMenu({
                         </NavigationMenu>
                     </div>
 
-                    <div className="flex shrink-0 items-center">
+                    <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                        <LanguageSwitcher variant="outline" className="h-9 px-2.5" />
+
                         {auth.isAuthenticated ? (
                             <>
                                 {/* Chuông và lửa được gom thành một nhóm */}
@@ -295,7 +303,7 @@ export function MainNavigationMenu({
                                                 className="cursor-pointer text-base font-medium"
                                             >
                                                 <CircleUser className="mr-2 h-4 w-4" />
-                                                Profile
+                                                {t("profile", { ns: "nav", defaultValue: "Profile" })}
                                             </Link>
                                         </DropdownMenuItem>
 
@@ -308,7 +316,7 @@ export function MainNavigationMenu({
                                                 className="cursor-pointer text-base font-medium"
                                             >
                                                 <History className="mr-2 h-4 w-4" />
-                                                History
+                                                {t("history", { ns: "nav", defaultValue: "History" })}
                                             </Link>
                                         </DropdownMenuItem>
 
@@ -325,7 +333,7 @@ export function MainNavigationMenu({
                                                 className="flex w-full cursor-pointer items-center text-base font-medium disabled:cursor-not-allowed"
                                             >
                                                 <Settings className="mr-2 h-4 w-4" />
-                                                <span>Study Settings</span>
+                                                <span>{t("studySettings", { ns: "nav", defaultValue: "Study Settings" })}</span>
                                             </button>
                                         </DropdownMenuItem>
 
@@ -341,7 +349,7 @@ export function MainNavigationMenu({
                                                 className="flex w-full cursor-pointer items-center text-base font-medium text-red-600 transition-colors duration-200 hover:!text-red-600"
                                             >
                                                 <LogOut className="mr-2 h-4 w-4 text-red-600" />
-                                                <span>Log-out</span>
+                                                <span>{t("logout", { ns: "nav", defaultValue: "Log-out" })}</span>
                                             </button>
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
@@ -358,7 +366,7 @@ export function MainNavigationMenu({
                                     onClick={(event) => handleNavigationClick(event, "/login")}
                                     className="flex items-center gap-2"
                                 >
-                                    <span>Log-in</span>
+                                    <span>{t("login", { ns: "nav", defaultValue: "Log-in" })}</span>
                                 </Link>
                             </Button>
                         )}
@@ -485,6 +493,7 @@ function MobileNav({
     const router = useRouter();
     const navigate = useNavigate();
     const auth = useAuth();
+    const { t } = useTranslation(["nav", "profile"]);
 
     const handleLogout = async () => {
         if (!window.confirm("Are you sure you want to logout?")) {
@@ -544,7 +553,7 @@ function MobileNav({
                             "bg-accent text-accent-foreground font-semibold",
                     }}
                 >
-                    Home
+                    {t("home", { ns: "nav", defaultValue: "Home" })}
                 </Link>
 
                 <Link
@@ -556,7 +565,7 @@ function MobileNav({
                             "bg-accent text-accent-foreground font-semibold",
                     }}
                 >
-                    Path
+                    {t("path", { ns: "nav", defaultValue: "Path" })}
                 </Link>
 
                 <Link
@@ -568,9 +577,16 @@ function MobileNav({
                             "bg-accent text-accent-foreground font-semibold",
                     }}
                 >
-                    How It Works
+                    {t("howItWorks", { ns: "nav", defaultValue: "How It Works" })}
                 </Link>
             </nav>
+
+            <div className="border-t px-6 py-3">
+                <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-600">Language</span>
+                    <LanguageSwitcher variant="outline" />
+                </div>
+            </div>
 
             {auth.isAuthenticated ? (
                 <div className="space-y-1 border-t px-6 py-4">
@@ -594,7 +610,7 @@ function MobileNav({
                         }}
                     >
                         <History className="h-4 w-4" />
-                        History
+                        {t("history", { ns: "nav", defaultValue: "History" })}
                     </Link>
 
                     <button
@@ -603,7 +619,7 @@ function MobileNav({
                         className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-base text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
                     >
                         <LogOut className="h-4 w-4" />
-                        <span>Log out</span>
+                        <span>{t("logout", { ns: "nav", defaultValue: "Log out" })}</span>
                     </button>
                 </div>
             ) : (
@@ -615,7 +631,7 @@ function MobileNav({
                             className="flex items-center justify-center gap-2"
                         >
                             <User className="h-4 w-4" />
-                            <span>Login</span>
+                            <span>{t("login", { ns: "nav", defaultValue: "Login" })}</span>
                         </Link>
                     </Button>
                 </div>

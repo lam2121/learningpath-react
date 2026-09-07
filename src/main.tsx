@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRouter } from '@tanstack/react-router'
 import { routeTree } from '@/routeTree.gen'
+import './i18n/i18n' // Initialize i18next before app renders
 import './index.css'
 
 import { AuthProvider, type AuthContextValue } from './common/context/AuthContext'

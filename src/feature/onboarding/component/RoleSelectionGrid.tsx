@@ -4,7 +4,10 @@ import tmaLogo from '@/asset/image/tma_logo.png'
 import { fetchJobRoles, type JobRole, type JobRoleSkillDefinitions } from '../api/onboardingApi'
 import { useAuth } from '@/common/context/AuthContext'
 import { useRadar } from '@/feature/radar/context/RadarContext'
+import { LanguageSwitcher } from '@/common/component/LanguageSwitcher'
+import { useTranslation } from 'react-i18next'
 import { devGenerateCourse, type SkillScores, type SkillDifficultyBreakdown } from '../../dev-mode/api/devModeApi'
+import { onboardingTexts } from '../onboardingTexts'
 
 // ─── Dev-mode harness (docs/07 §12.9) ────────────────────────────────────────
 
@@ -284,7 +287,7 @@ function RoleCardItem({ role, paletteIdx, isSelected, isHovered, onSelect, onHov
         <div className="min-w-0 flex-1">
           <h3 className={`font-bold text-sm leading-tight truncate ${isSelected ? 'text-indigo-600' : 'text-gray-900'}`}>{role.name}</h3>
           <span className={`inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${isSelected ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}>
-            Career Track
+            {onboardingTexts.roleSelection.careerTrackBadge}
           </span>
         </div>
       </div>
@@ -384,8 +387,8 @@ function ConfirmRoleModal({
               ⚠️
             </div>
             <div>
-              <h2 className="text-white font-bold text-lg leading-tight">Before You Continue</h2>
-              <p className="text-white/80 text-xs mt-0.5">Please read this carefully</p>
+              <h2 className="text-white font-bold text-lg leading-tight">{onboardingTexts.confirmModal.title}</h2>
+              <p className="text-white/80 text-xs mt-0.5">{onboardingTexts.confirmModal.subtitle}</p>
             </div>
           </div>
         </div>
@@ -393,15 +396,11 @@ function ConfirmRoleModal({
         {/* Body */}
         <div className="px-6 py-5 space-y-3">
           <p className="text-gray-800 text-sm leading-relaxed">
-            You are about to start the <span className="font-bold text-indigo-700">Placement Test</span> for the
-            <span className="font-bold text-orange-600"> {roleName}</span> career track.
+            {onboardingTexts.confirmModal.bodyStart} <span className="font-bold text-indigo-700">{onboardingTexts.confirmModal.placementTestLabel}</span> for the
+            <span className="font-bold text-orange-600"> {roleName}</span>{onboardingTexts.confirmModal.bodyCareerTrackPrefix}
           </p>
           <ul className="space-y-2">
-            {[
-              { icon: '🎯', text: 'The test will assess your current English proficiency.' },
-              { icon: '🔒', text: 'This test is intended to help assess and find courses that are suitable for you.' },
-              { icon: '⏱️', text: 'Once started, you should complete it without interruption.' },
-            ].map(({ icon, text }) => (
+            {onboardingTexts.confirmModal.bulletPoints.map(({ icon, text }) => (
               <li key={text} className="flex items-start gap-2.5 text-xs text-gray-600 leading-relaxed">
                 <span className="text-base flex-shrink-0 mt-0.5">{icon}</span>
                 <span>{text}</span>
@@ -410,7 +409,7 @@ function ConfirmRoleModal({
           </ul>
           <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
             <p className="text-amber-800 text-xs font-medium leading-relaxed">
-              Are you ready to proceed with <span className="font-bold">{roleName}</span>?
+              {onboardingTexts.confirmModal.readyPrompt(roleName)}
             </p>
           </div>
           {DEV_MODE && (
@@ -422,8 +421,7 @@ function ConfirmRoleModal({
                 className="mt-0.5 size-4 accent-indigo-600"
               />
               <span className="text-xs text-indigo-800 leading-relaxed">
-                <span className="font-bold">Developer mode</span> — skip the placement test and set
-                difficulty breakdown manually to build the course roadmap.
+                <span className="font-bold">{onboardingTexts.confirmModal.devModeLabel}</span>{onboardingTexts.confirmModal.devModeDescription}
               </span>
             </label>
           )}
@@ -437,7 +435,7 @@ function ConfirmRoleModal({
             onClick={onCancel}
             className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 cursor-pointer"
           >
-            Go Back
+            {onboardingTexts.confirmModal.cancelButton}
           </button>
           {devMode ? (
             <button
@@ -446,7 +444,7 @@ function ConfirmRoleModal({
               onClick={onSetScores}
               className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-sm shadow-md shadow-indigo-200 hover:shadow-lg transition-all duration-200 active:scale-[0.98] cursor-pointer"
             >
-              Set correct answers →
+              {onboardingTexts.confirmModal.devSetScoresButton}
             </button>
           ) : (
             <button
@@ -455,7 +453,7 @@ function ConfirmRoleModal({
               onClick={onConfirm}
               className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-sm shadow-md shadow-indigo-200 hover:shadow-lg transition-all duration-200 active:scale-[0.98] cursor-pointer"
             >
-              Yes, Proceed →
+              {onboardingTexts.confirmModal.confirmButton}
             </button>
           )}
         </div>
@@ -491,8 +489,8 @@ function InactiveRoleModal({
               🚫
             </div>
             <div>
-              <h2 className="text-white font-bold text-lg leading-tight">Track Not Available</h2>
-              <p className="text-white/80 text-xs mt-0.5">This career track is deactivated</p>
+              <h2 className="text-white font-bold text-lg leading-tight">{onboardingTexts.inactiveModal.title}</h2>
+              <p className="text-white/80 text-xs mt-0.5">{onboardingTexts.inactiveModal.subtitle}</p>
             </div>
           </div>
         </div>
@@ -501,14 +499,10 @@ function InactiveRoleModal({
         <div className="px-6 py-5 space-y-3">
           <p className="text-gray-800 text-sm leading-relaxed">
             <span className="font-bold text-gray-900">{roleName}</span> is currently
-            <span className="font-bold text-slate-600"> deactivated</span> and is not accepting new learners.
+            <span className="font-bold text-slate-600">{onboardingTexts.inactiveModal.bodyDeactivated}</span>{onboardingTexts.inactiveModal.bodyEnd}
           </p>
           <ul className="space-y-2">
-            {[
-              { icon: '📚', text: 'Existing learners already on this track can continue their course.' },
-              { icon: '👥', text: 'New learners should pick a different active career track.' },
-              { icon: '🛠️', text: 'Contact your administrator if you believe this is a mistake.' },
-            ].map(({ icon, text }) => (
+            {onboardingTexts.inactiveModal.bulletPoints.map(({ icon, text }) => (
               <li key={text} className="flex items-start gap-2.5 text-xs text-gray-600 leading-relaxed">
                 <span className="text-base flex-shrink-0 mt-0.5">{icon}</span>
                 <span>{text}</span>
@@ -517,7 +511,7 @@ function InactiveRoleModal({
           </ul>
           <div className="rounded-xl bg-slate-100 border border-slate-200 px-4 py-3">
             <p className="text-slate-700 text-xs font-medium leading-relaxed">
-              Please select an active track to start your placement test.
+              {onboardingTexts.inactiveModal.selectActiveTrack}
             </p>
           </div>
         </div>
@@ -530,7 +524,7 @@ function InactiveRoleModal({
             onClick={onClose}
             className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 cursor-pointer"
           >
-            Got it
+            {onboardingTexts.inactiveModal.closeButton}
           </button>
         </div>
       </div>
@@ -562,9 +556,9 @@ function DevPlacementPanel({
   const [expandedSkill, setExpandedSkill] = useState<SkillKey | null>(null)
   const track = classifyTrackPreview(skills)
   const trackStyles: Record<string, { label: string; color: string; badge: string }> = {
-    basic: { label: 'Basic Track', color: 'text-emerald-700', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-    intermediate: { label: 'Intermediate Track', color: 'text-indigo-700', badge: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
-    advanced: { label: 'Advanced Track', color: 'text-violet-700', badge: 'bg-violet-100 text-violet-700 border-violet-200' },
+    basic: { label: onboardingTexts.devPanel.trackLabels.basic ?? 'Basic Track', color: 'text-emerald-700', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+    intermediate: { label: onboardingTexts.devPanel.trackLabels.intermediate ?? 'Intermediate Track', color: 'text-indigo-700', badge: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+    advanced: { label: onboardingTexts.devPanel.trackLabels.advanced ?? 'Advanced Track', color: 'text-violet-700', badge: 'bg-violet-100 text-violet-700 border-violet-200' },
   }
   const style = trackStyles[track]
 
@@ -592,8 +586,8 @@ function DevPlacementPanel({
               🧪
             </div>
             <div>
-              <h2 className="text-white font-bold text-lg leading-tight">Developer Mode</h2>
-              <p className="text-white/80 text-xs mt-0.5">Set correct answers per difficulty to build the roadmap</p>
+              <h2 className="text-white font-bold text-lg leading-tight">{onboardingTexts.devPanel.title}</h2>
+              <p className="text-white/80 text-xs mt-0.5">{onboardingTexts.devPanel.subtitle}</p>
             </div>
           </div>
         </div>
@@ -619,7 +613,7 @@ function DevPlacementPanel({
                       <div key={tier}>
                         <div className="flex items-center justify-between mb-1">
                           <label className={`text-xs font-semibold ${color}`}>{label} (×{weight})</label>
-                          <span className="text-xs font-bold text-gray-600">{skills[key][tier]} correct</span>
+                          <span className="text-xs font-bold text-gray-600">{skills[key][tier]} {onboardingTexts.devPanel.correctSuffix}</span>
                         </div>
                         <input
                           type="range"
@@ -634,7 +628,7 @@ function DevPlacementPanel({
                       </div>
                     ))}
                     <p className="text-xs text-gray-500 text-right font-medium">
-                      Earned: {ew} / {MAX_SKILL_WEIGHT} ({Math.round(Math.min(ew / MAX_SKILL_WEIGHT, 1) * 100)}%)
+                      {onboardingTexts.devPanel.earnedLabel(ew, MAX_SKILL_WEIGHT, Math.round(Math.min(ew / MAX_SKILL_WEIGHT, 1) * 100))}
                     </p>
                   </div>
                 )}
@@ -643,7 +637,7 @@ function DevPlacementPanel({
           })}
 
           <div className={`rounded-xl border px-4 py-3 ${style.badge}`}>
-            <p className="text-xs font-bold uppercase tracking-wide">Track preview</p>
+            <p className="text-xs font-bold uppercase tracking-wide">{onboardingTexts.devPanel.trackPreviewLabel}</p>
             <p className={`text-sm font-bold mt-0.5 ${style.color}`}>{style.label}</p>
           </div>
         </div>
@@ -656,7 +650,7 @@ function DevPlacementPanel({
             disabled={isGenerating}
             className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 cursor-pointer disabled:opacity-50"
           >
-            Cancel
+            {onboardingTexts.devPanel.cancelButton}
           </button>
           <button
             id="modal-dev-btn-generate"
@@ -665,7 +659,7 @@ function DevPlacementPanel({
             disabled={isGenerating}
             className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-sm shadow-md shadow-indigo-200 hover:shadow-lg transition-all duration-200 active:scale-[0.98] cursor-pointer disabled:opacity-50"
           >
-            {isGenerating ? 'Building course…' : 'Skip Placement & Generate'}
+            {isGenerating ? onboardingTexts.devPanel.generatingButton : onboardingTexts.devPanel.generateButton}
           </button>
         </div>
       </div>
@@ -674,6 +668,7 @@ function DevPlacementPanel({
 }
 
 export function RoleSelectionGrid() {
+  useTranslation('onboarding')
   const [roles, setRoles] = useState<JobRole[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -783,7 +778,14 @@ export function RoleSelectionGrid() {
       )}
       {/* Top Header Bar */}
       <header className="w-full bg-[#0072FF] px-6 py-3.5 flex items-center justify-between shadow-md sticky top-0 z-30">
-        <img src={tmaLogo} alt="TMA Solutions" className="h-9 w-auto" />
+        <div className="flex items-center gap-3">
+          <img src={tmaLogo} alt="TMA Solutions" className="h-8 w-auto" />
+          <LanguageSwitcher
+            variant="ghost"
+            showLabel
+            className="text-white shadow-md border border-white/30 hover:bg-white/10 [&_svg]:text-white [&_span]:text-white"
+          />
+        </div>
         {isAuthenticated ? (
           <button
             id="btn-logout-role-selection"
@@ -794,7 +796,7 @@ export function RoleSelectionGrid() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-            <span>Log out</span>
+            <span>{onboardingTexts.common.logoutButton}</span>
           </button>
         ) : (
           <button
@@ -803,7 +805,7 @@ export function RoleSelectionGrid() {
             onClick={() => navigate({ to: '/login' })}
             className="px-4 py-1.5 rounded-full border border-white/40 text-white hover:bg-white/10 transition-colors text-sm font-medium flex items-center gap-2 cursor-pointer"
           >
-            <span>Sign in</span>
+            <span>{onboardingTexts.common.signInButton}</span>
           </button>
         )}
       </header>
@@ -831,18 +833,18 @@ export function RoleSelectionGrid() {
 
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-sm font-medium mb-4">
             <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-            Step 1 / 3 — Choose Your Career Track
+            {onboardingTexts.roleSelection.stepIndicator}
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl 2xl:text-6xl font-extrabold text-gray-900 leading-tight mb-3">
-            What role are you currently in
+            {onboardingTexts.roleSelection.pageTitle}
             <span className="block bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 bg-clip-text text-transparent mt-1">
-              at TMA?
+              {onboardingTexts.roleSelection.pageTitleHighlight}
             </span>
           </h1>
           <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            The system will build a personalized IT English learning path based on the
-            <span className="font-semibold text-gray-900"> D/C/T/G skill weights</span> specific to each career track.
+            {onboardingTexts.roleSelection.pageSubtitle}
+            <span className="font-semibold text-gray-900">{onboardingTexts.roleSelection.pageSubtitleHighlight}</span>{onboardingTexts.roleSelection.pageSubtitleEnd}
           </p>
 
 
@@ -852,14 +854,14 @@ export function RoleSelectionGrid() {
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-            <p className="text-gray-500 text-sm">Loading career tracks...</p>
+            <p className="text-gray-500 text-sm">{onboardingTexts.roleSelection.loadingText}</p>
           </div>
         )}
 
         {/* Error state */}
         {error && !isLoading && (
           <div className="max-w-lg mx-auto text-center py-16">
-            <p className="text-rose-600 font-semibold text-lg mb-2">Unable to load data</p>
+            <p className="text-rose-600 font-semibold text-lg mb-2">{onboardingTexts.roleSelection.errorTitle}</p>
             <p className="text-gray-600 text-sm">{error}</p>
             <button
               onClick={() => {
@@ -872,7 +874,7 @@ export function RoleSelectionGrid() {
               }}
               className="mt-4 px-5 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm transition-colors"
             >
-              Retry
+              {onboardingTexts.roleSelection.retryButton}
             </button>
           </div>
         )}
@@ -909,7 +911,7 @@ export function RoleSelectionGrid() {
                       onClick={handleContinueClick}
                       className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-semibold shadow-md transition-all duration-200 active:scale-[0.98] flex items-center gap-2 whitespace-nowrap"
                     >
-                      <span>Continue with {selectedRole.name}</span>
+                      <span>{onboardingTexts.roleSelection.continueWith(selectedRole.name)}</span>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
@@ -921,21 +923,21 @@ export function RoleSelectionGrid() {
                     {/* Left column in details */}
                     <div className="w-full md:w-1/2 space-y-6">
                       <div>
-                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">Job Description</h3>
+                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">{onboardingTexts.roleSelection.jobDescriptionHeading}</h3>
                         <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
                           {getRoleDescription(selectedRole)}
                         </p>
                       </div>
 
                       <div className="pt-2">
-                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">Skill Overview</h3>
+                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">{onboardingTexts.roleSelection.skillOverviewHeading}</h3>
                         <SkillLegend
                           weightDescriptions={getWeightDescriptions(selectedRole)}
                           activeSkill={activeSkill}
                           onSkillClick={setActiveSkill}
                         />
                         <p className="text-[11px] text-gray-400 mt-3 italic">
-                          Click a skill to see its role-specific details and examples.
+                          {onboardingTexts.roleSelection.skillOverviewHint}
                         </p>
                       </div>
 
@@ -944,7 +946,7 @@ export function RoleSelectionGrid() {
                     {/* Right column in details */}
                     <div className="w-full md:w-1/2 space-y-6">
                       <div>
-                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">Skill Weights</h3>
+                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">{onboardingTexts.roleSelection.skillWeightsHeading}</h3>
                         <div className="space-y-3 mt-4">
                           {(() => {
                             const weights = extractWeights(selectedRole.baseline)
@@ -963,7 +965,7 @@ export function RoleSelectionGrid() {
 
                       <div>
                         <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b pb-2">
-                          Example Questions
+                          {onboardingTexts.roleSelection.exampleQuestionsHeading}
                         </h3>
                         {(() => {
                           const exampleQs = getExampleQuestions(selectedRole, activeSkill)
@@ -982,7 +984,7 @@ export function RoleSelectionGrid() {
                                 ))
                                 : (
                                   <li className="text-sm text-gray-500 italic">
-                                    No example questions available for this skill yet.
+                                    {onboardingTexts.roleSelection.noExampleQuestions}
                                   </li>
                                 )
                               }
@@ -1000,9 +1002,9 @@ export function RoleSelectionGrid() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">Select a Career Track</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">{onboardingTexts.roleSelection.selectTrackTitle}</h3>
                   <p className="text-gray-500 text-sm max-w-sm">
-                    Choose a role from the list on the left to view its detailed requirements and skill weights.
+                    {onboardingTexts.roleSelection.selectTrackDescription}
                   </p>
                 </div>
               )}
@@ -1014,7 +1016,7 @@ export function RoleSelectionGrid() {
         {!isLoading && !error && !selectedRole && (
           <div className="text-center mt-4">
             <p className="text-sm text-gray-400 animate-pulse">
-              Select a Career Track to begin your IT English learning journey
+              {onboardingTexts.roleSelection.selectTrackHint}
             </p>
           </div>
         )}

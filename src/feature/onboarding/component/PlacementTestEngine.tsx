@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, type HistoryState } from '@tanstack/react-router'
 import tmaLogo from '@/asset/image/tma_logo.png'
 import bannerBg from '@/asset/image/banner_background.png'
@@ -8,6 +8,9 @@ import { SKILL_TO_AXIS, ORDERED_LEVELS } from '../api/placementTestTypes'
 import { useRadar } from '@/feature/radar'
 import { completePlacementTest, fetchPlacementTestQuestions } from '../api/onboardingApi'
 import type { RawPlacementQuestionApi } from '../api/onboardingApi'
+import { onboardingTexts } from '../onboardingTexts'
+import { LanguageSwitcher } from '@/common/component/LanguageSwitcher'
+import { useTranslation } from 'react-i18next'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -127,9 +130,9 @@ function QuitModal({ onStay, onQuit }: { onStay: () => void; onQuit: () => void 
         <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-rose-500/15 border border-rose-400/30 flex items-center justify-center text-2xl">
           ⚠️
         </div>
-        <h3 className="text-lg font-bold text-white text-center mb-2">Exit the test?</h3>
+        <h3 className="text-lg font-bold text-white text-center mb-2">{onboardingTexts.placementTest.quitModal.title}</h3>
         <p className="text-sm text-white/60 text-center mb-6 leading-relaxed">
-          Your test progress will be <span className="text-rose-300 font-semibold">completely lost</span> if you exit. Are you sure?
+          {onboardingTexts.placementTest.quitModal.bodyStart}<span className="text-rose-300 font-semibold">{onboardingTexts.placementTest.quitModal.bodyHighlight}</span>{onboardingTexts.placementTest.quitModal.bodyEnd}
         </p>
         <div className="flex gap-3">
           <button
@@ -137,14 +140,14 @@ function QuitModal({ onStay, onQuit }: { onStay: () => void; onQuit: () => void 
             onClick={onStay}
             className="flex-1 py-3 rounded-xl bg-blue-500/30 border border-blue-400/40 text-blue-300 hover:bg-blue-500/40 font-bold text-sm transition-all"
           >
-            Continue Test
+            {onboardingTexts.placementTest.quitModal.stayButton}
           </button>
           <button
             id="btn-quit-confirm"
             onClick={onQuit}
             className="flex-1 py-3 rounded-xl border border-white/20 text-white/60 hover:bg-white/10 font-medium text-sm transition-all"
           >
-            Exit
+            {onboardingTexts.placementTest.quitModal.exitButton}
           </button>
         </div>
       </div>
@@ -162,7 +165,7 @@ function LoadingScreen() {
       <div className="fixed inset-0 bg-blue-700/80" />
       <div className="relative z-10 flex flex-col items-center gap-5">
         <div className="w-16 h-16 rounded-full border-4 border-blue-300/30 border-t-blue-300 animate-spin" />
-        <p className="text-white/70 text-sm font-medium">Loading questions...</p>
+        <p className="text-white/70 text-sm font-medium">{onboardingTexts.placementTest.loadingText}</p>
       </div>
     </div>
   )
@@ -181,9 +184,9 @@ function NoQuestionsScreen({ onBack }: { onBack: () => void }) {
           📭
         </div>
         <div>
-          <h2 className="text-xl font-bold text-white mb-2">No Questions Available</h2>
+          <h2 className="text-xl font-bold text-white mb-2">{onboardingTexts.placementTest.noQuestionsTitle}</h2>
           <p className="text-white/60 text-sm leading-relaxed">
-            There are no questions for this role yet. Please check back later or select a different role.
+            {onboardingTexts.placementTest.noQuestionsDescription}
           </p>
         </div>
         <button
@@ -191,7 +194,7 @@ function NoQuestionsScreen({ onBack }: { onBack: () => void }) {
           onClick={onBack}
           className="px-6 py-3 rounded-xl bg-white/15 border border-white/25 text-white font-semibold text-sm hover:bg-white/25 transition-all"
         >
-          ← Back to Role Selection
+          {onboardingTexts.placementTest.backToRoleSelection}
         </button>
       </div>
     </div>
@@ -201,6 +204,7 @@ function NoQuestionsScreen({ onBack }: { onBack: () => void }) {
 // ─── Main Engine Component ────────────────────────────────────────────────────
 
 export function PlacementTestEngine() {
+  useTranslation('onboarding')
   const navigate = useNavigate()
   const { reinitialize: reinitializeRadar } = useRadar()
   const returnPath = '/onboarding/role-selection'
@@ -263,7 +267,7 @@ export function PlacementTestEngine() {
     const roleId = rawRoleId ? parseInt(rawRoleId, 10) : null
 
     if (!roleId) {
-      setFetchError('No role selected. Please go back and choose a role.')
+      setFetchError(onboardingTexts.placementTest.noRoleError)
       setLoadState('empty')
       return
     }
@@ -339,7 +343,7 @@ export function PlacementTestEngine() {
 
   // ─────────────────────────────────────────────────────────────────────────────
 
-  function buildCurrentQuestionResult(): QuestionResult | null {
+  const buildCurrentQuestionResult = useCallback((): QuestionResult | null => {
     if (!selectedId || !currentQuestion) {
       return null
     }
@@ -354,84 +358,90 @@ export function PlacementTestEngine() {
       options: currentQuestion.options,
       correctId: currentQuestion.correctId,
     }
-  }
+  }, [selectedId, currentQuestion])
 
-  function buildSubmissionResults(baseResults: QuestionResult[] = results): QuestionResult[] {
-    const pendingResult = buildCurrentQuestionResult()
-    if (!pendingResult) {
-      return baseResults
-    }
-
-    if (baseResults.some((result) => result.questionId === pendingResult.questionId)) {
-      return baseResults
-    }
-
-    return [...baseResults, pendingResult]
-  }
-
-  function handleSelect(optionId: string) {
-    if (isAdvancingRef.current || isSubmitting || remainingSeconds === 0) return
-    setSelectedId(optionId)
-  }
-
-  async function submitTest(finalResults: QuestionResult[], timedOut = false) {
-    if (isSubmitting) {
-      return
-    }
-
-    setIsSubmitting(true)
-    setFetchError(null)
-
-    const rawRoleId = localStorage.getItem('pending_role_id')
-    const roleId = rawRoleId ? parseInt(rawRoleId, 10) : null
-
-    if (!roleId) {
-      setIsSubmitting(false)
-      isAdvancingRef.current = false
-      setIsAdvancing(false)
-      setFetchError('No role selected. Please go back and choose a role.')
-      navigate({ to: returnPath })
-      return
-    }
-
-    type AnsweredResult = QuestionResult & { selectedId: string }
-    const answeredResults = finalResults.filter(
-      (r): r is AnsweredResult => r.selectedId !== null,
-    )
-    const formattedResults = answeredResults.map((r) => ({
-      question_id: parseInt(r.questionId, 10),
-      selected_id: r.selectedId,
-      selected_text: r.options?.find((o) => o.id === r.selectedId)?.text ?? '',
-      is_correct: r.isCorrect,
-      axis: r.axis,
-      difficulty: r.difficulty,
-    }))
-
-    try {
-      await completePlacementTest({ role_id: roleId, placement_test_answers: formattedResults })
-      try {
-        await reinitializeRadar(true)
-      } catch (radarError) {
-        console.warn('Failed to refresh radar state after placement completion:', radarError)
+  const buildSubmissionResults = useCallback(
+    (baseResults: QuestionResult[] = results): QuestionResult[] => {
+      const pendingResult = buildCurrentQuestionResult()
+      if (!pendingResult) {
+        return baseResults
       }
 
-      localStorage.removeItem('pending_survey_answers')
-      localStorage.removeItem('pending_role_id')
-      navigate({ to: '/onboarding/placement-result', state: { results: finalResults } as HistoryState })
-    } catch (err) {
-      console.warn('Failed to commit placement test:', err)
-      setFetchError(
-        timedOut
-          ? 'Time is up, but we could not save your placement test. Retry submission.'
-          : err instanceof Error
-            ? err.message
-            : 'Failed to save your placement test. Please try again.',
+      if (baseResults.some((result) => result.questionId === pendingResult.questionId)) {
+        return baseResults
+      }
+
+      return [...baseResults, pendingResult]
+    },
+    [buildCurrentQuestionResult, results],
+  )
+
+  const handleSelect = useCallback((optionId: string) => {
+    if (isAdvancingRef.current || isSubmitting || remainingSeconds === 0) return
+    setSelectedId(optionId)
+  }, [isSubmitting, remainingSeconds])
+
+  const submitTest = useCallback(
+    async (finalResults: QuestionResult[], timedOut = false) => {
+      if (isSubmitting) {
+        return
+      }
+
+      setIsSubmitting(true)
+      setFetchError(null)
+
+      const rawRoleId = localStorage.getItem('pending_role_id')
+      const roleId = rawRoleId ? parseInt(rawRoleId, 10) : null
+
+      if (!roleId) {
+        setIsSubmitting(false)
+        isAdvancingRef.current = false
+        setIsAdvancing(false)
+        setFetchError('No role selected. Please go back and choose a role.')
+        navigate({ to: returnPath })
+        return
+      }
+
+      type AnsweredResult = QuestionResult & { selectedId: string }
+      const answeredResults = finalResults.filter(
+        (r): r is AnsweredResult => r.selectedId !== null,
       )
-      setIsSubmitting(false)
-      isAdvancingRef.current = false
-      setIsAdvancing(false)
-    }
-  }
+      const formattedResults = answeredResults.map((r) => ({
+        question_id: parseInt(r.questionId, 10),
+        selected_id: r.selectedId,
+        selected_text: r.options?.find((o) => o.id === r.selectedId)?.text ?? '',
+        is_correct: r.isCorrect,
+        axis: r.axis,
+        difficulty: r.difficulty,
+      }))
+
+      try {
+        await completePlacementTest({ role_id: roleId, placement_test_answers: formattedResults })
+        try {
+          await reinitializeRadar(true)
+        } catch (radarError) {
+          console.warn('Failed to refresh radar state after placement completion:', radarError)
+        }
+
+        localStorage.removeItem('pending_survey_answers')
+        localStorage.removeItem('pending_role_id')
+        navigate({ to: '/onboarding/placement-result', state: { results: finalResults } as HistoryState })
+      } catch (err) {
+        console.warn('Failed to commit placement test:', err)
+        setFetchError(
+          timedOut
+            ? 'Time is up, but we could not save your placement test. Retry submission.'
+            : err instanceof Error
+              ? err.message
+              : 'Failed to save your placement test. Please try again.',
+        )
+        setIsSubmitting(false)
+        isAdvancingRef.current = false
+        setIsAdvancing(false)
+      }
+    },
+    [isSubmitting, navigate, returnPath, reinitializeRadar],
+  )
 
   useEffect(() => {
     if (
@@ -445,7 +455,7 @@ export function PlacementTestEngine() {
 
     timedOutSubmissionAttemptedRef.current = true
     void submitTest(buildSubmissionResults(), true)
-  }, [loadState, remainingSeconds, isSubmitting, results, selectedId, currentQuestion])
+  }, [loadState, remainingSeconds, isSubmitting, buildSubmissionResults, submitTest])
 
   function handleNext() {
     if (
@@ -531,7 +541,14 @@ export function PlacementTestEngine() {
     <div className="min-h-screen relative bg-slate-50">
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 h-16 bg-[#0072FF] z-40 flex items-center justify-between px-6 shadow-md">
-        <img src={tmaLogo} alt="TMA Solutions" className="h-8 w-auto" />
+        <div className="flex items-center gap-3">
+          <img src={tmaLogo} alt="TMA Solutions" className="h-8 w-auto" />
+          <LanguageSwitcher
+            variant="ghost"
+            showLabel
+            className="text-white shadow-md border border-white/30 hover:bg-white/10 [&_svg]:text-white [&_span]:text-white"
+          />
+        </div>
         <button
           id="btn-exit-test"
           type="button"
@@ -541,7 +558,7 @@ export function PlacementTestEngine() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          <span>Back to Role Selection</span>
+          <span>{onboardingTexts.placementTest.exitButton}</span>
         </button>
       </div>
 
@@ -567,7 +584,7 @@ export function PlacementTestEngine() {
           <svg className={`h-4 w-4 ${isTimeRunningLow ? 'text-rose-500' : 'text-blue-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span className="hidden sm:inline">Time left</span>
+          <span className="hidden sm:inline">{onboardingTexts.placementTest.timeLeftLabel}</span>
         </div>
         <div className={`font-mono text-xl sm:text-3xl sm:mt-2 font-bold tabular-nums ${isTimeRunningLow ? 'text-rose-600' : 'text-slate-800'}`}>
           {String(timerMinutes).padStart(2, '0')}:{String(timerSeconds).padStart(2, '0')}
@@ -579,7 +596,7 @@ export function PlacementTestEngine() {
           />
         </div>
         {remainingSeconds === 0 && (
-          <p className="mt-2 text-xs font-semibold text-rose-600">Time is up</p>
+          <p className="mt-2 text-xs font-semibold text-rose-600">{onboardingTexts.placementTest.timeUpText}</p>
         )}
       </aside>
 
@@ -610,7 +627,7 @@ export function PlacementTestEngine() {
             <div className="flex justify-center w-full">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-sm font-medium">
                 <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-                Step 2 / 3 — Placement Test
+                {onboardingTexts.placementTest.stepIndicator}
               </div>
             </div>
           </div>
@@ -673,18 +690,18 @@ export function PlacementTestEngine() {
                   <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
-                  <span>Compiling results...</span>
+                  <span>{onboardingTexts.placementTest.compilingResults}</span>
                 </>
               ) : hasTimedOut ? (
                 <span>Retry Submission</span>
               ) : isLastQuestion ? (
                 <>
-                  <span>Submit</span>
+                  <span>{onboardingTexts.placementTest.submitButton}</span>
                   <span>🎉</span>
                 </>
               ) : (
                 <>
-                  <span>Next Question</span>
+                  <span>{onboardingTexts.placementTest.nextQuestion}</span>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
@@ -694,7 +711,7 @@ export function PlacementTestEngine() {
 
             {!isLastQuestion && !hasTimedOut && (
               <p className="text-center text-[11px] text-gray-400 mt-2">
-                🔒 You cannot go back — choose carefully
+                {onboardingTexts.placementTest.cannotGoBack}
               </p>
             )}
           </div>

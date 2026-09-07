@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
+import { useTranslation } from "react-i18next";
 import {
     ArrowDownAZ,
     ArrowUpDown,
@@ -383,6 +384,7 @@ export function LoginHistoryCard({
     compact = false,
     stretch = false,
 }: LoginHistoryCardProps) {
+    const { t } = useTranslation(["history", "profile"]);
     const auth = useAuth();
     const userId = Number(auth.user?.id);
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
@@ -486,10 +488,10 @@ export function LoginHistoryCard({
         <Card className={`flex min-w-0 flex-col overflow-hidden border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.07)] ${shouldStretch ? "h-full" : "h-fit self-start"}`}>
             <CardHeader className={cardHeaderClassName}>
                 <CardTitle className="text-base text-slate-950 sm:text-lg">
-                    Study Time History
+                    {t("studyActivity", { defaultValue: "Study Activity" })}
                 </CardTitle>
                 <p className="text-xs leading-5 text-slate-500 sm:text-sm">
-                    A monthly view of the time you have already logged from completed lessons.
+                    {t("loginHistory.subtitle")}
                 </p>
             </CardHeader>
 
@@ -499,10 +501,10 @@ export function LoginHistoryCard({
                         <CalendarClock className="h-10 w-10 text-slate-300" />
                         <div>
                             <p className="font-semibold text-slate-900">
-                                No study time yet
+                                {t("loginHistory.emptyTitle")}
                             </p>
                             <p className="mt-2 text-sm leading-6 text-slate-500">
-                                Complete your first lesson to start building your study-time history.
+                                {t("loginHistory.emptyDesc")}
                             </p>
                         </div>
                     </div>
@@ -514,15 +516,15 @@ export function LoginHistoryCard({
                         <div className="flex items-start justify-between gap-3 sm:items-end sm:gap-4">
                             <div className="min-w-0">
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                                    Studied today
+                                    {t("loginHistory.studiedToday")}
                                 </p>
                                 <p className={`mt-1.5 font-bold tracking-tight text-slate-950 sm:mt-2 ${compact ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl"}`}>
                                     {formatStudyDuration(todayMinutes)}
                                 </p>
                                 <p className="mt-1.5 text-xs text-slate-500 sm:mt-2 sm:text-sm">
                                     {todayMinutes > 0
-                                        ? "Logged so far today"
-                                        : "No study time logged today yet"}
+                                        ? t("loginHistory.loggedSoFar")
+                                        : t("loginHistory.noneToday")}
                                 </p>
                             </div>
 
@@ -533,10 +535,10 @@ export function LoginHistoryCard({
 
                         <div className="flex min-w-0 flex-wrap gap-1.5 text-[11px] font-semibold sm:gap-2 sm:text-xs">
                             <span className="max-w-full truncate rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
-                                Shortest time: {formatStudyDuration(shortestStudyMinutes)}
+                                {t("loginHistory.shortest", { duration: formatStudyDuration(shortestStudyMinutes) })}
                             </span>
                             <span className="max-w-full truncate rounded-full bg-cyan-50 px-2.5 py-1 text-[#005596]">
-                                Longest time: {formatStudyDuration(longestStudyMinutes)}
+                                {t("loginHistory.longest", { duration: formatStudyDuration(longestStudyMinutes) })}
                             </span>
                         </div>
 
@@ -581,6 +583,7 @@ export function LessonQuizHistoryCard({
     compact = false,
     excludedStatuses = [],
 }: LessonQuizHistoryCardProps) {
+    const { t } = useTranslation(["history", "profile"]);
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
     const [sortOption, setSortOption] = useState<SortOption>("topic-asc");
     const [searchTerm, setSearchTerm] = useState("");
@@ -900,9 +903,8 @@ export function LessonQuizHistoryCard({
         return (
             <Card className="flex min-w-0 flex-col border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.07)]">
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-xl text-slate-950">Best Lesson Quiz Scores</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0 space-y-3">
+                    <CardTitle className="text-xl text-slate-950">{t("quizHistory", { defaultValue: "Quiz History" })}</CardTitle>
+                </CardHeader>                <CardContent className="pt-0 space-y-3">
                     {paginatedHistory.map((entry: LessonQuizHistoryEntryResponse) => (
                         <div
                             key={entry.lesson_id}
@@ -930,7 +932,7 @@ export function LessonQuizHistoryCard({
                                         <SlidersHorizontal className="h-3.5 w-3.5" />
                                     </div>
                                     <CardTitle className="text-lg font-bold text-white">
-                                        Search & Filter
+                                        {t("filters.title")}
                                     </CardTitle>
                                 </div>
                                 {isFilterActive ? (
@@ -940,7 +942,7 @@ export function LessonQuizHistoryCard({
                                         className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-bold text-cyan-50 transition-colors hover:bg-white/15"
                                     >
                                         <RotateCcw className="h-3 w-3" />
-                                        Reset
+                                        {t("filters.reset")}
                                     </button>
                                 ) : null}
                             </div>
@@ -950,7 +952,7 @@ export function LessonQuizHistoryCard({
                             {/* Keyword Search */}
                             <div>
                                 <label className="mb-2 block text-sm font-bold uppercase tracking-[0.14em] text-[#005596]/60">
-                                    Search
+                                    {t("filters.search")}
                                 </label>
                                 <div className="relative">
                                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-500" />
@@ -958,7 +960,7 @@ export function LessonQuizHistoryCard({
                                         type="search"
                                         value={searchTerm}
                                         onChange={(event) => handleSearchChange(event.target.value)}
-                                        placeholder="Search topic, lesson..."
+                                        placeholder={t("filters.searchPlaceholder")}
                                         className="h-11 rounded-xl border-cyan-100 bg-cyan-50/60 pl-9 pr-8 text-base focus-visible:bg-white focus-visible:border-cyan-300 focus-visible:ring-cyan-100"
                                     />
                                     {searchTerm ? (
@@ -976,7 +978,7 @@ export function LessonQuizHistoryCard({
                             {/* Sort Options */}
                             <div>
                                 <label className="mb-2 block text-sm font-bold uppercase tracking-[0.14em] text-[#005596]/60">
-                                    Sort By
+                                    {t("filters.sortBy")}
                                 </label>
                                 <div className="grid grid-cols-1 gap-1.5">
                                     <button
@@ -989,7 +991,7 @@ export function LessonQuizHistoryCard({
                                     >
                                         <span className="flex items-center gap-2">
                                             <ArrowDownAZ className="h-4 w-4" />
-                                            A → Z (Alphabetical)
+                                            {t("sort.aToZ")}
                                         </span>
                                         {sortOption === "title-asc" ? (
                                             <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
@@ -1006,7 +1008,7 @@ export function LessonQuizHistoryCard({
                                     >
                                         <span className="flex items-center gap-2">
                                             <ArrowUpZA className="h-4 w-4" />
-                                            Z → A (Alphabetical)
+                                            {t("sort.zToA")}
                                         </span>
                                         {sortOption === "title-desc" ? (
                                             <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
@@ -1023,7 +1025,7 @@ export function LessonQuizHistoryCard({
                                     >
                                         <span className="flex items-center gap-2">
                                             <Clock3 className="h-4 w-4" />
-                                            Newest First
+                                            {t("sort.newest")}
                                         </span>
                                         {sortOption === "newest" ? (
                                             <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
@@ -1040,7 +1042,7 @@ export function LessonQuizHistoryCard({
                                     >
                                         <span className="flex items-center gap-2">
                                             <CalendarClock className="h-4 w-4" />
-                                            Oldest First
+                                            {t("sort.oldest")}
                                         </span>
                                         {sortOption === "oldest" ? (
                                             <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
@@ -1057,7 +1059,7 @@ export function LessonQuizHistoryCard({
                                     >
                                         <span className="flex items-center gap-2">
                                             <ArrowUpDown className="h-4 w-4" />
-                                            Topic 1 → 8
+                                            {t("sort.topicAsc")}
                                         </span>
                                         {sortOption === "topic-asc" ? (
                                             <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
@@ -1074,7 +1076,7 @@ export function LessonQuizHistoryCard({
                                     >
                                         <span className="flex items-center gap-2">
                                             <ArrowUpDown className="h-4 w-4" />
-                                            Topic 8 → 1
+                                            {t("sort.topicDesc")}
                                         </span>
                                         {sortOption === "topic-desc" ? (
                                             <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
@@ -1086,7 +1088,7 @@ export function LessonQuizHistoryCard({
                             {/* Filter by Skill */}
                             <div>
                                 <label className="mb-2 block text-sm font-bold uppercase tracking-[0.14em] text-[#005596]/60">
-                                    Filter by Skill
+                                    {t("filters.filterBySkill")}
                                 </label>
                                 <div className="flex flex-wrap gap-1.5">
                                     {lessonSkillFilters.map((skill) => (
@@ -1099,7 +1101,7 @@ export function LessonQuizHistoryCard({
                                                 : skill.inactiveClass
                                                 }`}
                                         >
-                                            {skill.label}
+                                            {skill.value === "all" ? t("filters.all") : skill.label}
                                         </button>
                                     ))}
                                 </div>
@@ -1115,15 +1117,15 @@ export function LessonQuizHistoryCard({
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                 <div>
                                     <CardTitle className="text-2xl sm:text-3xl font-black text-white">
-                                        Best Lesson Quiz Scores
+                                        {t("list.title")}
                                     </CardTitle>
                                     <p className="mt-1 text-base text-cyan-100">
-                                        Highest weighted score saved for each lesson, including hint mode.
+                                        {t("list.subtitle")}
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-3 self-start sm:self-auto">
                                     <span className="rounded-xl border border-white/30 bg-white/20 px-3 py-1.5 text-sm font-black uppercase tracking-[0.14em] text-white shadow-sm whitespace-nowrap">
-                                        {sortedLessonQuizHistory.length} lesson{sortedLessonQuizHistory.length === 1 ? "" : "s"}
+                                        {t("list.lessonCount", { count: sortedLessonQuizHistory.length })}
                                     </span>
                                     <div className="rounded-xl bg-amber-400 p-2 text-white shadow-sm">
                                         <Medal className="h-5 w-5" />
@@ -1138,10 +1140,10 @@ export function LessonQuizHistoryCard({
                                     <Sparkles className="h-10 w-10 text-cyan-500" />
                                     <div>
                                         <p className="text-lg font-bold text-slate-900">
-                                            No quiz score history yet
+                                            {t("empty.noScoresTitle")}
                                         </p>
                                         <p className="mt-2 text-base leading-7 text-slate-500">
-                                            Pass or retry lesson quizzes to start building your best-score history.
+                                            {t("empty.noScoresDesc")}
                                         </p>
                                     </div>
                                 </div>
@@ -1150,10 +1152,10 @@ export function LessonQuizHistoryCard({
                                     <Search className="h-8 w-8 text-cyan-500" />
                                     <div>
                                         <p className="text-lg font-bold text-slate-900">
-                                            No matching lessons found
+                                            {t("empty.noMatchTitle")}
                                         </p>
                                         <p className="mt-2 text-base leading-7 text-slate-500">
-                                            No lessons match your current search &amp; filter criteria.
+                                            {t("empty.noMatchDesc")}
                                         </p>
                                         {isFilterActive ? (
                                             <Button
@@ -1164,7 +1166,7 @@ export function LessonQuizHistoryCard({
                                                 className="mt-4 rounded-xl border-cyan-200 text-sm font-bold text-[#005596] hover:bg-cyan-50"
                                             >
                                                 <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                                                Reset Filters
+                                                {t("empty.resetFilters")}
                                             </Button>
                                         ) : null}
                                     </div>
@@ -1184,10 +1186,10 @@ export function LessonQuizHistoryCard({
                                                         }`}
                                                 >
                                                     <span className="text-sm font-black uppercase tracking-[0.14em] leading-none">
-                                                        All Topics
+                                                        {t("list.allTopics")}
                                                     </span>
                                                     <span className={`mt-2 text-sm font-semibold leading-none ${selectedTopicFilter === null ? "text-cyan-50" : "text-cyan-500"}`}>
-                                                        {topicFilterBaseHistory.length} lessons
+                                                        {t("list.lessonCount", { count: topicFilterBaseHistory.length })}
                                                     </span>
                                                 </button>
                                                 {topicList.map((topic) => {
@@ -1206,10 +1208,10 @@ export function LessonQuizHistoryCard({
                                                                 }`}
                                                         >
                                                             <span className="text-sm font-black uppercase tracking-[0.14em] leading-none">
-                                                                Topic {topic.order}
+                                                                {t("list.topic", { count: topic.order })}
                                                             </span>
                                                             <span className={`mt-2 text-sm font-semibold leading-none ${isActive ? "text-cyan-50" : "text-cyan-500"}`}>
-                                                                {totalCount} lessons
+                                                                {t("list.lessonCount", { count: totalCount })}
                                                             </span>
 
                                                         </button>
@@ -1218,9 +1220,9 @@ export function LessonQuizHistoryCard({
                                             </div>
                                             {selectedTopicMeta ? (
                                                 <TopicHistoryHeader
-                                                    topicLabel={`Topic ${selectedTopicFilter}`}
+                                                    topicLabel={t("list.topic", { count: selectedTopicFilter as number })}
                                                     topicName={selectedTopicMeta.name}
-                                                    lessonCountLabel={`${sortedLessonQuizHistory.length} lesson${sortedLessonQuizHistory.length === 1 ? "" : "s"}`}
+                                                    lessonCountLabel={t("list.lessonCount", { count: sortedLessonQuizHistory.length })}
                                                     className="mt-3"
                                                 />
                                             ) : null}
@@ -1235,8 +1237,8 @@ export function LessonQuizHistoryCard({
                                             const statusLabel = formatStatusLabel(entry.status);
                                             const topicHeader = entry.topic_name ?? "Lesson quiz history";
                                             const topicLabel = entry.topic_sort_order
-                                                ? `Topic ${entry.topic_sort_order}`
-                                                : "Topic";
+                                                ? t("list.topic", { count: entry.topic_sort_order })
+                                                : t("list.topicFallback");
                                             const showTopicSectionHeader =
                                                 selectedTopicFilter === null
                                                 && (index === 0
@@ -1261,7 +1263,7 @@ export function LessonQuizHistoryCard({
                                                     <button
                                                         type="button"
                                                         onClick={() => void openLessonDetail(entry.lesson_id)}
-                                                        aria-label={`View quiz details for ${entry.lesson_title}`}
+                                                        aria-label={t("detail.viewDetailsAria", { title: entry.lesson_title })}
                                                         className="group flex w-full cursor-pointer flex-col rounded-xl border border-cyan-200 bg-[#eef7ff] p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400 hover:bg-white hover:shadow-[0_8px_20px_rgba(0,169,206,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
                                                     >
                                                         {/* Top row: badges + best score */}
@@ -1286,7 +1288,7 @@ export function LessonQuizHistoryCard({
                                                             {/* Enlarged best score */}
                                                             <div className="min-w-[84px] shrink-0 rounded-xl bg-[#0082c9] px-3 py-2 text-center shadow-md transition-colors group-hover:bg-[#0069aa]">
                                                                 <p className="text-[10px] font-black uppercase leading-none tracking-[0.16em] text-cyan-50">
-                                                                    Best
+                                                                    {t("list.best")}
                                                                 </p>
                                                                 <p className="mt-1 text-2xl font-black leading-none text-white">
                                                                     {formatPercent(entry.best_score_percent)}
@@ -1301,19 +1303,19 @@ export function LessonQuizHistoryCard({
                                                         {/* Stats row: all in one compact line */}
                                                         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-200 pt-2">
                                                             <span className="text-xs text-slate-600">
-                                                                <span className="font-bold text-slate-700">{entry.attempt_count}</span> attempts
+                                                                {t("list.attempts", { count: entry.attempt_count })}
                                                             </span>
                                                             <span className="text-xs text-slate-600">
-                                                                <span className="font-bold text-rose-600">{entry.failed_attempts}</span> failed
+                                                                {t("list.failed", { count: entry.failed_attempts })}
                                                             </span>
                                                             <span className="text-xs text-slate-600">
-                                                                No hint: <span className="font-bold text-teal-700">{entry.correct_no_hint_count}/{entry.total_no_hint_questions}</span>
+                                                                {t("list.noHint", { correct: entry.correct_no_hint_count, total: entry.total_no_hint_questions })}
                                                             </span>
                                                             <span className="text-xs text-slate-600">
-                                                                With hint: <span className="font-bold text-amber-700">{entry.correct_with_hint_count}/{entry.total_with_hint_questions}</span>
+                                                                {t("list.withHint", { correct: entry.correct_with_hint_count, total: entry.total_with_hint_questions })}
                                                             </span>
                                                             <span className="ml-auto text-xs text-slate-500">
-                                                                {recordedLabel ?? completedLabel ?? submittedLabel ?? "Unknown"}
+                                                                {recordedLabel ?? completedLabel ?? submittedLabel ?? t("list.unknown")}
                                                             </span>
                                                         </div>
                                                     </button>
@@ -1326,7 +1328,11 @@ export function LessonQuizHistoryCard({
                                     {totalPages > 1 ? (
                                         <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-cyan-100">
                                             <p className="text-sm font-bold text-[#005596]/60">
-                                                Showing {displayedLessonRange.start}–{displayedLessonRange.end} of {sortedLessonQuizHistory.length} lessons
+                                                {t("pagination.showing", {
+                                                    start: displayedLessonRange.start,
+                                                    end: displayedLessonRange.end,
+                                                    total: sortedLessonQuizHistory.length,
+                                                })}
                                             </p>
                                             <div className="flex items-center gap-1.5">
                                                 <Button
@@ -1338,7 +1344,7 @@ export function LessonQuizHistoryCard({
                                                     className="h-9 px-3 text-sm font-bold rounded-lg border-cyan-200 text-[#005596] hover:bg-cyan-50"
                                                 >
                                                     <ChevronLeft className="h-4 w-4 mr-1" />
-                                                    Previous
+                                                    {t("pagination.previous")}
                                                 </Button>
 
                                                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
@@ -1365,10 +1371,9 @@ export function LessonQuizHistoryCard({
                                                     onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                                                     className="h-9 px-3 text-sm font-bold rounded-lg border-cyan-200 text-[#005596] hover:bg-cyan-50"
                                                 >
-                                                    Next
+                                                    {t("pagination.next")}
                                                     <ChevronRight className="h-4 w-4 ml-1" />
-                                                </Button>
-                                            </div>
+                                                </Button>                                            </div>
                                         </div>
                                     ) : null}
                                 </>
@@ -1394,19 +1399,19 @@ export function LessonQuizHistoryCard({
                 <DialogContent className="!w-[98vw] !max-w-[calc(100vw-1rem)] sm:!max-w-[110rem] max-h-[92vh] overflow-y-auto p-6 sm:p-8">
                     <DialogHeader>
                         <DialogTitle>
-                            {selectedDetail?.lesson_title ?? "Saved lesson quiz answers"}
+                            {selectedDetail?.lesson_title ?? t("detail.title")}
                         </DialogTitle>
                         <DialogDescription>
                             {selectedDetail
                                 ? `${selectedDetail.topic_name ? `${selectedDetail.topic_name} · ` : ""}${formatLabel(selectedDetail.skill)} · ${formatLabel(selectedDetail.difficulty_tier)}`
-                                : "Loading the saved lesson quiz result from the database."}
+                                : t("detail.loadingDesc")}
                         </DialogDescription>
                     </DialogHeader>
 
                     {detailLoading ? (
                         <div className="flex min-h-48 items-center justify-center gap-3 text-slate-500">
                             <Loader2 className="h-5 w-5 animate-spin" />
-                            Loading saved quiz answers...
+                            {t("detail.loading")}
                         </div>
                     ) : detailError ? (
                         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-5 text-sm text-rose-700">
@@ -1416,39 +1421,39 @@ export function LessonQuizHistoryCard({
                         <div className="space-y-5">
                             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
                                 <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Status</p>
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{t("detail.status")}</p>
                                     <p className="mt-1 font-semibold text-slate-950">{formatStatusLabel(selectedDetail.status)}</p>
                                 </div>
                                 <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Best score</p>
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{t("detail.bestScore")}</p>
                                     <p className="mt-1 font-semibold text-slate-950">{formatPercent(selectedDetail.best_score_percent)}</p>
                                 </div>
                                 <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Attempts</p>
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{t("detail.attempts")}</p>
                                     <p className="mt-1 font-semibold text-slate-950">{selectedDetail.attempt_count}</p>
                                 </div>
                                 <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Failed attempts</p>
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{t("detail.failedAttempts")}</p>
                                     <p className="mt-1 font-semibold text-slate-950">{selectedDetail.failed_attempts}</p>
                                 </div>
                                 <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Correct no hint</p>
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{t("detail.correctNoHint")}</p>
                                     <p className="mt-1 font-semibold text-slate-950">{selectedDetail.correct_no_hint_count} / {selectedDetail.total_no_hint_questions}</p>
                                 </div>
                                 <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Correct with hint</p>
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{t("detail.correctWithHint")}</p>
                                     <p className="mt-1 font-semibold text-slate-950">{selectedDetail.correct_with_hint_count} / {selectedDetail.total_with_hint_questions}</p>
                                 </div>
                             </div>
 
                             <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Recorded</p>
-                                <p className="mt-1 font-semibold text-slate-950">{selectedRecordedLabel ?? "Unknown"}</p>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{t("detail.recorded")}</p>
+                                <p className="mt-1 font-semibold text-slate-950">{selectedRecordedLabel ?? t("detail.unknown")}</p>
                             </div>
 
                             {selectedDetail.question_results.length === 0 ? (
                                 <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                                    No saved question results are available for this lesson yet.
+                                    {t("detail.noQuestionResults")}
                                 </div>
                             ) : (
                                 <Accordion type="multiple" className="rounded-2xl border border-slate-200 bg-white px-4">
@@ -1461,20 +1466,20 @@ export function LessonQuizHistoryCard({
                                                 <div className="min-w-0">
                                                     <div className="flex flex-wrap items-center gap-2">
                                                         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                                                            Question {index + 1}
+                                                            {t("detail.question", { count: index + 1 })}
                                                         </span>
                                                         <span className="rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-[#005596]">
                                                             {formatQuestionTypeLabel(result.question_type)}
                                                         </span>
                                                         <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${result.is_correct ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
-                                                            {result.is_correct ? "Correct" : "Incorrect"}
+                                                            {result.is_correct ? t("detail.correct") : t("detail.incorrect")}
                                                         </span>
                                                         <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${result.used_hint ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-700"}`}>
-                                                            {result.used_hint ? "Hint used" : "No hint"}
+                                                            {result.used_hint ? t("detail.hintUsed") : t("detail.noHint")}
                                                         </span>
                                                     </div>
                                                     <p className="mt-2 text-sm font-semibold leading-6 text-slate-900">
-                                                        {result.question_text || "Question text unavailable"}
+                                                        {result.question_text || t("detail.questionTextUnavailable")}
                                                     </p>
                                                 </div>
                                             </AccordionTrigger>
@@ -1506,6 +1511,7 @@ export function LearningHistoryChart({
     showLoginHistory = true,
     supplementaryPanelBottom = null,
 }: LearningHistoryChartProps) {
+    const { t } = useTranslation("profile");
     const auth = useAuth();
     const userId = Number(auth.user?.id);
     const layoutRef = useRef<HTMLDivElement | null>(null);
@@ -1576,7 +1582,7 @@ export function LearningHistoryChart({
                 <div className="min-w-0" style={syncedPanelStyle}>
                     <Card className="flex h-full min-w-0 flex-col border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.07)]">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-xl">Learning Calendar</CardTitle>
+                            <CardTitle className="text-xl">{t("learningCalendar.cardTitle", { defaultValue: "Learning Calendar" })}</CardTitle>
                         </CardHeader>
 
                         <CardContent className="flex flex-1 flex-col pt-0">

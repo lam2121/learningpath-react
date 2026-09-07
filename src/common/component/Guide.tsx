@@ -9,26 +9,15 @@ import {
   Mail,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router"
-const steps = [
-  { number: "01", label: "Choose Career" },
-  { number: "02", label: "Placement Test" },
-  { number: "03", label: "AI Learning Path" },
-  { number: "04", label: "View Results" },
-];
-
-const progressItems = [
-  "Review completed lessons and quizzes",
-
-  "Monitor vocabulary and grammar improvement",
-
-  "Track daily learning streaks and achievements",
-
-  "Receive personalized AI recommendations",
-
-  "View your overall learning statistics",
-];
+import { useTranslation, Trans } from "react-i18next";
 
 export function Guide() {
+  const { t } = useTranslation("guide");
+
+  const steps = t("section3.steps", { returnObjects: true }) as Array<{ number: string; label: string }>;
+  const progressItems = t("section4.items", { returnObjects: true }) as string[];
+  const stepDetails = t("section3.stepDetails", { returnObjects: true }) as Array<{ label: string; title: string; description: string }>;
+
   return (
     <main className="flex-1">
       <div className="min-h-screen bg-background">
@@ -38,14 +27,14 @@ export function Guide() {
             <div className="flex items-center gap-2 mb-4">
               <span className="inline-flex items-center justify-center rounded-md border text-xs font-medium w-fit whitespace-nowrap shrink-0 text-primary border-primary/30 gap-1.5 px-3 py-1">
                 <GraduationCap className="w-3.5 h-3.5" aria-hidden="true" />
-                TMA AI English Learning Path
+                {t("badge")}
               </span>
             </div>
             <h1 className="text-4xl font-extrabold tracking-tight mb-3">
-              How It Works
+              {t("headerTitle")}
             </h1>
             <p className="text-lg font-medium text-slate-700 max-w-xl leading-relaxed">
-              Learn how AI creates your personalized English learning journey—from assessing your current level to generating lessons, quizzes, and daily study plans.
+              {t("headerDescription")}
             </p>
           </div>
         </div>
@@ -57,14 +46,16 @@ export function Guide() {
               <span className="w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
                 1
               </span>
-              About TMA AI English Learning Path
+              {t("section1.title")}
             </h2>
             <div className="pl-9">
               <p className="text-slate-700 leading-relaxed">
-                <strong className="text-slate-950">
-                  TMA AI English Learning Path
-                </strong>{" "}
-                is an intelligent platform designed to help learners improve their English through personalized learning experiences. By analyzing your current proficiency and learning goals, AI generates a customized learning path with interactive lessons, quizzes, and daily study plans to support continuous progress.
+                <Trans
+                  i18nKey="section1.description"
+                  ns="guide"
+                  components={{ strong: <strong className="text-slate-950" /> }}
+                  values={{ name: t("badge") }}
+                />
               </p>
             </div>
           </section>
@@ -75,7 +66,7 @@ export function Guide() {
               <span className="w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
                 2
               </span>
-              Learning Experience
+              {t("section2.title")}
             </h2>
             <div className="pl-9 grid gap-4">
               <div className="flex gap-4 p-5 rounded-xl border bg-card hover:shadow-sm transition-shadow">
@@ -87,13 +78,13 @@ export function Guide() {
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold">Practice</span>
+                    <span className="font-semibold">{t("section2.practice.title")}</span>
                     <span className="inline-flex items-center justify-center rounded-md font-medium w-fit whitespace-nowrap shrink-0 gap-1 text-xs px-2 py-0 h-5 border-0 bg-blue-500/15 text-blue-700">
-                      Personalized Lessons
+                      {t("section2.practice.badge")}
                     </span>
                   </div>
                   <p className="text-sm text-slate-700 leading-relaxed">
-                    Study AI-generated lessons that match your current English level. Each lesson includes vocabulary, grammar, reading, listening, and practical examples to build real communication skills.
+                    {t("section2.practice.description")}
                   </p>
                 </div>
               </div>
@@ -107,13 +98,13 @@ export function Guide() {
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold">Exam</span>
+                    <span className="font-semibold">{t("section2.exam.title")}</span>
                     <span className="inline-flex items-center justify-center rounded-md font-medium w-fit whitespace-nowrap shrink-0 gap-1 text-xs px-2 py-0 h-5 border-0 bg-amber-500/15 text-amber-700">
-                      Adaptive Quizzes
+                      {t("section2.exam.badge")}
                     </span>
                   </div>
                   <p className="text-sm text-slate-700 leading-relaxed">
-                    After each lesson, complete interactive quizzes to reinforce your knowledge. AI adapts future content based on your performance and learning progress.
+                    {t("section2.exam.description")}
                   </p>
                 </div>
               </div>
@@ -126,7 +117,7 @@ export function Guide() {
               <span className="w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
                 3
               </span>
-              Your AI-Powered Learning Journey
+              {t("section3.title")}
             </h2>
             <div className="pl-9 space-y-6">
               <div className="flex items-center gap-1 flex-wrap">
@@ -151,42 +142,21 @@ export function Guide() {
               </div>
 
               <div className="space-y-4 text-sm font-medium text-slate-700 leading-relaxed">
-                <div className="flex gap-3">
-                  <span className="font-bold text-primary shrink-0">
-                    Step 1
-                  </span>
-                  <p>
-                    Choose the <strong className="text-slate-950">Career Path</strong>{" "}
-                    that matches your interests and future goals. Whether you want to become a Software Engineer, Project Manager, Business Analyst, or another professional, your learning journey begins here.
-                  </p>
-                </div>
-                <div className="flex gap-3">
-                  <span className="font-bold text-primary shrink-0">
-                    Step 2
-                  </span>
-                  <p>
-                    Take an AI-powered English <strong className="text-slate-950">Placement Test</strong>{" "}
-                    to evaluate your current proficiency in vocabulary, grammar, reading, listening, and other essential language skills.
-                  </p>
-                </div>
-                <div className="flex gap-3">
-                  <span className="font-bold text-primary shrink-0">
-                    Step 3
-                  </span>
-                  <p>
-                    Based on your career choice and placement test results, AI generates a <strong className="text-slate-950">Personalized English Learning Path</strong>{" "}
-                    with structured topics, interactive lessons, quizzes, and daily learning recommendations tailored to your goals.
-                  </p>
-                </div>
-                <div className="flex gap-3">
-                  <span className="font-bold text-primary shrink-0">
-                    Step 4
-                  </span>
-                  <p>
-                    Open <strong className="text-slate-950">View Results</strong>{" "}
-                    to review your test outcome, learning progress, completed lessons, quiz performance, and personalized recommendations.
-                  </p>
-                </div>
+                {stepDetails.map((detail, index) => (
+                  <div className="flex gap-3" key={index}>
+                    <span className="font-bold text-primary shrink-0">
+                      {detail.label}
+                    </span>
+                    <p>
+                      <Trans
+                        i18nKey={`section3.stepDetails.${index}.description`}
+                        ns="guide"
+                        components={{ strong: <strong className="text-slate-950" /> }}
+                        values={{ title: detail.title }}
+                      />
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           </section>
@@ -197,7 +167,7 @@ export function Guide() {
               <span className="w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
                 4
               </span>
-              Learning Progress
+              {t("section4.title")}
             </h2>
             <div className="pl-9">
               <div className="flex gap-4 p-5 rounded-xl border bg-card">
@@ -209,8 +179,12 @@ export function Guide() {
                 </div>
                 <div className="space-y-3">
                   <p className="text-sm font-medium text-slate-700 leading-relaxed">
-                    The <strong className="text-slate-950">Progress</strong>{" "}
-                    page gives you a complete overview of your learning journey. Monitor completed lessons, quiz performance, learning streaks, and overall improvement as you move toward your English goals.
+                    <Trans
+                      i18nKey="section4.description"
+                      ns="guide"
+                      components={{ strong: <strong className="text-slate-950" /> }}
+                      values={{ title: t("section4.title") }}
+                    />
                   </p>
                   <ul className="space-y-2">
                     {progressItems.map((point) => (
@@ -237,15 +211,13 @@ export function Guide() {
               <CirclePlay className="w-6 h-6" aria-hidden="true" />
             </div>
             <div>
-              <p className="font-semibold">Ready to Start Learning?</p>
+              <p className="font-semibold">{t("cta.title")}</p>
               <p className="text-sm font-medium text-slate-700">
-                <Link
-                  to="/login"
-                  className="text-primary font-medium hover:underline"
-                >
-                  Start Now
-                </Link>{" "}
-                to begin your personalized English learning journey today and let AI guide you through lessons, quizzes, and daily practice designed just for you.
+                <Trans
+                  i18nKey="cta.description"
+                  ns="guide"
+                  components={{ 1: <Link to="/login" className="text-primary font-medium hover:underline" /> }}
+                />
               </p>
             </div>
           </div>
@@ -259,11 +231,9 @@ export function Guide() {
               />
             </div>
             <p className="text-sm font-medium text-slate-700 leading-relaxed">
-              Have suggestions or feedback?
-
-              We'd love to hear your ideas and continuously improve your learning experience.
-
-              Contact us anytime at:{" "}
+              {t("feedback.title")}{" "}
+              {t("feedback.description")}{" "}
+              {t("feedback.contactPrefix")}{" "}
               <Link
                 to="mailto:training@tma.com.vn"
                 className="text-primary font-medium hover:underline"

@@ -7,6 +7,7 @@ import {
 } from "@/shadcn/component/ui/card";
 import { CalendarDays, Flame } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
     calculateLongestStreak,
@@ -32,6 +33,7 @@ export function LearningCalendar({
     embedded = false,
     userId,
 }: LearningCalendarProps) {
+    const { t } = useTranslation("profile");
     const [loginDays, setLoginDays] = useState<string[]>([]);
     const [today, setToday] = useState(() => new Date());
 
@@ -83,13 +85,13 @@ export function LearningCalendar({
             <div className="space-y-1">
                 <div className="flex items-center gap-2 text-blue-700">
                     <CalendarDays className="h-4 w-4" />
-                    <p className="text-sm font-semibold">Activity Calendar</p>
+                    <p className="text-sm font-semibold">{t("learningCalendar.activityCalendar")}</p>
                 </div>
                 <CardTitle className="text-lg font-bold text-slate-900">
-                    Study rhythm
+                    {t("learningCalendar.title")}
                 </CardTitle>
                 <p className="text-sm text-slate-500">
-                    Keep small daily wins visible and let your streak build naturally.
+                    {t("learningCalendar.subtitle")}
                 </p>
             </div>
 
@@ -101,12 +103,12 @@ export function LearningCalendar({
                     {currentMonthLabel}
                 </Badge>
                 <div className="flex flex-wrap justify-end gap-2">
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                        Active {activeDays}
+                    <span className="whitespace-nowrap rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                        {t("learningCalendar.activeDays", { count: activeDays })}
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">
+                    <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">
                         <Flame className="h-3.5 w-3.5" />
-                        Streak {longestStreak}
+                        {t("learningCalendar.streak", { count: longestStreak })}
                     </span>
                 </div>
             </div>
@@ -144,11 +146,11 @@ export function LearningCalendar({
                         title={
                             isToday
                                 ? loggedIn
-                                    ? `${day}: today with learning activity`
-                                    : `${day}: today`
+                                    ? t("learningCalendar.tooltipTodayWithActivity", { day })
+                                    : t("learningCalendar.tooltipToday", { day })
                                 : loggedIn
-                                    ? `${day}: logged in`
-                                    : `${day}: no login`
+                                    ? t("learningCalendar.tooltipLoggedIn", { day })
+                                    : t("learningCalendar.tooltipNoLogin", { day })
                         }
                         className={[
                             `relative flex items-center justify-center rounded-xl border text-sm font-semibold transition ${embedded ? "min-h-[2.75rem] h-full" : "h-9"}`,
@@ -175,15 +177,15 @@ export function LearningCalendar({
         <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
             <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-slate-200" />
-                <span>No activity</span>
+                <span>{t("learningCalendar.noActivity")}</span>
             </div>
             <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-                <span>Learning activity</span>
+                <span>{t("learningCalendar.learningActivity")}</span>
             </div>
             <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                <span>Today</span>
+                <span>{t("learningCalendar.today")}</span>
             </div>
         </div>
     );

@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+import { useTranslation } from "react-i18next";
+import { userProfileTexts } from "../userProfileTexts";
 
 import tmaLogo from "@/asset/image/tma_logo.png";
 import { useAuth } from "@/common/context/AuthContext";
@@ -92,41 +94,23 @@ function formatProfileMonth(value: string | null | undefined) {
     return profileMonthFormatter.format(parsed);
 }
 
-function applyProfileTimeline(
-    profile: UserProfileResponse,
-    setStartedAtLabel: (value: string) => void,
-    setEstimatedFinishLabel: (value: string) => void,
-    setFinishBadgeLabel: (value: string) => void,
-) {
-    const startedAt =
-        formatProfileDate(profile.started_at) ?? formatProfileDate(profile.created_at);
-    const estimatedFinish = formatProfileDate(profile.estimated_finish);
-    const finishMonth = formatProfileMonth(profile.estimated_finish);
-
-    setStartedAtLabel(startedAt ?? "Not started yet");
-    setEstimatedFinishLabel(estimatedFinish ?? "Estimate pending");
-    setFinishBadgeLabel(
-        finishMonth ? `On track for ${finishMonth}` : "Estimate pending",
-    );
-}
-
-function formatStudyDuration(minutes: number) {
+function formatStudyDuration(minutes: number, minLabel = "min", hLabel = "h") {
     if (minutes <= 0) {
-        return "0 min";
+        return `0 ${minLabel}`;
     }
 
     if (minutes < 60) {
-        return minutes === 1 ? "1 min" : `${minutes} min`;
+        return `${minutes} ${minLabel}`;
     }
 
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
 
     if (remainingMinutes === 0) {
-        return hours === 1 ? "1h" : `${hours}h`;
+        return `${hours}${hLabel}`;
     }
 
-    return `${hours}h ${remainingMinutes}m`;
+    return `${hours}${hLabel} ${remainingMinutes}${minLabel}`;
 }
 
 function getRoadmapLessonIds(roadmap: RoadmapResponse | null): Set<number> {
@@ -163,11 +147,10 @@ function computePassedRoadmapAccuracy(
 }
 
 export function UserProfileCard() {
+    const { t } = useTranslation("profile");
     const { user } = useAuth();
     const [careerName, setCareerName] = useState<string>("Career Track");
-    const [startedAtLabel, setStartedAtLabel] = useState<string>("Not started yet");
-    const [estimatedFinishLabel, setEstimatedFinishLabel] = useState<string>("Estimate pending");
-    const [finishBadgeLabel, setFinishBadgeLabel] = useState<string>("Estimate pending");
+    const [profileData, setProfileData] = useState<UserProfileResponse | null>(null);
     const [backendStudiedMinutes, setBackendStudiedMinutes] = useState(0);
     const [trackedStudyMinutes, setTrackedStudyMinutes] = useState(0);
     const [lessonsCompleted, setLessonsCompleted] = useState(0);
@@ -203,12 +186,7 @@ export function UserProfileCard() {
                     : new Set<number>();
 
             if (profileResult.status === "fulfilled" && isMounted) {
-                applyProfileTimeline(
-                    profileResult.value,
-                    setStartedAtLabel,
-                    setEstimatedFinishLabel,
-                    setFinishBadgeLabel,
-                );
+                setProfileData(profileResult.value);
                 setBackendStudiedMinutes(
                     Math.max(0, profileResult.value.total_studied_minutes),
                 );
@@ -257,12 +235,10 @@ export function UserProfileCard() {
 
         const handleProfileUpdated = (event: Event) => {
             const customEvent = event as CustomEvent<UserProfileResponse>;
-            applyProfileTimeline(
-                customEvent.detail,
-                setStartedAtLabel,
-                setEstimatedFinishLabel,
-                setFinishBadgeLabel,
-            );
+            if (!isMounted) {
+                return;
+            }
+            setProfileData(customEvent.detail);
             setBackendStudiedMinutes(
                 Math.max(0, customEvent.detail.total_studied_minutes),
             );
@@ -347,7 +323,26 @@ export function UserProfileCard() {
         return calculateLongestStreak(loginDays);
     }, [loginDays]);
     const totalStudiedMinutes = Math.max(0, backendStudiedMinutes + trackedStudyMinutes);
-    const studyDurationLabel = formatStudyDuration(totalStudiedMinutes);
+    const minLabel = t("min", { defaultValue: "min" });
+    const hLabel = t("hours", { defaultValue: "h" });
+    const studyDurationLabel = formatStudyDuration(totalStudiedMinutes, minLabel, hLabel);
+
+    const startedAt = formatProfileDate(profileData?.started_at) ?? formatProfileDate(profileData?.created_at);
+    const estimatedFinish = formatProfileDate(profileData?.estimated_finish);
+    const finishMonth = formatProfileMonth(profileData?.estimated_finish);
+
+    const startedAtLabel = startedAt ?? userProfileTexts.notStartedYet();
+    const estimatedFinishLabel = estimatedFinish ?? userProfileTexts.estimatePending();
+    const finishBadgeLabel = finishMonth
+        ? userProfileTexts.onTrackFor(finishMonth)
+        : userProfileTexts.estimatePending();
+
+    const itemLabelMap: Record<string, string> = {
+        streak: userProfileTexts.dayStreak(),
+        lessons: userProfileTexts.lessons(),
+        accuracy: userProfileTexts.accuracy(),
+        study: userProfileTexts.studyTime(),
+    };
 
     const values = {
         streak: {
@@ -462,7 +457,7 @@ export function UserProfileCard() {
                                         <div className="flex items-center gap-2 text-emerald-700">
                                             <CalendarDays className="h-4 w-4 shrink-0" />
                                             <p className="text-xs font-semibold uppercase tracking-[0.16em]">
-                                                Started
+                                                {userProfileTexts.started()}
                                             </p>
                                         </div>
                                         <p className="mt-2 text-base font-semibold text-emerald-950">
@@ -474,7 +469,7 @@ export function UserProfileCard() {
                                         <div className="flex items-center gap-2 text-blue-700">
                                             <Target className="h-4 w-4 shrink-0" />
                                             <p className="text-xs font-semibold uppercase tracking-[0.16em]">
-                                                Estimated Finish
+                                                {userProfileTexts.targetFinish()}
                                             </p>
                                         </div>
                                         <p className="mt-2 text-base font-semibold text-slate-900">
@@ -502,7 +497,7 @@ export function UserProfileCard() {
                                         </div>
                                         <div className="min-w-0">
                                             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                                                {item.label}
+                                                {itemLabelMap[item.key] || item.label}
                                             </p>
                                             <p className={`mt-1 text-xl font-bold ${item.accentClassName.split(" ")[1]}`}>
                                                 {payload.value}

@@ -118,8 +118,9 @@ export async function generatePlacement(roleId: number, force = false): Promise<
 	return res.data;
 }
 
-export async function generateCourse(roleId: number, force = false): Promise<GenerateResponse> {
-	const res = await axiosJWT.post<GenerateResponse>(`/admin/roles/${roleId}/generate-course${force ? '?force=true' : ''}`);
+export async function generateCourse(roleId: number, force = false, resume = false): Promise<GenerateResponse> {
+	const query = resume ? '?resume=true' : force ? '?force=true' : '';
+	const res = await axiosJWT.post<GenerateResponse>(`/admin/roles/${roleId}/generate-course${query}`);
 	return res.data;
 }
 

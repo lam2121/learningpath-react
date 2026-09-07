@@ -1,0 +1,16 @@
+{
+  "home": "Trang chủ",
+  "path": "Lộ trình",
+  "howItWorks": "Hướng dẫn",
+  "profile": "Hồ sơ cá nhân",
+  "history": "Lịch sử",
+  "dayStreak": "ngày liên tiếp",
+  "studySettings": "Cài đặt học tập",
+  "logout": "Đăng xuất",
+  "login": "Đăng nhập",
+  "languages": {
+    "en": "English",
+    "vi": "Tiếng Việt",
+    "jp": "日本語"
+  }
+}

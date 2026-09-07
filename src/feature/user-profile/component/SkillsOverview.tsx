@@ -8,6 +8,7 @@ import type { UserProfileResponse } from "@/feature/auth/type/Auth";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/shadcn/component/ui/hover-card";
 import { Button } from "@/shadcn/component/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/component/ui/card";
+import { useTranslation } from "react-i18next";
 import {
     fetchJobRoles,
     fetchPlacementTestResult,
@@ -128,6 +129,7 @@ function formatScore(value: number) {
 }
 
 export function SkillsOverview() {
+    const { t } = useTranslation("profile");
     const [initialSkillScores, setInitialSkillScores] = useState<Record<string, number> | null>(null);
     const [currentSkillScores, setCurrentSkillScores] = useState<Record<string, number> | null>(null);
     const [selectedRole, setSelectedRole] = useState<JobRole | null>(null);
@@ -226,16 +228,16 @@ export function SkillsOverview() {
                 <div className="flex items-center justify-between gap-4">
                     <div>
                         <CardTitle className="text-lg text-slate-950">
-                            Skills Overview
+                            {t("skillsOverview", { defaultValue: "Skills Overview" })}
                         </CardTitle>
                         <p className="mt-1 text-sm text-slate-500">
-                            Compare your starting skill scores with your current progress.
+                            {t("skillsCompareDesc")}
                         </p>
                     </div>
 
                     <div className="rounded-2xl bg-blue-50 px-4 py-3 text-right">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-700">
-                            Average
+                            {t("average")}
                         </p>
                         <p className="mt-1 text-lg font-bold text-slate-950">
                             {averageScore}%
@@ -248,7 +250,7 @@ export function SkillsOverview() {
                 <div className="rounded-3xl border border-slate-200 bg-slate-50/70 px-4 py-6 sm:px-6">
                     <div className="mb-5 flex items-center justify-between gap-4">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                            Initial and Current Score By Skill
+                            {t("skillProficiency", { defaultValue: "Initial and Current Score By Skill" })}
                         </p>
                         <div className="hidden items-center gap-4 sm:flex">
                             {SKILL_META.map((skill) => (
@@ -282,7 +284,7 @@ export function SkillsOverview() {
                                         <div className="mb-3 grid w-full max-w-[9.5rem] cursor-help grid-cols-2 gap-2.5 sm:max-w-[10.5rem] sm:gap-3">
                                             <div className="flex flex-col items-center">
                                                 <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
-                                                    Initial
+                                                    {t("initial")}
                                                 </p>
                                                 <div
                                                     className={`relative flex h-44 w-full items-end overflow-hidden rounded-t-2xl border border-slate-100 ${skill.track} sm:h-52 lg:h-56`}
@@ -298,7 +300,7 @@ export function SkillsOverview() {
                                             </div>
                                             <div className="flex flex-col items-center">
                                                 <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
-                                                    Current
+                                                    {t("current")}
                                                 </p>
                                                 <div
                                                     className={`relative flex h-44 w-full items-end overflow-hidden rounded-t-2xl border border-slate-100 ${skill.track} sm:h-52 lg:h-56`}
@@ -346,14 +348,14 @@ export function SkillsOverview() {
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="font-semibold text-slate-900">
-                                    Unlock skill guidance in one step
+                                    {t("unlockSkillTitle")}
                                 </p>
                                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                                    Take the placement test once to replace all zero-state skill scores with your personalized profile.
+                                    {t("unlockSkillDesc")}
                                 </p>
                             </div>
                             <Button asChild variant="outline" className="shrink-0 border-slate-300">
-                                <Link to="/onboarding/placement-test">Take placement test</Link>
+                                <Link to="/onboarding/placement-test">{t("takePlacementTest")}</Link>
                             </Button>
                         </div>
                     </div>

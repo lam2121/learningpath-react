@@ -15,14 +15,9 @@ import { Progress } from "@/shadcn/component/ui/progress";
 import { Badge } from "@/shadcn/component/ui/badge";
 import { Separator } from "@/shadcn/component/ui/separator";
 import { Button } from "@/shadcn/component/ui/button";
+import { onboardingTexts } from '../onboardingTexts';
 
-const tips = [
-  "AI personalizes every lesson based on your placement test.",
-  "Lessons become more difficult as your skills improve.",
-  "Your quizzes focus on weak knowledge areas.",
-  "The roadmap can be regenerated anytime.",
-  "Progress is automatically saved during generation.",
-];
+const tips = onboardingTexts.courseLoading.tips;
 
 export function CourseLoading() {
   const navigate = useNavigate();
@@ -61,23 +56,23 @@ export function CourseLoading() {
   }, [progress, navigate]);
   const steps = [
     {
-      title: "Analyze Placement Test",
+      title: onboardingTexts.courseLoading.steps[0],
       status: progress >= 20 ? "done" : "loading",
     },
     {
-      title: "Identify Skill Gaps",
+      title: onboardingTexts.courseLoading.steps[1],
       status: progress >= 40 ? "done" : progress >= 20 ? "loading" : "todo",
     },
     {
-      title: "Generate Course Structure",
+      title: onboardingTexts.courseLoading.steps[2],
       status: progress >= 60 ? "done" : progress >= 40 ? "loading" : "todo",
     },
     {
-      title: "Generate Lessons",
+      title: onboardingTexts.courseLoading.steps[3],
       status: progress >= 80 ? "done" : progress >= 60 ? "loading" : "todo",
     },
     {
-      title: "Generate Quizzes",
+      title: onboardingTexts.courseLoading.steps[4],
       status: progress == 100 ? "done" : progress >= 95 ? "loading" : "todo"
     },
   ];
@@ -110,11 +105,11 @@ export function CourseLoading() {
 
             </div>
             <h1 className="text-3xl font-bold ml-5 text-slate-800">
-              Creating Your Course
+              {onboardingTexts.courseLoading.pageTitle}
             </h1>
 
             <p className="text-slate-500 mt-2 text-center">
-              AI is building your personalized learning roadmap...
+              {onboardingTexts.courseLoading.pageSubtitle}
             </p>
 
           </div>
@@ -126,7 +121,7 @@ export function CourseLoading() {
             <div className="flex justify-between text-sm mb-2">
 
               <span className="font-medium text-slate-600">
-                Progress
+                {onboardingTexts.courseLoading.progressLabel}
               </span>
 
               <span className="font-bold text-blue-600">
@@ -138,7 +133,7 @@ export function CourseLoading() {
             <Progress value={progress} className="h-3" />
 
             <div className="mt-2 text-center text-sm text-slate-500">
-              Estimated remaining: ~45 seconds
+              {onboardingTexts.courseLoading.estimatedRemaining}
             </div>
 
           </div>
@@ -178,19 +173,19 @@ export function CourseLoading() {
 
                 {step.status === "done" && (
                   <Badge className="bg-green-500">
-                    Done
+                    {onboardingTexts.courseLoading.statusDone}
                   </Badge>
                 )}
 
                 {step.status === "loading" && (
                   <Badge>
-                    Running
+                    {onboardingTexts.courseLoading.statusRunning}
                   </Badge>
                 )}
 
                 {step.status === "todo" && (
                   <Badge variant="secondary">
-                    Waiting
+                    {onboardingTexts.courseLoading.statusWaiting}
                   </Badge>
                 )}
 
@@ -211,7 +206,7 @@ export function CourseLoading() {
               <Sparkles className="text-blue-600 h-5 w-5" />
 
               <span className="font-semibold text-blue-700">
-                AI Tip
+                {onboardingTexts.courseLoading.aiTipLabel}
               </span>
 
             </div>
@@ -234,15 +229,13 @@ export function CourseLoading() {
               <ShieldCheck className="text-green-600 h-5 w-5" />
 
               <span className="font-semibold text-green-700">
-                Auto Resume Enabled
+                {onboardingTexts.courseLoading.autoResumeTitle}
               </span>
 
             </div>
 
             <p className="text-slate-600 mt-2">
-              Your progress is automatically saved.
-              If the browser closes or the connection is interrupted,
-              course generation will resume automatically when you return.
+              {onboardingTexts.courseLoading.autoResumeDescription}
             </p>
 
           </div>
@@ -252,7 +245,7 @@ export function CourseLoading() {
           <div className="flex justify-center mt-8">
 
             <Button variant="outline">
-              Continue in Background
+              {onboardingTexts.courseLoading.continueInBackground}
             </Button>
 
           </div>

@@ -258,8 +258,8 @@ export function RoleCreationForm({ initialTrack, onSuccess }: RoleCreationFormPr
 								placeholder="Detailed job description..."
 								value={formData.jobDescription}
 								onChange={e => setFormData(prev => ({ ...prev, jobDescription: e.target.value }))}
-								rows={6}
-								className="resize-none"
+								rows={12}
+								className="resize-none field-sizing-fixed"
 							/>
 							<p className="text-xs text-gray-500 mt-1">Description will be used to AI generate lesson content related to this role.</p>
 						</div>
