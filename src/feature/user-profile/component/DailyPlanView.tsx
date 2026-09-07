@@ -38,6 +38,8 @@ import { ChangeCareerAlert } from "./ChangeCareerAlert";
 import { StudySettingsDialog } from "./StudySettingsDialog";
 import { StudyTimeAlert } from "./StudyTimeAlert";
 import { StudyTimeDialog } from "./StudyTimeDialog";
+import { userProfileTexts } from "../userProfileTexts";
+import { fetchFlashcards } from "@/feature/lesson-workspace/api/flashcardApi";
 import { useCareerTrackReset } from "@/feature/user-profile/hook/useCareerTrackReset";
 
 const LOCKED_COPY = "Complete your first lesson to unlock this feature.";
@@ -125,6 +127,25 @@ export function DailyPlanView({
     const [openStudyTime, setOpenStudyTime] = useState(false);
     const [openCareerAlert, setOpenCareerAlert] = useState(false);
     const [openStudyTimeAlert, setOpenStudyTimeAlert] = useState(false);
+    const [savedFlashcardsCount, setSavedFlashcardsCount] = useState<number | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            try {
+                const cards = await fetchFlashcards();
+                if (!cancelled) {
+                    setSavedFlashcardsCount(cards.length);
+                }
+            } catch {
+                // Background count fetch - ignore error
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
     const [currentHour, setCurrentHour] = useState(2);
     const [newHour, setNewHour] = useState(2);
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
@@ -554,41 +575,53 @@ export function DailyPlanView({
                                         </Button>
                                     </div>
 
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                                    <Link
+                                        to="/flashcards"
+                                        className="group block rounded-2xl border border-slate-200 bg-white p-5 transition-all duration-200 hover:border-indigo-300 hover:shadow-md cursor-pointer"
+                                    >
                                         <div className="flex items-start gap-4">
-                                            <div className="rounded-2xl bg-slate-100 p-3 shadow-sm">
-                                                <Brain className="h-5 w-5 text-slate-500" />
+                                            <div className="rounded-2xl bg-indigo-50 p-3 shadow-xs text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                                <Brain className="h-5 w-5" />
                                             </div>
 
                                             <div className="min-w-0 flex-1">
-                                                <h3 className="text-lg font-semibold text-slate-900">Flashcards</h3>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <h3 className="text-lg font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                                                        {userProfileTexts.flashcards()}
+                                                    </h3>
+                                                    {savedFlashcardsCount != null && savedFlashcardsCount > 0 && (
+                                                        <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">
+                                                            {userProfileTexts.savedWordsCount(savedFlashcardsCount)}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <p className="mt-1 text-base text-slate-700">
-                                                    {allAssignedLessonsCompleted
-                                                        ? "Flashcards can now be generated from the lessons you have already completed."
-                                                        : nextLesson
-                                                            ? `Flashcards will be generated from the vocabulary and patterns inside ${nextLesson.title}.`
-                                                            : "Vocabulary flashcards will be generated from completed lessons."}
+                                                    {savedFlashcardsCount != null && savedFlashcardsCount > 0
+                                                        ? userProfileTexts.flashcardsSubtitle()
+                                                        : userProfileTexts.flashcardsSectionDesc()}
                                                 </p>
                                                 <p className="mt-2 text-base leading-7 text-slate-500">
-                                                    {allAssignedLessonsCompleted
-                                                        ? "Use completed lessons as review material while you wait for the next roadmap action."
-                                                        : nextTopic
-                                                            ? `Your first deck unlocks after you finish a lesson in ${nextTopic.name}.`
-                                                            : LOCKED_COPY}
+                                                    {savedFlashcardsCount != null && savedFlashcardsCount > 0
+                                                        ? userProfileTexts.readyToReview()
+                                                        : allAssignedLessonsCompleted
+                                                            ? "Use completed lessons as review material while you wait for the next roadmap action."
+                                                            : nextTopic
+                                                                ? `Your first deck unlocks after you finish a lesson in ${nextTopic.name}.`
+                                                                : LOCKED_COPY}
                                                 </p>
                                             </div>
                                         </div>
 
                                         <Button
+                                            type="button"
                                             variant="outline"
-                                            disabled
-                                            className="mt-5 h-11 w-full border-slate-200 text-slate-500"
+                                            className="mt-5 h-11 w-full border-indigo-200 bg-indigo-50/50 text-indigo-700 font-semibold group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all pointer-events-none"
                                         >
-                                            {allAssignedLessonsCompleted
-                                                ? "Ready from completed lessons"
-                                                : "Unlock after your first quiz"}
+                                            {savedFlashcardsCount != null && savedFlashcardsCount > 0
+                                                ? `${userProfileTexts.reviewFlashcards()} (${savedFlashcardsCount})`
+                                                : userProfileTexts.openFlashcards()}
                                         </Button>
-                                    </div>
+                                    </Link>
                                 </div>
                             </div>
                         </CardContent>
