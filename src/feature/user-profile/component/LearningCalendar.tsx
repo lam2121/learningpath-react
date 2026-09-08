@@ -85,12 +85,12 @@ export function LearningCalendar({
             <div className="space-y-1">
                 <div className="flex items-center gap-2 text-blue-700">
                     <CalendarDays className="h-4 w-4" />
-                    <p className="text-sm font-semibold">{t("learningCalendar.activityCalendar")}</p>
+                    <p className="text-lg font-semibold">{t("learningCalendar.activityCalendar")}</p>
                 </div>
-                <CardTitle className="text-lg font-bold text-slate-900">
+                <CardTitle className="text-xl font-bold text-slate-900">
                     {t("learningCalendar.title")}
                 </CardTitle>
-                <p className="text-sm text-slate-500">
+                <p className="text-ls text-slate-500">
                     {t("learningCalendar.subtitle")}
                 </p>
             </div>
@@ -98,15 +98,15 @@ export function LearningCalendar({
             <div className="flex flex-col items-end gap-2">
                 <Badge
                     variant="secondary"
-                    className="rounded-full px-3 py-1 text-slate-700"
+                    className="rounded-full px-3 py-1 text-slate-700 text-sm"
                 >
                     {currentMonthLabel}
                 </Badge>
                 <div className="flex flex-wrap justify-end gap-2">
-                    <span className="whitespace-nowrap rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                    <span className="whitespace-nowrap rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700">
                         {t("learningCalendar.activeDays", { count: activeDays })}
                     </span>
-                    <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">
+                    <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-orange-50 px-3 py-1 text-sm font-semibold text-orange-700">
                         <Flame className="h-3.5 w-3.5" />
                         {t("learningCalendar.streak", { count: longestStreak })}
                     </span>
@@ -116,7 +116,7 @@ export function LearningCalendar({
     );
 
     const weekdayHeader = (
-        <div className="grid grid-cols-7 gap-1.5 text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+        <div className="grid grid-cols-7 gap-1.5 text-center text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">
             {WEEKDAY_LABELS.map((label) => (
                 <div key={label}>{label}</div>
             ))}
@@ -174,7 +174,7 @@ export function LearningCalendar({
     );
 
     const legend = (
-        <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+        <div className="flex flex-wrap items-center gap-4 text-[16px] text-slate-500">
             <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-slate-200" />
                 <span>{t("learningCalendar.noActivity")}</span>

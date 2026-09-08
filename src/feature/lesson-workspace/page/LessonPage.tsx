@@ -12,6 +12,7 @@ import {
     Copy,
     FileText,
     Headphones,
+    Heart,
     Languages,
     ListChecks,
     MessageSquareText,
@@ -41,6 +42,11 @@ import {
     type RoadmapResponse,
     type RoadmapTopic,
 } from "@/feature/learning-path/api/roadmapApi";
+import {
+    deleteFlashcard,
+    fetchFlashcards,
+    saveFlashcard,
+} from "@/feature/lesson-workspace/api/flashcardApi";
 import { useRadar } from "@/feature/radar";
 import { DailyStudyGoalDialog } from "@/feature/user-profile/component/DailyStudyGoalDialog";
 import { getTrackedStudyMinutesByDay, recordStudyTime } from "@/feature/user-profile/utils/StudyActivity";
@@ -1584,6 +1590,36 @@ function EmptyPanel({
     );
 }
 
+// Nut trai tim luu tu vung vao bo flashcard ca nhan (bang user_flashcard).
+function VocabularyHeartButton({
+    saved,
+    pending,
+    onToggle,
+}: {
+    saved: boolean;
+    pending: boolean;
+    onToggle: () => void;
+}) {
+    return (
+        <button
+            type="button"
+            onClick={onToggle}
+            disabled={pending}
+            aria-pressed={saved}
+            aria-label={saved ? "Remove from flashcards" : "Save to flashcards"}
+            title={saved ? "Remove from flashcards" : "Save to flashcards"}
+            className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-60 ${saved
+                ? "bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/50"
+                : "bg-slate-100 text-slate-400 hover:bg-rose-50 hover:text-rose-500 dark:bg-slate-800 dark:text-slate-500 dark:hover:bg-rose-950/40 dark:hover:text-rose-300"
+                }`}
+        >
+            <Heart
+                className={`h-4 w-4 ${saved ? "fill-current" : ""} ${pending ? "animate-pulse" : ""}`}
+            />
+        </button>
+    );
+}
+
 function VocabularySection({ section }: { section: ParsedTheorySection }) {
     const items = splitHash(section.primary).map((entry, index) => {
         const parts = entry.split("|").map((part) => part.trim());
@@ -1607,6 +1643,81 @@ function VocabularySection({ section }: { section: ParsedTheorySection }) {
         };
     });
 
+    // Flashcard state: word_eng -> saved row id. Loaded once so hearts render
+    // filled for words this user has already saved (user_flashcard table).
+    const [savedFlashcardIds, setSavedFlashcardIds] = useState<Record<string, number>>({});
+    const [pendingWords, setPendingWords] = useState<Record<string, boolean>>({});
+    const [flashcardError, setFlashcardError] = useState<string | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            try {
+                const cards = await fetchFlashcards();
+                if (cancelled) return;
+                setSavedFlashcardIds(
+                    Object.fromEntries(cards.map((card) => [card.word_eng, card.id])),
+                );
+            } catch {
+                // Khong chan viec hoc: neu khong tai duoc thi tim de trong.
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const toggleFlashcard = useCallback(
+        async (item: {
+            term: string;
+            ipa: string;
+            meaning: string;
+            explanation: string;
+            example: string;
+        }) => {
+            // Cat theo dung gioi han cot cua user_flashcard de tranh loi 422.
+            const word = item.term.trim().slice(0, 45);
+            if (!word || pendingWords[word]) return;
+
+            setPendingWords((prev) => ({ ...prev, [word]: true }));
+            setFlashcardError(null);
+
+            const savedId = savedFlashcardIds[word];
+            try {
+                if (savedId != null) {
+                    await deleteFlashcard(savedId);
+                    setSavedFlashcardIds((prev) => {
+                        const next = { ...prev };
+                        delete next[word];
+                        return next;
+                    });
+                } else {
+                    const created = await saveFlashcard({
+                        word_eng: word,
+                        word_vi: item.meaning.trim().slice(0, 50) || null,
+                        transcription: item.ipa.trim().slice(0, 45) || null,
+                        context: item.explanation.trim().slice(0, 500) || null,
+                        workspace_example: item.example.trim().slice(0, 500) || null,
+                    });
+                    setSavedFlashcardIds((prev) => ({ ...prev, [word]: created.id }));
+                }
+            } catch (error) {
+                setFlashcardError(
+                    error instanceof Error
+                        ? error.message
+                        : "Could not update your flashcards.",
+                );
+            } finally {
+                setPendingWords((prev) => {
+                    const next = { ...prev };
+                    delete next[word];
+                    return next;
+                });
+            }
+        },
+        [pendingWords, savedFlashcardIds],
+    );
+
     // Parse secondary pronunciation tips and spoken drills
     const secondaryParts = splitPipe(section.secondary);
     const pronunciationGuideText = secondaryParts
@@ -1619,6 +1730,11 @@ function VocabularySection({ section }: { section: ParsedTheorySection }) {
 
     return (
         <PanelShell eyebrow="Section 2" title={section.label} note={section.note}>
+            {flashcardError && (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300">
+                    {flashcardError}
+                </div>
+            )}
             <div className="grid gap-5 md:grid-cols-2">
                 {items.map((item) => (
                     <article
@@ -1633,7 +1749,14 @@ function VocabularySection({ section }: { section: ParsedTheorySection }) {
                                     </h3>
                                     <AudioSpeakButton text={item.term} />
                                 </div>
-                                <Badge variant="outline">{item.partOfSpeech}</Badge>
+                                <div className="flex items-center gap-2">
+                                    <Badge variant="outline">{item.partOfSpeech}</Badge>
+                                    <VocabularyHeartButton
+                                        saved={savedFlashcardIds[item.term.trim().slice(0, 45)] != null}
+                                        pending={pendingWords[item.term.trim().slice(0, 45)] === true}
+                                        onToggle={() => void toggleFlashcard(item)}
+                                    />
+                                </div>
                             </div>
 
                             <div className="mt-1.5 flex flex-wrap items-center gap-2">
@@ -1895,11 +2018,6 @@ function ReadingPracticeSection({
         recognition.continuous = true;
         recognition.interimResults = true;
 
-        let initialText = draftAnswers[index] || "";
-        if (initialText && !initialText.endsWith(" ")) {
-            initialText += " ";
-        }
-
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognitionEvent has no TS types
         recognition.onresult = (event: any) => {
             let sessionTranscript = "";
@@ -1908,7 +2026,7 @@ function ReadingPracticeSection({
             }
             setDraftAnswers((prev) => ({
                 ...prev,
-                [index]: initialText + sessionTranscript,
+                [index]: sessionTranscript,
             }));
         };
 
@@ -2160,11 +2278,6 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
         recognition.continuous = true;
         recognition.interimResults = true;
 
-        let initialText = userReplies[index] || "";
-        if (initialText && !initialText.endsWith(" ")) {
-            initialText += " ";
-        }
-
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognitionEvent has no TS types
         recognition.onresult = (event: any) => {
             let sessionTranscript = "";
@@ -2173,7 +2286,7 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
             }
             setUserReplies((prev) => ({
                 ...prev,
-                [index]: initialText + sessionTranscript,
+                [index]: sessionTranscript,
             }));
         };
 
@@ -2492,11 +2605,6 @@ function ListeningPracticeSection({
         recognition.continuous = true;
         recognition.interimResults = true;
 
-        let initialText = draftAnswers[index] || "";
-        if (initialText && !initialText.endsWith(" ")) {
-            initialText += " ";
-        }
-
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognitionEvent has no TS types
         recognition.onresult = (event: any) => {
             let sessionTranscript = "";
@@ -2505,7 +2613,7 @@ function ListeningPracticeSection({
             }
             setDraftAnswers((prev) => ({
                 ...prev,
-                [index]: initialText + sessionTranscript,
+                [index]: sessionTranscript,
             }));
         };
 
