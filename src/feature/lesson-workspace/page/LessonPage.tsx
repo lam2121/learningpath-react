@@ -2018,11 +2018,6 @@ function ReadingPracticeSection({
         recognition.continuous = true;
         recognition.interimResults = true;
 
-        let initialText = draftAnswers[index] || "";
-        if (initialText && !initialText.endsWith(" ")) {
-            initialText += " ";
-        }
-
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognitionEvent has no TS types
         recognition.onresult = (event: any) => {
             let sessionTranscript = "";
@@ -2031,7 +2026,7 @@ function ReadingPracticeSection({
             }
             setDraftAnswers((prev) => ({
                 ...prev,
-                [index]: initialText + sessionTranscript,
+                [index]: sessionTranscript,
             }));
         };
 
@@ -2283,11 +2278,6 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
         recognition.continuous = true;
         recognition.interimResults = true;
 
-        let initialText = userReplies[index] || "";
-        if (initialText && !initialText.endsWith(" ")) {
-            initialText += " ";
-        }
-
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognitionEvent has no TS types
         recognition.onresult = (event: any) => {
             let sessionTranscript = "";
@@ -2296,7 +2286,7 @@ function DialogueSection({ section }: { section: ParsedTheorySection }) {
             }
             setUserReplies((prev) => ({
                 ...prev,
-                [index]: initialText + sessionTranscript,
+                [index]: sessionTranscript,
             }));
         };
 
@@ -2615,11 +2605,6 @@ function ListeningPracticeSection({
         recognition.continuous = true;
         recognition.interimResults = true;
 
-        let initialText = draftAnswers[index] || "";
-        if (initialText && !initialText.endsWith(" ")) {
-            initialText += " ";
-        }
-
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognitionEvent has no TS types
         recognition.onresult = (event: any) => {
             let sessionTranscript = "";
@@ -2628,7 +2613,7 @@ function ListeningPracticeSection({
             }
             setDraftAnswers((prev) => ({
                 ...prev,
-                [index]: initialText + sessionTranscript,
+                [index]: sessionTranscript,
             }));
         };
 
