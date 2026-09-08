@@ -487,10 +487,10 @@ export function LoginHistoryCard({
     return (
         <Card className={`flex min-w-0 flex-col overflow-hidden border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.07)] ${shouldStretch ? "h-full" : "h-fit self-start"}`}>
             <CardHeader className={cardHeaderClassName}>
-                <CardTitle className="text-base text-slate-950 sm:text-lg">
+                <CardTitle className="text-base text-slate-950 sm:text-xl">
                     {t("studyActivity", { defaultValue: "Study Activity" })}
                 </CardTitle>
-                <p className="text-xs leading-5 text-slate-500 sm:text-sm">
+                <p className="text-xs leading-5 text-slate-500 sm:text-[15px]">
                     {t("loginHistory.subtitle")}
                 </p>
             </CardHeader>
@@ -503,7 +503,7 @@ export function LoginHistoryCard({
                             <p className="font-semibold text-slate-900">
                                 {t("loginHistory.emptyTitle")}
                             </p>
-                            <p className="mt-2 text-sm leading-6 text-slate-500">
+                            <p className="mt-2 text-lg leading-6 text-slate-500">
                                 {t("loginHistory.emptyDesc")}
                             </p>
                         </div>
@@ -515,13 +515,13 @@ export function LoginHistoryCard({
                     }>
                         <div className="flex items-start justify-between gap-3 sm:items-end sm:gap-4">
                             <div className="min-w-0">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                <p className="text-[14px] font-semibold uppercase tracking-[0.1em] text-slate-400">
                                     {t("loginHistory.studiedToday")}
                                 </p>
                                 <p className={`mt-1.5 font-bold tracking-tight text-slate-950 sm:mt-2 ${compact ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl"}`}>
                                     {formatStudyDuration(todayMinutes)}
                                 </p>
-                                <p className="mt-1.5 text-xs text-slate-500 sm:mt-2 sm:text-sm">
+                                <p className="mt-1.5 text-xs text-slate-500 sm:mt-2 sm:text-[15px]">
                                     {todayMinutes > 0
                                         ? t("loginHistory.loggedSoFar")
                                         : t("loginHistory.noneToday")}
@@ -533,7 +533,7 @@ export function LoginHistoryCard({
                             </div>
                         </div>
 
-                        <div className="flex min-w-0 flex-wrap gap-1.5 text-[11px] font-semibold sm:gap-2 sm:text-xs">
+                        <div className="flex min-w-0 flex-wrap gap-1.5 text-[11px] font-semibold sm:gap-2 sm:text-sm">
                             <span className="max-w-full truncate rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
                                 {t("loginHistory.shortest", { duration: formatStudyDuration(shortestStudyMinutes) })}
                             </span>

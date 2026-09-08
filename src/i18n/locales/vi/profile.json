@@ -159,7 +159,12 @@
   "incorrect": "Chưa chính xác",
   "expectedAnswer": "Đáp án:",
   "tryAgain": "Thử lại",
-  "showAnswer": "Xem đáp án"
+  "showAnswer": "Xem đáp án",
+  "speakAnswer": "Trả lời bằng giọng nói",
+  "stopListening": "Dừng ghi âm",
+  "listeningHint": "Đang nghe... hãy nói tiếng Việt",
+  "speechNotSupported": "Trình duyệt của bạn không hỗ trợ nhận diện giọng nói.",
+  "speechError": "Không ghi nhận được giọng nói. Vui lòng kiểm tra quyền micro."
 }
 
 

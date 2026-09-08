@@ -161,6 +161,11 @@ export const userProfileTexts = {
   expectedAnswer: () => t('expectedAnswer'),
   tryAgain: () => t('tryAgain'),
   showAnswer: () => t('showAnswer'),
+  speakAnswer: () => t('speakAnswer'),
+  stopListening: () => t('stopListening'),
+  listeningHint: () => t('listeningHint'),
+  speechNotSupported: () => t('speechNotSupported'),
+  speechError: () => t('speechError'),
 }
 
 

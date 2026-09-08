@@ -540,7 +540,7 @@ export function DailyPlanView({
                                     </Button>
                                 </div>
 
-                                <div className="grid gap-4 lg:grid-cols-2">
+                                <div className="grid gap-4 lg:grid-rows-2">
                                     <div className="rounded-2xl border border-slate-200 bg-white p-5">
                                         <div className="flex items-start gap-4">
                                             <div className="rounded-2xl bg-slate-100 p-3 shadow-sm">
@@ -589,12 +589,14 @@ export function DailyPlanView({
                                                     <h3 className="text-lg font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">
                                                         {userProfileTexts.flashcards()}
                                                     </h3>
-                                                    {savedFlashcardsCount != null && savedFlashcardsCount > 0 && (
+                                                   
+                                                </div>
+                                                <div> {savedFlashcardsCount != null && savedFlashcardsCount > 0 && (
                                                         <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">
                                                             {userProfileTexts.savedWordsCount(savedFlashcardsCount)}
                                                         </span>
-                                                    )}
-                                                </div>
+                                                    )}</div>
+                                    
                                                 <p className="mt-1 text-base text-slate-700">
                                                     {savedFlashcardsCount != null && savedFlashcardsCount > 0
                                                         ? userProfileTexts.flashcardsSubtitle()
@@ -660,7 +662,7 @@ export function DailyPlanView({
                                         </span>
                                     </div>
                                 ) : nextLesson && nextTopic ? (
-                                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                                    <div className="mt-3 flex flex-wrap gap-2 text-sm font-semibold">
                                         <span className="rounded-full bg-white px-2.5 py-1 text-blue-700 ring-1 ring-blue-100">
                                             Focus: {nextTopic.name}
                                         </span>

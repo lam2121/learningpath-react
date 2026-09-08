@@ -14,10 +14,12 @@ import {
     XCircle,
     RotateCcw,
     Send,
+    Mic,
+    MicOff,
     ChevronLeft,
     ChevronRight,
 } from "lucide-react";
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
 
@@ -94,6 +96,14 @@ export function FlashcardsPage() {
         Record<number, { isSubmitted: boolean; isCorrect: boolean }>
     >({});
 
+    // Speech-to-text state: which card is currently recording, plus any error
+    const [listeningCardId, setListeningCardId] = useState<number | null>(null);
+    const [speechError, setSpeechError] = useState<
+        { cardId: number; message: string } | null
+    >(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognition API has no TS types
+    const recognitionRef = useRef<any>(null);
+
     // Practice Deck Dialog state
     const [practiceModalOpen, setPracticeModalOpen] = useState(false);
 
@@ -148,6 +158,11 @@ export function FlashcardsPage() {
         const input = userInputs[cardId]?.trim() ?? "";
         if (!input) return;
 
+        if (listeningCardId === cardId) {
+            recognitionRef.current?.stop();
+            setListeningCardId(null);
+        }
+
         const isCorrect = checkVietnameseMatch(input, expected);
         setSubmissionResults((prev) => ({
             ...prev,
@@ -156,6 +171,11 @@ export function FlashcardsPage() {
     };
 
     const handleResetAnswer = (cardId: number) => {
+        if (listeningCardId === cardId) {
+            recognitionRef.current?.stop();
+            setListeningCardId(null);
+        }
+        setSpeechError(null);
         setSubmissionResults((prev) => {
             const next = { ...prev };
             delete next[cardId];
@@ -166,6 +186,86 @@ export function FlashcardsPage() {
             delete next[cardId];
             return next;
         });
+    };
+
+    // Stop any running recognition when the page unmounts
+    useEffect(() => {
+        return () => {
+            recognitionRef.current?.stop();
+        };
+    }, []);
+
+    // Vietnamese speech-to-text for the quiz input (second input option)
+    const toggleDictation = (cardId: number) => {
+        setSpeechError(null);
+
+        // Clicking the mic of the card that is already recording stops it
+        if (listeningCardId === cardId) {
+            recognitionRef.current?.stop();
+            setListeningCardId(null);
+            return;
+        }
+
+        recognitionRef.current?.stop();
+
+        /* eslint-disable @typescript-eslint/no-explicit-any -- Web SpeechRecognition API has no TS types */
+        const SpeechRecognition =
+            (window as any).SpeechRecognition ||
+            (window as any).webkitSpeechRecognition;
+        /* eslint-enable @typescript-eslint/no-explicit-any */
+
+        if (!SpeechRecognition) {
+            setSpeechError({
+                cardId,
+                message: userProfileTexts.speechNotSupported(),
+            });
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = "vi-VN";
+        recognition.continuous = false;
+        recognition.interimResults = true;
+
+        // Dictation appends to whatever the user already typed
+        let initialText = userInputs[cardId] || "";
+        if (initialText && !initialText.endsWith(" ")) {
+            initialText += " ";
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognitionEvent has no TS types
+        recognition.onresult = (event: any) => {
+            let sessionTranscript = "";
+            for (let i = 0; i < event.results.length; ++i) {
+                sessionTranscript += event.results[i][0].transcript;
+            }
+            setUserInputs((prev) => ({
+                ...prev,
+                [cardId]: initialText + sessionTranscript,
+            }));
+        };
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web SpeechRecognitionErrorEvent has no TS types
+        recognition.onerror = (event: any) => {
+            if (event.error !== "aborted" && event.error !== "no-speech") {
+                setSpeechError({ cardId, message: userProfileTexts.speechError() });
+            }
+            setListeningCardId((prev) => (prev === cardId ? null : prev));
+        };
+
+        recognition.onend = () => {
+            setListeningCardId((prev) => (prev === cardId ? null : prev));
+        };
+
+        try {
+            recognition.start();
+            recognitionRef.current = recognition;
+            setListeningCardId(cardId);
+        } catch (error) {
+            console.error("Speech recognition error:", error);
+            setSpeechError({ cardId, message: userProfileTexts.speechError() });
+            setListeningCardId(null);
+        }
     };
 
     const handleShowAnswer = (cardId: number) => {
@@ -484,6 +584,9 @@ export function FlashcardsPage() {
                                     const isFlipped = Boolean(flippedCards[card.id]);
                                     const cardIndex = (currentPage - 1) * ITEMS_PER_PAGE + idx + 1;
                                     const result = submissionResults[card.id];
+                                    const isListening = listeningCardId === card.id;
+                                    const cardSpeechError =
+                                        speechError?.cardId === card.id ? speechError.message : null;
 
                                 const frontBorderClass = result
                                     ? result.isCorrect
@@ -577,6 +680,37 @@ export function FlashcardsPage() {
                                                                     className="h-9 text-xs bg-slate-50 border-slate-200 rounded-xl focus-visible:ring-indigo-500"
                                                                 />
                                                                 <Button
+                                                                    type="button"
+                                                                    size="icon"
+                                                                    variant="outline"
+                                                                    title={
+                                                                        isListening
+                                                                            ? userProfileTexts.stopListening()
+                                                                            : userProfileTexts.speakAnswer()
+                                                                    }
+                                                                    aria-label={
+                                                                        isListening
+                                                                            ? userProfileTexts.stopListening()
+                                                                            : userProfileTexts.speakAnswer()
+                                                                    }
+                                                                    aria-pressed={isListening}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        toggleDictation(card.id);
+                                                                    }}
+                                                                    className={`h-9 w-9 rounded-xl shrink-0 transition-all ${
+                                                                        isListening
+                                                                            ? "border-rose-300 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700"
+                                                                            : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
+                                                                    }`}
+                                                                >
+                                                                    {isListening ? (
+                                                                        <MicOff className="h-3.5 w-3.5 animate-pulse" />
+                                                                    ) : (
+                                                                        <Mic className="h-3.5 w-3.5" />
+                                                                    )}
+                                                                </Button>
+                                                                <Button
                                                                     type="submit"
                                                                     size="sm"
                                                                     disabled={!userInputs[card.id]?.trim()}
@@ -587,7 +721,19 @@ export function FlashcardsPage() {
                                                                 </Button>
                                                             </div>
 
-                                                            <div className="flex items-center justify-end text-[11px] text-slate-400 px-1">
+                                                            <div className="flex items-center justify-between gap-2 text-[11px] text-slate-400 px-1">
+                                                                {isListening ? (
+                                                                    <span className="inline-flex items-center gap-1 font-medium text-rose-500">
+                                                                        <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
+                                                                        {userProfileTexts.listeningHint()}
+                                                                    </span>
+                                                                ) : cardSpeechError ? (
+                                                                    <span className="truncate font-medium text-rose-500">
+                                                                        {cardSpeechError}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span />
+                                                                )}
                                                                 <button
                                                                     type="button"
                                                                     onClick={(e) => {
@@ -656,17 +802,17 @@ export function FlashcardsPage() {
                                                 {/* Bottom Hint */}
                                                 <div className="w-full pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-400">
                                                     <span className="flex items-center gap-1 group-hover:text-indigo-600 transition-colors">
-                                                        <RotateCw className="h-3 w-3" />
+                                                        <RotateCw className="h-4 w-4" />
                                                         {userProfileTexts.clickToFlip()}
                                                     </span>
 
                                                     <button
                                                         type="button"
                                                         onClick={(e) => handleDelete(card.id, e)}
-                                                        className="p-1 text-slate-300 hover:text-red-500 transition-colors"
+                                                        className="p-1 text-red-500 hover:text-red-600 transition-colors"
                                                         title={userProfileTexts.deleteFlashcard()}
                                                     >
-                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                        <Trash2 className="h-5 w-5" />
                                                     </button>
                                                 </div>
                                             </div>
@@ -688,10 +834,10 @@ export function FlashcardsPage() {
                                                     <button
                                                         type="button"
                                                         onClick={(e) => handleDelete(card.id, e)}
-                                                        className="p-1 rounded-lg text-slate-400 hover:text-red-400 hover:bg-white/10 transition-colors"
+                                                        className="p-1 rounded-lg text-red-400 hover:text-red-400 hover:bg-white/10 transition-colors"
                                                         title={userProfileTexts.deleteFlashcard()}
                                                     >
-                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                        <Trash2 className="h-5 w-5" />
                                                     </button>
                                                 </div>
 

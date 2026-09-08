@@ -159,7 +159,12 @@
   "incorrect": "不正解",
   "expectedAnswer": "答え:",
   "tryAgain": "再試行",
-  "showAnswer": "答えを見る"
+  "showAnswer": "答えを見る",
+  "speakAnswer": "音声で答える",
+  "stopListening": "録音を停止",
+  "listeningHint": "聞き取り中... ベトナム語で話してください",
+  "speechNotSupported": "お使いのブラウザは音声認識に対応していません。",
+  "speechError": "音声を認識できませんでした。マイクの許可を確認してください。"
 }
 
 

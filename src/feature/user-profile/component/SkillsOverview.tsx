@@ -227,10 +227,10 @@ export function SkillsOverview() {
             <CardHeader className="px-6 pb-3 pt-5">
                 <div className="flex items-center justify-between gap-4">
                     <div>
-                        <CardTitle className="text-lg text-slate-950">
+                        <CardTitle className="text-xl text-slate-950">
                             {t("skillsOverview", { defaultValue: "Skills Overview" })}
                         </CardTitle>
-                        <p className="mt-1 text-sm text-slate-500">
+                        <p className="mt-1 text-lg text-slate-500">
                             {t("skillsCompareDesc")}
                         </p>
                     </div>
@@ -249,14 +249,14 @@ export function SkillsOverview() {
             <CardContent className="px-6 pb-6 pt-0">
                 <div className="rounded-3xl border border-slate-200 bg-slate-50/70 px-4 py-6 sm:px-6">
                     <div className="mb-5 flex items-center justify-between gap-4">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                        <p className="text-[14px] font-bold uppercase tracking-[0.16em] text-slate-500">
                             {t("skillProficiency", { defaultValue: "Initial and Current Score By Skill" })}
                         </p>
                         <div className="hidden items-center gap-4 sm:flex">
                             {SKILL_META.map((skill) => (
                                 <div
                                     key={skill.key}
-                                    className="flex items-center gap-2 text-xs font-semibold text-slate-500"
+                                    className="flex items-center gap-2 text-[14px] font-bold text-slate-500"
                                 >
                                     <span className={`h-2.5 w-2.5 rounded-full ${skill.bar}`} />
                                     {skill.label}
@@ -281,13 +281,13 @@ export function SkillsOverview() {
                                         colorClassName={skill.color}
                                         description={skillDefinitions[skill.key].description}
                                     >
-                                        <div className="mb-3 grid w-full max-w-[9.5rem] cursor-help grid-cols-2 gap-2.5 sm:max-w-[10.5rem] sm:gap-3">
+                                        <div className="mb-3 grid w-full max-w-[9.5rem] cursor-help grid-cols-2 gap-2.5 sm:max-w-[10.5rem] sm:gap-4">
                                             <div className="flex flex-col items-center">
-                                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
+                                                <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-600">
                                                     {t("initial")}
                                                 </p>
                                                 <div
-                                                    className={`relative flex h-44 w-full items-end overflow-hidden rounded-t-2xl border border-slate-100 ${skill.track} sm:h-52 lg:h-56`}
+                                                    className={`relative flex h-44 w-full items-end overflow-hidden rounded-t-2xl border border-slate-60 ${skill.track} sm:h-52 lg:h-56`}
                                                 >
                                                     <div
                                                         className={`w-full rounded-t-2xl transition-all duration-700 ease-out ${skill.barInitial}`}
@@ -299,11 +299,11 @@ export function SkillsOverview() {
                                                 </p>
                                             </div>
                                             <div className="flex flex-col items-center">
-                                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
+                                                <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-600">
                                                     {t("current")}
                                                 </p>
                                                 <div
-                                                    className={`relative flex h-44 w-full items-end overflow-hidden rounded-t-2xl border border-slate-100 ${skill.track} sm:h-52 lg:h-56`}
+                                                    className={`relative flex h-44 w-full items-end overflow-hidden rounded-t-2xl border border-slate-60 ${skill.track} sm:h-52 lg:h-56`}
                                                 >
                                                     <div
                                                         className={`w-full rounded-t-2xl transition-all duration-700 ease-out ${skill.bar}`}

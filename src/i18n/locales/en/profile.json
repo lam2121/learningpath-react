@@ -159,7 +159,12 @@
   "incorrect": "Incorrect",
   "expectedAnswer": "Answer:",
   "tryAgain": "Try again",
-  "showAnswer": "Show answer"
+  "showAnswer": "Show answer",
+  "speakAnswer": "Speak your answer",
+  "stopListening": "Stop recording",
+  "listeningHint": "Listening... speak in Vietnamese",
+  "speechNotSupported": "Your browser does not support speech recognition.",
+  "speechError": "Could not capture your voice. Please check microphone access."
 }
 
 
