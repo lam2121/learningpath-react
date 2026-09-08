@@ -1,6 +1,6 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, redirect, isRedirect } from '@tanstack/react-router'
 import { LoginPage } from '@/feature/auth/page/LoginPage'
-import { fetchOnboardingStatus } from '@/feature/onboarding/api/onboardingApi'
+import { fetchOnboardingStatus, getCachedOnboardingStatus } from '@/feature/onboarding/api/onboardingApi'
 
 export const Route = createFileRoute('/(auth)/login')({
 	beforeLoad: async ({ context }) => {
@@ -13,11 +13,24 @@ export const Route = createFileRoute('/(auth)/login')({
 			}
 
 			// Learner → check if placement test is finished
-			const status = await fetchOnboardingStatus().catch(() => ({ learning_status: 'none' }))
-			if (status.learning_status === 'enrolled') {
+			try {
+				const status = await fetchOnboardingStatus()
+				if (status.learning_status === 'enrolled') {
+					throw redirect({ to: '/profile' })
+				}
+				throw redirect({ to: '/onboarding/role-selection' })
+			} catch (err) {
+				if (isRedirect(err)) {
+					throw err
+				}
+				const userId = context.auth.user?.id ? Number(context.auth.user.id) : null
+				const cachedStatus = getCachedOnboardingStatus(userId)
+				if (cachedStatus === 'none') {
+					throw redirect({ to: '/onboarding/role-selection' })
+				}
+				// Default to profile on network error so existing users aren't sent to onboarding
 				throw redirect({ to: '/profile' })
 			}
-			throw redirect({ to: '/onboarding/role-selection' })
 		}
 	},
 	component: LoginPage,

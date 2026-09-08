@@ -100,9 +100,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         );
         setUser(serverUser);
         setStoredUser(serverUser);
-      } catch {
-        setUser(null);
-        clearAuthStorage();
+      } catch (error) {
+        // If the error is a network/connectivity failure (backend offline),
+        // keep the stored user so temporary outages don't kick the user out.
+        const isNetworkFailure =
+          error instanceof TypeError ||
+          (error instanceof Error &&
+            (error.message.toLowerCase().includes("failed to fetch") ||
+              error.message.toLowerCase().includes("networkerror") ||
+              error.message.toLowerCase().includes("load failed")));
+
+        if (!isNetworkFailure) {
+          setUser(null);
+          clearAuthStorage();
+        } else {
+          console.warn("Backend server unreachable during session verification; preserving local session.");
+        }
       } finally {
         setIsLoading(false);
       }
@@ -176,9 +189,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
       setUser(serverUser);
       setStoredUser(serverUser);
-    } catch {
-      setUser(null);
-      clearAuthStorage();
+    } catch (error) {
+      const isNetworkFailure =
+        error instanceof TypeError ||
+        (error instanceof Error &&
+          (error.message.toLowerCase().includes("failed to fetch") ||
+            error.message.toLowerCase().includes("networkerror") ||
+            error.message.toLowerCase().includes("load failed")));
+
+      if (!isNetworkFailure) {
+        setUser(null);
+        clearAuthStorage();
+      }
     }
   }, []);
 

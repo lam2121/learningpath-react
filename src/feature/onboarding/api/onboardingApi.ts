@@ -25,6 +25,38 @@ export interface OnboardingStatus {
   learning_status: 'none' | 'enrolled'
 }
 
+const ONBOARDING_STATUS_KEY_PREFIX = 'onboarding_status'
+
+export function getCachedOnboardingStatus(userId?: number | null): 'none' | 'enrolled' | null {
+  if (!userId) return null
+  try {
+    const cached = localStorage.getItem(`${ONBOARDING_STATUS_KEY_PREFIX}:${userId}`)
+    if (cached === 'none' || cached === 'enrolled') {
+      return cached
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+export function setCachedOnboardingStatus(userId: number, status: 'none' | 'enrolled'): void {
+  try {
+    localStorage.setItem(`${ONBOARDING_STATUS_KEY_PREFIX}:${userId}`, status)
+  } catch {
+    // ignore
+  }
+}
+
+export function clearCachedOnboardingStatus(userId?: number | null): void {
+  if (!userId) return
+  try {
+    localStorage.removeItem(`${ONBOARDING_STATUS_KEY_PREFIX}:${userId}`)
+  } catch {
+    // ignore
+  }
+}
+
 /** Check if the current user has finished the placement test. */
 export async function fetchOnboardingStatus(
   options: { redirectOnAuthFailure?: boolean } = {},
@@ -34,7 +66,11 @@ export async function fetchOnboardingStatus(
     headers: jsonHeaders(),
     redirectOnAuthFailure: options.redirectOnAuthFailure,
   })
-  return handleResponse<OnboardingStatus>(res)
+  const data = await handleResponse<OnboardingStatus>(res)
+  if (data?.user_id && data?.learning_status) {
+    setCachedOnboardingStatus(data.user_id, data.learning_status)
+  }
+  return data
 }
 
 // ─── Placement Test API ───────────────────────────────────────────────────────
@@ -63,7 +99,11 @@ export async function completePlacementTest(
     headers: jsonHeaders(),
     body: JSON.stringify(payload),
   })
-  return handleResponse<{ message: string; learning_status: 'enrolled' }>(res)
+  const data = await handleResponse<{ message: string; learning_status: 'enrolled' }>(res)
+  if (payload.user_id) {
+    setCachedOnboardingStatus(payload.user_id, 'enrolled')
+  }
+  return data
 }
 
 

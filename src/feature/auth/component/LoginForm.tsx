@@ -4,7 +4,7 @@ import { Eye, EyeOff, User, Lock } from 'lucide-react'
 import { loginUser } from '../api/authAPI'
 import { saveUserSession } from '../helper/authHelper'
 import { useAuth } from '@/common/context/AuthContext'
-import { fetchOnboardingStatus } from '@/feature/onboarding/api/onboardingApi'
+import { fetchOnboardingStatus, getCachedOnboardingStatus } from '@/feature/onboarding/api/onboardingApi'
 
 import { recordLoginDay } from "@/feature/user-profile/utils/StudyActivity";
 export function LoginForm() {
@@ -52,12 +52,21 @@ export function LoginForm() {
 			}
 
 			// Learner → check if placement test is finished
-			const status = await fetchOnboardingStatus().catch(() => ({ learning_status: 'none' }))
 			recordLoginDay(Number(data.user_id));
-			if (status.learning_status === 'enrolled') {
-				await navigate({ to: '/profile' })
-			} else {
-				await navigate({ to: '/onboarding/role-selection' })
+			try {
+				const status = await fetchOnboardingStatus()
+				if (status.learning_status === 'enrolled') {
+					await navigate({ to: '/profile' })
+				} else {
+					await navigate({ to: '/onboarding/role-selection' })
+				}
+			} catch {
+				const cachedStatus = getCachedOnboardingStatus(Number(data.user_id))
+				if (cachedStatus === 'none') {
+					await navigate({ to: '/onboarding/role-selection' })
+				} else {
+					await navigate({ to: '/profile' })
+				}
 			}
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Login failed. Please try again.')

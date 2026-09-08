@@ -7,6 +7,7 @@ import {
     clearLoginDays,
     clearTrackedStudyActivity,
 } from "@/feature/user-profile/utils/StudyActivity";
+import { clearCachedOnboardingStatus } from "@/feature/onboarding/api/onboardingApi";
 
 const DEFAULT_RESET_ERROR = "Could not reset your career track. Please try again.";
 
@@ -40,6 +41,7 @@ export function useCareerTrackReset() {
                 clearLoginDays(userId);
                 clearTrackedStudyActivity(userId);
                 clearStudyGoalDecisions(userId);
+                clearCachedOnboardingStatus(userId);
             }
 
             await navigate({ to: "/onboarding/role-selection" });
