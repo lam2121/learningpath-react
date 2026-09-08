@@ -205,6 +205,41 @@ function formatLabel(value: string) {
         .join(" ");
 }
 
+export function getSkillBadgeClasses(skill: string | null | undefined): string {
+    if (!skill) return "border border-cyan-200 bg-cyan-50 text-[#005596]";
+    const s = skill.toLowerCase().trim();
+    if (s.startsWith("d")) return "border border-cyan-200 bg-cyan-50 text-[#005596]";
+    if (s.startsWith("c")) return "border border-teal-200 bg-teal-50 text-teal-700";
+    if (s.startsWith("t")) return "border border-rose-200 bg-rose-50 text-rose-700";
+    if (s.startsWith("g") || s.startsWith("b")) return "border border-amber-200 bg-amber-50 text-amber-700";
+    return "border border-cyan-200 bg-cyan-50 text-[#005596]";
+}
+
+export function getSkillTextClass(skill: string | null | undefined): string {
+    if (!skill) return "text-[#005596]";
+    const s = skill.toLowerCase().trim();
+    if (s.startsWith("d")) return "text-[#005596]";
+    if (s.startsWith("c")) return "text-teal-700";
+    if (s.startsWith("t")) return "text-rose-700";
+    if (s.startsWith("g") || s.startsWith("b")) return "text-amber-700";
+    return "text-[#005596]";
+}
+
+export function getDifficultyBadgeClasses(difficulty: string | null | undefined): string {
+    if (!difficulty) return "border border-slate-300 bg-slate-100 text-slate-700";
+    const d = difficulty.toLowerCase().trim();
+    if (d.includes("basic") || d.includes("begin") || d.includes("easy")) {
+        return "border border-emerald-200 bg-emerald-50 text-emerald-700";
+    }
+    if (d.includes("inter") || d.includes("med")) {
+        return "border border-indigo-200 bg-indigo-50 text-indigo-700";
+    }
+    if (d.includes("adv") || d.includes("hard") || d.includes("exp")) {
+        return "border border-purple-200 bg-purple-50 text-purple-700";
+    }
+    return "border border-slate-300 bg-slate-100 text-slate-700";
+}
+
 function formatStatusLabel(value: string) {
     return value
         .split("_")
@@ -1266,25 +1301,33 @@ export function LessonQuizHistoryCard({
                                                         aria-label={t("detail.viewDetailsAria", { title: entry.lesson_title })}
                                                         className="group flex w-full cursor-pointer flex-col rounded-xl border border-cyan-200 bg-[#eef7ff] p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400 hover:bg-white hover:shadow-[0_8px_20px_rgba(0,169,206,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
                                                     >
-                                                        {/* Top row: badges + best score */}
+                                                        {/* Top section: Badges + Lesson Title on left, Best Score Badge on right */}
                                                         <div className="flex items-start justify-between gap-3">
-                                                            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                                                                <span className="rounded-full bg-cyan-200 px-2.5 py-1 text-xs font-bold text-[#004a82]">
-                                                                    {topicLabel}
-                                                                </span>
-                                                                <span className="rounded-full border border-cyan-200 bg-cyan-100 px-2.5 py-1 text-xs font-bold text-[#004a82]">
-                                                                    {formatLabel(entry.skill)}
-                                                                </span>
-                                                                <span className="rounded-full border border-slate-300 bg-slate-200 px-2.5 py-1 text-xs font-bold text-slate-700">
-                                                                    {formatLabel(entry.difficulty_tier)}
-                                                                </span>
-                                                                <span className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-1 text-xs ${statusClasses}`}>
-                                                                    {entry.status === "passed" ? (
-                                                                        <CheckCircle2 className="h-3 w-3" />
-                                                                    ) : null}
-                                                                    {statusLabel}
-                                                                </span>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                                    <span className="rounded-full bg-cyan-200 px-2.5 py-1 text-xs font-bold text-[#004a82]">
+                                                                        {topicLabel}
+                                                                    </span>
+                                                                    <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${getSkillBadgeClasses(entry.skill)}`}>
+                                                                        {formatLabel(entry.skill)}
+                                                                    </span>
+                                                                    <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${getDifficultyBadgeClasses(entry.difficulty_tier)}`}>
+                                                                        {formatLabel(entry.difficulty_tier)}
+                                                                    </span>
+                                                                    <span className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-1 text-xs ${statusClasses}`}>
+                                                                        {entry.status === "passed" ? (
+                                                                            <CheckCircle2 className="h-3 w-3" />
+                                                                        ) : null}
+                                                                        {statusLabel}
+                                                                    </span>
+                                                                </div>
+
+                                                                {/* Lesson Title - moved up to sit nicely in the middle next to the score badge */}
+                                                                <p className="mt-2 line-clamp-1 text-base font-bold text-slate-800 transition-colors group-hover:text-[#005596]">
+                                                                    {entry.lesson_title}
+                                                                </p>
                                                             </div>
+
                                                             {/* Enlarged best score */}
                                                             <div className="min-w-[84px] shrink-0 rounded-xl bg-[#0082c9] px-3 py-2 text-center shadow-md transition-colors group-hover:bg-[#0069aa]">
                                                                 <p className="text-[10px] font-black uppercase leading-none tracking-[0.16em] text-cyan-50">
@@ -1295,10 +1338,6 @@ export function LessonQuizHistoryCard({
                                                                 </p>
                                                             </div>
                                                         </div>
-
-                                                        <p className="mt-2.5 line-clamp-1 text-base font-bold text-slate-800 transition-colors group-hover:text-[#005596]">
-                                                            {entry.lesson_title}
-                                                        </p>
 
                                                         {/* Stats row: all in one compact line */}
                                                         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-200 pt-2">

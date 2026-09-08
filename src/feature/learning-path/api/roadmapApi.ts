@@ -1,5 +1,9 @@
-
 import { fetchWithAuthRetry } from "@/common/lib/authSession";
+import type {
+	FillBlankQuestionData,
+	MultiSelectQuestionData,
+	OrderingQuestionData,
+} from "@/feature/quiz-engine/type/Quiz";
 
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api'
 
@@ -25,6 +29,7 @@ export interface RoadmapLesson {
 	estimated_minutes: number | null
 	is_generated: boolean
 	is_unlocked: boolean
+	is_completed?: boolean
 	theory_content: unknown | null
 	quiz_content: unknown | null
 }
@@ -36,6 +41,10 @@ export interface RoadmapTopic {
 	seed_tier: string
 	sort_order: number
 	total_estimated_minutes: number
+	topic_quiz_status?: 'locked' | 'ready' | 'passed' | 'failed'
+	topic_quiz_score?: number | null
+	topic_quiz_attempt_count?: number
+	weakest_lesson_ids?: number[]
 	lessons: RoadmapLesson[]
 }
 
@@ -44,6 +53,10 @@ export interface RoadmapResponse {
 	topics: RoadmapTopic[]
 	assigned_lessons: Record<string, number>
 	total_estimated_minutes: number
+	final_quiz_status?: 'locked' | 'ready' | 'passed' | 'failed'
+	final_quiz_score?: number | null
+	final_quiz_attempt_count?: number
+	all_topic_quizzes_passed?: boolean
 }
 
 export interface LessonGenerateResponse {
@@ -208,4 +221,241 @@ export async function evaluateAnswer(
 		body: JSON.stringify(payload),
 	})
 	return handleResponse<EvaluateAnswerResponse>(res)
+}
+
+// ─── Topic Quiz API (Spec §4.2, §4.4) ────────────────────────────────────────
+//
+// NOTE: Topic Quiz questions now share the same fill_blank / multi_select /
+// ordering row shape as lesson quizzes (see quiz-engine's Quiz types). There
+// is no `difficulty` field anywhere in this section.
+
+export type TopicQuizQuestionType = 'fill_blank' | 'multi_select' | 'ordering'
+
+export interface TopicQuizQuestion {
+	id: string
+	question_number: number
+	skill: string
+	question_type: TopicQuizQuestionType
+	data: FillBlankQuestionData | MultiSelectQuestionData | OrderingQuestionData
+	lesson_id: number
+	lesson_title: string
+}
+
+export interface TopicQuizAnswerSubmission {
+	question_id: string
+	question_type: TopicQuizQuestionType
+	answer: string
+}
+
+export interface TopicQuizQuestionResult {
+	question_id: string
+	question_type: TopicQuizQuestionType
+	question_text: string
+	options: string[]
+	user_answer: string
+	correct_answer: string
+	explanation: string
+	is_correct: boolean
+	lesson_id: number
+	lesson_title: string
+	skill?: string | null
+}
+
+export interface WeakestLessonSummary {
+	lesson_id: number
+	title: string
+	correct_count: number
+	total_count: number
+	accuracy_percent: number
+}
+
+export interface TopicQuizSubmitResponse {
+	topic_id: number
+	topic_name: string
+	passed: boolean
+	score_percent: number
+	correct_count: number
+	total_questions: number
+	status: 'passed' | 'failed'
+	attempt_count: number
+	failed_attempts: number
+	weakest_lessons: WeakestLessonSummary[]
+	question_results: TopicQuizQuestionResult[]
+	skill_scores?: Record<string, number> | null
+}
+
+export interface TopicQuizStateResponse {
+	topic_id: number
+	topic_name: string
+	is_unlocked: boolean
+	status: 'locked' | 'ready' | 'passed' | 'failed'
+	attempt_count: number
+	failed_attempts: number
+	best_score_percent: number | null
+	last_score_percent: number | null
+	weakest_lessons: WeakestLessonSummary[]
+	total_assigned_lessons: number
+	completed_assigned_lessons: number
+	latest_attempt?: TopicQuizSubmitResponse | null
+	best_attempt?: TopicQuizSubmitResponse | null
+	first_pass?: TopicQuizSubmitResponse | null
+}
+
+export async function fetchTopicQuizQuestions(
+	topicId: number,
+	forceNew: boolean = false,
+): Promise<TopicQuizQuestion[]> {
+	const query = forceNew ? '?new_attempt=true' : ''
+	const res = await fetchWithAuthRetry(
+		`${BASE_URL}/onboarding/topics/${topicId}/quiz/questions${query}`,
+		{
+			method: 'GET',
+			headers: defaultHeaders(),
+			cache: 'no-store',
+		},
+	)
+	return handleResponse<TopicQuizQuestion[]>(res)
+}
+
+export async function submitTopicQuiz(
+	topicId: number,
+	answers: TopicQuizAnswerSubmission[],
+): Promise<TopicQuizSubmitResponse> {
+	const res = await fetchWithAuthRetry(
+		`${BASE_URL}/onboarding/topics/${topicId}/quiz/submit`,
+		{
+			method: 'POST',
+			headers: defaultHeaders(),
+			body: JSON.stringify({ answers }),
+		},
+	)
+	return handleResponse<TopicQuizSubmitResponse>(res)
+}
+
+export async function fetchTopicQuizState(
+	topicId: number,
+): Promise<TopicQuizStateResponse> {
+	const res = await fetchWithAuthRetry(
+		`${BASE_URL}/onboarding/topics/${topicId}/quiz/state`,
+		{
+			method: 'GET',
+			headers: defaultHeaders(),
+			cache: 'no-store',
+		},
+	)
+	return handleResponse<TopicQuizStateResponse>(res)
+}
+
+export interface FinalQuizQuestion {
+	id: string
+	question_number: number
+	skill: string
+	question_type: 'fill_blank' | 'multi_select' | 'ordering'
+	data: FillBlankQuestionData | MultiSelectQuestionData | OrderingQuestionData
+	lesson_id: number
+	lesson_title: string
+	topic_id?: number | null
+	topic_name?: string | null
+}
+
+export interface FinalQuizAnswerSubmission {
+	question_id: string
+	question_type: 'fill_blank' | 'multi_select' | 'ordering'
+	answer: string
+}
+
+export interface FinalQuizQuestionResult {
+	question_id: string
+	question_type: 'fill_blank' | 'multi_select' | 'ordering'
+	question_text: string
+	options: string[]
+	user_answer: string
+	correct_answer: string
+	explanation: string
+	is_correct: boolean
+	lesson_id: number
+	lesson_title: string
+	skill: string
+}
+
+export interface FinalQuizSkillScore {
+	skill: string
+	label: string
+	correct_count: number
+	total_count: number
+	accuracy_percent: number
+	passed: boolean
+}
+
+export interface FinalQuizSubmitResponse {
+	passed: boolean
+	score_percent: number
+	correct_count: number
+	total_questions: number
+	status: 'passed' | 'failed'
+	attempt_count: number
+	failed_attempts: number
+	skill_scores: Record<string, number>
+	skill_breakdown: FinalQuizSkillScore[]
+	weakest_lessons: WeakestLessonSummary[]
+	question_results: FinalQuizQuestionResult[]
+}
+
+export interface FinalQuizStateResponse {
+	is_unlocked: boolean
+	status: 'locked' | 'ready' | 'passed' | 'failed'
+	attempt_count: number
+	failed_attempts: number
+	best_score_percent: number | null
+	last_score_percent: number | null
+	passed: boolean
+	total_topics: number
+	completed_topics: number
+	skill_scores: Record<string, number> | null
+	skill_breakdown: FinalQuizSkillScore[]
+	weakest_lessons: WeakestLessonSummary[]
+	latest_attempt?: FinalQuizSubmitResponse | null
+	best_attempt?: FinalQuizSubmitResponse | null
+	first_pass?: FinalQuizSubmitResponse | null
+}
+
+export async function fetchFinalQuizQuestions(
+	forceNew: boolean = false,
+): Promise<FinalQuizQuestion[]> {
+	const query = forceNew ? '?new_attempt=true' : ''
+	const res = await fetchWithAuthRetry(
+		`${BASE_URL}/onboarding/final-quiz/questions${query}`,
+		{
+			method: 'GET',
+			headers: defaultHeaders(),
+			cache: 'no-store',
+		},
+	)
+	return handleResponse<FinalQuizQuestion[]>(res)
+}
+
+export async function submitFinalQuiz(
+	answers: FinalQuizAnswerSubmission[],
+): Promise<FinalQuizSubmitResponse> {
+	const res = await fetchWithAuthRetry(
+		`${BASE_URL}/onboarding/final-quiz/submit`,
+		{
+			method: 'POST',
+			headers: defaultHeaders(),
+			body: JSON.stringify({ answers }),
+		},
+	)
+	return handleResponse<FinalQuizSubmitResponse>(res)
+}
+
+export async function fetchFinalQuizState(): Promise<FinalQuizStateResponse> {
+	const res = await fetchWithAuthRetry(
+		`${BASE_URL}/onboarding/final-quiz/state`,
+		{
+			method: 'GET',
+			headers: defaultHeaders(),
+			cache: 'no-store',
+		},
+	)
+	return handleResponse<FinalQuizStateResponse>(res)
 }

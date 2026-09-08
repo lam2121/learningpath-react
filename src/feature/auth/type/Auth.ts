@@ -47,6 +47,38 @@ export interface LessonQuizHistoryEntryResponse {
 	last_submitted_at: string | null
 }
 
+export interface TopicQuizHistoryEntryResponse {
+	topic_id: number
+	topic_name: string
+	topic_sort_order?: number | null
+	status: string
+	best_score_percent: number | null
+	passed: boolean
+	attempt_count: number
+	failed_attempts: number
+	correct_count: number
+	total_questions: number
+	recorded_at: string | null
+	completed_at: string | null
+}
+
+export interface FinalQuizHistoryEntryResponse {
+	course_id: number
+	course_name: string
+	status: string
+	best_score_percent: number | null
+	passed: boolean
+	progress: number
+	attempt_count: number
+	failed_attempts: number
+	correct_count: number
+	total_questions: number
+	skill_scores?: Record<string, number> | null
+	unlocked_at: string | null
+	completed_at: string | null
+	recorded_at: string | null
+}
+
 export interface UserProfileResponse extends UserResponse {
 	started_at: string | null
 	estimated_finish: string | null
@@ -55,8 +87,11 @@ export interface UserProfileResponse extends UserResponse {
 	total_studied_minutes: number
 	study_history: StudyHistoryEntryResponse[]
 	lesson_quiz_history?: LessonQuizHistoryEntryResponse[]
+	topic_quiz_history?: TopicQuizHistoryEntryResponse[]
+	final_quiz_history?: FinalQuizHistoryEntryResponse[]
 	initial_skill_scores?: Record<string, number> | null
 	current_skill_scores?: Record<string, number> | null
+	quiz_review_count?: number
 }
 
 export interface StudySettingsUpdateRequest {

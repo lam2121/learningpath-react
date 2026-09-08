@@ -1,5 +1,6 @@
 import { createFileRoute, redirect, Outlet } from '@tanstack/react-router'
 import { fetchOnboardingStatus } from '@/feature/onboarding/api/onboardingApi'
+import { DailyMorningReviewAutoTrigger } from '@/feature/user-profile/component/DailyMorningReviewAutoTrigger'
 
 export const Route = createFileRoute('/_protected/_user/_enrolled')({
 	beforeLoad: async () => {
@@ -10,5 +11,11 @@ export const Route = createFileRoute('/_protected/_user/_enrolled')({
 			throw redirect({ to: '/onboarding/role-selection' })
 		}
 	},
-	component: () => <Outlet />,
+	component: () => (
+		<>
+			<Outlet />
+			<DailyMorningReviewAutoTrigger />
+		</>
+	),
 })
+

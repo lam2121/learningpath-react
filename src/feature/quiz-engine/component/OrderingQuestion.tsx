@@ -53,6 +53,13 @@ export function OrderingQuestion({
 
 	const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 	const draggedIndexRef = useRef<number | null>(null);
+	const touchDragIndexRef = useRef<number | null>(null);
+
+	// Generate answer string from current order
+	const generateAnswer = (steps = orderedSteps) => {
+		const indices = steps.map(step => originalSteps.indexOf(step));
+		return indices.join('|');
+	};
 
 	// Handle drag start
 	const handleDragStart = (index: number) => {
@@ -81,12 +88,50 @@ export function OrderingQuestion({
 	const handleDragEnd = () => {
 		draggedIndexRef.current = null;
 		setDraggedIndex(null);
+		if (!isSubmitted) {
+			onAnswerChange(generateAnswer());
+		}
 	};
 
-	// Generate answer string from current order
-	const generateAnswer = () => {
-		const indices = orderedSteps.map(step => originalSteps.indexOf(step));
-		return indices.join('|');
+	// Touch handlers for mobile & touch displays
+	const handleTouchStart = (index: number) => {
+		if (isSubmitted) return;
+		touchDragIndexRef.current = index;
+		setDraggedIndex(index);
+	};
+
+	const handleTouchMove = (e: React.TouchEvent) => {
+		if (isSubmitted || touchDragIndexRef.current === null) return;
+		const touch = e.touches[0];
+		if (!touch) return;
+
+		const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+		const cardEl = targetEl?.closest('[data-ordering-index]');
+		if (!cardEl) return;
+
+		const targetIndexStr = cardEl.getAttribute('data-ordering-index');
+		if (targetIndexStr === null) return;
+
+		const targetIndex = Number(targetIndexStr);
+		const fromIndex = touchDragIndexRef.current;
+		if (Number.isNaN(targetIndex) || fromIndex === null || fromIndex === targetIndex) return;
+
+		setOrderedSteps(prev => {
+			const newSteps = [...prev];
+			const [removed] = newSteps.splice(fromIndex, 1);
+			newSteps.splice(targetIndex, 0, removed);
+			return newSteps;
+		});
+		touchDragIndexRef.current = targetIndex;
+		setDraggedIndex(targetIndex);
+	};
+
+	const handleTouchEnd = () => {
+		touchDragIndexRef.current = null;
+		setDraggedIndex(null);
+		if (!isSubmitted) {
+			onAnswerChange(generateAnswer());
+		}
 	};
 
 	// Update answer when order changes
@@ -126,12 +171,17 @@ export function OrderingQuestion({
 			<div className="space-y-3" role="list" aria-label="Steps to order">
 				{orderedSteps.map((step, index) => (
 					<div
-						key={index}
+						key={step}
+						data-ordering-index={index}
 						draggable={!isSubmitted}
 						onDragStart={() => handleDragStart(index)}
 						onDragOver={e => handleDragOver(e, index)}
 						onDragEnd={handleDragEnd}
 						onDrop={handleOrderChange}
+						onTouchStart={() => handleTouchStart(index)}
+						onTouchMove={handleTouchMove}
+						onTouchEnd={handleTouchEnd}
+						onTouchCancel={handleTouchEnd}
 						className={cn(
 							'relative flex items-start gap-3 rounded-xl border-2 p-4 transition-all sm:items-center sm:gap-4',
 							'bg-white hover:bg-gray-50',

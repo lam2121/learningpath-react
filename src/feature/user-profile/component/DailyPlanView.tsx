@@ -39,6 +39,7 @@ import { StudySettingsDialog } from "./StudySettingsDialog";
 import { StudyTimeAlert } from "./StudyTimeAlert";
 import { StudyTimeDialog } from "./StudyTimeDialog";
 import { useCareerTrackReset } from "@/feature/user-profile/hook/useCareerTrackReset";
+import { fetchQuizReview } from "@/feature/user-profile/api/quizReviewApi";
 
 const LOCKED_COPY = "Complete your first lesson to unlock this feature.";
 const SHARED_CARD_CLASS =
@@ -137,6 +138,7 @@ export function DailyPlanView({
     const [studyGoalDecision, setStudyGoalDecision] = useState<StudyGoalDecision | null>(
         () => (Number.isFinite(userId) ? readStudyGoalDecision(userId, getTodayDateKey()) : null),
     );
+    const [reviewCount, setReviewCount] = useState<number>(0);
     const {
         clearResetError,
         isResetting,
@@ -158,6 +160,9 @@ export function DailyPlanView({
                 setCurrentHour(hours);
                 setNewHour(hours);
                 setTotalEstimatedMinutes(profile.total_estimated_minutes);
+                if (typeof profile.quiz_review_count === "number") {
+                    setReviewCount(profile.quiz_review_count);
+                }
             } catch {
                 if (!isMounted) {
                     return;
@@ -180,6 +185,9 @@ export function DailyPlanView({
             setCurrentHour(hours);
             setNewHour(hours);
             setTotalEstimatedMinutes(customEvent.detail.total_estimated_minutes);
+            if (typeof customEvent.detail.quiz_review_count === "number") {
+                setReviewCount(customEvent.detail.quiz_review_count);
+            }
         };
 
         const handleStudyActivityUpdated = (event: Event) => {
@@ -221,6 +229,34 @@ export function DailyPlanView({
         setTrackedStudyMinutesByDay(getTrackedStudyMinutesByDay(userId));
         setStudyGoalDecision(readStudyGoalDecision(userId, getTodayDateKey()));
     }, [userId]);
+
+    useEffect(() => {
+        let isMounted = true;
+        const loadReviewCount = async () => {
+            try {
+                const data = await fetchQuizReview(1);
+                if (isMounted) {
+                    setReviewCount(data.total_count);
+                }
+            } catch {
+                // Ignore failure
+            }
+        };
+        void loadReviewCount();
+
+        const handleReviewUpdated = (event: Event) => {
+            const customEvent = event as CustomEvent<{ remainingCount?: number }>;
+            if (typeof customEvent.detail?.remainingCount === "number") {
+                setReviewCount(customEvent.detail.remainingCount);
+            }
+        };
+
+        window.addEventListener("careerpath:review-updated", handleReviewUpdated);
+        return () => {
+            isMounted = false;
+            window.removeEventListener("careerpath:review-updated", handleReviewUpdated);
+        };
+    }, []);
 
     const [coachMessage, setCoachMessage] = useState<string | null>(null);
     const [isGeneratingCoach, setIsGeneratingCoach] = useState(false);
@@ -522,36 +558,53 @@ export function DailyPlanView({
                                 <div className="grid gap-4 lg:grid-cols-2">
                                     <div className="rounded-2xl border border-slate-200 bg-white p-5">
                                         <div className="flex items-start gap-4">
-                                            <div className="rounded-2xl bg-slate-100 p-3 shadow-sm">
-                                                <RotateCcw className="h-5 w-5 text-slate-500" />
+                                            <div className={`rounded-2xl p-3 shadow-sm ${reviewCount > 0 ? "bg-amber-50 text-amber-600" : "bg-slate-100 text-slate-500"}`}>
+                                                <RotateCcw className="h-5 w-5" />
                                             </div>
 
                                             <div className="min-w-0 flex-1">
-                                                <h3 className="text-lg font-semibold text-slate-900">{t("review", { defaultValue: "Review" })}</h3>
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="text-lg font-semibold text-slate-900">{t("review", { defaultValue: "Review" })}</h3>
+                                                    {reviewCount > 0 ? (
+                                                        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
+                                                            {reviewCount} to review
+                                                        </span>
+                                                    ) : null}
+                                                </div>
                                                 <p className="mt-1 text-base text-slate-700">
-                                                    {nextTopic
-                                                        ? `Review for ${nextTopic.name} will appear here after you complete lessons and quizzes in this topic.`
-                                                        : "Review cards and follow-up practice will appear here once your roadmap is active."}
+                                                    {reviewCount > 0
+                                                        ? `You have ${reviewCount} question(s) from previous lesson quizzes to review.`
+                                                        : completedLessonCount > 0
+                                                        ? "All caught up! No wrong lesson quiz answers waiting for review."
+                                                        : "Review questions will appear here after you complete lesson quizzes."}
                                                 </p>
                                                 <p className="mt-2 text-base leading-7 text-slate-500">
-                                                    {allAssignedLessonsCompleted
-                                                        ? "You can now revisit completed lessons and quizzes to reinforce retention."
-                                                        : nextLesson
-                                                            ? `Finish ${nextLesson.title} and submit its quiz to unlock targeted review items.`
-                                                            : LOCKED_COPY}
+                                                    {reviewCount > 0
+                                                        ? "Practice your past mistakes now to reinforce your understanding and clear them from your review pool."
+                                                        : completedLessonCount > 0
+                                                        ? "Great retention! Questions you miss on future quizzes will be saved here for daily morning review."
+                                                        : LOCKED_COPY}
                                                 </p>
                                             </div>
                                         </div>
 
-                                        <Button
-                                            variant="outline"
-                                            disabled
-                                            className="mt-5 h-11 w-full border-slate-200 text-slate-500"
-                                        >
-                                            {allAssignedLessonsCompleted
-                                                ? "Review unlocked"
-                                                : "Complete a lesson first"}
-                                        </Button>
+                                        {reviewCount > 0 ? (
+                                            <Button
+                                                type="button"
+                                                onClick={() => window.dispatchEvent(new CustomEvent("careerpath:open-daily-review"))}
+                                                className="mt-5 h-11 w-full bg-blue-600 font-semibold text-white hover:bg-blue-700 shadow-sm"
+                                            >
+                                                Start Review ({Math.min(5, reviewCount)} questions)
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                variant="outline"
+                                                disabled
+                                                className="mt-5 h-11 w-full border-slate-200 text-slate-400"
+                                            >
+                                                {completedLessonCount > 0 ? "All caught up" : "Complete a lesson first"}
+                                            </Button>
+                                        )}
                                     </div>
 
                                     <div className="rounded-2xl border border-slate-200 bg-white p-5">
