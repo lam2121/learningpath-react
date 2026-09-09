@@ -1,6 +1,6 @@
 # careerpath-react-ts-vite
 
-
+# deployment trigger
 
 ## Getting started
 
