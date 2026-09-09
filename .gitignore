@@ -19,9 +19,6 @@ dist-ssr
 dist-root-backup
 *.local
 
-# Auto-generated
-src/routeTree.gen.ts
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
