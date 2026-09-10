@@ -15,7 +15,7 @@ import type { ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { userProfileTexts } from "../userProfileTexts";
 
-import tmaLogo from "@/asset/image/tma_logo.png";
+import careerpathLogo from "@/asset/image/careerpath_logo.png";
 import { useAuth } from "@/common/context/AuthContext";
 import { fetchCurrentUserProfile } from "@/feature/auth/api/authAPI";
 import type { UserProfileResponse } from "@/feature/auth/type/Auth";
@@ -394,7 +394,7 @@ export function UserProfileCard() {
                     <circle cx="1006" cy="214" r="8" fill="rgba(255,255,255,0.12)" />
                 </svg>
                 <img
-                    src={tmaLogo}
+                    src={careerpathLogo}
                     alt=""
                     aria-hidden="true"
                     className="pointer-events-none absolute bottom-1 left-28 h-18 w-auto opacity-[0.18] drop-shadow-[0_8px_18px_rgba(255,255,255,0.22)]"

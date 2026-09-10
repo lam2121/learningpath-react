@@ -1,9 +1,9 @@
 {
-  "badge": "Lộ Trình Học Tiếng Anh AI TMA",
+  "badge": "Lộ Trình Học Tiếng Anh AI CareerPath",
   "headerTitle": "Cách Thức Hoạt Động",
   "headerDescription": "Tìm hiểu cách AI tạo hành trình học tiếng Anh được cá nhân hóa cho bạn — từ đánh giá trình độ hiện tại đến tạo bài học, bài kiểm tra và kế hoạch học hàng ngày.",
   "section1": {
-    "title": "Giới Thiệu Lộ Trình Học Tiếng Anh AI TMA",
+    "title": "Giới Thiệu Lộ Trình Học Tiếng Anh AI CareerPath",
     "description": "<strong>{{name}}</strong> là nền tảng thông minh được thiết kế giúp học viên cải thiện tiếng Anh thông qua trải nghiệm học tập được cá nhân hóa. Bằng cách phân tích trình độ hiện tại và mục tiêu học tập, AI tạo lộ trình học tùy chỉnh với các bài học tương tác, bài kiểm tra và kế hoạch học hàng ngày để hỗ trợ tiến bộ liên tục."
   },
   "section2": {

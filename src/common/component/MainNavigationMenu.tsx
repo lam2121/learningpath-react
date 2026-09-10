@@ -45,7 +45,7 @@ import { StudySettingsDialog } from "@/feature/user-profile/component/StudySetti
 import { StudyTimeAlert } from "@/feature/user-profile/component/StudyTimeAlert";
 import { StudyTimeDialog } from "@/feature/user-profile/component/StudyTimeDialog";
 import { cn } from "@/shadcn/lib/util";
-import { TmaLogo } from "./TmaLogo";
+import { CareerPathLogo } from "./CareerPathLogo";
 import { APP_INFO } from "../const/appConst";
 import { CareerpathIcon } from "../../common/component/SocialMediaIcon";
 import { StreakDropdown } from "@/feature/user-profile/component/StreakDropdown";
@@ -534,7 +534,7 @@ function MobileNav({
                     onClick={(event) => handleNavigationClick(event, "/")}
                     className="flex items-center gap-3"
                 >
-                    <TmaLogo className="h-8 w-8" />
+                    <CareerPathLogo className="h-8 w-8" />
 
                     <div className="text-lg font-bold text-sidebar-primary">
                         {APP_INFO.APP_NAME}{" "}

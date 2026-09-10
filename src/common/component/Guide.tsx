@@ -235,10 +235,10 @@ export function Guide() {
               {t("feedback.description")}{" "}
               {t("feedback.contactPrefix")}{" "}
               <Link
-                to="mailto:training@tma.com.vn"
+                to="mailto:support@careerpath.io"
                 className="text-primary font-medium hover:underline"
               >
-                training@tma.com.vn
+                support@careerpath.io
               </Link>
               .
             </p>

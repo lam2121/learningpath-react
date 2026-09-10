@@ -120,7 +120,7 @@ export function ForgotPassForm() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="forgot-input"
-                                    placeholder="ví dụ: user@tma.com.vn hoặc gmail"
+                                    placeholder="ví dụ: user@example.com hoặc gmail"
                                     autoComplete="email"
                                     required
                                 />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import tmaLogo from '@/asset/image/tma_logo.png'
+import careerpathLogo from '@/asset/image/careerpath_logo.png'
 import { fetchJobRoles, type JobRole, type JobRoleSkillDefinitions } from '../api/onboardingApi'
 import { useAuth } from '@/common/context/AuthContext'
 import { useRadar } from '@/feature/radar/context/RadarContext'
@@ -779,7 +779,7 @@ export function RoleSelectionGrid() {
       {/* Top Header Bar */}
       <header className="w-full bg-[#0072FF] px-6 py-3.5 flex items-center justify-between shadow-md sticky top-0 z-30">
         <div className="flex items-center gap-3">
-          <img src={tmaLogo} alt="TMA Solutions" className="h-8 w-auto" />
+          <img src={careerpathLogo} alt="CareerPath" className="h-8 w-auto" />
           <LanguageSwitcher
             variant="ghost"
             showLabel

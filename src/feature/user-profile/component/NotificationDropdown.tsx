@@ -117,9 +117,9 @@ export function NotificationDropdown() {
     useEffect(() => {
         let isMounted = true;
         let stream: EventSource | null = null;
-        let refreshTimer: number | null = null;
         let reconnectTimer: number | null = null;
         let reconnectInFlight = false;
+        let reconnectAttempt = 0;
 
         if (!Number.isFinite(userId)) {
             setRoadmap(null);
@@ -142,10 +142,17 @@ export function NotificationDropdown() {
             }
         };
 
-        const scheduleReconnect = (delayMs: number) => {
+        const getBackoffDelayWithJitter = (attempt: number) => {
+            const baseDelay = Math.min(30_000, 1_000 * Math.pow(1.5, attempt));
+            const jitter = Math.random() * 1_000;
+            return Math.round(baseDelay + jitter);
+        };
+
+        const scheduleReconnect = (delayMs?: number) => {
             if (!isMounted || reconnectTimer !== null) {
                 return;
             }
+            const actualDelay = delayMs ?? getBackoffDelayWithJitter(reconnectAttempt);
             reconnectTimer = window.setTimeout(async () => {
                 reconnectTimer = null;
                 if (!isMounted || reconnectInFlight) {
@@ -160,12 +167,13 @@ export function NotificationDropdown() {
                     connectStream();
                 } catch {
                     if (isMounted) {
-                        scheduleReconnect(5_000);
+                        reconnectAttempt++;
+                        scheduleReconnect();
                     }
                 } finally {
                     reconnectInFlight = false;
                 }
-            }, delayMs);
+            }, actualDelay);
         };
 
         const connectStream = () => {
@@ -178,23 +186,24 @@ export function NotificationDropdown() {
                 withCredentials: true,
             });
 
+            stream.onopen = () => {
+                reconnectAttempt = 0;
+            };
+
             stream.addEventListener("roadmap_updated", () => {
+                reconnectAttempt = 0;
                 void loadRoadmap();
             });
 
             stream.onerror = () => {
                 stream?.close();
                 stream = null;
-                scheduleReconnect(1_500);
+                reconnectAttempt++;
+                scheduleReconnect();
             };
         };
 
         void loadRoadmap();
-
-        refreshTimer = window.setInterval(() => {
-            void loadRoadmap();
-        }, 30_000);
-
         connectStream();
 
         const handleWindowFocus = () => {
@@ -210,9 +219,6 @@ export function NotificationDropdown() {
         return () => {
             isMounted = false;
             stream?.close();
-            if (refreshTimer !== null) {
-                window.clearInterval(refreshTimer);
-            }
             if (reconnectTimer !== null) {
                 window.clearTimeout(reconnectTimer);
             }

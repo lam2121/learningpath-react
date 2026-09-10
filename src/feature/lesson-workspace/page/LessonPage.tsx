@@ -31,6 +31,7 @@ import { useAuth } from "@/common/context/AuthContext";
 import { fetchCurrentUserProfile } from "@/feature/auth/api/authAPI";
 import type { UserProfileResponse } from "@/feature/auth/type/Auth";
 import {
+    buildRoadmapNotificationStreamUrl,
     fetchRoadmap,
     fetchLessonQuizState,
     kickoffRoadmapLessonGeneration,
@@ -3427,14 +3428,33 @@ function EmbeddedLessonQuiz({
             }
         };
 
+        // Check initially once
         void checkNextLesson();
-        const intervalId = window.setInterval(() => {
-            void checkNextLesson();
-        }, 15000);
+
+        // Replace 15s polling with SSE-driven event listener
+        let stream: EventSource | null = null;
+        try {
+            stream = new EventSource(buildRoadmapNotificationStreamUrl(), {
+                withCredentials: true,
+            });
+
+            stream.addEventListener("roadmap_updated", (event: MessageEvent) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (!data?.lesson_id || data.lesson_id === nextLesson.lesson.id) {
+                        void checkNextLesson();
+                    }
+                } catch {
+                    void checkNextLesson();
+                }
+            });
+        } catch {
+            // If SSE cannot connect, rely on initial check
+        }
 
         return () => {
             cancelled = true;
-            window.clearInterval(intervalId);
+            stream?.close();
         };
     }, [nextLesson, nextLessonStatus, quizStarted]);
 

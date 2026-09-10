@@ -76,7 +76,7 @@ function DashboardPage() {
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-					<p className="text-gray-500">Manage TMA IT Communication System</p>
+					<p className="text-gray-500">Manage CareerPath Platform</p>
 				</div>
 				<Badge variant={killSwitchOn ? 'destructive' : 'outline'} className="gap-1.5 px-3 py-1">
 					<Zap className="h-3 w-3" />
