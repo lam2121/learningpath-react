@@ -5,7 +5,7 @@ import {
 	refreshAccessToken,
 } from '@/common/lib/authSession';
 const commonConfig = {
-	baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+	baseURL: import.meta.env.VITE_API_URL || '/api',
 	headers: { 'Content-Type': 'application/json' },
 	withCredentials: true,
 };

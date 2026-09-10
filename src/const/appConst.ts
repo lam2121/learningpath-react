@@ -1,6 +1,6 @@
 export const APP_NAME = 'TMA IT Communication';
 export const APP_VERSION = '1.0.0';
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 export const TMA_INFO = {
 	name: 'TMA Solutions',
