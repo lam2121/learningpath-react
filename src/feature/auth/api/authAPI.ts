@@ -13,7 +13,7 @@ import {
 	fetchWithAuthRetry,
 	refreshAccessToken as refreshAuthSession,
 } from "@/common/lib/authSession";
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api'
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
 const AUTH_URL = import.meta.env.VITE_AUTH_API_URL ?? 'http://localhost:8001/api/auth'
 
 function jsonHeaders(): HeadersInit {
