@@ -15,10 +15,10 @@ function StatCard({ title, value, subtitle, icon: Icon, color }: {
 	color: 'blue' | 'green' | 'orange' | 'red' 
 }) {
 	const colors = {
-		blue: 'bg-blue-100 text-blue-600',
-		green: 'bg-green-100 text-green-600',
-		orange: 'bg-orange-100 text-orange-600',
-		red: 'bg-red-100 text-red-600'
+		blue: 'bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400',
+		green: 'bg-green-100 dark:bg-green-950 text-green-600 dark:text-green-400',
+		orange: 'bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400',
+		red: 'bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400'
 	}
 	
 	return (
@@ -26,9 +26,9 @@ function StatCard({ title, value, subtitle, icon: Icon, color }: {
 			<CardContent className="p-6">
 				<div className="flex items-center justify-between">
 					<div>
-						<p className="text-sm text-gray-500">{title}</p>
-						<p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
-						<p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+						<p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
+						<p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{value}</p>
+						<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>
 					</div>
 					<div className={cn('w-12 h-12 rounded-xl flex items-center justify-center', colors[color])}>
 						<Icon className="h-6 w-6" />
@@ -75,8 +75,8 @@ function DashboardPage() {
 		<div className="space-y-6">
 			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-					<p className="text-gray-500">Manage CareerPath Platform</p>
+					<h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h1>
+					<p className="text-gray-500 dark:text-gray-400">Manage TMA IT Communication System</p>
 				</div>
 				<Badge variant={killSwitchOn ? 'destructive' : 'outline'} className="gap-1.5 px-3 py-1">
 					<Zap className="h-3 w-3" />
@@ -97,12 +97,12 @@ function DashboardPage() {
 				<CardContent className="p-6">
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-4">
-							<div className={cn('w-12 h-12 rounded-lg flex items-center justify-center', killSwitchOn ? 'bg-red-100' : 'bg-green-100')}>
-								<Shield className={cn('h-6 w-6', killSwitchOn ? 'text-red-600' : 'text-green-600')} />
+							<div className={cn('w-12 h-12 rounded-lg flex items-center justify-center', killSwitchOn ? 'bg-red-100 dark:bg-red-950' : 'bg-green-100 dark:bg-green-950')}>
+								<Shield className={cn('h-6 w-6', killSwitchOn ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400')} />
 							</div>
 							<div>
-								<h3 className="font-semibold text-gray-900">Emergency Kill Switch</h3>
-								<p className="text-sm text-gray-500">
+								<h3 className="font-semibold text-gray-900 dark:text-gray-100">Emergency Kill Switch</h3>
+								<p className="text-sm text-gray-500 dark:text-gray-400">
 									{killSwitchOn ? 'AI Generation is DISABLED - serving cache only' : 'AI Generation operating normally'}
 								</p>
 							</div>
@@ -117,27 +117,27 @@ function DashboardPage() {
 			{/* Quick Actions */}
 			<Card>
 				<CardContent className="p-6">
-					<h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
+					<h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Quick Actions</h3>
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-						<Link to="/admin/tracks" className="p-4 rounded-lg border hover:bg-gray-50 transition-colors">
-							<Plus className="h-8 w-8 text-blue-600 mb-2" />
-							<h4 className="font-medium text-gray-900">Create New Track</h4>
-							<p className="text-sm text-gray-500">Add new career track with D/C/T/G budget</p>
+						<Link to="/admin/tracks" className="p-4 rounded-lg border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+							<Plus className="h-8 w-8 text-blue-600 dark:text-blue-400 mb-2" />
+							<h4 className="font-medium text-gray-900 dark:text-gray-100">Create New Track</h4>
+							<p className="text-sm text-gray-500 dark:text-gray-400">Add new career track with D/C/T/G budget</p>
 						</Link>
-						<Link to="/admin/costs" className="p-4 rounded-lg border hover:bg-gray-50 transition-colors">
-							<DollarSign className="h-8 w-8 text-green-600 mb-2" />
-							<h4 className="font-medium text-gray-900">View Cost Dashboard</h4>
-							<p className="text-sm text-gray-500">Track AI costs by generator</p>
+						<Link to="/admin/costs" className="p-4 rounded-lg border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+							<DollarSign className="h-8 w-8 text-green-600 dark:text-green-400 mb-2" />
+							<h4 className="font-medium text-gray-900 dark:text-gray-100">View Cost Dashboard</h4>
+							<p className="text-sm text-gray-500 dark:text-gray-400">Track AI costs by generator</p>
 						</Link>
-						<Link to="/admin/usage-logs" className="p-4 rounded-lg border hover:bg-gray-50 transition-colors">
-							<ScrollText className="h-8 w-8 text-indigo-600 mb-2" />
-							<h4 className="font-medium text-gray-900">Inspect AI Usage Logs</h4>
-							<p className="text-sm text-gray-500">Review call history and clear old records</p>
+						<Link to="/admin/usage-logs" className="p-4 rounded-lg border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+							<ScrollText className="h-8 w-8 text-indigo-600 dark:text-indigo-400 mb-2" />
+							<h4 className="font-medium text-gray-900 dark:text-gray-100">Inspect AI Usage Logs</h4>
+							<p className="text-sm text-gray-500 dark:text-gray-400">Review call history and clear old records</p>
 						</Link>
-						<Link to="/admin/rejected" className="p-4 rounded-lg border hover:bg-gray-50 transition-colors">
-							<AlertTriangle className="h-8 w-8 text-red-600 mb-2" />
-							<h4 className="font-medium text-gray-900">Review Rejected Content</h4>
-							<p className="text-sm text-gray-500">View and process content rejected by validator</p>
+						<Link to="/admin/rejected" className="p-4 rounded-lg border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+							<AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400 mb-2" />
+							<h4 className="font-medium text-gray-900 dark:text-gray-100">Review Rejected Content</h4>
+							<p className="text-sm text-gray-500 dark:text-gray-400">View and process content rejected by validator</p>
 						</Link>
 					</div>
 				</CardContent>

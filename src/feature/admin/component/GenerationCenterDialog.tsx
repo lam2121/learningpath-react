@@ -1,4 +1,4 @@
-import { AlertTriangle, FileText, Layers3, Loader2, Play, RefreshCw, Sparkles } from 'lucide-react';
+import { AlertTriangle, FileText, Layers3, Loader2, Play, Plus, RefreshCw, Sparkles } from 'lucide-react';
 import { Alert, AlertDescription } from '@/shadcn/component/ui/alert';
 import { Badge } from '@/shadcn/component/ui/badge';
 import { Button } from '@/shadcn/component/ui/button';
@@ -14,12 +14,13 @@ interface GenerationCenterDialogProps {
 	track: CareerTrack | null;
 	summary: GenerationSummary | null;
 	loading: boolean;
-	actionLoading: Workflow | 'reset' | null;
+	actionLoading: Workflow | 'reset' | 'more-topics' | null;
 	confirmWorkflow: Workflow | null;
 	onClose: () => void;
 	onRequestGenerate: (workflow: Workflow) => void;
 	onCancelConfirm: () => void;
 	onRequestResetLearners: () => void;
+	onRequestMoreTopics: () => void;
 }
 
 function formatDateTime(value: string | null): string {
@@ -37,7 +38,7 @@ function statusMeta(status: string, blocked: boolean) {
 	if (blocked) {
 		return {
 			label: 'Blocked',
-			className: 'border-amber-200 bg-amber-50 text-amber-800',
+			className: 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-200',
 		};
 	}
 	switch (status) {
@@ -45,22 +46,22 @@ function statusMeta(status: string, blocked: boolean) {
 		case 'pending':
 			return {
 				label: 'Generating',
-				className: 'border-blue-200 bg-blue-50 text-blue-700',
+				className: 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300',
 			};
 		case 'completed':
 			return {
 				label: 'Ready',
-				className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+				className: 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300',
 			};
 		case 'failed':
 			return {
 				label: 'Failed',
-				className: 'border-red-200 bg-red-50 text-red-700',
+				className: 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300',
 			};
 		default:
 			return {
 				label: 'Not generated',
-				className: 'border-slate-200 bg-slate-50 text-slate-700',
+				className: 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300',
 			};
 	}
 }
@@ -74,15 +75,15 @@ function courseProgress(summary: GenerationSummary | null): number {
 
 function CardSkeleton() {
 	return (
-		<Card className="border-slate-200">
+		<Card className="border-slate-200 dark:border-slate-700">
 			<CardHeader>
-				<div className="h-5 w-32 animate-pulse rounded bg-slate-100" />
-				<div className="h-4 w-48 animate-pulse rounded bg-slate-100" />
+				<div className="h-5 w-32 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+				<div className="h-4 w-48 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
 			</CardHeader>
 			<CardContent className="space-y-3">
-				<div className="h-10 animate-pulse rounded bg-slate-100" />
-				<div className="h-10 animate-pulse rounded bg-slate-100" />
-				<div className="h-16 animate-pulse rounded bg-slate-100" />
+				<div className="h-10 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+				<div className="h-10 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+				<div className="h-16 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
 			</CardContent>
 		</Card>
 	);
@@ -98,6 +99,7 @@ export function GenerationCenterDialog({
 	onRequestGenerate,
 	onCancelConfirm,
 	onRequestResetLearners,
+	onRequestMoreTopics,
 }: GenerationCenterDialogProps) {
 	if (!track) return null;
 
@@ -116,26 +118,32 @@ export function GenerationCenterDialog({
 		(summary?.course.lessonsCount ?? 0) < (summary?.course.targetLessons ?? 0);
 	const killSwitchOn = Boolean(summary?.blockers.killSwitchOn);
 
+	// More topics can only extend a complete outline (every topic has its lesson shells).
+	const lessonsPerTopic = (summary?.course.targetLessons ?? 0) / Math.max(summary?.course.targetTopics ?? 0, 1);
+	const canAddTopics =
+		(summary?.course.topicsCount ?? 0) > 0 &&
+		(summary?.course.lessonsCount ?? 0) >= (summary?.course.topicsCount ?? 0) * lessonsPerTopic;
+
 	return (
 		<Dialog open onOpenChange={open => !open && actionLoading === null && onClose()}>
 			<DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto p-0">
-				<div className="sticky top-0 z-10 border-b bg-slate-50/80 px-6 py-5">
+				<div className="sticky top-0 z-10 border-b dark:border-gray-700 bg-slate-50/80 dark:bg-slate-900/80 px-6 py-5">
 					<DialogHeader>
 						<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 							<div>
-								<DialogTitle className="flex items-center gap-2 text-xl text-slate-900">
+								<DialogTitle className="flex items-center gap-2 text-xl text-slate-900 dark:text-slate-100">
 									<Sparkles className="h-5 w-5 text-blue-600" />
 									Generation Center
 								</DialogTitle>
-								<DialogDescription className="mt-1 text-sm text-slate-600">
+								<DialogDescription className="mt-1 text-sm text-slate-600 dark:text-slate-400">
 									Manage placement-question and course-outline generation for <strong>{track.name}</strong>.
 								</DialogDescription>
 							</div>
 							<div className="flex flex-wrap gap-2">
-								<Badge variant="outline" className="border-slate-200 bg-white text-slate-700">
+								<Badge variant="outline" className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300">
 									{track.placementQuestionsCount} questions
 								</Badge>
-								<Badge variant="outline" className="border-slate-200 bg-white text-slate-700">
+								<Badge variant="outline" className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300">
 									{track.topicsCount} topics · {track.lessonsCount} lessons
 								</Badge>
 								{isAnythingRunning && activeWorkflow && (
@@ -177,11 +185,11 @@ export function GenerationCenterDialog({
 							</>
 						) : (
 							<>
-								<Card className="border-slate-200 shadow-sm">
+								<Card className="border-slate-200 dark:border-slate-700 shadow-sm">
 									<CardHeader className="space-y-3">
 										<div className="flex items-start justify-between gap-3">
 											<div>
-												<CardTitle className="flex items-center gap-2 text-slate-900">
+												<CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
 													<FileText className="h-5 w-5 text-blue-600" />
 													Placement Tests
 												</CardTitle>
@@ -195,12 +203,12 @@ export function GenerationCenterDialog({
 										</div>
 									</CardHeader>
 									<CardContent className="space-y-4">
-										<div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-											<div className="text-xs font-medium uppercase tracking-wide text-slate-500">Question pool</div>
-											<div className="mt-1 text-2xl font-semibold text-slate-900">
+										<div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4">
+											<div className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Question pool</div>
+											<div className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">
 												{summary.placement.questionCount} / {summary.placement.targetCount}
 											</div>
-											<div className="mt-1 text-sm text-slate-600">
+											<div className="mt-1 text-sm text-slate-600 dark:text-slate-400">
 												{summary.placement.questionCount > 0
 													? 'Cached and ready for learner placement tests.'
 													: 'No placement pool generated yet.'}
@@ -208,13 +216,13 @@ export function GenerationCenterDialog({
 										</div>
 
 										<div className="grid gap-3 sm:grid-cols-2">
-											<div className="rounded-lg border border-slate-200 p-3">
-												<div className="text-xs font-medium uppercase tracking-wide text-slate-500">Last started</div>
-												<div className="mt-1 text-sm text-slate-800">{formatDateTime(summary.placement.lastStartedAt)}</div>
+											<div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3">
+												<div className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Last started</div>
+												<div className="mt-1 text-sm text-slate-800 dark:text-slate-200">{formatDateTime(summary.placement.lastStartedAt)}</div>
 											</div>
-											<div className="rounded-lg border border-slate-200 p-3">
-												<div className="text-xs font-medium uppercase tracking-wide text-slate-500">Last finished</div>
-												<div className="mt-1 text-sm text-slate-800">{formatDateTime(summary.placement.lastFinishedAt)}</div>
+											<div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3">
+												<div className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Last finished</div>
+												<div className="mt-1 text-sm text-slate-800 dark:text-slate-200">{formatDateTime(summary.placement.lastFinishedAt)}</div>
 											</div>
 										</div>
 
@@ -236,9 +244,9 @@ export function GenerationCenterDialog({
 											</Alert>
 										)}
 									</CardContent>
-									<CardFooter className="border-t bg-slate-50/60">
+									<CardFooter className="border-t dark:border-gray-700 bg-slate-50/60 dark:bg-slate-900/60">
 										<div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-											<p className="text-xs text-slate-500">
+											<p className="text-xs text-slate-500 dark:text-slate-400">
 												Regeneration replaces the existing placement pool with a new set of 48 questions.
 											</p>
 											<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
@@ -281,11 +289,11 @@ export function GenerationCenterDialog({
 									</CardFooter>
 								</Card>
 
-								<Card className="border-slate-200 shadow-sm">
+								<Card className="border-slate-200 dark:border-slate-700 shadow-sm">
 									<CardHeader className="space-y-3">
 										<div className="flex items-start justify-between gap-3">
 											<div>
-												<CardTitle className="flex items-center gap-2 text-slate-900">
+												<CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
 													<Layers3 className="h-5 w-5 text-blue-600" />
 													Course Outline
 												</CardTitle>
@@ -300,29 +308,29 @@ export function GenerationCenterDialog({
 									</CardHeader>
 									<CardContent className="space-y-4">
 										<div className="grid gap-3 sm:grid-cols-2">
-											<div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-												<div className="text-xs font-medium uppercase tracking-wide text-slate-500">Topics</div>
-												<div className="mt-1 text-2xl font-semibold text-slate-900">
+											<div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4">
+												<div className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Topics</div>
+												<div className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">
 													{summary.course.topicsCount} / {summary.course.targetTopics}
 												</div>
 											</div>
-											<div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-												<div className="text-xs font-medium uppercase tracking-wide text-slate-500">Lessons</div>
-												<div className="mt-1 text-2xl font-semibold text-slate-900">
+											<div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4">
+												<div className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Lessons</div>
+												<div className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">
 													{summary.course.lessonsCount} / {summary.course.targetLessons}
 												</div>
 											</div>
 										</div>
 
-										<div className="space-y-2 rounded-lg border border-slate-200 p-4">
-											<div className="flex items-center justify-between text-sm text-slate-700">
+										<div className="space-y-2 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+											<div className="flex items-center justify-between text-sm text-slate-700 dark:text-slate-300">
 												<span>Pipeline progress</span>
 												<span>
 													{summary.course.currentStep === 'b1' ? 'Generating topics' : summary.course.currentStep === 'b2' ? 'Generating lesson shells' : 'Idle'}
 												</span>
 											</div>
 											<Progress value={courseProgress(summary)} className="h-2" />
-											<div className="flex flex-wrap gap-4 text-xs text-slate-500">
+											<div className="flex flex-wrap gap-4 text-xs text-slate-500 dark:text-slate-400">
 												<span>B1: {summary.course.stepB1Count} topics</span>
 												<span>B2: {summary.course.stepB2Count} lessons</span>
 												<span>Errors: {summary.course.stepB1Errors + summary.course.stepB2Errors}</span>
@@ -330,13 +338,13 @@ export function GenerationCenterDialog({
 										</div>
 
 										<div className="grid gap-3 sm:grid-cols-2">
-											<div className="rounded-lg border border-slate-200 p-3">
+											<div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3">
 												<div className="text-xs font-medium uppercase tracking-wide text-slate-500">Last started</div>
-												<div className="mt-1 text-sm text-slate-800">{formatDateTime(summary.course.lastStartedAt)}</div>
+												<div className="mt-1 text-sm text-slate-800 dark:text-slate-200">{formatDateTime(summary.course.lastStartedAt)}</div>
 											</div>
-											<div className="rounded-lg border border-slate-200 p-3">
+											<div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3">
 												<div className="text-xs font-medium uppercase tracking-wide text-slate-500">Last finished</div>
-												<div className="mt-1 text-sm text-slate-800">{formatDateTime(summary.course.lastFinishedAt)}</div>
+												<div className="mt-1 text-sm text-slate-800 dark:text-slate-200">{formatDateTime(summary.course.lastFinishedAt)}</div>
 											</div>
 										</div>
 
@@ -358,83 +366,93 @@ export function GenerationCenterDialog({
 											</Alert>
 										)}
 									</CardContent>
-									<CardFooter className="border-t bg-slate-50/60">
-										<div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-											<p className="text-xs text-slate-500">
-												{canResumeCourse
-													? 'Resume only regenerates the lesson shells that are still missing. Existing topics and completed shells are kept.'
-													: 'Lesson shells are metadata only. Theory and quiz content are still generated lazily per lesson.'}
-											</p>
-											<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-												{courseBlocked ? (
-													<Button
-														variant="outline"
-														onClick={onRequestResetLearners}
-														disabled={actionLoading !== null || isAnythingRunning}
-														className="w-full sm:w-auto"
-													>
-														{actionLoading === 'reset' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-														Reset learners
+									{/* Redesigned footer specifically for Generate More Topics and Course Outline actions */}
+									<CardFooter className="border-t dark:border-gray-700 bg-slate-50/60 dark:bg-slate-900/60 flex flex-col gap-3 p-4">
+										<p className="text-xs text-slate-500 dark:text-slate-400 w-full leading-relaxed">
+											{canResumeCourse
+												? 'Resume only regenerates the lesson shells that are still missing. Existing topics and completed shells are kept.'
+												: 'Lesson shells are metadata only. Theory and quiz content are still generated lazily per lesson.'}
+										</p>
+										<div className="flex flex-wrap items-center justify-end gap-2.5 w-full">
+											{canAddTopics && confirmWorkflow === null && (
+												<Button
+													variant="outline"
+													onClick={onRequestMoreTopics}
+													disabled={actionLoading !== null || killSwitchOn || isAnythingRunning}
+													className="w-full sm:w-auto"
+												>
+													{actionLoading === 'more-topics' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+													Generate More Topics
+												</Button>
+											)}
+											{courseBlocked ? (
+												<Button
+													variant="outline"
+													onClick={onRequestResetLearners}
+													disabled={actionLoading !== null || isAnythingRunning}
+													className="w-full sm:w-auto"
+												>
+													{actionLoading === 'reset' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+													Reset learners
+												</Button>
+											) : confirmWorkflow === 'course' && courseReady ? (
+												<>
+													<Button variant="outline" onClick={onCancelConfirm} disabled={actionLoading !== null}>
+														Cancel
 													</Button>
-												) : confirmWorkflow === 'course' && courseReady ? (
-													<>
-														<Button variant="outline" onClick={onCancelConfirm} disabled={actionLoading !== null}>
-															Cancel
-														</Button>
-														<Button
-															onClick={() => onRequestGenerate('course')}
-															disabled={actionLoading !== null || killSwitchOn || isAnythingRunning}
-															className="bg-amber-600 hover:bg-amber-700"
-														>
-															{actionLoading === 'course' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-															Confirm regenerate
-														</Button>
-													</>
-												) : confirmWorkflow === 'course-resume' ? (
-													<>
-														<Button variant="outline" onClick={onCancelConfirm} disabled={actionLoading !== null}>
-															Cancel
-														</Button>
-														<Button
-															onClick={() => onRequestGenerate('course-resume')}
-															disabled={actionLoading !== null || killSwitchOn || isAnythingRunning}
-															className="bg-emerald-600 hover:bg-emerald-700"
-														>
-															{actionLoading === 'course-resume' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-															Confirm resume
-														</Button>
-													</>
-												) : canResumeCourse ? (
-													<>
-														<Button
-															onClick={() => onRequestGenerate('course-resume')}
-															disabled={actionLoading !== null || killSwitchOn || isAnythingRunning}
-															className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700"
-														>
-															{actionLoading === 'course-resume' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-															Resume
-														</Button>
-														<Button
-															variant="outline"
-															onClick={() => onRequestGenerate('course')}
-															disabled={actionLoading !== null || killSwitchOn || isAnythingRunning}
-															className="w-full sm:w-auto"
-														>
-															<RefreshCw className="mr-2 h-4 w-4" />
-															Regenerate
-														</Button>
-													</>
-												) : (
 													<Button
 														onClick={() => onRequestGenerate('course')}
 														disabled={actionLoading !== null || killSwitchOn || isAnythingRunning}
-														className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
+														className="bg-amber-600 hover:bg-amber-700 text-white"
 													>
-														{actionLoading === 'course' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Layers3 className="mr-2 h-4 w-4" />}
-														{courseReady ? 'Regenerate' : 'Generate'}
+														{actionLoading === 'course' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+														Confirm regenerate
 													</Button>
-												)}
-											</div>
+												</>
+											) : confirmWorkflow === 'course-resume' ? (
+												<>
+													<Button variant="outline" onClick={onCancelConfirm} disabled={actionLoading !== null}>
+														Cancel
+													</Button>
+													<Button
+														onClick={() => onRequestGenerate('course-resume')}
+														disabled={actionLoading !== null || killSwitchOn || isAnythingRunning}
+														className="bg-emerald-600 hover:bg-emerald-700 text-white"
+													>
+														{actionLoading === 'course-resume' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+														Confirm resume
+													</Button>
+												</>
+											) : canResumeCourse ? (
+												<>
+													<Button
+														onClick={() => onRequestGenerate('course-resume')}
+														disabled={actionLoading !== null || killSwitchOn || isAnythingRunning}
+														className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white"
+													>
+														{actionLoading === 'course-resume' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+														Resume
+													</Button>
+													<Button
+														variant="outline"
+														onClick={() => onRequestGenerate('course')}
+														disabled={actionLoading !== null || killSwitchOn || isAnythingRunning}
+														className="w-full sm:w-auto"
+													>
+														<RefreshCw className="mr-2 h-4 w-4" />
+														Regenerate
+													</Button>
+												</>
+											) : (
+												<Button
+													onClick={() => onRequestGenerate('course')}
+													disabled={actionLoading !== null || killSwitchOn || isAnythingRunning}
+													className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+												>
+													{actionLoading === 'course' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Layers3 className="mr-2 h-4 w-4" />}
+													{courseReady ? 'Regenerate' : 'Generate'}
+												</Button>
+											)}
 										</div>
 									</CardFooter>
 								</Card>

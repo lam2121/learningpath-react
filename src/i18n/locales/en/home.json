@@ -1,0 +1,27 @@
+{
+  "robotAriaLabel": "Friendly CareerPath learning robot",
+  "badge": "Role-specific professional English",
+  "heroTitle": "Know exactly what English",
+  "heroTitleGradient": "to learn for your career.",
+  "heroDescription": "A fair placement test finds your real gaps across four workplace skills, then builds an 8-topic roadmap around your profession and level.",
+  "continue": "Continue",
+  "startTest": "Start my placement test",
+  "howItWorks": "How it works",
+  "feature1": "48-question diagnostic",
+  "feature2": "4 core skills",
+  "feature3": "No credit card",
+  "journeyTitle": "One clear journey",
+  "journeySubtitle": "No hidden graduation rules",
+  "journeySteps": {
+    "step1": "Choose role",
+    "step2": "Find gaps",
+    "step3": "Follow 8 topics",
+    "step4": "Pass Final Test"
+  },
+  "companionBadge": "Your learning companion",
+  "companionTitle": "Hi! Ready to find your path?",
+  "companionDescription": "I’ll help you turn your real English gaps into clear, achievable steps.",
+  "hereToHelp": "Here to help",
+  "ctaSubtitle": "Your goal, your pace",
+  "ctaTitle": "Let’s take the first step together."
+}

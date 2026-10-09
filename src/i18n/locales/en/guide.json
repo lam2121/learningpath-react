@@ -1,9 +1,9 @@
 {
-  "badge": "CareerPath AI English Learning Path",
+  "badge": "TMA AI English Learning Path",
   "headerTitle": "How It Works",
   "headerDescription": "Learn how AI creates your personalized English learning journey—from assessing your current level to generating lessons, quizzes, and daily study plans.",
   "section1": {
-    "title": "About CareerPath AI English Learning Path",
+    "title": "About TMA AI English Learning Path",
     "description": "<strong>{{name}}</strong> is an intelligent platform designed to help learners improve their English through personalized learning experiences. By analyzing your current proficiency and learning goals, AI generates a customized learning path with interactive lessons, quizzes, and daily study plans to support continuous progress."
   },
   "section2": {

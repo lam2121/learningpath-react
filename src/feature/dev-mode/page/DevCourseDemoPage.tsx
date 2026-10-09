@@ -21,9 +21,13 @@ import {
 import {
 	fetchDevRoadmap,
 	generateDevLesson,
+	type DevLesson,
 	type DevRoadmap,
 	type DevTopic,
 } from '../api/devModeApi'
+
+const isDevLessonGenerated = (l: DevLesson) => l.is_generated === 1 || l.is_generated === true
+const isDevLessonFailed = (l: DevLesson) => l.is_generated === -1
 
 const TIER_ORDER = ['basic', 'intermediate', 'advanced']
 
@@ -77,7 +81,7 @@ export function DevCourseDemoPage() {
 	}, [topic])
 
 	const remainingCount = useMemo(
-		() => roadmap?.topics.flatMap((t) => t.lessons).filter((l) => !l.is_generated).length ?? 0,
+		() => roadmap?.topics.flatMap((t) => t.lessons).filter((l) => !isDevLessonGenerated(l)).length ?? 0,
 		[roadmap],
 	)
 
@@ -89,7 +93,7 @@ export function DevCourseDemoPage() {
 				topics: prev.topics.map((t) => ({
 					...t,
 					lessons: t.lessons.map((l) =>
-						l.id === lessonId ? { ...l, is_generated: true } : l,
+						l.id === lessonId ? { ...l, is_generated: 1 } : l,
 					),
 				})),
 			}
@@ -115,7 +119,7 @@ export function DevCourseDemoPage() {
 	}
 
 	const handleGenerateAll = async () => {
-		const lessons = roadmap?.topics.flatMap((t) => t.lessons).filter((l) => !l.is_generated) ?? []
+		const lessons = roadmap?.topics.flatMap((t) => t.lessons).filter((l) => !isDevLessonGenerated(l)) ?? []
 		if (lessons.length === 0) return
 		setGenerateAll(true)
 		try {
@@ -256,10 +260,12 @@ export function DevCourseDemoPage() {
 												<div className="flex flex-wrap items-center gap-2">
 													<span className="text-sm font-medium">{lesson.title}</span>
 													<Badge variant="outline">{lesson.primary_skill}</Badge>
-													{lesson.is_generated ? (
+													{isDevLessonGenerated(lesson) ? (
 														<Badge variant="default" className="bg-emerald-600">
 															Generated (shared — reused by all learners of this role)
 														</Badge>
+													) : isDevLessonFailed(lesson) ? (
+														<Badge variant="destructive">Generation failed</Badge>
 													) : (
 														<Badge variant="secondary">Not generated</Badge>
 													)}
@@ -277,7 +283,7 @@ export function DevCourseDemoPage() {
 													Generate C1+C2
 												</Button>
 											</div>
-											{lesson.is_generated && (
+											{isDevLessonGenerated(lesson) && (
 												<div className="mt-3 grid gap-3 lg:grid-cols-2">
 													<div>
 														<p className="mb-1 text-xs font-medium text-gray-500">

@@ -11,28 +11,12 @@ import type {
 import type { AuthUser } from "@/common/context/AuthContext";
 import {
 	fetchWithAuthRetry,
-	refreshAccessToken as refreshAuthSession,
 } from "@/common/lib/authSession";
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
-const AUTH_URL = import.meta.env.VITE_AUTH_API_URL ?? 'http://localhost:8001/api/auth'
+import { API_BASE_URL as BASE_URL, AUTH_BASE_URL as AUTH_URL } from "@/const/appConst";
 
 function jsonHeaders(): HeadersInit {
 	return {
 		'Content-Type': 'application/json',
-	}
-}
-
-
-// Internal response shape from Auth Service login endpoint
-interface AuthLoginResponse {
-	message?: string
-	user: {
-		id: number
-		email: string
-		username?: string
-		full_name?: string
-		role: string
-		role_id?: number
 	}
 }
 
@@ -81,8 +65,8 @@ async function handleEmptyResponse(res: Response): Promise<void> {
 }
 
 /**
-* Register via Central Auth Service (Port 8001).
-*/
+ * Register via Central Auth Service.
+ */
 export async function registerUser(data: RegisterRequest): Promise<UserResponse> {
 	const res = await fetch(`${AUTH_URL}/register`, {
 		method: 'POST',
@@ -90,9 +74,10 @@ export async function registerUser(data: RegisterRequest): Promise<UserResponse>
 		credentials: 'include',
 		body: JSON.stringify({
 			email: data.email,
-			username: data.username?.trim() || data.name || data.email.split('@')[0],
+			username: data.username || data.name || data.email.split('@')[0],
 			full_name: data.name,
 			password: data.password,
+			role: 'employee',
 		}),
 	})
 	const responseData = await handleResponse<{ message: string; user: UserResponse }>(res)
@@ -100,52 +85,107 @@ export async function registerUser(data: RegisterRequest): Promise<UserResponse>
 }
 
 /**
-* Login via Central Auth Service (Port 8001).
-* Supports both Email and Username.
-*/
+ * Login via Central Auth Service.
+ * Supports both Email and Username.
+ */
 export async function loginUser(data: LoginRequest): Promise<LoginResponse> {
 	const res = await fetch(`${AUTH_URL}/login`, {
 		method: 'POST',
-		headers: jsonHeaders(),
+		headers: { 'Content-Type': 'application/json' },
 		credentials: 'include',
 		body: JSON.stringify({
 			credential: data.identifier,
 			password: data.password,
 		}),
 	})
-	const authData = await handleResponse<AuthLoginResponse>(res)
+	const authData = await handleResponse<{
+		access_token: string
+		refresh_token: string
+		token_type: string
+		user: {
+			id: number
+			email: string
+			username?: string
+			full_name?: string
+			role: string
+		}
+	}>(res)
 
-	const rawRole = String(authData.user?.role || '').trim().toLowerCase();
-	const isAdmin = rawRole === 'admin' || rawRole === 'administrator' || authData.user.role_id === 2;
+	const rawRole = String(authData.user?.role || (authData as any).role || '').trim().toLowerCase();
+	const isAdmin = rawRole === 'admin' || rawRole === 'administrator' || (authData as any).role_id === 2 || (authData.user as any)?.role_id === 2;
 
 	return {
-		user_id: authData.user.id,
-		email: authData.user.email,
-		name: authData.user.full_name || authData.user.username || authData.user.email,
+		access_token: authData.access_token,
+		token_type: authData.token_type || 'bearer',
+		user_id: authData.user?.id || (authData as any).user_id,
+		email: authData.user?.email || (authData as any).email,
+		name: authData.user?.full_name || authData.user?.username || authData.user?.email || (authData as any).name,
 		role_id: isAdmin ? 2 : 1,
 	}
 }
+
 /**
-* Logout from Central Auth Service (revokes refresh token and clears SSO cookies).
-* Local auth state is cleared by AuthContext even if this request fails.
-*/
+ * Guest Login via Central Auth Service.
+ */
+export async function guestLoginUser(email: string, name?: string): Promise<LoginResponse> {
+	const res = await fetch(`${AUTH_URL}/guest/login`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		credentials: 'include',
+		body: JSON.stringify({ email, name }),
+	})
+	const authData = await handleResponse<{
+		access_token: string
+		refresh_token: string
+		token_type: string
+		user: {
+			id: number
+			email: string
+			username?: string
+			full_name?: string
+			role: string
+		}
+	}>(res)
+
+	return {
+		access_token: authData.access_token,
+		token_type: authData.token_type || 'bearer',
+		user_id: authData.user.id,
+		email: authData.user.email,
+		name: authData.user.full_name || authData.user.username || authData.user.email,
+		role_id: authData.user.role === 'admin' ? 2 : 1,
+	}
+}
+
+/**
+ * Logout from Central Auth Service (revokes refresh token and clears SSO cookies).
+ */
 export async function logoutUser(): Promise<void> {
 	await fetch(`${AUTH_URL}/logout`, {
 		method: 'POST',
 		credentials: 'include',
-	}).catch(() => { })
+	}).catch(() => {})
 }
 
 /**
-* Refresh cookie-backed auth state via HttpOnly cookies.
-*/
-export async function refreshAccessToken(): Promise<void> {
-	return refreshAuthSession()
+ * Refresh Access Token from Central Auth Service via HttpOnly cookie.
+ */
+export async function refreshAccessToken(): Promise<{ access_token: string } | null> {
+	try {
+		const res = await fetch(`${AUTH_URL}/refresh-token`, {
+			method: 'POST',
+			credentials: 'include',
+		})
+		if (!res.ok) return null
+		return await res.json()
+	} catch {
+		return null
+	}
 }
 
 /**
-* Request Password Reset OTP from Central Auth Service.
-*/
+ * Request Password Reset OTP from Central Auth Service.
+ */
 export async function requestPasswordOtp(credential: string): Promise<{ success: boolean; message: string; expires_in_minutes?: number }> {
 	const res = await fetch(`${AUTH_URL}/password/otp`, {
 		method: 'POST',
@@ -156,8 +196,8 @@ export async function requestPasswordOtp(credential: string): Promise<{ success:
 }
 
 /**
-* Verify Password Reset OTP with Central Auth Service.
-*/
+ * Verify Password Reset OTP with Central Auth Service.
+ */
 export async function verifyPasswordOtp(email: string, otp: string): Promise<{ success: boolean; token: string; message: string }> {
 	const res = await fetch(`${AUTH_URL}/password/otp/verify`, {
 		method: 'POST',
@@ -168,8 +208,8 @@ export async function verifyPasswordOtp(email: string, otp: string): Promise<{ s
 }
 
 /**
-* Reset Password using verified action token in Central Auth Service.
-*/
+ * Reset Password using verified action token in Central Auth Service.
+ */
 export async function resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
 	const res = await fetch(`${AUTH_URL}/password/reset`, {
 		method: 'PUT',
@@ -180,8 +220,8 @@ export async function resetPassword(token: string, newPassword: string): Promise
 }
 
 /**
-* Fetch CareerPath User Profile & Learning Roadmap from CareerPath Backend (Port 8005).
-*/
+ * Fetch CareerPath User Profile & Learning Roadmap from CareerPath Backend.
+ */
 export async function fetchCurrentUserProfile(
 	options: { redirectOnAuthFailure?: boolean } = {},
 ): Promise<UserProfileResponse> {
@@ -193,15 +233,14 @@ export async function fetchCurrentUserProfile(
 			'Cache-Control': 'no-cache, no-store, max-age=0',
 			Pragma: 'no-cache',
 		},
-		cache: 'no-store',
-		redirectOnAuthFailure: options.redirectOnAuthFailure,
+		redirectOnAuthFailure: options.redirectOnAuthFailure ?? false,
 	})
 	return await handleResponse<UserProfileResponse>(res)
 }
 
 /**
-* Update daily study time target (60, 120, 180, 240, 300, 360 mins)
-*/
+ * Update daily study time target (60, 120, 180, 240, 300, 360 mins)
+ */
 export async function updateDailyStudyMinutes(minutes: number): Promise<UserProfileResponse> {
 	const res = await fetchWithAuthRetry(`${BASE_URL}/user/me/study-settings`, {
 		method: 'PATCH',
@@ -220,8 +259,8 @@ export async function updateStudySettings(
 }
 
 /**
-* Reset career track / roadmap so the user can retake onboarding.
-*/
+ * Reset career track / roadmap so the user can retake onboarding.
+ */
 export async function resetUserCareerTrack(): Promise<void> {
 	const res = await fetchWithAuthRetry(`${BASE_URL}/user/me/career-track`, {
 		method: 'DELETE',
@@ -235,8 +274,34 @@ export async function deleteCareerTrack(): Promise<void> {
 }
 
 /**
-* Generate AI Coach weekly message from prompt E1 via backend.
-*/
+ * Upload or replace the user's profile avatar image.
+ * Accepts a File (JPEG, PNG, or WebP, up to 5 MB).
+ */
+export async function uploadUserAvatar(file: File): Promise<UserProfileResponse> {
+	const formData = new FormData()
+	formData.append('file', file)
+	const res = await fetchWithAuthRetry(`${BASE_URL}/user/me/avatar`, {
+		method: 'POST',
+		// Do NOT set Content-Type header — browser sets it with multipart boundary
+		body: formData,
+	})
+	return await handleResponse<UserProfileResponse>(res)
+}
+
+/**
+ * Delete the user's profile avatar and revert to default.
+ */
+export async function deleteUserAvatar(): Promise<UserProfileResponse> {
+	const res = await fetchWithAuthRetry(`${BASE_URL}/user/me/avatar`, {
+		method: 'DELETE',
+		headers: jsonHeaders(),
+	})
+	return await handleResponse<UserProfileResponse>(res)
+}
+
+/**
+ * Generate AI Coach weekly message from prompt E1 via backend.
+ */
 export async function generateAICoachMessage(payload: AICoachMessageRequest): Promise<AICoachMessageResponse> {
 	const res = await fetchWithAuthRetry(`${BASE_URL}/user/me/ai-coach-message`, {
 		method: 'POST',
@@ -247,6 +312,7 @@ export async function generateAICoachMessage(payload: AICoachMessageRequest): Pr
 	})
 	return await handleResponse<AICoachMessageResponse>(res)
 }
+
 export async function getCurrentUser(): Promise<AuthUser> {
 	const profile = await fetchCurrentUserProfile();
 	return {
@@ -259,9 +325,8 @@ export async function getCurrentUser(): Promise<AuthUser> {
 }
 
 /**
-* Đăng xuất khỏi Central Auth Service và xóa cookie.
-*/
+ * Đăng xuất khỏi Central Auth Service và xóa cookie.
+ */
 export async function logout(): Promise<void> {
 	await logoutUser();
 }
-

@@ -19,37 +19,42 @@ import {
 } from "@/shadcn/component/ui/dropdown-menu";
 import { Button } from "../../shadcn/component/ui/button";
 import { Dialog } from "@/shadcn/component/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shadcn/component/ui/avatar";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { ThemeToggle } from "./ThemeToggle";
 import {
     Sheet,
     SheetContent,
     SheetTrigger,
 } from "@/shadcn/component/ui/sheet";
 import {
-    CircleUser,
     History,
+    LayoutDashboard,
     LogOut,
     Menu,
     Settings,
     User,
 } from "lucide-react";
 import { useAuth } from "@/common/context/AuthContext";
+import { resolveAvatarUrl } from "@/common/lib/avatar";
 import {
     fetchCurrentUserProfile,
     updateStudySettings,
 } from "@/feature/auth/api/authAPI";
 import type { UserProfileResponse } from "@/feature/auth/type/Auth";
-import { ChangeCareerAlert } from "@/feature/user-profile/component/ChangeCareerAlert";
-import { StudySettingsDialog } from "@/feature/user-profile/component/StudySettingsDialog";
-import { StudyTimeAlert } from "@/feature/user-profile/component/StudyTimeAlert";
-import { StudyTimeDialog } from "@/feature/user-profile/component/StudyTimeDialog";
+import {
+    ChangeCareerAlert,
+    StudySettingsDialog,
+    StudyTimeAlert,
+    StudyTimeDialog,
+    LogoutConfirmDialog,
+} from "./shared-dialog";
 import { cn } from "@/shadcn/lib/util";
-import { CareerPathLogo } from "./CareerPathLogo";
-import { APP_INFO } from "../const/appConst";
+import { TmaLogo } from "./TmaLogo";
+import { APP_INFO } from "@/const/appConst";
 import { CareerpathIcon } from "../../common/component/SocialMediaIcon";
-import { StreakDropdown } from "@/feature/user-profile/component/StreakDropdown";
-import { NotificationDropdown } from "@/feature/user-profile/component/NotificationDropdown";
+import { NotificationDropdown, StreakDropdown } from "./navbar";
 import { useCareerTrackReset } from "@/feature/user-profile/hook/useCareerTrackReset";
 
 function estimateDays(totalMinutes: number, dailyStudyMinutes: number) {
@@ -71,13 +76,14 @@ export function MainNavigationMenu({
     const router = useRouter();
     const navigate = useNavigate();
     const auth = useAuth();
-    const userId = Number(auth.user?.id);
     const [openSetting, setOpenSetting] = useState(false);
     const [openCareerAlert, setOpenCareerAlert] = useState(false);
     const [openStudyTime, setOpenStudyTime] = useState(false);
     const [openStudyTimeAlert, setOpenStudyTimeAlert] = useState(false);
-    const [currentHour, setCurrentHour] = useState(2);
-    const [newHour, setNewHour] = useState(2);
+    const [openLogoutConfirm, setOpenLogoutConfirm] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [currentMinutes, setCurrentMinutes] = useState(120);
+    const [newMinutes, setNewMinutes] = useState(120);
     const [totalEstimatedMinutes, setTotalEstimatedMinutes] = useState(0);
     const [isSavingStudyTime, setIsSavingStudyTime] = useState(false);
     const [studyTimeError, setStudyTimeError] = useState<string | null>(null);
@@ -88,34 +94,61 @@ export function MainNavigationMenu({
         resetError,
     } = useCareerTrackReset();
 
+    const displayName = auth.user?.username || auth.user?.email || "User";
+    const initials = displayName
+        .split(" ")
+        .map((part) => part[0]?.toUpperCase() ?? "")
+        .slice(0, 2)
+        .join("");
+
+    const [avatarUrl, setAvatarUrl] = useState("/avatar.png");
+
     useEffect(() => {
-        if (!Number.isFinite(userId)) {
-            setCurrentHour(2);
-            setNewHour(2);
-            setTotalEstimatedMinutes(0);
+        const handleAvatarUpdated = (event: Event) => {
+            const customEvent = event as CustomEvent<{ avatarUrl?: string }>;
+            if (customEvent.detail?.avatarUrl) {
+                setAvatarUrl(resolveAvatarUrl(customEvent.detail.avatarUrl));
+            }
+        };
+
+        window.addEventListener("careerpath:avatar-updated", handleAvatarUpdated);
+        window.addEventListener("storage", handleAvatarUpdated);
+
+        return () => {
+            window.removeEventListener("careerpath:avatar-updated", handleAvatarUpdated);
+            window.removeEventListener("storage", handleAvatarUpdated);
+        };
+    }, []);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        if (!auth.isAuthenticated) {
             return;
         }
 
-        let isMounted = true;
-
         const loadProfile = async () => {
             try {
-                const profile = await fetchCurrentUserProfile();
+                const profile = await fetchCurrentUserProfile({ redirectOnAuthFailure: false });
                 if (!isMounted) {
                     return;
                 }
 
-                const hours = Math.max(1, Math.round(profile.daily_study_minutes / 60));
-                setCurrentHour(hours);
-                setNewHour(hours);
+                const minutes = profile.daily_study_minutes || 120;
+                setCurrentMinutes(minutes);
+                setNewMinutes(minutes);
                 setTotalEstimatedMinutes(profile.total_estimated_minutes);
+                // Load avatar from server profile
+                if (profile.avatar_url) {
+                    setAvatarUrl(resolveAvatarUrl(profile.avatar_url));
+                }
             } catch {
                 if (!isMounted) {
                     return;
                 }
 
-                setCurrentHour(2);
-                setNewHour(2);
+                setCurrentMinutes(120);
+                setNewMinutes(120);
                 setTotalEstimatedMinutes(0);
             }
         };
@@ -128,9 +161,9 @@ export function MainNavigationMenu({
                 return;
             }
 
-            const hours = Math.max(1, Math.round(customEvent.detail.daily_study_minutes / 60));
-            setCurrentHour(hours);
-            setNewHour(hours);
+            const minutes = customEvent.detail.daily_study_minutes || 120;
+            setCurrentMinutes(minutes);
+            setNewMinutes(minutes);
             setTotalEstimatedMinutes(customEvent.detail.total_estimated_minutes);
         };
 
@@ -140,29 +173,33 @@ export function MainNavigationMenu({
             isMounted = false;
             window.removeEventListener("careerpath:profile-updated", handleProfileUpdated);
         };
-    }, [userId]);
+    }, [auth.isAuthenticated]);
 
-    const handleLogout = async () => {
-        if (!window.confirm("Are you sure you want to logout?")) {
-            return;
-        }
+    const handleLogout = () => {
+        setOpenLogoutConfirm(true);
+    };
 
+    const performLogout = async () => {
+        setIsLoggingOut(true);
         try {
             await auth.logout();
             await router.invalidate();
             await navigate({ to: "/" });
         } catch (error) {
             console.error("Logout error:", error);
+        } finally {
+            setIsLoggingOut(false);
+            setOpenLogoutConfirm(false);
         }
     };
 
-    const currentDays = estimateDays(totalEstimatedMinutes, currentHour * 60);
-    const projectedDays = estimateDays(totalEstimatedMinutes, newHour * 60);
+    const currentDays = estimateDays(totalEstimatedMinutes, currentMinutes);
+    const projectedDays = estimateDays(totalEstimatedMinutes, newMinutes);
 
     const handleStudySettingsUpdated = (profile: UserProfileResponse) => {
-        const hours = Math.max(1, Math.round(profile.daily_study_minutes / 60));
-        setCurrentHour(hours);
-        setNewHour(hours);
+        const minutes = profile.daily_study_minutes || 120;
+        setCurrentMinutes(minutes);
+        setNewMinutes(minutes);
         setTotalEstimatedMinutes(profile.total_estimated_minutes);
         window.dispatchEvent(
             new CustomEvent<UserProfileResponse>("careerpath:profile-updated", {
@@ -194,7 +231,7 @@ export function MainNavigationMenu({
                         <Link
                             to="/"
                             onClick={(event) => handleNavigationClick(event, "/")}
-                            className="!bg-white px-4 py-2 !text-base font-medium"
+                            className="rounded-lg px-4 py-2 !text-base font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white"
                         >
                             {t("home", { ns: "nav", defaultValue: "Home" })}
                         </Link>
@@ -206,7 +243,7 @@ export function MainNavigationMenu({
                         <Link
                             to="/lessons/learning-path"
                             onClick={(event) => handleNavigationClick(event, "/lessons/learning-path")}
-                            className="!bg-white px-4 py-2 !text-base font-medium"
+                            className="rounded-lg px-4 py-2 !text-base font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white"
                         >
                             {t("path", { ns: "nav", defaultValue: "Path" })}
                         </Link>
@@ -218,7 +255,7 @@ export function MainNavigationMenu({
                         <Link
                             to="/guide"
                             onClick={(event) => handleNavigationClick(event, "/guide")}
-                            className="!bg-white px-4 py-2 !text-base font-medium"
+                            className="rounded-lg px-4 py-2 !text-base font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white"
                         >
                             {t("howItWorks", { ns: "nav", defaultValue: "How It Works" })}
                         </Link>
@@ -232,7 +269,7 @@ export function MainNavigationMenu({
         <div>
             <div className="h-13" />
 
-            <header className="fixed top-0 z-50 w-full border-b border-gray-300 bg-white">
+            <header className="fixed top-0 z-50 w-full border-b border-gray-300 bg-white/95 backdrop-blur-sm transition-colors dark:border-slate-800 dark:bg-slate-900/95">
                 <div className="flex h-13 w-full items-center justify-between px-4 py-3 sm:px-6">
                     <div className="flex min-w-0 items-center gap-4 lg:gap-6">
                         <Link
@@ -255,6 +292,7 @@ export function MainNavigationMenu({
                     </div>
 
                     <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                        <ThemeToggle variant="outline" className="h-9 px-2" />
                         <LanguageSwitcher variant="outline" className="h-9 px-2.5" />
 
                         {auth.isAuthenticated ? (
@@ -269,28 +307,47 @@ export function MainNavigationMenu({
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button
-                                            variant="outline"
+                                            variant="ghost"
                                             aria-label="Open user menu"
-                                            className="ml-3 flex items-center px-3 text-[15px] sm:ml-4"
+                                            className="ml-3 relative h-9 w-9 rounded-full p-0 sm:ml-4 transition-transform hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-blue-500"
                                         >
-                                            <User className="h-4 w-4" />
+                                            <Avatar className="h-9 w-9 border border-slate-200 shadow-xs dark:border-slate-800">
+                                                <AvatarImage
+                                                    src={avatarUrl}
+                                                    alt={displayName}
+                                                    className="object-cover"
+                                                />
+                                                <AvatarFallback className="bg-gradient-to-br from-blue-600 to-indigo-700 text-xs font-bold text-white">
+                                                    {initials || <User className="h-4 w-4" />}
+                                                </AvatarFallback>
+                                            </Avatar>
                                         </Button>
                                     </DropdownMenuTrigger>
 
                                     <DropdownMenuContent
-                                        className="w-52"
+                                        className="w-56 p-1.5"
                                         align="end"
                                     >
-                                        <DropdownMenuLabel className="text-center">
-                                            <div className="space-y-1">
-                                                <p className="text-base font-semibold">
-                                                    {auth.user?.username ||
-                                                        "User"}
-                                                </p>
-
-                                                <p className="text-xs text-muted-foreground">
-                                                    {auth.user?.email}
-                                                </p>
+                                        <DropdownMenuLabel className="p-2.5 font-normal">
+                                            <div className="flex items-center gap-3">
+                                                <Avatar className="h-10 w-10 border border-slate-200 shadow-xs dark:border-slate-800 shrink-0">
+                                                    <AvatarImage
+                                                        src={avatarUrl}
+                                                        alt={displayName}
+                                                        className="object-cover"
+                                                    />
+                                                    <AvatarFallback className="bg-gradient-to-br from-blue-600 to-indigo-700 text-xs font-bold text-white">
+                                                        {initials || <User className="h-4 w-4" />}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex flex-col min-w-0 flex-1">
+                                                    <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
+                                                        {displayName}
+                                                    </p>
+                                                    <p className="truncate text-xs text-muted-foreground">
+                                                        {auth.user?.email}
+                                                    </p>
+                                                </div>
                                             </div>
                                         </DropdownMenuLabel>
 
@@ -300,10 +357,19 @@ export function MainNavigationMenu({
                                             <Link
                                                 to="/profile"
                                                 onClick={(event) => handleNavigationClick(event, "/profile")}
-                                                className="cursor-pointer text-base font-medium"
+                                                className="cursor-pointer text-base font-medium flex items-center"
                                             >
-                                                <CircleUser className="mr-2 h-4 w-4" />
-                                                {t("profile", { ns: "nav", defaultValue: "Profile" })}
+                                                <Avatar className="mr-2.5 h-4 w-4 shrink-0 border border-slate-200 dark:border-slate-700">
+                                                    <AvatarImage
+                                                        src={avatarUrl}
+                                                        alt={displayName}
+                                                        className="object-cover"
+                                                    />
+                                                    <AvatarFallback className="bg-blue-600 text-[8px] font-bold text-white">
+                                                        {initials ? initials[0] : <User className="h-2.5 w-2.5" />}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <span>{t("profile", { ns: "nav", defaultValue: "Profile" })}</span>
                                             </Link>
                                         </DropdownMenuItem>
 
@@ -337,11 +403,28 @@ export function MainNavigationMenu({
                                             </button>
                                         </DropdownMenuItem>
 
+                                        {auth.user?.role_id === 2 && (
+                                            <>
+                                                <DropdownMenuSeparator />
+
+                                                <DropdownMenuItem asChild>
+                                                    <Link
+                                                        to="/admin"
+                                                        onClick={(event) => handleNavigationClick(event, "/admin")}
+                                                        className="cursor-pointer text-base font-medium"
+                                                    >
+                                                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                                                        {t("adminPage", { ns: "nav", defaultValue: "Go to admin page" })}
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
+
                                         <DropdownMenuSeparator />
 
                                         <DropdownMenuItem
                                             asChild
-                                            className="hover:!bg-red-50"
+                                            className="hover:!bg-red-50 dark:hover:!bg-red-950/40"
                                         >
                                             <button
                                                 type="button"
@@ -389,7 +472,12 @@ export function MainNavigationMenu({
                                 side="left"
                                 className="w-[300px] p-0"
                             >
-                                <MobileNav onNavigateIntent={onNavigateIntent} />
+                                <MobileNav
+                                    onNavigateIntent={onNavigateIntent}
+                                    avatarUrl={avatarUrl}
+                                    displayName={displayName}
+                                    initials={initials}
+                                />
                             </SheetContent>
                         </Sheet>
                     </div>
@@ -398,7 +486,7 @@ export function MainNavigationMenu({
 
             <Dialog open={openSetting} onOpenChange={setOpenSetting}>
                 <StudySettingsDialog
-                    studyHours={currentHour}
+                    studyMinutes={currentMinutes}
                     onCareerClick={() => {
                         setOpenSetting(false);
                         clearResetError();
@@ -440,34 +528,58 @@ export function MainNavigationMenu({
                 />
             </AlertDialog>
 
-            <Dialog open={openStudyTime} onOpenChange={setOpenStudyTime}>
+            <Dialog
+                open={openStudyTime}
+                onOpenChange={(isOpen) => {
+                    setOpenStudyTime(isOpen);
+                    if (!isOpen) {
+                        setNewMinutes(currentMinutes);
+                        setStudyTimeError(null);
+                    }
+                }}
+            >
                 <StudyTimeDialog
-                    currentHour={currentHour}
-                    onCancel={() => setOpenStudyTime(false)}
-                    onSave={(hour) => {
+                    open={openStudyTime}
+                    currentMinutes={currentMinutes}
+                    onCancel={() => {
                         setOpenStudyTime(false);
-                        setNewHour(hour);
+                        setNewMinutes(currentMinutes);
+                    }}
+                    onSave={(mins) => {
+                        setOpenStudyTime(false);
+                        setNewMinutes(mins);
                         setStudyTimeError(null);
                         setOpenStudyTimeAlert(true);
                     }}
                 />
             </Dialog>
 
-            <AlertDialog open={openStudyTimeAlert} onOpenChange={setOpenStudyTimeAlert}>
+            <AlertDialog
+                open={openStudyTimeAlert}
+                onOpenChange={(isOpen) => {
+                    setOpenStudyTimeAlert(isOpen);
+                    if (!isOpen) {
+                        setNewMinutes(currentMinutes);
+                    }
+                }}
+            >
                 <StudyTimeAlert
-                    currentHour={currentHour}
-                    newHour={newHour}
+                    currentMinutes={currentMinutes}
+                    newMinutes={newMinutes}
                     currentDays={currentDays}
                     newDays={projectedDays}
                     isSaving={isSavingStudyTime}
                     errorMessage={studyTimeError}
-                    onCancel={() => setOpenStudyTimeAlert(false)}
+                    onCancel={() => {
+                        setOpenStudyTimeAlert(false);
+                        setNewMinutes(currentMinutes);
+                    }}
                     onConfirm={async () => {
                         setIsSavingStudyTime(true);
                         setStudyTimeError(null);
                         try {
                             const updatedProfile = await updateStudySettings({
-                                daily_study_minutes: newHour * 60,
+                                daily_study_minutes: newMinutes,
                             });
                             handleStudySettingsUpdated(updatedProfile);
                             setOpenStudyTimeAlert(false);
@@ -481,31 +593,59 @@ export function MainNavigationMenu({
                     }}
                 />
             </AlertDialog>
+
+            <AlertDialog
+                open={openLogoutConfirm}
+                onOpenChange={(open) => {
+                    if (isLoggingOut) {
+                        return;
+                    }
+                    setOpenLogoutConfirm(open);
+                }}
+            >
+                <LogoutConfirmDialog
+                    onCancel={() => setOpenLogoutConfirm(false)}
+                    onConfirm={performLogout}
+                    isSubmitting={isLoggingOut}
+                />
+            </AlertDialog>
         </div>
     );
 }
 
 function MobileNav({
     onNavigateIntent,
+    avatarUrl,
+    displayName,
+    initials,
 }: {
     onNavigateIntent?: (to: string) => boolean;
+    avatarUrl: string;
+    displayName: string;
+    initials: string;
 }) {
     const router = useRouter();
     const navigate = useNavigate();
     const auth = useAuth();
     const { t } = useTranslation(["nav", "profile"]);
+    const [openLogoutConfirm, setOpenLogoutConfirm] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-    const handleLogout = async () => {
-        if (!window.confirm("Are you sure you want to logout?")) {
-            return;
-        }
+    const handleLogout = () => {
+        setOpenLogoutConfirm(true);
+    };
 
+    const performLogout = async () => {
+        setIsLoggingOut(true);
         try {
             await auth.logout();
             await router.invalidate();
             await navigate({ to: "/" });
         } catch (error) {
             console.error("Logout error:", error);
+        } finally {
+            setIsLoggingOut(false);
+            setOpenLogoutConfirm(false);
         }
     };
 
@@ -527,115 +667,187 @@ function MobileNav({
     };
 
     return (
-        <div className="flex h-full flex-col">
-            <div className="border-b px-6 py-4">
-                <Link
-                    to="/"
-                    onClick={(event) => handleNavigationClick(event, "/")}
-                    className="flex items-center gap-3"
-                >
-                    <CareerPathLogo className="h-8 w-8" />
-
-                    <div className="text-lg font-bold text-sidebar-primary">
-                        {APP_INFO.APP_NAME}{" "}
-                        <span className="text-black">TOEIC</span>
-                    </div>
-                </Link>
-            </div>
-
-            <nav className="flex-1 space-y-1 px-6 py-4">
-                <Link
-                    to="/"
-                    onClick={(event) => handleNavigationClick(event, "/")}
-                    className={linkClass}
-                    activeProps={{
-                        className:
-                            "bg-accent text-accent-foreground font-semibold",
-                    }}
-                >
-                    {t("home", { ns: "nav", defaultValue: "Home" })}
-                </Link>
-
-                <Link
-                    to="/lessons/learning-path"
-                    onClick={(event) => handleNavigationClick(event, "/lessons/learning-path")}
-                    className={linkClass}
-                    activeProps={{
-                        className:
-                            "bg-accent text-accent-foreground font-semibold",
-                    }}
-                >
-                    {t("path", { ns: "nav", defaultValue: "Path" })}
-                </Link>
-
-                <Link
-                    to="/guide"
-                    onClick={(event) => handleNavigationClick(event, "/guide")}
-                    className={linkClass}
-                    activeProps={{
-                        className:
-                            "bg-accent text-accent-foreground font-semibold",
-                    }}
-                >
-                    {t("howItWorks", { ns: "nav", defaultValue: "How It Works" })}
-                </Link>
-            </nav>
-
-            <div className="border-t px-6 py-3">
-                <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-slate-600">Language</span>
-                    <LanguageSwitcher variant="outline" />
-                </div>
-            </div>
-
-            {auth.isAuthenticated ? (
-                <div className="space-y-1 border-t px-6 py-4">
-                    <div className="px-3 py-2">
-                        <p className="text-base font-semibold">
-                            {auth.user?.username || "User"}
-                        </p>
-
-                        <p className="text-xs text-muted-foreground">
-                            {auth.user?.email}
-                        </p>
-                    </div>
-
+        <>
+            <div className="flex h-full flex-col">
+                <div className="border-b px-6 py-4">
                     <Link
-                        to="/history"
-                        onClick={(event) => handleNavigationClick(event, "/history")}
-                        className={cn(linkClass, "gap-2")}
+                        to="/"
+                        onClick={(event) => handleNavigationClick(event, "/")}
+                        className="flex items-center gap-3"
+                    >
+                        <TmaLogo className="h-8 w-8" />
+
+                        <div className="text-lg font-bold text-sidebar-primary">
+                            {APP_INFO.APP_NAME}{" "}
+                            <span className="text-black dark:text-white">TOEIC</span>
+                        </div>
+                    </Link>
+                </div>
+
+                <nav className="flex-1 space-y-1 px-6 py-4">
+                    <Link
+                        to="/"
+                        onClick={(event) => handleNavigationClick(event, "/")}
+                        className={linkClass}
                         activeProps={{
                             className:
                                 "bg-accent text-accent-foreground font-semibold",
                         }}
                     >
-                        <History className="h-4 w-4" />
-                        {t("history", { ns: "nav", defaultValue: "History" })}
+                        {t("home", { ns: "nav", defaultValue: "Home" })}
                     </Link>
 
-                    <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-base text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
+                    <Link
+                        to="/lessons/learning-path"
+                        onClick={(event) => handleNavigationClick(event, "/lessons/learning-path")}
+                        className={linkClass}
+                        activeProps={{
+                            className:
+                                "bg-accent text-accent-foreground font-semibold",
+                        }}
                     >
-                        <LogOut className="h-4 w-4" />
-                        <span>{t("logout", { ns: "nav", defaultValue: "Log out" })}</span>
-                    </button>
+                        {t("path", { ns: "nav", defaultValue: "Path" })}
+                    </Link>
+
+                    <Link
+                        to="/guide"
+                        onClick={(event) => handleNavigationClick(event, "/guide")}
+                        className={linkClass}
+                        activeProps={{
+                            className:
+                                "bg-accent text-accent-foreground font-semibold",
+                        }}
+                    >
+                        {t("howItWorks", { ns: "nav", defaultValue: "How It Works" })}
+                    </Link>
+                </nav>
+
+                <div className="border-t border-slate-200 px-6 py-3 space-y-3 dark:border-slate-800">
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                            {t("theme.theme", { ns: "nav", defaultValue: "Theme" })}
+                        </span>
+                        <ThemeToggle variant="outline" showLabel />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Language</span>
+                        <LanguageSwitcher variant="outline" />
+                    </div>
                 </div>
-            ) : (
-                <div className="border-t px-6 py-4">
-                    <Button asChild variant="outline" className="w-full">
+
+                {auth.isAuthenticated ? (
+                    <div className="space-y-1 border-t px-6 py-4">
+                        <div className="flex items-center gap-3 px-3 py-2">
+                            <Avatar className="h-10 w-10 border border-slate-200 shadow-xs dark:border-slate-800 shrink-0">
+                                <AvatarImage
+                                    src={avatarUrl}
+                                    alt={displayName}
+                                    className="object-cover"
+                                />
+                                <AvatarFallback className="bg-gradient-to-br from-blue-600 to-indigo-700 text-xs font-bold text-white">
+                                    {initials || <User className="h-4 w-4" />}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-base font-semibold">
+                                    {displayName}
+                                </p>
+                                <p className="truncate text-xs text-muted-foreground">
+                                    {auth.user?.email}
+                                </p>
+                            </div>
+                        </div>
+
                         <Link
-                            to="/login"
-                            onClick={(event) => handleNavigationClick(event, "/login")}
-                            className="flex items-center justify-center gap-2"
+                            to="/profile"
+                            onClick={(event) => handleNavigationClick(event, "/profile")}
+                            className={cn(linkClass, "gap-2.5")}
+                            activeProps={{
+                                className:
+                                    "bg-accent text-accent-foreground font-semibold",
+                            }}
                         >
-                            <User className="h-4 w-4" />
-                            <span>{t("login", { ns: "nav", defaultValue: "Login" })}</span>
+                            <Avatar className="h-4 w-4 shrink-0 border border-slate-200 dark:border-slate-700">
+                                <AvatarImage
+                                    src={avatarUrl}
+                                    alt={displayName}
+                                    className="object-cover"
+                                />
+                                <AvatarFallback className="bg-blue-600 text-[8px] font-bold text-white">
+                                    {initials ? initials[0] : <User className="h-2.5 w-2.5" />}
+                                </AvatarFallback>
+                            </Avatar>
+                            <span>{t("profile", { ns: "nav", defaultValue: "Profile" })}</span>
                         </Link>
-                    </Button>
-                </div>
-            )}
-        </div>
+
+                        <Link
+                            to="/history"
+                            onClick={(event) => handleNavigationClick(event, "/history")}
+                            className={cn(linkClass, "gap-2")}
+                            activeProps={{
+                                className:
+                                    "bg-accent text-accent-foreground font-semibold",
+                            }}
+                        >
+                            <History className="h-4 w-4" />
+                            {t("history", { ns: "nav", defaultValue: "History" })}
+                        </Link>
+
+                        {auth.user?.role_id === 2 && (
+                            <Link
+                                to="/admin"
+                                onClick={(event) => handleNavigationClick(event, "/admin")}
+                                className={cn(linkClass, "gap-2")}
+                                activeProps={{
+                                    className:
+                                        "bg-accent text-accent-foreground font-semibold",
+                                }}
+                            >
+                                <LayoutDashboard className="h-4 w-4" />
+                                {t("adminPage", { ns: "nav", defaultValue: "Go to admin page" })}
+                            </Link>
+                        )}
+
+                        <button
+                            type="button"
+                            onClick={handleLogout}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-base text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
+                        >
+                            <LogOut className="h-4 w-4" />
+                            <span>{t("logout", { ns: "nav", defaultValue: "Log out" })}</span>
+                        </button>
+                    </div>
+                ) : (
+                    <div className="border-t px-6 py-4">
+                        <Button asChild variant="outline" className="w-full">
+                            <Link
+                                to="/login"
+                                onClick={(event) => handleNavigationClick(event, "/login")}
+                                className="flex items-center justify-center gap-2"
+                            >
+                                <User className="h-4 w-4" />
+                                <span>{t("login", { ns: "nav", defaultValue: "Login" })}</span>
+                            </Link>
+                        </Button>
+                    </div>
+                )}
+            </div>
+
+            <AlertDialog
+                open={openLogoutConfirm}
+                onOpenChange={(open) => {
+                    if (isLoggingOut) {
+                        return;
+                    }
+                    setOpenLogoutConfirm(open);
+                }}
+            >
+                <LogoutConfirmDialog
+                    onCancel={() => setOpenLogoutConfirm(false)}
+                    onConfirm={performLogout}
+                    isSubmitting={isLoggingOut}
+                />
+            </AlertDialog>
+        </>
     );
 }

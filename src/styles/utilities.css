@@ -1,0 +1,146 @@
+/* ── Custom Scrollbar ───────────────────────────────────────────── */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.4);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(71, 85, 105, 0.6);
+}
+
+/* ── Collapsible Smooth Grid Animation ────────────────────────────── */
+.accordion-collapse-grid {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 350ms cubic-bezier(0.33, 1, 0.68, 1), opacity 280ms ease;
+  pointer-events: none;
+}
+
+.accordion-collapse-grid[data-expanded="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.accordion-collapse-grid>div {
+  overflow: hidden;
+}
+
+.accordion-collapse-grid.study-activity-rail {
+  min-height: 0;
+  flex-grow: 0;
+  flex-shrink: 1;
+  flex-basis: auto;
+  transition: grid-template-rows 350ms cubic-bezier(0.33, 1, 0.68, 1), opacity 280ms ease, flex-grow 350ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+@media (min-width: 1280px) {
+  .accordion-collapse-grid.study-activity-rail[data-expanded="true"] {
+    flex-grow: 1;
+  }
+}
+
+.accordion-collapse-grid.study-activity-rail>div {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.accordion-collapse-content {
+  transition: transform 350ms cubic-bezier(0.33, 1, 0.68, 1), opacity 280ms ease;
+  transform: translateY(-8px);
+  opacity: 0;
+}
+
+.accordion-collapse-grid[data-expanded="true"] .accordion-collapse-content {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.daily-action-card {
+  transition: transform 300ms cubic-bezier(0.33, 1, 0.68, 1), opacity 250ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.accordion-collapse-grid[data-expanded="true"] .daily-action-card:nth-child(1) {
+  transition-delay: 40ms;
+}
+
+.accordion-collapse-grid[data-expanded="true"] .daily-action-card:nth-child(2) {
+  transition-delay: 80ms;
+}
+
+.accordion-collapse-grid[data-expanded="true"] .daily-action-card:nth-child(3) {
+  transition-delay: 120ms;
+}
+
+/* ── Blink Blink / Sparkling Card Effects ────────────────────────────── */
+@keyframes blink-twinkle {
+  0%, 100% {
+    opacity: 0.15;
+    transform: scale(0.6) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.25) rotate(180deg);
+    filter: drop-shadow(0 0 8px rgba(0, 169, 206, 0.9));
+  }
+}
+
+@keyframes blink-twinkle-alt {
+  0%, 100% {
+    opacity: 0.9;
+    transform: scale(1.15) rotate(90deg);
+    filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.85));
+  }
+  50% {
+    opacity: 0.1;
+    transform: scale(0.5) rotate(0deg);
+  }
+}
+
+@keyframes border-blink-glow {
+  0%, 100% {
+    box-shadow: 0 10px 30px rgba(37, 99, 235, 0.08), 0 0 0 1px rgba(0, 114, 187, 0.25);
+  }
+  50% {
+    box-shadow: 0 15px 45px rgba(0, 169, 206, 0.3), 0 0 25px rgba(0, 114, 187, 0.35), 0 0 0 2.5px rgba(0, 169, 206, 0.7);
+  }
+}
+
+.animate-border-blink {
+  animation: border-blink-glow 2.4s ease-in-out infinite;
+}
+
+.animate-blink-twinkle-1 {
+  animation: blink-twinkle 2s ease-in-out infinite;
+}
+
+.animate-blink-twinkle-2 {
+  animation: blink-twinkle-alt 2.6s ease-in-out infinite 0.4s;
+}
+
+.animate-blink-twinkle-3 {
+  animation: blink-twinkle 2.2s ease-in-out infinite 0.9s;
+}
+
+.animate-blink-twinkle-4 {
+  animation: blink-twinkle-alt 2.8s ease-in-out infinite 1.3s;
+}

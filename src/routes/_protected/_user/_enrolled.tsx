@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, Outlet, isRedirect } from '@tanstack/react-router'
 import { fetchOnboardingStatus, getCachedOnboardingStatus } from '@/feature/onboarding/api/onboardingApi'
-import { DailyMorningReviewAutoTrigger } from '@/feature/user-profile/component/DailyMorningReviewAutoTrigger'
+import { DailyMorningReviewAutoTrigger } from '@/feature/daily-review'
 
 export const Route = createFileRoute('/_protected/_user/_enrolled')({
 	beforeLoad: async ({ context }) => {

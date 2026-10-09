@@ -7,4 +7,3 @@ export * from './component/FillBlankQuestion';
 export * from './component/MultiSelectQuestion';
 export * from './component/OrderingQuestion';
 export * from './component/QuizResultAccordion';
-export * from './component/FailureRoutingModal';

@@ -10,7 +10,7 @@ export interface BudgetVector {
 }
 
 export interface SkillDefinition {
-	description: string;
+	description: string | Record<string, string>;
 	example_questions: string[];
 }
 
@@ -67,37 +67,71 @@ export interface BudgetValidationResult {
 	warnings: string[];
 }
 
-export interface CostRecord {
-	id: string;
-	date: string; // ISO date string
-	generator: string;
-	inputTokens: number;
-	outputTokens: number;
-	costUsd: number;
-	status: 'success' | 'retry' | 'fallback' | 'rejected';
-	role?: string;
+export type CostRange =
+	| '7d'
+	| '30d'
+	| '90d'
+	| 'this_month'
+	| 'last_month'
+	| '12m'
+	| 'all';
+
+export type CostGranularity = 'daily' | 'weekly' | 'monthly';
+
+/** One point on the spend-over-time chart. */
+export interface CostBucket {
+	period: string;
+	label: string;
+	total: number;
+	calls: number;
+	byGenerator: Record<string, number>;
+}
+
+/** One row of any breakdown (generator / model / provider / track / status). */
+export interface CostGroup {
+	key: string;
+	label: string | null;
+	count: number;
+	promptTokens: number;
+	completionTokens: number;
+	totalTokens: number;
+	totalCost: number;
+	avgCost: number;
+	share: number;
+}
+
+export interface CostAlert {
+	date: string;
+	type: 'spike' | 'budget_warning' | 'kill_switch';
+	message: string;
+}
+
+export interface CostFilters {
+	range?: CostRange;
+	granularity?: CostGranularity;
+	generator?: string;
+	model?: string;
+	roleId?: number | null;
+	status?: string;
 }
 
 export interface CostDashboardData {
-	totalCost30d: number;
-	dailyAverage: number;
-	dailyCosts: Array<{
-		date: string;
-		total: number;
-		byGenerator: Record<string, number>;
-	}>;
-	generatorBreakdown: Array<{
-		generator: string;
-		count: number;
-		totalTokens: number;
-		totalCost: number;
-		avgCost: number;
-	}>;
-	alerts: Array<{
-		date: string;
-		type: 'spike' | 'budget_warning' | 'kill_switch';
-		message: string;
-	}>;
+	rangeKey: CostRange;
+	granularity: CostGranularity;
+	fromDate: string;
+	toDate: string;
+	totalCost: number;
+	totalCalls: number;
+	totalTokens: number;
+	periodAverage: number;
+	buckets: CostBucket[];
+	byGenerator: CostGroup[];
+	byModel: CostGroup[];
+	byProvider: CostGroup[];
+	byTrack: CostGroup[];
+	byStatus: CostGroup[];
+	availableModels: string[];
+	alerts: CostAlert[];
 }
 
 export interface RejectedContent {
@@ -240,13 +274,66 @@ export interface GenerationSummary {
 	blockers: GenerationBlockers;
 }
 
-export interface ResetLearnersResult {
-	resetLearners: number;
+export interface ClearedCounts {
 	clearedAnswers: number;
 	clearedRoadmaps: number;
 	clearedLessons: number;
+	clearedTopicQuizzes: number;
+	clearedFinalQuizzes: number;
 	clearedRadarScores: number;
 	clearedQueueEntries: number;
+	clearedFlashcards: number;
+}
+
+export interface ResetLearnersResult extends ClearedCounts {
+	resetLearners: number;
+}
+
+// ── Users ────────────────────────────────────────────────────────────────────
+//
+// The roster comes from CareerPath's own `user` table. The shared auth_db is
+// never read or written from the admin portal, so identity fields that live
+// only there (phone, avatar, is_verified, is_active) are deliberately absent.
+
+export const LEARNER_ROLE_ID = 1;
+export const ADMIN_ROLE_ID = 2;
+
+export type UserRoleFilter = 'admin' | 'employee' | '';
+
+/** One roster row: CareerPath identity plus learning state. */
+export interface AdminUser {
+	id: number;
+	name: string;
+	email: string;
+	roleId: number | null;
+	createdAt: string;
+	jobRoleId: number | null;
+	jobRoleName: string | null;
+	learningStatus: string;
+	lessonsCompleted: number;
+	lessonsTotal: number;
+	topicQuizzesPassed: number;
+	finalQuizStatus: string | null;
+	flashcardCount: number;
+	hasPlacementAnswers: boolean;
+}
+
+export interface AdminUserFilters {
+	search?: string;
+	role?: UserRoleFilter;
+	limit?: number;
+	offset?: number;
+}
+
+export interface AdminUserPage {
+	items: AdminUser[];
+	total: number;
+	limit: number;
+	offset: number;
+}
+
+export interface ResetLearnerResult extends ClearedCounts {
+	userId: number;
 }
 
 export interface DashboardData {

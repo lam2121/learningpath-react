@@ -7,23 +7,28 @@ import { Badge } from '@/shadcn/component/ui/badge';
 import { Alert, AlertDescription } from '@/shadcn/component/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shadcn/component/ui/dialog';
 import { Toaster } from '@/shadcn/component/ui/sonner';
-import { RoleCreationForm } from '@/feature/admin/component/RoleCreationForm';
-import { GenerationCenterDialog } from '@/feature/admin/component/GenerationCenterDialog';
-import { ResetTrackLearnersModal } from '@/feature/admin/component/GenerationConfirmModals';
+import {
+	GenerateMoreTopicsModal,
+	GenerationCenterDialog,
+	ResetTrackLearnersModal,
+	RoleCreationForm,
+} from '@/feature/admin/component';
 import {
 	activateTrack,
 	deleteTrack,
 	fetchGenerationSummary,
 	fetchTracks,
 	generateCourse,
+	generateMoreTopics,
 	generatePlacement,
 	resetTrackLearners,
 	type CareerTrack,
 	type GenerationSummary,
+	type SkillKey,
 } from '@/feature/admin/api/adminApi';
 
 type Workflow = 'placement' | 'course' | 'course-resume';
-type ActionState = Workflow | 'reset' | null;
+type ActionState = Workflow | 'reset' | 'more-topics' | null;
 
 function getRowStatus(track: CareerTrack): { label: string; className: string } {
 	const placementStatus = track.placementGenerationStatus;
@@ -33,13 +38,13 @@ function getRowStatus(track: CareerTrack): { label: string; className: string } 
 	if (isGenerating) {
 		return {
 			label: courseStatus === 'in_progress' || courseStatus === 'pending' ? 'Generating course' : 'Generating placement',
-			className: 'border-blue-200 bg-blue-50 text-blue-700',
+			className: 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300',
 		}
 	}
 	if (placementStatus === 'failed' || courseStatus === 'failed') {
 		return {
 			label: 'Attention',
-			className: 'border-red-200 bg-red-50 text-red-700',
+			className: 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300',
 		}
 	}
 	const placementReady = track.placementQuestionsCount >= 48;
@@ -47,18 +52,18 @@ function getRowStatus(track: CareerTrack): { label: string; className: string } 
 	if (placementReady && courseReady) {
 		return {
 			label: 'Ready',
-			className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+			className: 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300',
 		}
 	}
 	if (track.placementQuestionsCount > 0 || track.topicsCount > 0 || track.lessonsCount > 0) {
 		return {
 			label: 'Partial',
-			className: 'border-amber-200 bg-amber-50 text-amber-800',
+			className: 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-300',
 		}
 	}
 	return {
 		label: 'Not started',
-		className: 'border-slate-200 bg-slate-50 text-slate-700',
+		className: 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300',
 	}
 }
 
@@ -93,6 +98,7 @@ function TracksPage() {
 	const [actionLoading, setActionLoading] = useState<ActionState>(null);
 	const [confirmWorkflow, setConfirmWorkflow] = useState<Workflow | null>(null);
 	const [confirmReset, setConfirmReset] = useState(false);
+	const [showMoreTopics, setShowMoreTopics] = useState(false);
 	const [confirmDelete, setConfirmDelete] = useState<CareerTrack | null>(null);
 	const [mutating, setMutating] = useState(false);
 
@@ -198,6 +204,27 @@ function TracksPage() {
 		}
 	}
 
+	const handleGenerateMoreTopics = async (skill: SkillKey, count: number) => {
+		if (!selectedTrack) return;
+		setActionLoading('more-topics');
+		try {
+			await generateMoreTopics(selectedTrack.id, skill, count);
+			toast.success(`Generating ${count} more topic${count === 1 ? '' : 's'} — lesson shells are created with each topic.`);
+			setShowMoreTopics(false);
+			await Promise.all([
+				loadTracks(),
+				loadGenerationSummary(selectedTrack.id, true),
+			])
+		} catch (error) {
+			console.error('Generate more topics failed:', error);
+			const detail = (error as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+			toast.error(typeof detail === 'string' ? detail : 'Failed to start generation.');
+			await loadGenerationSummary(selectedTrack.id, true);
+		} finally {
+			setActionLoading(null);
+		}
+	}
+
 	const handleResetLearners = async () => {
 		if (!selectedTrack) return;
 		setConfirmReset(false);
@@ -205,7 +232,7 @@ function TracksPage() {
 		try {
 			const result = await resetTrackLearners(selectedTrack.id);
 			toast.success(
-				`Reset ${result.resetLearners} learner(s), cleared ${result.clearedAnswers} answer(s), ${result.clearedRoadmaps} roadmap(s), ${result.clearedLessons} lesson(s), ${result.clearedRadarScores} radar score(s), and ${result.clearedQueueEntries} review queue entry(ies).`
+				`Reset ${result.resetLearners} learner(s), cleared ${result.clearedAnswers} answer(s), ${result.clearedRoadmaps} roadmap(s), ${result.clearedLessons} lesson(s), ${result.clearedTopicQuizzes} topic quiz(zes), ${result.clearedFinalQuizzes} final quiz(zes), ${result.clearedRadarScores} radar score(s), and ${result.clearedQueueEntries} review queue entry(ies).`
 			);
 			setConfirmWorkflow(null);
 			await Promise.all([
@@ -272,8 +299,8 @@ function TracksPage() {
 			<Toaster position="top-right" />
 			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-bold text-gray-900">Career Tracks</h1>
-					<p className="text-gray-500">Manage career tracks and D/C/T/G budget</p>
+					<h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Career Tracks</h1>
+					<p className="text-gray-500 dark:text-gray-400">Manage career tracks and D/C/T/G budget</p>
 				</div>
 				<Button onClick={() => { setEditingTrack(undefined); setShowForm(true); }}>
 					<Plus className="mr-2 h-4 w-4" />
@@ -281,15 +308,15 @@ function TracksPage() {
 				</Button>
 			</div>
 
-			<div className="overflow-x-auto rounded-lg border bg-white">
+			<div className="overflow-x-auto rounded-lg border dark:border-gray-800 bg-white dark:bg-gray-900">
 				<table className="w-full">
 					<thead>
-						<tr className="bg-gray-50 text-left text-sm text-gray-500">
+						<tr className="bg-gray-50 dark:bg-gray-800 text-left text-sm text-gray-500 dark:text-gray-400">
 							<th className="p-4">Track Name</th>
 							<th className="p-4">Role Description</th>
 							<th className="p-4">Active Learners</th>
 							<th className="p-4">Status</th>
-							<th className="p-4">Budget (Baseline)</th>
+							<th className="p-4">Budget (20 Topics)</th>
 							<th className="p-4">Generation</th>
 							<th className="p-4 w-40">Actions</th>
 						</tr>
@@ -302,17 +329,20 @@ function TracksPage() {
 								|| track.courseGenerationStatus === 'in_progress'
 								|| track.courseGenerationStatus === 'pending';
 							return (
-								<tr key={track.id} className="border-t border-gray-100 hover:bg-gray-50">
-									<td className="p-4 font-medium text-gray-900">{track.name}</td>
-									<td className="max-w-xs p-4 text-sm text-gray-600">{track.jobDescription.slice(0, 80)}...</td>
-									<td className="p-4 text-sm text-gray-600">{track.activeLearnerCount}</td>
+								<tr key={track.id} className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+									<td className="p-4 font-medium text-gray-900 dark:text-gray-100">{track.name}</td>
+									<td className="max-w-xs p-4 text-sm text-gray-600 dark:text-gray-400">{track.jobDescription.slice(0, 80)}...</td>
+									<td className="p-4 text-sm text-gray-600 dark:text-gray-400">{track.activeLearnerCount}</td>
 									<td className='p-4'>
 										<Badge variant={track.isActive ? 'default' : 'secondary'}>
 											{track.isActive ? 'Active' : 'Inactive'}
 										</Badge>
 									</td>
-									<td className="p-4 font-mono text-sm">
-										D:{track.baseline.D_doc} C:{track.baseline.C_comm} T:{track.baseline.T_trouble} G:{track.baseline.G_custom}
+									<td
+										className="p-4 font-mono text-sm cursor-help"
+										title={`Percentages: D:${track.baseline.D_doc}% C:${track.baseline.C_comm}% T:${track.baseline.T_trouble}% G:${track.baseline.G_custom}%`}
+									>
+										D:{Math.round(track.baseline.D_doc / 5)} C:{Math.round(track.baseline.C_comm / 5)} T:{Math.round(track.baseline.T_trouble / 5)} G:{Math.round(track.baseline.G_custom / 5)}
 									</td>
 									<td className='p-4'>
 										<div className="flex flex-col gap-3">
@@ -330,7 +360,7 @@ function TracksPage() {
 													{rowStatus.label}
 												</Badge>
 											</div>
-											<div className="space-y-1 text-xs text-gray-500">
+											<div className="space-y-1 text-xs text-gray-500 dark:text-gray-400">
 												<div>{summarizePlacement(track)}</div>
 												<div>{summarizeCourse(track)}</div>
 											</div>
@@ -374,7 +404,7 @@ function TracksPage() {
 
 			{showForm && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-					<div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white p-6">
+					<div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white dark:bg-gray-900 border dark:border-gray-800 p-6">
 						<RoleCreationForm
 							initialTrack={editingTrack || undefined}
 							onSuccess={handleTrackSaved}
@@ -393,7 +423,17 @@ function TracksPage() {
 				onRequestGenerate={handleGenerateRequest}
 				onCancelConfirm={() => setConfirmWorkflow(null)}
 				onRequestResetLearners={() => setConfirmReset(true)}
+				onRequestMoreTopics={() => setShowMoreTopics(true)}
 			/>
+
+			{showMoreTopics && (
+				<GenerateMoreTopicsModal
+					track={selectedTrack}
+					loading={actionLoading === 'more-topics'}
+					onConfirm={handleGenerateMoreTopics}
+					onClose={() => setShowMoreTopics(false)}
+				/>
+			)}
 
 			{confirmReset && (
 				<ResetTrackLearnersModal
@@ -407,7 +447,7 @@ function TracksPage() {
 			<Dialog open={Boolean(confirmDelete)} onOpenChange={open => { if (!open) setConfirmDelete(null); }}>
 				<DialogContent className="max-w-md">
 					<DialogHeader>
-						<DialogTitle className="flex items-center gap-2 text-red-600">
+						<DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
 							<AlertCircle className="h-5 w-5" />
 							Delete Career Track
 						</DialogTitle>
@@ -418,7 +458,7 @@ function TracksPage() {
 
 					{confirmDelete && (
 						<div className="space-y-4 py-4">
-							<Alert className="border-amber-200 bg-amber-50">
+							<Alert className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200">
 								<AlertCircle className="h-4 w-4" />
 								<AlertDescription className="text-sm">
 									{confirmDelete.activeLearnerCount > 0

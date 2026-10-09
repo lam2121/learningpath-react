@@ -4,8 +4,8 @@ import type {
 	MultiSelectQuestionData,
 	OrderingQuestionData,
 } from "@/feature/quiz-engine/type/Quiz";
-
-export const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
+import { API_BASE_URL as BASE_URL } from "@/const/appConst";
+export { BASE_URL };
 
 function defaultHeaders(): HeadersInit {
 	return {
@@ -27,7 +27,7 @@ export interface RoadmapLesson {
 	primary_skill: string
 	difficulty_tier: string
 	estimated_minutes: number | null
-	is_generated: boolean
+	is_generated: number | boolean
 	is_unlocked: boolean
 	is_completed?: boolean
 	theory_content: unknown | null
@@ -91,6 +91,15 @@ export interface LessonQuizSavedAnswer {
 	used_hint: boolean
 }
 
+export interface LessonQuizHintRequest {
+	question_id: string
+}
+
+export interface LessonQuizHintResponse {
+	question_id: string
+	correct_answer: string
+}
+
 export interface LessonQuizStateResponse {
 	lesson_id: number
 	skill: string
@@ -136,14 +145,15 @@ export interface LessonQuizResultDetailResponse {
 	question_results: LessonQuizQuestionResult[]
 }
 export interface EvaluateAnswerRequest {
-	section_type: 'reading' | 'dialogue' | 'listening'
+	section_type: 'reading' | 'dialogue' | 'listening' | 'wrapup' | 'challenge' | 'output_challenge'
 	context: string
 	question: string
-	reference_answer: string
+	reference_answer?: string
 	user_answer: string
 }
 export interface EvaluateAnswerResponse {
 	feedback_summary: string
+	score?: number | null
 }
 export async function fetchRoadmap(): Promise<RoadmapResponse> {
 	const res = await fetchWithAuthRetry(`${BASE_URL}/onboarding/roadmap`, {
@@ -156,6 +166,14 @@ export async function fetchRoadmap(): Promise<RoadmapResponse> {
 
 export function buildRoadmapNotificationStreamUrl(): string {
 	return `${BASE_URL}/onboarding/roadmap/notifications/stream`
+}
+
+export async function clearRoadmapNotifications(): Promise<{ message: string; cleared_count: number }> {
+	const res = await fetchWithAuthRetry(`${BASE_URL}/onboarding/roadmap/notifications/clear`, {
+		method: 'POST',
+		headers: defaultHeaders(),
+	})
+	return handleResponse<{ message: string; cleared_count: number }>(res)
 }
 
 export async function kickoffRoadmapLessonGeneration(
@@ -210,6 +228,21 @@ export async function fetchLessonQuizResultDetail(
 		},
 	)
 	return handleResponse<LessonQuizResultDetailResponse>(res)
+}
+
+export async function fetchLessonQuizHint(
+	lessonId: number,
+	questionId: string,
+): Promise<LessonQuizHintResponse> {
+	const res = await fetchWithAuthRetry(
+		`${BASE_URL}/onboarding/roadmap/lessons/${lessonId}/quiz/hint`,
+		{
+			method: 'POST',
+			headers: defaultHeaders(),
+			body: JSON.stringify({ question_id: questionId }),
+		},
+	)
+	return handleResponse<LessonQuizHintResponse>(res)
 }
 
 export async function evaluateAnswer(

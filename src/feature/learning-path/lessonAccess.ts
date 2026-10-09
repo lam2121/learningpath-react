@@ -4,16 +4,28 @@ import type {
 	RoadmapTopic,
 } from '@/feature/learning-path/api/roadmapApi'
 
+export function isLessonGenerated(
+	lesson: RoadmapLesson | null | undefined,
+): boolean {
+	return lesson?.is_generated === 1 || lesson?.is_generated === true
+}
+
+export function isLessonGenerationFailed(
+	lesson: RoadmapLesson | null | undefined,
+): boolean {
+	return lesson?.is_generated === -1
+}
+
 export function isLessonReadyToStudy(
 	lesson: RoadmapLesson | null | undefined,
 ): boolean {
-	return Boolean(lesson?.is_generated && lesson?.is_unlocked)
+	return Boolean(isLessonGenerated(lesson) && lesson?.is_unlocked)
 }
 
 export function isLessonGeneratedButLocked(
 	lesson: RoadmapLesson | null | undefined,
 ): boolean {
-	return Boolean(lesson?.is_generated && !lesson?.is_unlocked)
+	return Boolean(isLessonGenerated(lesson) && !lesson?.is_unlocked)
 }
 
 export function findLatestReadyLessonInTopic(

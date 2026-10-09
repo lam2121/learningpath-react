@@ -31,7 +31,7 @@ export function AiPreviewModal({ isOpen, onClose, data }: AiPreviewModalProps) {
 					) : (
 						<>
 							{data.error && (
-								<div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+								<div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3 text-sm text-red-700 dark:text-red-300">
 									{data.error}
 								</div>
 							)}
@@ -45,12 +45,12 @@ export function AiPreviewModal({ isOpen, onClose, data }: AiPreviewModalProps) {
 							
 							<div className="space-y-3">
 								{data.examples.map((example, idx) => (
-									<div key={idx} className="p-4 rounded-lg bg-gray-50 border border-gray-100">
+									<div key={idx} className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
 										<div className="flex items-start gap-3">
-											<div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm">
+											<div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-medium text-sm">
 												{idx + 1}
 											</div>
-											<p className="text-gray-800 text-sm leading-relaxed">{example}</p>
+											<p className="text-gray-800 dark:text-gray-200 text-sm leading-relaxed">{example}</p>
 										</div>
 									</div>
 								))}

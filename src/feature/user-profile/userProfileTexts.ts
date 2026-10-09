@@ -15,6 +15,14 @@ export const userProfileTexts = {
   exploreLearningPath: () => t('exploreLearningPath'),
   continueRoadmap: () => t('continueRoadmap'),
   loadingLearningPath: () => t('loadingLearningPath'),
+  trackName: (track?: string | null) => {
+    if (!track) return ''
+    const lower = track.toLowerCase()
+    if (lower === 'basic' || lower === 'beginner') return t('trackBasic', { defaultValue: 'Basic' })
+    if (lower === 'intermediate') return t('trackIntermediate', { defaultValue: 'Intermediate' })
+    if (lower === 'advanced') return t('trackAdvanced', { defaultValue: 'Advanced' })
+    return track.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ')
+  },
   topicsCount: (count: number) => t('topicsCount', { count }),
   exploreTopics: () => t('exploreTopics'),
   openRoadmapDesc: () => t('openRoadmapDesc'),
@@ -41,10 +49,37 @@ export const userProfileTexts = {
   activeCareerTrack: () => t('activeCareerTrack'),
   viewRoadmap: () => t('viewRoadmap'),
   changeAvatar: () => t('changeAvatar'),
+  uploadAvatar: () => t('uploadAvatar'),
+  adjustOrChangeAvatar: () => t('adjustOrChangeAvatar'),
   uploadPhoto: () => t('uploadPhoto'),
+  adjustAvatarTitle: () => t('adjustAvatarTitle'),
+  adjustAvatarDescription: () => t('adjustAvatarDescription'),
+  cropPreview: () => t('cropPreview'),
+  dragToReposition: () => t('dragToReposition'),
+  zoom: () => t('zoom'),
+  rotate: () => t('rotate'),
+  rotateLeft: () => t('rotateLeft'),
+  rotateRight: () => t('rotateRight'),
+  flipHorizontal: () => t('flipHorizontal'),
+  resetAdjustments: () => t('resetAdjustments'),
+  chooseDifferentPhoto: () => t('chooseDifferentPhoto'),
+  applyAndSaveAvatar: () => t('applyAndSaveAvatar'),
+  savingAvatar: () => t('savingAvatar'),
+  avatarSavedSuccess: () => t('avatarSavedSuccess'),
+  streakKeepGoing: () => t('streakKeepGoing'),
+  streakFirstDay: () => t('streakFirstDay'),
+  completedLessons: () => t('completedLessons'),
+  firstLessonMomentum: () => t('firstLessonMomentum'),
+  noPassedLessonYet: () => t('noPassedLessonYet'),
+  averageScorePassedRoadmapLessons: () => t('averageScorePassedRoadmapLessons'),
+  appearsAfterFirstPassedLesson: () => t('appearsAfterFirstPassedLesson'),
+  totalTimeLearned: () => t('totalTimeLearned'),
+  timeAppearsAfterActivity: () => t('timeAppearsAfterActivity'),
 
   // ─── DailyPlanView ──────────────────────────────────────────────────────────
   dailyPlan: () => t('dailyPlan'),
+  todayFocus: () => t('todayFocus'),
+  personalGuidance: () => t('personalGuidance'),
   dailyStudyGoal: () => t('dailyStudyGoal'),
   todayTarget: (minutes: number) => t('todayTarget', { minutes }),
   todayProgress: (studied: number, target: number) => t('todayProgress', { studied, target }),
@@ -61,6 +96,14 @@ export const userProfileTexts = {
   editGoal: () => t('editGoal'),
   noRoadmap: () => t('noRoadmap'),
   studySettingsCardDesc: () => t('studySettingsCardDesc'),
+  todayTimeBudget: () => t('todayTimeBudget'),
+  dailyGoalReached: () => t('dailyGoalReached'),
+  plannedToday: () => t('plannedToday'),
+  learnedToday: () => t('learnedToday'),
+  bonusTime: () => t('bonusTime'),
+  remaining: () => t('remaining'),
+  newLesson: () => t('newLesson'),
+  aiCoach: () => t('aiCoach'),
 
   // ─── LearningHistoryChart ───────────────────────────────────────────────────
   studyActivity: () => i18n.t('studyActivity', { ns: 'history' }),
@@ -112,6 +155,7 @@ export const userProfileTexts = {
   deleting: () => t('deleting'),
   chooseStudyTime: () => t('chooseStudyTime'),
   selectedHours: (hours: number) => t('selectedHours', { hours }),
+  selectedMinutes: (minutes: number) => t('selectedMinutes', { minutes }),
   aiRecommendation: () => t('aiRecommendation'),
   aiRecommendationText: () => t('aiRecommendationText'),
   saveChanges: () => t('saveChanges'),
@@ -159,6 +203,7 @@ export const userProfileTexts = {
   correct: () => t('correct'),
   incorrect: () => t('incorrect'),
   expectedAnswer: () => t('expectedAnswer'),
+  yourAnswer: () => t('yourAnswer'),
   tryAgain: () => t('tryAgain'),
   showAnswer: () => t('showAnswer'),
   speakAnswer: () => t('speakAnswer'),
@@ -166,6 +211,50 @@ export const userProfileTexts = {
   listeningHint: () => t('listeningHint'),
   speechNotSupported: () => t('speechNotSupported'),
   speechError: () => t('speechError'),
+  japaneseMeaning: () => t('japaneseMeaning'),
+  studyMode: () => t('studyMode'),
+  studyModeVI: () => t('studyModeVI'),
+  studyModeJA: () => t('studyModeJA'),
+  studyModeEN: () => t('studyModeEN'),
+  enterJapanesePlaceholder: () => t('enterJapanesePlaceholder'),
+  enterEnglishPlaceholder: () => t('enterEnglishPlaceholder'),
+  listeningHintJA: () => t('listeningHintJA'),
+  listeningHintEN: () => t('listeningHintEN'),
+  definitionPrompt: () => t('definitionPrompt'),
+  maskedExample: () => t('maskedExample'),
+  hintIpa: () => t('hintIpa'),
+  quizScore: () => t('quizScore'),
+  totalDeck: () => t('totalDeck'),
+  flipCardAll: () => t('flipCardAll'),
+  hint: () => t('hint'),
+  hideHint: () => t('hideHint'),
+  startsWith: (letter: string) => t('startsWith', { letter }),
+  englishSolution: () => t('englishSolution'),
+  lessonProgressFraction: (completed: number, total: number, percent: number) =>
+    t('lessonProgressFraction', { completed, total, percent, defaultValue: `${completed} / ${total} lessons (${percent}%)` }),
+  upNextLabel: () => t('upNextLabel', { defaultValue: 'Up Next:' }),
+  lessonLabelPrefix: () => t('lessonLabelPrefix', { defaultValue: 'Lesson:' }),
+  topicLabelPrefix: () => t('topicLabelPrefix', { defaultValue: 'Topic:' }),
+  exampleScenarios: () => t('exampleScenarios', { defaultValue: 'Example Scenarios:' }),
+  baseline: () => t('baseline', { defaultValue: 'Baseline:' }),
+  formatEstimatedHours: (minutes: number | null | undefined) => {
+    if (minutes == null || minutes <= 0) {
+      return t('estimatePending', { defaultValue: 'Estimate pending' })
+    }
+    const minUnit = t('min', { defaultValue: 'min' })
+    const hourUnit = t('hourShort', { defaultValue: 'h' })
+    const minShortUnit = t('minShort', { defaultValue: 'm' })
+
+    if (minutes < 60) {
+      return `${minutes} ${minUnit}`
+    }
+    const hours = Math.floor(minutes / 60)
+    const remainder = minutes % 60
+    if (remainder === 0) {
+      return `${hours}${hourUnit}`
+    }
+    return `${hours}${hourUnit} ${remainder}${minShortUnit}`
+  },
 }
 
 

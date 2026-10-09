@@ -16,11 +16,13 @@ import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProtectedAdminRouteImport } from './routes/_protected/admin'
 import { Route as ProtectedUserRouteImport } from './routes/_protected/_user'
+import { Route as authSsoCallbackRouteImport } from './routes/(auth)/sso-callback'
 import { Route as authRegisterRouteImport } from './routes/(auth)/register'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
 import { Route as authForgotPasswordRouteImport } from './routes/(auth)/forgot-password'
 import { Route as ProtectedAdminIndexRouteImport } from './routes/_protected/admin/index'
 import { Route as ProtectedQuizFinalRouteImport } from './routes/_protected/quiz.final'
+import { Route as ProtectedAdminUsersRouteImport } from './routes/_protected/admin/users'
 import { Route as ProtectedAdminUsageLogsRouteImport } from './routes/_protected/admin/usage-logs'
 import { Route as ProtectedAdminTracksRouteImport } from './routes/_protected/admin/tracks'
 import { Route as ProtectedAdminRejectedRouteImport } from './routes/_protected/admin/rejected'
@@ -72,6 +74,11 @@ const ProtectedUserRoute = ProtectedUserRouteImport.update({
   id: '/_user',
   getParentRoute: () => ProtectedRoute,
 } as any)
+const authSsoCallbackRoute = authSsoCallbackRouteImport.update({
+  id: '/(auth)/sso-callback',
+  path: '/sso-callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const authRegisterRoute = authRegisterRouteImport.update({
   id: '/(auth)/register',
   path: '/register',
@@ -96,6 +103,11 @@ const ProtectedQuizFinalRoute = ProtectedQuizFinalRouteImport.update({
   id: '/quiz/final',
   path: '/quiz/final',
   getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedAdminUsersRoute = ProtectedAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => ProtectedAdminRoute,
 } as any)
 const ProtectedAdminUsageLogsRoute = ProtectedAdminUsageLogsRouteImport.update({
   id: '/usage-logs',
@@ -200,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof authForgotPasswordRoute
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
+  '/sso-callback': typeof authSsoCallbackRoute
   '/admin': typeof ProtectedAdminRouteWithChildren
   '/dashboard': typeof ProtectedUserDashboardRoute
   '/onboarding': typeof ProtectedUserOnboardingRouteWithChildren
@@ -208,6 +221,7 @@ export interface FileRoutesByFullPath {
   '/admin/rejected': typeof ProtectedAdminRejectedRoute
   '/admin/tracks': typeof ProtectedAdminTracksRoute
   '/admin/usage-logs': typeof ProtectedAdminUsageLogsRoute
+  '/admin/users': typeof ProtectedAdminUsersRoute
   '/quiz/final': typeof ProtectedQuizFinalRoute
   '/admin/': typeof ProtectedAdminIndexRoute
   '/flashcards': typeof ProtectedUserEnrolledFlashcardsRoute
@@ -228,6 +242,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof authForgotPasswordRoute
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
+  '/sso-callback': typeof authSsoCallbackRoute
   '/dashboard': typeof ProtectedUserDashboardRoute
   '/onboarding': typeof ProtectedUserOnboardingRouteWithChildren
   '/admin/costs': typeof ProtectedAdminCostsRoute
@@ -235,6 +250,7 @@ export interface FileRoutesByTo {
   '/admin/rejected': typeof ProtectedAdminRejectedRoute
   '/admin/tracks': typeof ProtectedAdminTracksRoute
   '/admin/usage-logs': typeof ProtectedAdminUsageLogsRoute
+  '/admin/users': typeof ProtectedAdminUsersRoute
   '/quiz/final': typeof ProtectedQuizFinalRoute
   '/admin': typeof ProtectedAdminIndexRoute
   '/flashcards': typeof ProtectedUserEnrolledFlashcardsRoute
@@ -257,6 +273,7 @@ export interface FileRoutesById {
   '/(auth)/forgot-password': typeof authForgotPasswordRoute
   '/(auth)/login': typeof authLoginRoute
   '/(auth)/register': typeof authRegisterRoute
+  '/(auth)/sso-callback': typeof authSsoCallbackRoute
   '/_protected/_user': typeof ProtectedUserRouteWithChildren
   '/_protected/admin': typeof ProtectedAdminRouteWithChildren
   '/_protected/_user/_enrolled': typeof ProtectedUserEnrolledRouteWithChildren
@@ -267,6 +284,7 @@ export interface FileRoutesById {
   '/_protected/admin/rejected': typeof ProtectedAdminRejectedRoute
   '/_protected/admin/tracks': typeof ProtectedAdminTracksRoute
   '/_protected/admin/usage-logs': typeof ProtectedAdminUsageLogsRoute
+  '/_protected/admin/users': typeof ProtectedAdminUsersRoute
   '/_protected/quiz/final': typeof ProtectedQuizFinalRoute
   '/_protected/admin/': typeof ProtectedAdminIndexRoute
   '/_protected/_user/_enrolled/flashcards': typeof ProtectedUserEnrolledFlashcardsRoute
@@ -289,6 +307,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/register'
+    | '/sso-callback'
     | '/admin'
     | '/dashboard'
     | '/onboarding'
@@ -297,6 +316,7 @@ export interface FileRouteTypes {
     | '/admin/rejected'
     | '/admin/tracks'
     | '/admin/usage-logs'
+    | '/admin/users'
     | '/quiz/final'
     | '/admin/'
     | '/flashcards'
@@ -317,6 +337,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/register'
+    | '/sso-callback'
     | '/dashboard'
     | '/onboarding'
     | '/admin/costs'
@@ -324,6 +345,7 @@ export interface FileRouteTypes {
     | '/admin/rejected'
     | '/admin/tracks'
     | '/admin/usage-logs'
+    | '/admin/users'
     | '/quiz/final'
     | '/admin'
     | '/flashcards'
@@ -345,6 +367,7 @@ export interface FileRouteTypes {
     | '/(auth)/forgot-password'
     | '/(auth)/login'
     | '/(auth)/register'
+    | '/(auth)/sso-callback'
     | '/_protected/_user'
     | '/_protected/admin'
     | '/_protected/_user/_enrolled'
@@ -355,6 +378,7 @@ export interface FileRouteTypes {
     | '/_protected/admin/rejected'
     | '/_protected/admin/tracks'
     | '/_protected/admin/usage-logs'
+    | '/_protected/admin/users'
     | '/_protected/quiz/final'
     | '/_protected/admin/'
     | '/_protected/_user/_enrolled/flashcards'
@@ -377,6 +401,7 @@ export interface RootRouteChildren {
   authForgotPasswordRoute: typeof authForgotPasswordRoute
   authLoginRoute: typeof authLoginRoute
   authRegisterRoute: typeof authRegisterRoute
+  authSsoCallbackRoute: typeof authSsoCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -430,6 +455,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedUserRouteImport
       parentRoute: typeof ProtectedRoute
     }
+    '/(auth)/sso-callback': {
+      id: '/(auth)/sso-callback'
+      path: '/sso-callback'
+      fullPath: '/sso-callback'
+      preLoaderRoute: typeof authSsoCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(auth)/register': {
       id: '/(auth)/register'
       path: '/register'
@@ -464,6 +496,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/quiz/final'
       preLoaderRoute: typeof ProtectedQuizFinalRouteImport
       parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/admin/users': {
+      id: '/_protected/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof ProtectedAdminUsersRouteImport
+      parentRoute: typeof ProtectedAdminRoute
     }
     '/_protected/admin/usage-logs': {
       id: '/_protected/admin/usage-logs'
@@ -653,6 +692,7 @@ interface ProtectedAdminRouteChildren {
   ProtectedAdminRejectedRoute: typeof ProtectedAdminRejectedRoute
   ProtectedAdminTracksRoute: typeof ProtectedAdminTracksRoute
   ProtectedAdminUsageLogsRoute: typeof ProtectedAdminUsageLogsRoute
+  ProtectedAdminUsersRoute: typeof ProtectedAdminUsersRoute
   ProtectedAdminIndexRoute: typeof ProtectedAdminIndexRoute
 }
 
@@ -662,6 +702,7 @@ const ProtectedAdminRouteChildren: ProtectedAdminRouteChildren = {
   ProtectedAdminRejectedRoute: ProtectedAdminRejectedRoute,
   ProtectedAdminTracksRoute: ProtectedAdminTracksRoute,
   ProtectedAdminUsageLogsRoute: ProtectedAdminUsageLogsRoute,
+  ProtectedAdminUsersRoute: ProtectedAdminUsersRoute,
   ProtectedAdminIndexRoute: ProtectedAdminIndexRoute,
 }
 
@@ -696,6 +737,7 @@ const rootRouteChildren: RootRouteChildren = {
   authForgotPasswordRoute: authForgotPasswordRoute,
   authLoginRoute: authLoginRoute,
   authRegisterRoute: authRegisterRoute,
+  authSsoCallbackRoute: authSsoCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

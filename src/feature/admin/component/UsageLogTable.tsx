@@ -21,26 +21,7 @@ import {
 	fetchTracks,
 	type UsageLog,
 } from '../api/adminApi';
-
-const generatorLabels: Record<string, string> = {
-	A: 'A - Placement Test',
-	B1: 'B1 - Topic Outline',
-	B2: 'B2 - Lesson Outline',
-	C1: 'C1 - Theory',
-	C2: 'C2 - Quiz',
-};
-
-const statusStyles: Record<string, string> = {
-	success: 'bg-green-100 text-green-800',
-	retry: 'bg-amber-100 text-amber-800',
-	rejected: 'bg-red-100 text-red-800',
-	fallback: 'bg-gray-100 text-gray-600',
-};
-
-function formatCost(usd: number) {
-	if (usd > 0 && usd < 0.0001) return '<$0.0001';
-	return `$${usd.toFixed(4)}`;
-}
+import { STATUS_STYLES, formatCost, generatorOptionLabel } from '../lib/labels';
 
 function roleFilterValue(roleId: string): number | null {
 	return roleId && roleId !== 'all' ? Number(roleId) : null;
@@ -142,37 +123,37 @@ export function UsageLogTable() {
 		<div className="space-y-4">
 			{/* Summary */}
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-				<div className="flex items-center gap-3 p-4 bg-white rounded-lg border">
-					<div className="p-2.5 rounded-lg bg-blue-50">
-						<Database className="h-5 w-5 text-blue-600" />
+				<div className="flex items-center gap-3 p-4 bg-white dark:bg-gray-900 rounded-lg border dark:border-gray-700">
+					<div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950">
+						<Database className="h-5 w-5 text-blue-600 dark:text-blue-400" />
 					</div>
 					<div>
 						<p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Loaded Records</p>
-						<p className="text-lg font-bold text-gray-900">{items.length}</p>
+						<p className="text-lg font-bold text-gray-900 dark:text-gray-100">{items.length}</p>
 					</div>
 				</div>
-				<div className="flex items-center gap-3 p-4 bg-white rounded-lg border">
-					<div className="p-2.5 rounded-lg bg-indigo-50">
-						<Coins className="h-5 w-5 text-indigo-600" />
+				<div className="flex items-center gap-3 p-4 bg-white dark:bg-gray-900 rounded-lg border dark:border-gray-700">
+					<div className="p-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-950">
+						<Coins className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
 					</div>
 					<div>
 						<p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Total Tokens</p>
-						<p className="text-lg font-bold text-gray-900">{summary.totalTokens.toLocaleString()}</p>
+						<p className="text-lg font-bold text-gray-900 dark:text-gray-100">{summary.totalTokens.toLocaleString()}</p>
 					</div>
 				</div>
-				<div className="flex items-center gap-3 p-4 bg-white rounded-lg border">
-					<div className="p-2.5 rounded-lg bg-green-50">
-						<span className="text-sm font-bold text-green-700">$</span>
+				<div className="flex items-center gap-3 p-4 bg-white dark:bg-gray-900 rounded-lg border dark:border-gray-700">
+					<div className="p-2.5 rounded-lg bg-green-50 dark:bg-green-950">
+						<span className="text-sm font-bold text-green-700 dark:text-green-400">$</span>
 					</div>
 					<div>
 						<p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Total Cost</p>
-						<p className="text-lg font-bold text-gray-900">{formatCost(summary.totalCost)}</p>
+						<p className="text-lg font-bold text-gray-900 dark:text-gray-100">{formatCost(summary.totalCost)}</p>
 					</div>
 				</div>
 			</div>
 
 			{/* Filters + danger actions */}
-			<div className="flex flex-wrap items-center gap-4 p-4 bg-gray-50 rounded-lg border">
+			<div className="flex flex-wrap items-center gap-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border dark:border-gray-700">
 				<Select value={filters.generator} onValueChange={v => setFilters(f => ({ ...f, generator: v }))}>
 					<SelectTrigger className="w-[180px]">
 						<SelectValue placeholder="Generator" />
@@ -248,7 +229,7 @@ export function UsageLogTable() {
 				<div className="overflow-x-auto rounded-lg border">
 					<Table>
 						<TableHeader>
-							<TableRow className="bg-gray-50">
+							<TableRow className="bg-gray-50 dark:bg-gray-800">
 								<TableHead className="w-20">Generator</TableHead>
 								<TableHead>Model</TableHead>
 								<TableHead>Role</TableHead>
@@ -262,34 +243,34 @@ export function UsageLogTable() {
 						<TableBody>
 							{items.length === 0 ? (
 								<TableRow>
-									<TableCell colSpan={8} className="text-center py-8 text-gray-500">
+									<TableCell colSpan={8} className="text-center py-8 text-gray-500 dark:text-gray-400">
 										No usage logs
 									</TableCell>
 								</TableRow>
 							) : (
 								items.map(item => (
-									<TableRow key={item.id} className="hover:bg-gray-50">
+									<TableRow key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
 										<TableCell className="font-mono text-xs">
 											<Badge variant="outline" className="px-2 py-0.5 text-xs">
-												{generatorLabels[item.generator] || item.generator}
+												{generatorOptionLabel(item.generator)}
 											</Badge>
 										</TableCell>
-										<TableCell className="text-xs font-mono text-gray-600 max-w-[220px] truncate" title={item.model}>
+										<TableCell className="text-xs font-mono text-gray-600 dark:text-gray-400 max-w-[220px] truncate" title={item.model}>
 											{item.model}
 										</TableCell>
-										<TableCell className="text-sm text-gray-700">{item.roleName || '-'}</TableCell>
-										<TableCell className="text-sm text-gray-600 text-right whitespace-nowrap font-mono">
+										<TableCell className="text-sm text-gray-700 dark:text-gray-300">{item.roleName || '-'}</TableCell>
+										<TableCell className="text-sm text-gray-600 dark:text-gray-400 text-right whitespace-nowrap font-mono">
 											{item.promptTokens.toLocaleString()} / {item.completionTokens.toLocaleString()}
 										</TableCell>
-										<TableCell className="text-sm text-gray-900 text-right whitespace-nowrap font-mono">
+										<TableCell className="text-sm text-gray-900 dark:text-gray-100 text-right whitespace-nowrap font-mono">
 											{formatCost(item.costUsd)}
 										</TableCell>
 										<TableCell>
-											<Badge className={statusStyles[item.status] || 'bg-gray-100 text-gray-600'}>
+											<Badge className={STATUS_STYLES[item.status] || 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'}>
 												{item.status}
 											</Badge>
 										</TableCell>
-										<TableCell className="text-sm text-gray-500 whitespace-nowrap">
+										<TableCell className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
 											{new Date(item.createdAt).toLocaleString('vi-VN')}
 										</TableCell>
 										<TableCell>
@@ -322,7 +303,7 @@ export function UsageLogTable() {
 					<AlertDialogHeader>
 						<AlertDialogTitle>Delete this usage log?</AlertDialogTitle>
 						<AlertDialogDescription>
-							Record #{pendingDelete?.id} ({generatorLabels[pendingDelete?.generator || ''] || pendingDelete?.generator}
+							Record #{pendingDelete?.id} ({generatorOptionLabel(pendingDelete?.generator ?? '')}
 							{' · '}
 							{formatCost(pendingDelete?.costUsd ?? 0)}) will be permanently removed. This cannot be undone.
 						</AlertDialogDescription>

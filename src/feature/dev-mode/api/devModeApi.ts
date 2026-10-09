@@ -1,6 +1,5 @@
 import { fetchWithAuthRetry } from "@/common/lib/authSession";
-
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
+import { API_BASE_URL as BASE_URL } from "@/const/appConst";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -33,7 +32,7 @@ export interface DevLesson {
   title: string
   primary_skill: string
   difficulty_tier: string
-  is_generated: boolean
+  is_generated: number | boolean
   is_unlocked: boolean
   theory_content: unknown | null
   quiz_content: unknown | null
@@ -97,8 +96,9 @@ export async function generateDevLesson(
   lessonId: number,
   force = false,
 ): Promise<GenerateLessonResult> {
+  const query = force ? '?force=true&sync=true' : '?sync=true'
   const res = await fetchWithAuthRetry(
-    `${BASE_URL}/onboarding/roadmap/lessons/${lessonId}/generate${force ? '?force=true' : ''}`,
+    `${BASE_URL}/onboarding/roadmap/lessons/${lessonId}/generate${query}`,
     {
       method: 'POST',
       headers: jsonHeaders(),

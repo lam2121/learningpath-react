@@ -2,11 +2,11 @@ import { useState } from "react";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { useAuth } from "@/common/context/AuthContext";
 import { deleteCareerTrack } from "@/feature/auth/api/authAPI";
-import { clearStudyGoalDecisions } from "@/feature/user-profile/utils/dailyStudyGoal";
+import { clearStudyGoalDecisions } from "@/common/utils/dailyStudyGoal";
 import {
     clearLoginDays,
     clearTrackedStudyActivity,
-} from "@/feature/user-profile/utils/StudyActivity";
+} from "@/common/utils/StudyActivity";
 import { clearCachedOnboardingStatus } from "@/feature/onboarding/api/onboardingApi";
 
 const DEFAULT_RESET_ERROR = "Could not reset your career track. Please try again.";

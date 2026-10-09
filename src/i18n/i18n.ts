@@ -21,6 +21,10 @@ import historyEn from './locales/en/history.json'
 import historyVi from './locales/vi/history.json'
 import historyJp from './locales/jp/history.json'
 
+import homeEn from './locales/en/home.json'
+import homeVi from './locales/vi/home.json'
+import homeJp from './locales/jp/home.json'
+
 // ─── i18n Configuration ───────────────────────────────────────────────────────
 // Default language: English
 // Supported languages: en, vi, jp
@@ -33,6 +37,7 @@ const resources = {
     nav: navEn,
     guide: guideEn,
     history: historyEn,
+    home: homeEn,
   },
   vi: {
     onboarding: onboardingVi,
@@ -40,6 +45,7 @@ const resources = {
     nav: navVi,
     guide: guideVi,
     history: historyVi,
+    home: homeVi,
   },
   jp: {
     onboarding: onboardingJp,
@@ -47,6 +53,7 @@ const resources = {
     nav: navJp,
     guide: guideJp,
     history: historyJp,
+    home: homeJp,
   },
 }
 
@@ -54,7 +61,7 @@ i18n.use(initReactI18next).init({
   resources,
   lng: localStorage.getItem('app_language') || 'en',
   fallbackLng: 'en',
-  ns: ['onboarding', 'profile', 'nav', 'guide', 'history'],
+  ns: ['onboarding', 'profile', 'nav', 'guide', 'history', 'home'],
   defaultNS: 'profile',
   interpolation: {
     escapeValue: false, // React already handles XSS

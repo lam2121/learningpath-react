@@ -1,6 +1,5 @@
 import { fetchWithAuthRetry } from "@/common/lib/authSession";
-
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
+import { API_BASE_URL as BASE_URL } from "@/const/appConst";
 
 function defaultHeaders(): HeadersInit {
 	return {
@@ -20,6 +19,7 @@ export interface Flashcard {
 	id: number;
 	word_eng: string;
 	word_vi: string | null;
+	word_ja: string | null;
 	transcription: string | null;
 	context: string | null;
 	workspace_example: string | null;
@@ -28,6 +28,7 @@ export interface Flashcard {
 export interface FlashcardCreatePayload {
 	word_eng: string;
 	word_vi?: string | null;
+	word_ja?: string | null;
 	transcription?: string | null;
 	context?: string | null;
 	workspace_example?: string | null;

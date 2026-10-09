@@ -7,6 +7,12 @@ import type {
 	BudgetVector,
 	BudgetValidationResult,
 	CostDashboardData,
+	CostBucket,
+	CostGroup,
+	CostAlert,
+	CostFilters,
+	CostRange,
+	CostGranularity,
 	RejectedContent,
 	KillSwitchState,
 	AiPreviewRequest,
@@ -22,6 +28,10 @@ import type {
 	SkillKey,
 	RoleSkillDefinitions,
 	ResetLearnersResult,
+	ResetLearnerResult,
+	AdminUser,
+	AdminUserFilters,
+	AdminUserPage,
 	UsageLog,
 	UsageLogFilters,
 	UsageLogClearResult,
@@ -33,6 +43,12 @@ export type {
 	BudgetVector,
 	BudgetValidationResult,
 	CostDashboardData,
+	CostBucket,
+	CostGroup,
+	CostAlert,
+	CostFilters,
+	CostRange,
+	CostGranularity,
 	RejectedContent,
 	UsageLog,
 	UsageLogFilters,
@@ -50,6 +66,10 @@ export type {
 	SkillKey,
 	RoleSkillDefinitions,
 	ResetLearnersResult,
+	ResetLearnerResult,
+	AdminUser,
+	AdminUserFilters,
+	AdminUserPage,
 };
 
 export { DEFAULT_BASELINE } from '../type/Admin';
@@ -121,6 +141,11 @@ export async function generatePlacement(roleId: number, force = false): Promise<
 export async function generateCourse(roleId: number, force = false, resume = false): Promise<GenerateResponse> {
 	const query = resume ? '?resume=true' : force ? '?force=true' : '';
 	const res = await axiosJWT.post<GenerateResponse>(`/admin/roles/${roleId}/generate-course${query}`);
+	return res.data;
+}
+
+export async function generateMoreTopics(roleId: number, skill: SkillKey, count: number): Promise<GenerateResponse> {
+	const res = await axiosJWT.post<GenerateResponse>(`/admin/roles/${roleId}/generate-topics`, { skill, count });
 	return res.data;
 }
 
@@ -199,27 +224,26 @@ export async function fetchDashboard(): Promise<DashboardData> {
 	return res.data;
 }
 
-export async function fetchCostDashboard(): Promise<CostDashboardData> {
-	const res = await axiosJWT.get<CostDashboardData>('/admin/costs');
-	return res.data;
+export async function fetchCostDashboard(filters: CostFilters = {}): Promise<CostDashboardData> {
+	const params = new URLSearchParams();
+	params.set('range', filters.range ?? '30d');
+	if (filters.granularity) params.set('granularity', filters.granularity);
+	if (filters.generator && filters.generator !== 'all') params.set('generator', filters.generator);
+	if (filters.model && filters.model !== 'all') params.set('model', filters.model);
+	if (filters.roleId) params.set('role_id', String(filters.roleId));
+	if (filters.status && filters.status !== 'all') params.set('status', filters.status);
+
+	try {
+		const res = await axiosJWT.get<CostDashboardData>(`/admin/costs?${params.toString()}`);
+		return res.data;
+	} catch (error) {
+		throw unwrapError(error);
+	}
 }
 
 // ============================================================================
 // Rejected content
 // ============================================================================
-
-function normalizeValidatorChecks(checks: unknown): ValidatorCheck[] | null {
-	if (Array.isArray(checks)) {
-		return checks as ValidatorCheck[];
-	}
-	if (checks && typeof checks === 'object') {
-		return Object.entries(checks as Record<string, unknown>).map(([check, passed]) => ({
-			check,
-			passed: Boolean(passed),
-		}));
-	}
-	return null;
-}
 
 interface RejectedResponse {
 	id: number;
@@ -234,17 +258,21 @@ interface RejectedResponse {
 	createdAt: string;
 }
 
+/** Normalize a backend rejected-content row into the shape the table renders. */
 function toRejectedContent(row: RejectedResponse): RejectedContent {
+	const checks = Array.isArray(row.validatorChecks)
+		? (row.validatorChecks as ValidatorCheck[])
+		: null;
 	return {
 		id: row.id,
 		generator: row.generator,
-		role: row.roleName || '',
-		inputPreview: row.inputPreview || '',
+		role: row.roleName ?? (row.roleId != null ? `Role ${row.roleId}` : '—'),
+		inputPreview: row.inputPreview ?? '',
 		error: row.error,
-		rawResponse: row.rawResponse || '',
+		rawResponse: row.rawResponse ?? '',
 		timestamp: row.createdAt,
-		validatorChecks: normalizeValidatorChecks(row.validatorChecks),
-		status: (['pending', 'fixed', 'ignored'].includes(row.status) ? row.status : 'pending') as RejectedContent['status'],
+		validatorChecks: checks,
+		status: (row.status as RejectedContent['status']) ?? 'pending',
 	};
 }
 
@@ -340,4 +368,52 @@ export async function toggleKillSwitch(enabled: boolean, reason?: string): Promi
 		window.dispatchEvent(new CustomEvent('kill-switch-changed', { detail: state }));
 	}
 	return state;
+}
+
+// ============================================================================
+// Users (learning data - identity lives in auth-service, see adminAuthApi.ts)
+// ============================================================================
+
+export async function fetchAdminUsers(filters: AdminUserFilters = {}): Promise<AdminUserPage> {
+	try {
+		const res = await axiosJWT.get<AdminUserPage>('/admin/users', {
+			params: {
+				search: filters.search || undefined,
+				role: filters.role || undefined,
+				limit: filters.limit ?? 25,
+				offset: filters.offset ?? 0,
+			},
+		});
+		return res.data;
+	} catch (error) {
+		throw unwrapError(error);
+	}
+}
+
+export async function setUserRole(userId: number, roleId: number): Promise<AdminUser> {
+	try {
+		const res = await axiosJWT.patch<AdminUser>(`/admin/users/${userId}/role`, { roleId });
+		return res.data;
+	} catch (error) {
+		throw unwrapError(error);
+	}
+}
+
+export async function resetLearner(userId: number, clearFlashcards: boolean): Promise<ResetLearnerResult> {
+	try {
+		const res = await axiosJWT.post<ResetLearnerResult>(`/admin/users/${userId}/reset-learner`, {
+			clearFlashcards,
+		});
+		return res.data;
+	} catch (error) {
+		throw unwrapError(error);
+	}
+}
+
+export async function deleteUserLearningData(userId: number): Promise<void> {
+	try {
+		await axiosJWT.delete(`/admin/users/${userId}`);
+	} catch (error) {
+		throw unwrapError(error);
+	}
 }

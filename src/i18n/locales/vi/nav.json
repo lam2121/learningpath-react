@@ -5,12 +5,28 @@
   "profile": "Hồ sơ cá nhân",
   "history": "Lịch sử",
   "dayStreak": "ngày liên tiếp",
+  "adminPage": "Đến trang quản trị",
   "studySettings": "Cài đặt học tập",
   "logout": "Đăng xuất",
   "login": "Đăng nhập",
+  "logoutDialog": {
+    "title": "Đăng xuất",
+    "description": "Bạn có chắc chắn muốn đăng xuất không?",
+    "confirm": "Đăng xuất",
+    "cancel": "Hủy",
+    "loggingOut": "Đang đăng xuất..."
+  },
   "languages": {
     "en": "English",
     "vi": "Tiếng Việt",
     "jp": "日本語"
-  }
+  },
+  "theme": {
+    "theme": "Giao diện",
+    "light": "Sáng",
+    "dark": "Tối",
+    "system": "Hệ thống"
+  },
+  "trainingTool": "Công Cụ Đào Tạo",
+  "smartLearning": "Học Tập Thông Minh"
 }

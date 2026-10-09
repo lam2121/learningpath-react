@@ -1,8 +1,13 @@
 {
   "page": {
     "badge": "Lịch Sử",
-    "title": "Điểm bài kiểm tra cao nhất",
-    "subtitle": "Xem lại điểm số có trọng số cao nhất được lưu cho mỗi bài học, được nhóm gọn hơn để bạn có thể xem nhanh tiến độ theo chủ đề."
+    "title": "Lịch Sử Đánh Giá",
+    "subtitle": "Xem lại lần làm bài có điểm cao nhất được lưu cho các bài kiểm tra bài học, đánh giá chủ đề và kỳ thi tốt nghiệp.",
+    "tabs": {
+      "lessons": "Kiểm Tra Bài Học ({{count}})",
+      "topics": "Kiểm Tra Chủ Đề ({{count}})",
+      "final": "Bài Thi Tốt Nghiệp Khóa Học"
+    }
   },
   "studyActivity": "Hoạt Động Học Tập",
   "quizHistory": "Lịch Sử Kiểm Tra",
@@ -17,6 +22,8 @@
     "shortest": "Thời gian ngắn nhất: {{duration}}",
     "longest": "Thời gian dài nhất: {{duration}}"
   },
+  "title": "Điểm Bài Kiểm Tra Cao Nhất",
+  "subtitle": "Điểm trọng số cao nhất được lưu cho mỗi bài học, bao gồm cả chế độ gợi ý.",
   "filters": {
     "title": "Tìm Kiếm & Lọc",
     "reset": "Đặt lại",
@@ -24,7 +31,13 @@
     "searchPlaceholder": "Tìm chủ đề, bài học...",
     "sortBy": "Sắp Xếp Theo",
     "filterBySkill": "Lọc Theo Kỹ Năng",
-    "all": "Tất Cả"
+    "skill": "Lọc Theo Kỹ Năng",
+    "all": "Tất Cả",
+    "status": "Trạng thái",
+    "passed": "Đạt",
+    "failed": "Trượt",
+    "topicFilter": "Lọc theo Chủ Đề",
+    "allTopics": "Tất Cả Chủ Đề"
   },
   "sort": {
     "aToZ": "A → Z (Theo bảng chữ cái)",
@@ -32,14 +45,21 @@
     "newest": "Mới Nhất Trước",
     "oldest": "Cũ Nhất Trước",
     "topicAsc": "Chủ đề 1 → 8",
-    "topicDesc": "Chủ đề 8 → 1"
+    "topicDesc": "Chủ đề 8 → 1",
+    "topicAscDefault": "Chủ đề 1 → 8 (Mặc định)",
+    "highestScore": "Điểm cao nhất"
   },
   "list": {
     "title": "Điểm Bài Kiểm Tra Cao Nhất",
     "subtitle": "Điểm trọng số cao nhất được lưu cho mỗi bài học, bao gồm cả chế độ gợi ý.",
+    "totalQuizzes": "{{count}} bài kiểm tra",
+    "totalQuizzes_one": "{{count}} bài kiểm tra",
+    "totalQuizzes_other": "{{count}} bài kiểm tra",
+    "lessonCount": "{{count}} bài học",
     "lessonCount_one": "{{count}} bài học",
     "lessonCount_other": "{{count}} bài học",
     "allTopics": "Tất Cả Chủ Đề",
+    "topic": "Chủ đề {{count}}",
     "topic_one": "Chủ đề {{count}}",
     "topic_other": "Chủ đề {{count}}",
     "topicFallback": "Chủ đề",
@@ -53,8 +73,10 @@
   "empty": {
     "noScoresTitle": "Chưa có lịch sử điểm",
     "noScoresDesc": "Vượt qua hoặc làm lại bài kiểm tra bài học để bắt đầu xây dựng lịch sử điểm cao nhất của bạn.",
+    "noHistoryTitle": "Chưa có lịch sử điểm",
+    "noHistoryDesc": "Vượt qua hoặc làm lại bài kiểm tra bài học để bắt đầu xây dựng lịch sử điểm cao nhất của bạn.",
     "noMatchTitle": "Không tìm thấy bài học phù hợp",
-    "noMatchDesc": "Không có bài học nào khớp với điều kiện tìm kiếm &amp; lọc hiện tại.",
+    "noMatchDesc": "Không có bài học nào khớp với điều kiện tìm kiếm & lọc hiện tại.",
     "resetFilters": "Đặt Lại Bộ Lọc"
   },
   "pagination": {
@@ -75,6 +97,7 @@
     "recorded": "Đã ghi nhận",
     "unknown": "Không xác định",
     "noQuestionResults": "Chưa có kết quả câu hỏi đã lưu cho bài học này.",
+    "question": "Câu hỏi {{count}}",
     "question_one": "Câu hỏi {{count}}",
     "question_other": "Câu hỏi {{count}}",
     "correct": "Đúng",
@@ -83,5 +106,115 @@
     "noHint": "Không gợi ý",
     "questionTextUnavailable": "Không có nội dung câu hỏi",
     "viewDetailsAria": "Xem chi tiết bài kiểm tra của {{title}}"
+  },
+  "topicQuiz": {
+    "title": "Điểm Bài Kiểm Tra Chủ Đề Cao Nhất",
+    "subtitle": "Điểm cao nhất được lưu cho mỗi bài đánh giá chủ đề trong lộ trình của bạn.",
+    "topicCount_one": "{{count}} Chủ đề",
+    "topicCount_other": "{{count}} Chủ đề",
+    "best": "CAO NHẤT",
+    "attempt_one": "{{count}} lần làm",
+    "attempt_other": "{{count}} lần làm",
+    "failed": "{{count}} lần trượt",
+    "correct": "{{correct}}/{{total}} đúng",
+    "notRecorded": "Chưa ghi nhận",
+    "empty": {
+      "noHistoryTitle": "Chưa có lịch sử kiểm tra chủ đề",
+      "noHistoryDesc": "Hoàn thành tất cả các bài học được giao trong chủ đề để mở khóa và làm bài kiểm tra chủ đề.",
+      "noMatchTitle": "Không tìm thấy chủ đề phù hợp",
+      "noMatchDesc": "Hãy thử điều chỉnh từ khóa tìm kiếm."
+    },
+    "filters": {
+      "searchPlaceholder": "Tìm tên chủ đề...",
+      "passed": "Đã đạt",
+      "failed": "Chưa đạt"
+    },
+    "detail": {
+      "title": "Chủ đề {{order}}: {{name}}",
+      "titleNoOrder": "{{name}}",
+      "description": "Đánh giá kiểm tra chủ đề · Lần làm bài tốt nhất đã lưu · {{status}}",
+      "loading": "Đang tải kết quả bài kiểm tra chủ đề...",
+      "status": "Trạng thái",
+      "bestScore": "Điểm cao nhất",
+      "totalAttempts": "Tổng số lần làm",
+      "failedAttempts": "Số lần trượt",
+      "correctQuestions": "Số câu đúng",
+      "recordedDate": "Ngày ghi nhận",
+      "unknown": "Không xác định",
+      "flaggedReview": "Các bài cần ôn tập ({{count}})",
+      "accuracy": "Độ chính xác: {{percent}}%",
+      "questions": "Câu hỏi ({{count}})",
+      "all": "Tất cả ({{count}})",
+      "incorrect": "Sai ({{count}})",
+      "correct": "Đúng ({{count}})",
+      "noQuestionsMatch": "Không có câu hỏi nào khớp với bộ lọc đã chọn.",
+      "question_one": "Câu hỏi {{count}}",
+      "question_other": "Câu hỏi {{count}}",
+      "correctBadge": "Đúng",
+      "incorrectBadge": "Sai",
+      "questionUnavailable": "Nội dung câu hỏi không khả dụng"
+    }
+  },
+  "finalQuiz": {
+    "standardTitle": "Tiêu Chuẩn Tốt Nghiệp",
+    "dualGateTitle": "Tiêu chuẩn kép (Dual-Gate):",
+    "overallScoreReq": "Điểm tổng thể ≥ 80%",
+    "allSkillsReq": "Cả 4 kỹ năng ≥ 60%",
+    "skillsEvaluated": "Các kỹ năng tốt nghiệp được đánh giá:",
+    "docSkill": "Tài liệu (D)",
+    "commSkill": "Giao tiếp (C)",
+    "troubleSkill": "Giải quyết vấn đề (T)",
+    "businessSkill": "Chuyên môn (G)",
+    "customSkill": "Chuyên môn (G)",
+    "title": "Điểm Bài Thi Tốt Nghiệp Cao Nhất",
+    "subtitle": "Điểm thi tốt nghiệp cao nhất được lưu cho lộ trình nghề nghiệp bạn đã đăng ký.",
+    "badge": "Thi Tốt Nghiệp",
+    "empty": {
+      "noRecordTitle": "Chưa có kết quả bài thi tốt nghiệp",
+      "noRecordDesc": "Hoàn thành tất cả các bài kiểm tra chủ đề trong lộ trình để mở khóa bài thi tốt nghiệp."
+    },
+    "card": {
+      "careerTrack": "Lộ trình nghề nghiệp: {{name}}",
+      "examTitle": "Kỳ Thi Tốt Nghiệp Tổng Hợp",
+      "examDesc": "Nhấp vào thẻ để xem lại câu trả lời và giải thích của lần làm bài tốt nhất.",
+      "best": "CAO NHẤT",
+      "passSection": "Đạt (≥60%)",
+      "needsReview": "Cần ôn tập",
+      "attempt_one": "{{count}} lần làm",
+      "attempt_other": "{{count}} lần làm",
+      "failed": "{{count}} lần trượt",
+      "questionsCorrect": "{{correct}}/{{total}} câu đúng",
+      "progress": "Tiến độ: {{percent}}%",
+      "recorded": "Đã ghi nhận"
+    },
+    "detail": {
+      "title": "Bài Thi Tốt Nghiệp — {{name}}",
+      "defaultTitle": "Kỳ Thi Tốt Nghiệp",
+      "description": "Kỳ thi tốt nghiệp lộ trình · Lần làm bài tốt nhất đã lưu · {{status}}",
+      "graduated": "Đã tốt nghiệp (Đạt)",
+      "retakeRequired": "Cần thi lại (Chưa đạt)",
+      "loading": "Đang tải kết quả thi tốt nghiệp đã lưu...",
+      "noAttemptFound": "Không tìm thấy chi tiết lần thi tốt nghiệp nào trong hồ sơ của bạn.",
+      "loadFailed": "Không thể tải chi tiết bài thi tốt nghiệp.",
+      "status": "Trạng thái",
+      "bestScore": "Điểm cao nhất",
+      "totalAttempts": "Tổng số lần làm",
+      "failedAttempts": "Số lần trượt",
+      "correctQuestions": "Số câu đúng",
+      "recordedDate": "Ngày ghi nhận",
+      "unknown": "Không xác định",
+      "sectionPerformance": "Hiệu suất từng phần (yêu cầu ≥ 60% mỗi phần)",
+      "sectionCorrect": "{{correct}}/{{total}} đúng",
+      "questions": "Câu hỏi tốt nghiệp ({{count}})",
+      "all": "Tất cả ({{count}})",
+      "incorrect": "Sai ({{count}})",
+      "correct": "Đúng ({{count}})",
+      "noQuestionsMatch": "Không có câu hỏi nào khớp với bộ lọc đã chọn.",
+      "question_one": "Câu hỏi {{count}}",
+      "question_other": "Câu hỏi {{count}}",
+      "correctBadge": "Đúng",
+      "incorrectBadge": "Sai",
+      "questionUnavailable": "Nội dung câu hỏi không khả dụng"
+    }
   }
 }

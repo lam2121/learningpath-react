@@ -1,8 +1,13 @@
 {
   "page": {
     "badge": "History",
-    "title": "Best lesson quiz scores",
-    "subtitle": "Review the highest weighted score saved for each lesson, grouped more tightly so you can scan topic progress faster."
+    "title": "Assessment History",
+    "subtitle": "Review the highest saved attempt for your lesson quizzes, topic assessments, and final graduation examination.",
+    "tabs": {
+      "lessons": "Lesson Quizzes ({{count}})",
+      "topics": "Topic Quizzes ({{count}})",
+      "final": "Final Course Quiz"
+    }
   },
   "studyActivity": "Study Activity",
   "quizHistory": "Quiz History",
@@ -17,6 +22,8 @@
     "shortest": "Shortest time: {{duration}}",
     "longest": "Longest time: {{duration}}"
   },
+  "title": "Best Lesson Quiz Scores",
+  "subtitle": "Highest weighted score saved for each lesson, including hint mode.",
   "filters": {
     "title": "Search & Filter",
     "reset": "Reset",
@@ -24,7 +31,13 @@
     "searchPlaceholder": "Search topic, lesson...",
     "sortBy": "Sort By",
     "filterBySkill": "Filter by Skill",
-    "all": "All"
+    "skill": "Filter by Skill",
+    "all": "All",
+    "status": "Status",
+    "passed": "Passed",
+    "failed": "Failed",
+    "topicFilter": "Filter by Topic",
+    "allTopics": "All Topics"
   },
   "sort": {
     "aToZ": "A → Z (Alphabetical)",
@@ -32,14 +45,21 @@
     "newest": "Newest First",
     "oldest": "Oldest First",
     "topicAsc": "Topic 1 → 8",
-    "topicDesc": "Topic 8 → 1"
+    "topicDesc": "Topic 8 → 1",
+    "topicAscDefault": "Topic 1 → 8 (Default)",
+    "highestScore": "Highest Score"
   },
   "list": {
     "title": "Best Lesson Quiz Scores",
     "subtitle": "Highest weighted score saved for each lesson, including hint mode.",
+    "totalQuizzes": "{{count}} Quizzes",
+    "totalQuizzes_one": "{{count}} Quiz",
+    "totalQuizzes_other": "{{count}} Quizzes",
+    "lessonCount": "{{count}} Lessons",
     "lessonCount_one": "{{count}} lesson",
     "lessonCount_other": "{{count}} lessons",
     "allTopics": "All Topics",
+    "topic": "Topic {{count}}",
     "topic_one": "Topic {{count}}",
     "topic_other": "Topic {{count}}",
     "topicFallback": "Topic",
@@ -53,8 +73,10 @@
   "empty": {
     "noScoresTitle": "No quiz score history yet",
     "noScoresDesc": "Pass or retry lesson quizzes to start building your best-score history.",
+    "noHistoryTitle": "No quiz score history yet",
+    "noHistoryDesc": "Pass or retry lesson quizzes to start building your best-score history.",
     "noMatchTitle": "No matching lessons found",
-    "noMatchDesc": "No lessons match your current search &amp; filter criteria.",
+    "noMatchDesc": "No lessons match your current search & filter criteria.",
     "resetFilters": "Reset Filters"
   },
   "pagination": {
@@ -75,6 +97,7 @@
     "recorded": "Recorded",
     "unknown": "Unknown",
     "noQuestionResults": "No saved question results are available for this lesson yet.",
+    "question": "Question {{count}}",
     "question_one": "Question {{count}}",
     "question_other": "Question {{count}}",
     "correct": "Correct",
@@ -83,5 +106,115 @@
     "noHint": "No hint",
     "questionTextUnavailable": "Question text unavailable",
     "viewDetailsAria": "View quiz details for {{title}}"
+  },
+  "topicQuiz": {
+    "title": "Best Topic Quiz Scores",
+    "subtitle": "Highest score saved for each topic assessment in your roadmap.",
+    "topicCount_one": "{{count}} Topic",
+    "topicCount_other": "{{count}} Topics",
+    "best": "BEST",
+    "attempt_one": "{{count}} attempt",
+    "attempt_other": "{{count}} attempts",
+    "failed": "{{count}} failed",
+    "correct": "{{correct}}/{{total}} correct",
+    "notRecorded": "Not recorded",
+    "empty": {
+      "noHistoryTitle": "No Topic Quiz History Yet",
+      "noHistoryDesc": "Complete all assigned lessons in a topic to unlock and take its Topic Quiz.",
+      "noMatchTitle": "No matching topics found",
+      "noMatchDesc": "Try adjusting your search query."
+    },
+    "filters": {
+      "searchPlaceholder": "Search topic name...",
+      "passed": "Passed",
+      "failed": "Failed"
+    },
+    "detail": {
+      "title": "Topic {{order}}: {{name}}",
+      "titleNoOrder": "{{name}}",
+      "description": "Topic Quiz Assessment · Saved Best Attempt · {{status}}",
+      "loading": "Loading topic quiz results...",
+      "status": "Status",
+      "bestScore": "Best Score",
+      "totalAttempts": "Total Attempts",
+      "failedAttempts": "Failed Attempts",
+      "correctQuestions": "Correct Questions",
+      "recordedDate": "Recorded Date",
+      "unknown": "Unknown",
+      "flaggedReview": "Flagged Review Modules ({{count}})",
+      "accuracy": "Accuracy: {{percent}}%",
+      "questions": "Questions ({{count}})",
+      "all": "All ({{count}})",
+      "incorrect": "Incorrect ({{count}})",
+      "correct": "Correct ({{count}})",
+      "noQuestionsMatch": "No questions match the selected filter.",
+      "question_one": "Question {{count}}",
+      "question_other": "Question {{count}}",
+      "correctBadge": "Correct",
+      "incorrectBadge": "Incorrect",
+      "questionUnavailable": "Question statement unavailable"
+    }
+  },
+  "finalQuiz": {
+    "standardTitle": "Graduation Standard",
+    "dualGateTitle": "Dual-Gate Criteria:",
+    "overallScoreReq": "Overall Score ≥ 80%",
+    "allSkillsReq": "All 4 skills ≥ 60%",
+    "skillsEvaluated": "Graduation Skills Evaluated:",
+    "docSkill": "Documentation (D)",
+    "commSkill": "Communication (C)",
+    "troubleSkill": "Problem Solving (T)",
+    "businessSkill": "Specialization (G)",
+    "customSkill": "Specialization (G)",
+    "title": "Best Final Course Quiz Score",
+    "subtitle": "Highest graduation examination score saved for your enrolled career track.",
+    "badge": "Graduation Exam",
+    "empty": {
+      "noRecordTitle": "No Final Course Quiz Record Yet",
+      "noRecordDesc": "Complete all Topic Quizzes in your roadmap to unlock the Final Course Quiz."
+    },
+    "card": {
+      "careerTrack": "Career Track: {{name}}",
+      "examTitle": "Comprehensive Final Examination",
+      "examDesc": "Click card to review saved best-attempt answers and explanations.",
+      "best": "BEST",
+      "passSection": "Pass (≥60%)",
+      "needsReview": "Needs Review",
+      "attempt_one": "{{count}} attempt",
+      "attempt_other": "{{count}} attempts",
+      "failed": "{{count}} failed",
+      "questionsCorrect": "{{correct}}/{{total}} questions correct",
+      "progress": "Progress: {{percent}}%",
+      "recorded": "Recorded"
+    },
+    "detail": {
+      "title": "Final Course Quiz — {{name}}",
+      "defaultTitle": "Graduation Examination",
+      "description": "Career Track Graduation Exam · Saved Best Attempt · {{status}}",
+      "graduated": "Graduated (Passed)",
+      "retakeRequired": "Retake Required (Failed)",
+      "loading": "Loading saved final quiz results...",
+      "noAttemptFound": "No detailed final quiz attempt found in your record.",
+      "loadFailed": "Failed to load final quiz details.",
+      "status": "Status",
+      "bestScore": "Best Score",
+      "totalAttempts": "Total Attempts",
+      "failedAttempts": "Failed Attempts",
+      "correctQuestions": "Correct Questions",
+      "recordedDate": "Recorded Date",
+      "unknown": "Unknown",
+      "sectionPerformance": "Section Performance (≥ 60% required per section)",
+      "sectionCorrect": "{{correct}}/{{total}} correct",
+      "questions": "Graduation Questions ({{count}})",
+      "all": "All ({{count}})",
+      "incorrect": "Incorrect ({{count}})",
+      "correct": "Correct ({{count}})",
+      "noQuestionsMatch": "No questions match the selected filter.",
+      "question_one": "Question {{count}}",
+      "question_other": "Question {{count}}",
+      "correctBadge": "Correct",
+      "incorrectBadge": "Incorrect",
+      "questionUnavailable": "Question statement unavailable"
+    }
   }
 }

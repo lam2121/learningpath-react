@@ -22,5 +22,9 @@ export const Route = createFileRoute('/_protected/_user/onboarding')({
             console.warn('Cannot reach server to check onboarding status:', err)
         }
     },
-    component: () => <Outlet />,
+    component: () => (
+        <div className="min-h-screen bg-white text-slate-900 light" data-theme="light">
+            <Outlet />
+        </div>
+    ),
 })

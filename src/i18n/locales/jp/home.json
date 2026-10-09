@@ -1,0 +1,27 @@
+{
+  "robotAriaLabel": "フレンドリーなCareerPath学習ロボット",
+  "badge": "職種特化型ビジネス英語",
+  "heroTitle": "キャリアに必要な英語を",
+  "heroTitleGradient": "正確に把握して学びましょう。",
+  "heroDescription": "公平なプレイスメントテストで4つの職場スキルのギャップを見つけ、あなたの職種とレベルに合わせた8トピックのロードマップを構築します。",
+  "continue": "学習を続ける",
+  "startTest": "プレイスメントテストを開始",
+  "howItWorks": "仕組みを見る",
+  "feature1": "48問の診断テスト",
+  "feature2": "4つのコアスキル",
+  "feature3": "クレジットカード不要",
+  "journeyTitle": "明確な学習ロードマップ",
+  "journeySubtitle": "隠れた修了条件はありません",
+  "journeySteps": {
+    "step1": "職種を選択",
+    "step2": "課題を特定",
+    "step3": "8つのトピックを学習",
+    "step4": "修了テストに合格"
+  },
+  "companionBadge": "あなたの学習コンパニオン",
+  "companionTitle": "こんにちは！あなたの道を見つけましょう",
+  "companionDescription": "実際の英語の課題を、明確で達成可能なステップへと変えるお手伝いをします。",
+  "hereToHelp": "サポート中",
+  "ctaSubtitle": "あなたの目標、あなたのペースで",
+  "ctaTitle": "最初の一歩を一緒に踏み出しましょう。"
+}

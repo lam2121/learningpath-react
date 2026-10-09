@@ -1,5 +1,12 @@
-const AUTH_URL = import.meta.env.VITE_AUTH_API_URL ?? "http://localhost:8001/api/auth";
-const LOGIN_PATH = "/careerpath/login";
+import { AUTH_BASE_URL as AUTH_URL, getAppPath } from "@/const/appConst";
+import {
+  getAccessToken,
+  REFRESH_TOKEN_KEY,
+  TOKEN_KEY,
+  USER_KEY,
+} from "@/feature/auth/helper/authHelper";
+
+const LOGIN_PATH = getAppPath("/login");
 let refreshRequest: Promise<void> | null = null;
 
 export interface AuthRetryFetchOptions extends RequestInit {
@@ -8,12 +15,36 @@ export interface AuthRetryFetchOptions extends RequestInit {
 }
 
 export function clearClientAuthState(): void {
-  localStorage.removeItem("auth_user");
-  localStorage.removeItem("auth_access_token");
+  localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
 export function redirectToLogin(): void {
   window.location.href = LOGIN_PATH;
+}
+
+/**
+ * Build headers that include the Bearer token from localStorage
+ * (merged with any caller-supplied headers).
+ */
+function withAuthHeaders(init: RequestInit): RequestInit {
+  const token = getAccessToken();
+  if (!token) return init;
+
+  const existing = init.headers instanceof Headers
+    ? Object.fromEntries((init.headers as Headers).entries())
+    : Array.isArray(init.headers)
+      ? Object.fromEntries(init.headers)
+      : (init.headers ?? {});
+
+  return {
+    ...init,
+    headers: {
+      ...existing,
+      Authorization: `Bearer ${token}`,
+    },
+  };
 }
 
 export async function refreshAccessToken(): Promise<void> {
@@ -22,9 +53,11 @@ export async function refreshAccessToken(): Promise<void> {
   }
 
   refreshRequest = (async () => {
+    const token = getAccessToken();
     const response = await fetch(`${AUTH_URL}/refresh-token`, {
       method: "POST",
       credentials: "include",
+      ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
     });
 
     if (!response.ok) {
@@ -50,10 +83,10 @@ export async function fetchWithAuthRetry(
   } = options;
 
   const execute = () =>
-    fetch(input, {
+    fetch(input, withAuthHeaders({
       credentials: "include",
       ...requestInit,
-    });
+    }));
 
   let response = await execute();
   if (!retryOnUnauthorized || response.status !== 401) {

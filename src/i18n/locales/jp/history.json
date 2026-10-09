@@ -1,8 +1,13 @@
 {
   "page": {
     "badge": "履歴",
-    "title": "最高のレッスンクイズスコア",
-    "subtitle": "各レッスンに保存された最高の加重スコアを、トピックの進捗をより速く確認できるようにコンパクトにまとめて確認できます。"
+    "title": "評価履歴",
+    "subtitle": "レッスンクイズ、トピック評価、および最終卒業試験の最高記録を確認できます。",
+    "tabs": {
+      "lessons": "レッスンクイズ ({{count}})",
+      "topics": "トピッククイズ ({{count}})",
+      "final": "コース最終試験"
+    }
   },
   "studyActivity": "学習活動",
   "quizHistory": "クイズ履歴",
@@ -17,6 +22,8 @@
     "shortest": "最短時間: {{duration}}",
     "longest": "最長時間: {{duration}}"
   },
+  "title": "最高のレッスンクイズスコア",
+  "subtitle": "各レッスンに保存された最高の加重スコア（ヒントモードを含む）。",
   "filters": {
     "title": "検索とフィルター",
     "reset": "リセット",
@@ -24,7 +31,13 @@
     "searchPlaceholder": "トピック、レッスンを検索...",
     "sortBy": "並び替え",
     "filterBySkill": "スキルでフィルター",
-    "all": "すべて"
+    "skill": "スキルで絞り込み",
+    "all": "すべて",
+    "status": "ステータス",
+    "passed": "合格",
+    "failed": "不合格",
+    "topicFilter": "トピックで絞り込み",
+    "allTopics": "すべてのトピック"
   },
   "sort": {
     "aToZ": "A → Z (アルファベット順)",
@@ -32,14 +45,21 @@
     "newest": "新しい順",
     "oldest": "古い順",
     "topicAsc": "トピック 1 → 8",
-    "topicDesc": "トピック 8 → 1"
+    "topicDesc": "トピック 8 → 1",
+    "topicAscDefault": "トピック 1 → 8 (デフォルト)",
+    "highestScore": "最高スコア"
   },
   "list": {
     "title": "最高のレッスンクイズスコア",
     "subtitle": "各レッスンに保存された最高の加重スコア（ヒントモードを含む）。",
+    "totalQuizzes": "{{count}} クイズ",
+    "totalQuizzes_one": "{{count}} クイズ",
+    "totalQuizzes_other": "{{count}} クイズ",
+    "lessonCount": "{{count}} レッスン",
     "lessonCount_one": "{{count}} レッスン",
     "lessonCount_other": "{{count}} レッスン",
     "allTopics": "すべてのトピック",
+    "topic": "トピック {{count}}",
     "topic_one": "トピック {{count}}",
     "topic_other": "トピック {{count}}",
     "topicFallback": "トピック",
@@ -53,6 +73,8 @@
   "empty": {
     "noScoresTitle": "まだクイズスコアの履歴がありません",
     "noScoresDesc": "レッスンクイズに合格するか再挑戦して、最高スコア履歴の作成を始めましょう。",
+    "noHistoryTitle": "まだクイズスコアの履歴がありません",
+    "noHistoryDesc": "レッスンクイズに合格するか再挑戦して、最高スコア履歴の作成を始めましょう。",
     "noMatchTitle": "一致するレッスンが見つかりません",
     "noMatchDesc": "現在の検索およびフィルター条件に一致するレッスンはありません。",
     "resetFilters": "フィルターをリセット"
@@ -75,6 +97,7 @@
     "recorded": "記録日",
     "unknown": "不明",
     "noQuestionResults": "このレッスンでは保存された問題の結果はまだありません。",
+    "question": "問題 {{count}}",
     "question_one": "問題 {{count}}",
     "question_other": "問題 {{count}}",
     "correct": "正解",
@@ -83,5 +106,115 @@
     "noHint": "ヒントなし",
     "questionTextUnavailable": "問題文を利用できません",
     "viewDetailsAria": "{{title}} のクイズ詳細を表示"
+  },
+  "topicQuiz": {
+    "title": "最高のトピッククイズスコア",
+    "subtitle": "ロードマップ内の各トピック評価の最高スコア。",
+    "topicCount_one": "{{count}} トピック",
+    "topicCount_other": "{{count}} トピック",
+    "best": "最高",
+    "attempt_one": "{{count}} 回の挑戦",
+    "attempt_other": "{{count}} 回の挑戦",
+    "failed": "{{count}} 回失敗",
+    "correct": "{{correct}}/{{total}} 正解",
+    "notRecorded": "未記録",
+    "empty": {
+      "noHistoryTitle": "トピッククイズの履歴はまだありません",
+      "noHistoryDesc": "トピック内の割り当てられたレッスンをすべて完了して、トピッククイズを解放して受験しましょう。",
+      "noMatchTitle": "一致するトピックが見つかりません",
+      "noMatchDesc": "検索キーワードを調整してください。"
+    },
+    "filters": {
+      "searchPlaceholder": "トピック名を検索...",
+      "passed": "合格",
+      "failed": "不合格"
+    },
+    "detail": {
+      "title": "トピック {{order}}: {{name}}",
+      "titleNoOrder": "{{name}}",
+      "description": "トピッククイズ評価 · 保存された最高記録 · {{status}}",
+      "loading": "トピッククイズの結果を読み込み中...",
+      "status": "ステータス",
+      "bestScore": "最高スコア",
+      "totalAttempts": "総挑戦回数",
+      "failedAttempts": "失敗回数",
+      "correctQuestions": "正解数",
+      "recordedDate": "記録日",
+      "unknown": "不明",
+      "flaggedReview": "復習が必要なモジュール ({{count}})",
+      "accuracy": "正解率: {{percent}}%",
+      "questions": "問題 ({{count}})",
+      "all": "すべて ({{count}})",
+      "incorrect": "不正解 ({{count}})",
+      "correct": "正解 ({{count}})",
+      "noQuestionsMatch": "選択したフィルターに一致する問題はありません。",
+      "question_one": "問題 {{count}}",
+      "question_other": "問題 {{count}}",
+      "correctBadge": "正解",
+      "incorrectBadge": "不正解",
+      "questionUnavailable": "問題文を利用できません"
+    }
+  },
+  "finalQuiz": {
+    "standardTitle": "卒業基準",
+    "dualGateTitle": "デュアルゲート基準:",
+    "overallScoreReq": "総合スコア ≥ 80%",
+    "allSkillsReq": "4スキルすべて ≥ 60%",
+    "skillsEvaluated": "評価される卒業スキル:",
+    "docSkill": "ドキュメント (D)",
+    "commSkill": "コミュニケーション (C)",
+    "troubleSkill": "問題解決 (T)",
+    "businessSkill": "専門スキル (G)",
+    "customSkill": "専門スキル (G)",
+    "title": "最高のコース最終試験スコア",
+    "subtitle": "登録したキャリアトラックの最高卒業試験スコア。",
+    "badge": "卒業試験",
+    "empty": {
+      "noRecordTitle": "最終試験の記録はまだありません",
+      "noRecordDesc": "ロードマップ内のすべてのトピッククイズを完了して最終試験を解放しましょう。"
+    },
+    "card": {
+      "careerTrack": "キャリアトラック: {{name}}",
+      "examTitle": "総合最終試験",
+      "examDesc": "カードをクリックして保存された最高記録の回答と解説を確認できます。",
+      "best": "最高",
+      "passSection": "合格 (≥60%)",
+      "needsReview": "要復習",
+      "attempt_one": "{{count}} 回の挑戦",
+      "attempt_other": "{{count}} 回の挑戦",
+      "failed": "{{count}} 回失敗",
+      "questionsCorrect": "{{correct}}/{{total}} 問正解",
+      "progress": "進捗: {{percent}}%",
+      "recorded": "記録日"
+    },
+    "detail": {
+      "title": "コース最終試験 — {{name}}",
+      "defaultTitle": "卒業試験",
+      "description": "キャリアトラック卒業試験 · 保存された最高記録 · {{status}}",
+      "graduated": "卒業 (合格)",
+      "retakeRequired": "再受験が必要 (不合格)",
+      "loading": "保存された最終試験結果を読み込み中...",
+      "noAttemptFound": "記録に最終試験の詳細な受験記録が見つかりません。",
+      "loadFailed": "最終試験の詳細を読み込めませんでした。",
+      "status": "ステータス",
+      "bestScore": "最高スコア",
+      "totalAttempts": "総挑戦回数",
+      "failedAttempts": "失敗回数",
+      "correctQuestions": "正解数",
+      "recordedDate": "記録日",
+      "unknown": "不明",
+      "sectionPerformance": "セクション別実績 (各セクション ≥ 60% 必要)",
+      "sectionCorrect": "{{correct}}/{{total}} 正解",
+      "questions": "卒業試験問題 ({{count}})",
+      "all": "すべて ({{count}})",
+      "incorrect": "不正解 ({{count}})",
+      "correct": "正解 ({{count}})",
+      "noQuestionsMatch": "選択したフィルターに一致する問題はありません。",
+      "question_one": "問題 {{count}}",
+      "question_other": "問題 {{count}}",
+      "correctBadge": "正解",
+      "incorrectBadge": "不正解",
+      "questionUnavailable": "問題文を利用できません"
+    }
   }
 }

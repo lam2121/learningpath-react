@@ -333,29 +333,27 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 		const mins = Math.floor(seconds / 60);
 		const secs = seconds % 60;
 		return `${mins}:${secs.toString().padStart(2, '0')}`;
-	};
-
-	return (
-		<div className="min-h-screen bg-gray-50">
+	};	return (
+		<div className="min-h-screen bg-gray-50 dark:bg-slate-950">
 			<Toaster position="top-right" />
 
 			{/* Header with Progress & Timer */}
-			<header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+			<header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm dark:bg-slate-900 dark:border-slate-800">
 				<div className="max-w-3xl mx-auto px-4 py-3">
 					<div className="flex items-center justify-between gap-4 mb-3">
 						<div className="flex-1 min-w-0">
-							<div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+							<div className="flex items-center gap-2 text-sm text-gray-500 mb-1 dark:text-slate-400">
 								<span>{session.targetName}</span>
-								<span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-medium capitalize">{type}</span>
+								<span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-medium capitalize dark:bg-blue-950/70 dark:text-blue-300">{type}</span>
 							</div>
-							<h1 className="text-lg font-semibold text-gray-900 truncate">
+							<h1 className="text-lg font-semibold text-gray-900 truncate dark:text-white">
 								Question {currentQuestionIndex + 1} / {session.questions.length}
 							</h1>
 						</div>
 						{type === 'final' && timeRemaining !== null && (
 							<div className={cn(
 								'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-mono font-semibold',
-								timeRemaining < 300 ? 'bg-red-50 text-red-600 animate-pulse' : 'bg-gray-100 text-gray-700'
+								timeRemaining < 300 ? 'bg-red-50 text-red-600 animate-pulse dark:bg-rose-950/50 dark:text-rose-400' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300'
 							)}>
 								<Clock className="w-4 h-4" />
 								{formatTime(timeRemaining)}
@@ -368,7 +366,7 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 
 					{/* Network Status */}
 					{networkStatus === 'offline' && (
-						<div className="mt-2 flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg">
+						<div className="mt-2 flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg dark:bg-amber-950/40 dark:text-amber-300">
 							<WifiOff className="w-3 h-3" />
 							<span>Offline - Saving locally</span>
 						</div>
@@ -422,7 +420,7 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 
 			{/* Navigation — full width sticky bottom bar */}
 			{!showResult && (
-				<nav className="sticky bottom-0 z-30 bg-white border-t border-gray-200">
+				<nav className="sticky bottom-0 z-30 bg-white border-t border-gray-200 dark:bg-slate-900 dark:border-slate-800">
 					<div className="max-w-5xl mx-auto px-6 py-3 flex items-center gap-4">
 						<Button
 							variant="outline"
@@ -430,8 +428,8 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 							disabled={submitting || currentQuestionIndex === 0}
 							className="flex-shrink-0"
 						>
-<ChevronLeft className="w-4 h-4 mr-2" />
-								Previous Question
+							<ChevronLeft className="w-4 h-4 mr-2" />
+							Previous Question
 						</Button>
 
 						{/* Question Number Circles */}
@@ -448,7 +446,7 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 										'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all',
 										i === currentQuestionIndex && 'bg-blue-600 text-white ring-2 ring-blue-300',
 										answers[i] && i !== currentQuestionIndex && 'bg-green-500 text-white',
-										!answers[i] && i !== currentQuestionIndex && 'bg-gray-200 text-gray-600 hover:bg-gray-300',
+										!answers[i] && i !== currentQuestionIndex && 'bg-gray-200 text-gray-600 hover:bg-gray-300 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700',
 										'hover:scale-105'
 									)}
 									aria-label={`Câu ${i + 1}`}
@@ -487,7 +485,7 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 			{/* Result View */}
 			{showResult && result && (
 				<div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-					<div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-slide-up relative">
+					<div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-slide-up relative dark:bg-slate-900 dark:border dark:border-slate-800">
 						<div className="absolute top-4 right-4 z-10">
 							<Button variant="ghost" size="sm" onClick={() => navigate({ to: '/dashboard' })}>Close</Button>
 						</div>

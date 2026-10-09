@@ -35,15 +35,15 @@ export function KillSwitchToggle({ enabled, onToggle, disabled, compact = false 
 			<div className={cn(
 				'flex items-center gap-3 rounded-xl border p-3 transition-colors',
 				enabled
-					? 'border-red-200 bg-red-50'
-					: 'border-emerald-200 bg-emerald-50'
+					? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950'
+					: 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950'
 			)}>
 				<Zap className={cn('h-5 w-5', enabled ? 'text-red-600' : 'text-emerald-600')} />
 				<div className="flex-1 min-w-0">
 					<p className={cn('text-sm font-medium', enabled ? 'text-red-800' : 'text-emerald-800')}>
 						Emergency Kill Switch
 					</p>
-					<p className={cn('text-xs', enabled ? 'text-red-600' : 'text-emerald-700')}>
+					<p className={cn('text-xs', enabled ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-300')}>
 						{enabled ? 'AI generation disabled. Serving cache only.' : 'AI generation active and accepting new jobs.'}
 					</p>
 				</div>
@@ -59,9 +59,9 @@ export function KillSwitchToggle({ enabled, onToggle, disabled, compact = false 
 	}
 
 	return (
-		<Card className="border-red-200 bg-red-50">
+		<Card className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950">
 			<CardHeader>
-				<CardTitle className="flex items-center gap-2 text-red-700">
+				<CardTitle className="flex items-center gap-2 text-red-700 dark:text-red-400">
 					<Zap className="h-5 w-5" />
 					Emergency Kill Switch
 				</CardTitle>
@@ -69,7 +69,7 @@ export function KillSwitchToggle({ enabled, onToggle, disabled, compact = false 
 			<CardContent className="space-y-4">
 				<Alert variant={enabled ? 'destructive' : 'default'} className={cn(
 					'border-2',
-					enabled ? 'border-red-300 bg-red-50' : 'border-green-200 bg-green-50'
+					enabled ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950' : 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950'
 				)}>
 					{enabled ? <ShieldOff className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
 					<AlertDescription className="flex flex-col gap-1">
@@ -78,7 +78,7 @@ export function KillSwitchToggle({ enabled, onToggle, disabled, compact = false 
 								? 'AI Generation DISABLED - Serving cache only' 
 								: 'AI Generation NORMALLY OPERATIONAL'}
 						</span>
-						<span className="text-sm text-gray-600">
+						<span className="text-sm text-gray-600 dark:text-gray-400">
 							{enabled 
 								? 'All AI calls (Placement Test, Course Generator, Quiz Generator, Evaluator) will be blocked. System will only return cached content from DB. Learners can still study but no new content will be generated.'
 								: 'System operating normally. AI will be called when needed to generate new content.'}
@@ -87,20 +87,20 @@ export function KillSwitchToggle({ enabled, onToggle, disabled, compact = false 
 				</Alert>
 
 				{enabled && (
-					<Alert className="border-amber-200 bg-amber-50">
+					<Alert className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950">
 						<AlertTriangle className="h-4 w-4" />
 						<AlertDescription className="flex flex-col gap-1">
 							<span className="font-medium">⚠️ WARNING: Kill Switch IS ON</span>
-							<span className="text-sm text-amber-800">
+							<span className="text-sm text-amber-800 dark:text-amber-200">
 								This means AI budget is exhausted or there's an issue. Please re-enable when budget is replenished or issue is resolved.
 							</span>
 						</AlertDescription>
 					</Alert>
 				)}
 
-				<div className="flex items-center justify-between p-4 rounded-lg bg-white border">
+				<div className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-900 border dark:border-gray-700">
 					<div>
-						<p className="text-sm text-gray-500">Current Status</p>
+						<p className="text-sm text-gray-500 dark:text-gray-400">Current Status</p>
 						<p className={cn(
 							'font-bold text-lg',
 							enabled ? 'text-red-600' : 'text-green-600'
@@ -114,7 +114,7 @@ export function KillSwitchToggle({ enabled, onToggle, disabled, compact = false 
 						disabled={disabled || toggling}
 						id="kill-switch-main"
 					/>
-<Label htmlFor="kill-switch-main" className="text-sm text-gray-600">
+<Label htmlFor="kill-switch-main" className="text-sm text-gray-600 dark:text-gray-400">
 							{enabled ? 'Enable AI Generation' : 'Disable AI Generation (Emergency)'}
 						</Label>
 					{toggling && <Loader2 className="h-5 w-5 animate-spin text-gray-400" />}
@@ -140,11 +140,11 @@ export function KillSwitchBanner({ enabled }: { enabled: boolean }) {
 	if (!enabled) return null;
 
 	return (
-		<Alert className="fixed bottom-4 right-4 z-50 max-w-sm border-red-300 bg-red-50 shadow-lg animate-slide-in">
+		<Alert className="fixed bottom-4 right-4 z-50 max-w-sm border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950 shadow-lg animate-slide-in">
 			<AlertTriangle className="h-4 w-4 text-red-500" />
 			<AlertDescription className="flex flex-col gap-1">
 				<span className="font-medium">🔴 KILL SWITCH ACTIVE</span>
-				<span className="text-xs text-red-700">AI Generation disabled. Serving cached content only.</span>
+				<span className="text-xs text-red-700 dark:text-red-300">AI Generation disabled. Serving cached content only.</span>
 			</AlertDescription>
 		</Alert>
 	);

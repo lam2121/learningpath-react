@@ -17,6 +17,7 @@ export interface UserResponse {
 	email: string
 	name: string
 	role_id: number | null
+	avatar_url: string | null
 	created_at: string
 }
 
@@ -63,8 +64,8 @@ export interface TopicQuizHistoryEntryResponse {
 }
 
 export interface FinalQuizHistoryEntryResponse {
-	course_id: number
-	course_name: string
+	job_role_id: number
+	role_name: string
 	status: string
 	best_score_percent: number | null
 	passed: boolean
@@ -99,6 +100,8 @@ export interface StudySettingsUpdateRequest {
 }
 
 export interface LoginResponse {
+	access_token: string
+	token_type: string
 	user_id: number
 	email: string
 	name: string

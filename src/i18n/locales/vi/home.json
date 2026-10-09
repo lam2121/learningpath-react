@@ -1,0 +1,27 @@
+{
+  "robotAriaLabel": "Robot đồng hành học tập CareerPath thân thiện",
+  "badge": "Tiếng Anh chuyên ngành theo từng vị trí",
+  "heroTitle": "Biết chính xác tiếng Anh cần học",
+  "heroTitleGradient": "để phát triển sự nghiệp của bạn.",
+  "heroDescription": "Bài kiểm tra xếp lớp chuẩn xác giúp xác định lỗ hổng thực tế qua 4 kỹ năng công sở, sau đó xây dựng lộ trình 8 chủ đề bám sát nghề nghiệp và trình độ của bạn.",
+  "continue": "Tiếp tục học",
+  "startTest": "Bắt đầu bài kiểm tra xếp lớp",
+  "howItWorks": "Cách thức hoạt động",
+  "feature1": "48 câu hỏi chẩn đoán",
+  "feature2": "4 kỹ năng cốt lõi",
+  "feature3": "Không cần thẻ tín dụng",
+  "journeyTitle": "Một lộ trình rõ ràng",
+  "journeySubtitle": "Không có quy tắc tốt nghiệp ẩn",
+  "journeySteps": {
+    "step1": "Chọn vị trí",
+    "step2": "Tìm lỗ hổng",
+    "step3": "Học 8 chủ đề",
+    "step4": "Vượt qua bài test cuối"
+  },
+  "companionBadge": "Người bạn đồng hành học tập",
+  "companionTitle": "Xin chào! Sẵn sàng khám phá lộ trình của bạn?",
+  "companionDescription": "Tôi sẽ giúp bạn biến các lỗ hổng tiếng Anh thành những bước học rõ ràng và dễ dàng đạt được.",
+  "hereToHelp": "Sẵn sàng hỗ trợ",
+  "ctaSubtitle": "Mục tiêu của bạn, nhịp độ của bạn",
+  "ctaTitle": "Hãy cùng nhau bước đi bước đầu tiên."
+}

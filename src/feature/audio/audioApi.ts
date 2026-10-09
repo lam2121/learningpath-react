@@ -1,6 +1,5 @@
 import { fetchWithAuthRetry } from "@/common/lib/authSession";
-
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
+import { API_BASE_URL as BASE_URL } from "@/const/appConst";
 
 export interface VoiceProfile {
   id: string
@@ -145,8 +144,8 @@ export const DEFAULT_VOICES: VoiceProfile[] = [
   },
 ]
 
-export const DEFAULT_VOICE_ID = 'en-US-JennyNeural'
-export const DEFAULT_RATE = '-15%' // Slower default for optimal listening comprehension
+export const DEFAULT_VOICE_ID = import.meta.env.VITE_DEFAULT_VOICE_ID || 'en-US-JennyNeural'
+export const DEFAULT_RATE = import.meta.env.VITE_DEFAULT_VOICE_RATE || '-15%' // Slower default for optimal listening comprehension
 
 function resolveAudioUrl(audioUrl: string): string {
   if (!audioUrl) {
@@ -268,8 +267,8 @@ export async function uploadSTTAudio(
   const extension = audioBlob.type.includes('wav')
     ? 'wav'
     : audioBlob.type.includes('mp3')
-      ? 'mp3'
-      : 'webm'
+    ? 'mp3'
+    : 'webm'
   formData.append('audio_file', audioBlob, `recording.${extension}`)
 
   if (targetText && targetText.trim()) {
@@ -284,6 +283,97 @@ export async function uploadSTTAudio(
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new Error(err.detail ?? 'Failed to process speech to text')
+  }
+  return res.json()
+}
+
+// ─── Pronunciation assessment (phoneme-level) ────────────────────────────────
+// Distinct from uploadSTTAudio: that one transcribes and diffs whole words, so it
+// can say a word was wrong but not which sound. These mirror the backend's
+// PronunciationResponse in app/feature/audio/audio_schema.py exactly.
+
+export interface PronunciationPhone {
+  /** Expected phone in IPA */
+  expected: string
+  /** What was heard; empty string means the phone was silent */
+  heard: string
+  /** Confidence that THIS phone is wrong, 0.0-1.0 */
+  confidence: number
+}
+
+export interface PronunciationWordError {
+  position: number
+  word: string
+  expected_ipa: string
+  heard_ipa: string
+  phone_distance: number
+  /** Confidence that this word IS mispronounced, 0.0-1.0 */
+  confidence: number
+  phones: PronunciationPhone[]
+}
+
+export interface PronunciationResponse {
+  expected_text: string
+  transcript: string
+  /** Overall score, 0-100 */
+  score: number
+  /** Fractions (0.0-1.0), not percentages */
+  word_error_rate: number
+  phoneme_error_rate: number
+  words_with_errors: string[]
+  errors: PronunciationWordError[]
+  duration_seconds: number | null
+  language: string
+  /** Coaching feedback in markdown */
+  feedback_summary: string
+  /** False when scoring succeeded but the LLM call failed */
+  llm_feedback_available: boolean
+  /** Plain-text recap (<= 75 words) of the words/sounds that went wrong */
+  short_summary?: string
+}
+
+/**
+ * One Section 2 vocabulary card. Send it when the target is a single term: the
+ * backend then coaches the word with prompts F4/F5 (syllables, stress, phonemes)
+ * instead of F1/F2, which are written for a whole sentence.
+ */
+export interface VocabWordContext {
+  term: string
+  ipa?: string
+  pos?: string
+  vn_meaning?: string
+  pronunciation_guide?: string
+  example?: string
+}
+
+/** Upload a recording for phoneme-level scoring plus AI coaching feedback. */
+export async function uploadPronunciationAudio(
+  audioBlob: Blob,
+  expectedText: string,
+  wordContext?: VocabWordContext
+): Promise<PronunciationResponse> {
+  const formData = new FormData()
+  const extension = audioBlob.type.includes('wav')
+    ? 'wav'
+    : audioBlob.type.includes('mp3')
+    ? 'mp3'
+    : 'webm'
+  formData.append('audio_file', audioBlob, `recording.${extension}`)
+  formData.append('expected_text', expectedText.trim())
+
+  if (wordContext) {
+    formData.append('word_context', JSON.stringify(wordContext))
+  }
+
+  // No Content-Type header: the browser must set the multipart boundary itself.
+  const res = await fetchWithAuthRetry(`${BASE_URL}/audio/pronunciation`, {
+    method: 'POST',
+    body: formData,
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(err.detail ?? 'Failed to assess pronunciation')
   }
   return res.json()
 }

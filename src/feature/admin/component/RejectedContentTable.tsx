@@ -73,15 +73,15 @@ export function RejectedContentTable() {
 	};
 
 	const statusLabels: Record<string, { label: string; color: string }> = {
-pending: { label: 'Pending', color: 'bg-amber-100 text-amber-800' },
-	fixed: { label: 'Fixed', color: 'bg-green-100 text-green-800' },
-	ignored: { label: 'Ignored', color: 'bg-gray-100 text-gray-600' }
+pending: { label: 'Pending', color: 'bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200' },
+	fixed: { label: 'Fixed', color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' },
+	ignored: { label: 'Ignored', color: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300' }
 	};
 
 	return (
 		<div className="space-y-4">
 			{/* Filters */}
-			<div className="flex flex-wrap gap-4 p-4 bg-gray-50 rounded-lg border">
+			<div className="flex flex-wrap gap-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border dark:border-gray-700">
 				<Select value={filters.generator} onValueChange={v => setFilters(f => ({ ...f, generator: v }))}>
 					<SelectTrigger className="w-[180px]">
 						<SelectValue placeholder="Generator" />
@@ -129,7 +129,7 @@ pending: { label: 'Pending', color: 'bg-amber-100 text-amber-800' },
 			<div className="overflow-x-auto rounded-lg border">
 				<Table>
 					<TableHeader>
-						<TableRow className="bg-gray-50">
+						<TableRow className="bg-gray-50 dark:bg-gray-800">
 							<TableHead className="w-20">Generator</TableHead>
 							<TableHead>Role</TableHead>
 							<TableHead>Error</TableHead>
@@ -141,27 +141,27 @@ pending: { label: 'Pending', color: 'bg-amber-100 text-amber-800' },
 					<TableBody>
 						{items.length === 0 ? (
 							<TableRow>
-								<TableCell colSpan={6} className="text-center py-8 text-gray-500">
+								<TableCell colSpan={6} className="text-center py-8 text-gray-500 dark:text-gray-400">
 									No rejected content
 								</TableCell>
 							</TableRow>
 						) : (
 							items.map(item => (
-								<TableRow key={item.id} className="hover:bg-gray-50">
+								<TableRow key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
 									<TableCell className="font-mono text-xs">
 										<Badge variant="outline" className="px-2 py-0.5 text-xs">
 											{generatorLabels[item.generator] || item.generator}
 										</Badge>
 									</TableCell>
-									<TableCell className="text-sm text-gray-700">{item.role}</TableCell>
-									<TableCell className="text-sm text-gray-600 max-w-xs truncate">
+									<TableCell className="text-sm text-gray-700 dark:text-gray-300">{item.role}</TableCell>
+									<TableCell className="text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate">
 										{item.error}
 									</TableCell>
-									<TableCell className="text-sm text-gray-500 whitespace-nowrap">
+									<TableCell className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
 										{new Date(item.timestamp).toLocaleString('vi-VN')}
 									</TableCell>
 									<TableCell>
-										<Badge className={statusLabels[item.status]?.color || 'bg-gray-100 text-gray-600'}>
+										<Badge className={statusLabels[item.status]?.color || 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'}>
 											{statusLabels[item.status]?.label || item.status}
 										</Badge>
 									</TableCell>
@@ -201,7 +201,7 @@ pending: { label: 'Pending', color: 'bg-amber-100 text-amber-800' },
 														size="sm"
 														onClick={() => handleStatusChange(item.id, 'ignored')}
 														disabled={updating === item.id}
-														className="h-8 text-xs text-gray-500"
+														className="h-8 text-xs text-gray-500 dark:text-gray-400"
 													>
 Ignore
 													</Button>
@@ -233,15 +233,15 @@ Ignore
 					<div className="space-y-4 max-h-[60vh] overflow-y-auto">
 						<div className="grid grid-cols-2 gap-4 text-sm">
 							<div>
-								<p className="text-gray-500">Generator</p>
+								<p className="text-gray-500 dark:text-gray-400">Generator</p>
 								<p className="font-medium">{generatorLabels[selectedItem?.generator || '']}</p>
 							</div>
 							<div>
-								<p className="text-gray-500">Role</p>
+								<p className="text-gray-500 dark:text-gray-400">Role</p>
 								<p className="font-medium">{selectedItem?.role}</p>
 							</div>
 							<div>
-								<p className="text-gray-500">Status</p>
+								<p className="text-gray-500 dark:text-gray-400">Status</p>
 								<p className="font-medium">
 									<Badge className={statusLabels[selectedItem?.status || '']?.color}>
 										{statusLabels[selectedItem?.status || '']?.label}
@@ -249,47 +249,47 @@ Ignore
 								</p>
 							</div>
 							<div>
-								<p className="text-gray-500">Timestamp</p>
+								<p className="text-gray-500 dark:text-gray-400">Timestamp</p>
 								<p className="font-medium">{selectedItem ? new Date(selectedItem.timestamp).toLocaleString('vi-VN') : ''}</p>
 							</div>
 						</div>
 
 						<div>
-							<p className="text-sm font-medium text-gray-500 mb-2">Input Preview</p>
-							<pre className="p-3 rounded bg-gray-100 text-xs overflow-x-auto max-h-40 overflow-y-auto">
+							<p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Input Preview</p>
+							<pre className="p-3 rounded bg-gray-100 dark:bg-gray-800 text-xs overflow-x-auto max-h-40 overflow-y-auto">
 								{selectedItem?.inputPreview}
 							</pre>
 						</div>
 
 						<div>
-							<p className="text-sm font-medium text-gray-500 mb-2">Error</p>
-							<div className="p-3 rounded bg-red-50 border border-red-200 text-red-700 text-sm">
+							<p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Error</p>
+							<div className="p-3 rounded bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">
 								{selectedItem?.error}
 							</div>
 						</div>
 
 						<div>
-							<p className="text-sm font-medium text-gray-500 mb-2">Raw AI Response</p>
-							<pre className="p-3 rounded bg-gray-100 text-xs overflow-x-auto max-h-60 overflow-y-auto font-mono">
+							<p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Raw AI Response</p>
+							<pre className="p-3 rounded bg-gray-100 dark:bg-gray-800 text-xs overflow-x-auto max-h-60 overflow-y-auto font-mono">
 								{selectedItem?.rawResponse}
 							</pre>
 						</div>
 
 						<div>
-							<p className="text-sm font-medium text-gray-500 mb-2">Validator Checks</p>
+							<p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Validator Checks</p>
 							<div className="space-y-2">
 								{!selectedItem?.validatorChecks || selectedItem.validatorChecks.length === 0 ? (
-									<p className="text-sm text-gray-500">No validator checks recorded.</p>
+									<p className="text-sm text-gray-500 dark:text-gray-400">No validator checks recorded.</p>
 								) : (
 									selectedItem.validatorChecks.map((check, idx) => (
-										<div key={idx} className="flex items-center gap-2 p-2 rounded bg-white border">
+										<div key={idx} className="flex items-center gap-2 p-2 rounded bg-white dark:bg-gray-800 border dark:border-gray-700">
 											{check.passed ? (
 												<CheckCircle className="h-4 w-4 text-green-500" />
 											) : (
 												<XCircle className="h-4 w-4 text-red-500" />
 											)}
 											<span className="text-sm font-medium">{check.check}</span>
-											{check.details && <span className="text-xs text-gray-500 ml-auto">{check.details}</span>}
+											{check.details && <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">{check.details}</span>}
 										</div>
 									))
 								)}

@@ -5,12 +5,28 @@
   "profile": "プロフィール",
   "history": "履歴",
   "dayStreak": "日間連続",
+  "adminPage": "管理ページへ",
   "studySettings": "学習設定",
   "logout": "ログアウト",
   "login": "ログイン",
+  "logoutDialog": {
+    "title": "ログアウト",
+    "description": "ログアウトしてもよろしいですか？",
+    "confirm": "ログアウト",
+    "cancel": "キャンセル",
+    "loggingOut": "ログアウト中..."
+  },
   "languages": {
     "en": "English",
     "vi": "Tiếng Việt",
     "jp": "日本語"
-  }
+  },
+  "theme": {
+    "theme": "テーマ",
+    "light": "ライト",
+    "dark": "ダーク",
+    "system": "システム"
+  },
+  "trainingTool": "研修ツール",
+  "smartLearning": "スマートラーニング"
 }

@@ -56,7 +56,7 @@ import {
   type STTResponse,
   type TTSGenerateResponse,
   type VoiceProfile,
-} from '../api/devAudioApi'
+} from '@/feature/audio/audioApi'
 
 // Preset sample phrases for quick testing
 const TTS_PRESETS = [

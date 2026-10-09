@@ -17,6 +17,7 @@ interface OrderingQuestionProps {
 	onAnswerChange: (answer: string) => void;
 	isSubmitted: boolean;
 	isCorrect?: boolean;
+	correctAnswer?: string;
 	explanation?: string;
 	revealAnswer?: boolean;
 }
@@ -29,15 +30,17 @@ export function OrderingQuestion({
 	onAnswerChange,
 	isSubmitted,
 	isCorrect,
+	correctAnswer: explicitCorrectAnswer,
 	explanation,
 	revealAnswer = true,
 }: OrderingQuestionProps) {
-	const [instruction, stepsStr, correctAnswerStr, expl] = data;
+	const [instruction, stepsStr, dataCorrectAnswerStr, expl] = data;
+	const correctAnswerStr = explicitCorrectAnswer ?? dataCorrectAnswerStr;
 	// Memoize these so their array references are stable between renders.
 	// Without useMemo, a new array is created each render, making it an
 	// unstable useEffect dependency that causes an infinite update loop.
 	const originalSteps = useMemo(() => stepsStr.split('|'), [stepsStr]);
-	const correctIndices = useMemo(() => correctAnswerStr.split('|').map(Number), [correctAnswerStr]);
+	const correctIndices = useMemo(() => (correctAnswerStr ? correctAnswerStr.split('|').map(Number) : []), [correctAnswerStr]);
 	const correctOrder = useMemo(() => correctIndices.map(i => originalSteps[i]), [correctIndices, originalSteps]);
 	const showFailedState = isSubmitted && !revealAnswer && isCorrect === false;
 
@@ -151,20 +154,20 @@ export function OrderingQuestion({
 	}, [userAnswer, isSubmitted, originalSteps]);
 
 	return (
-		<div className="space-y-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
+		<div className="space-y-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
 			<div className="flex flex-wrap items-center justify-between gap-3">
-				<h3 className="text-lg font-semibold text-gray-900">
-					Question {questionNumber} / {totalQuestions} · <span className="text-gray-500 font-normal">Ordering</span>
+				<h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+					Question {questionNumber} / {totalQuestions} · <span className="text-gray-500 font-normal dark:text-slate-400">Ordering</span>
 				</h3>
-				<div className="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700">
+				<div className="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700 dark:bg-amber-950/70 dark:text-amber-300">
 					T
 				</div>
 			</div>
 
 			{/* Instruction */}
-			<div className="rounded-xl border border-orange-100 bg-orange-50 p-4">
-				<p className="font-medium text-orange-900 mb-2">📋 Instruction:</p>
-				<p className="text-gray-800">{instruction}</p>
+			<div className="rounded-xl border border-orange-200 bg-orange-50 p-4 dark:border-amber-900/50 dark:bg-amber-950/30">
+				<p className="font-bold text-orange-950 mb-2 dark:text-amber-200">📋 Instruction:</p>
+				<p className="font-medium text-slate-900 dark:text-slate-100">{instruction}</p>
 			</div>
 
 			{/* Drag and Drop List */}
@@ -184,23 +187,23 @@ export function OrderingQuestion({
 						onTouchCancel={handleTouchEnd}
 						className={cn(
 							'relative flex items-start gap-3 rounded-xl border-2 p-4 transition-all sm:items-center sm:gap-4',
-							'bg-white hover:bg-gray-50',
+							'bg-white hover:bg-gray-50 dark:bg-slate-800/60 dark:hover:bg-slate-800',
 							isSubmitted
 								? revealAnswer && orderedSteps.every((s, i) => s === correctOrder[i])
-									? 'border-green-300 bg-green-50'
+									? 'border-green-300 bg-green-50 dark:border-emerald-600 dark:bg-emerald-950/40'
 									: showFailedState
-										? 'border-red-300 bg-red-50'
-										: 'border-gray-200'
+										? 'border-red-300 bg-red-50 dark:border-rose-600 dark:bg-rose-950/40'
+										: 'border-gray-200 dark:border-slate-800'
 								: draggedIndex === index
-								? 'border-blue-400 bg-blue-50 opacity-75 rotate-1 scale-105 shadow-lg'
-								: 'border-gray-200'
+								? 'border-blue-400 bg-blue-50 opacity-75 rotate-1 scale-105 shadow-lg dark:border-blue-500 dark:bg-blue-950/60'
+								: 'border-gray-200 dark:border-slate-800'
 						)}
 						style={{ cursor: isSubmitted ? 'default' : 'grab' }}
 					>
 						{/* Drag Handle */}
 						<div className={cn(
 							'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
-							'text-gray-400 hover:text-gray-600 active:text-gray-900',
+							'text-gray-400 hover:text-gray-600 active:text-gray-900 dark:text-slate-500 dark:hover:text-slate-300 dark:active:text-white',
 							isSubmitted && 'cursor-default opacity-50'
 						)}>
 							<GripVertical className="w-5 h-5" />
@@ -211,17 +214,17 @@ export function OrderingQuestion({
 							'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg font-bold',
 							isSubmitted
 								? revealAnswer && step === correctOrder[index]
-									? 'bg-green-100 text-green-700'
+									? 'bg-green-100 text-green-700 dark:bg-emerald-950/70 dark:text-emerald-300'
 									: showFailedState
-										? 'bg-red-100 text-red-700'
-										: 'bg-gray-100 text-gray-600'
-								: 'bg-gray-100 text-gray-600'
+										? 'bg-red-100 text-red-700 dark:bg-rose-950/70 dark:text-rose-300'
+										: 'bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-300'
+								: 'bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-300'
 						)}>
 							{index + 1}
 						</div>
 
 						{/* Step Content */}
-						<div className="min-w-0 flex-1 break-words font-medium text-gray-900">{step}</div>
+						<div className="min-w-0 flex-1 break-words font-medium text-gray-900 dark:text-slate-100">{step}</div>
 
 						{/* Result Indicators */}
 						{isSubmitted && revealAnswer && (
@@ -236,35 +239,20 @@ export function OrderingQuestion({
 					</div>
 				))}
 			</div>
-
-			{/* Reset Button */}
-			{!isSubmitted && (
-				<button
-					type="button"
-					onClick={() => {
-						const shuffled = [...originalSteps].sort(() => Math.random() - 0.5);
-						setOrderedSteps(shuffled);
-						onAnswerChange(shuffled.map(s => originalSteps.indexOf(s)).join('|'));
-					}}
-					className="w-full px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
-				>
-					🔄 Shuffle Again
-				</button>
-			)}
-
+			
 			{/* Explanation */}
 			{isSubmitted && revealAnswer && (
-				<div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+				<div className="p-4 rounded-xl bg-gray-50 border border-gray-200 dark:bg-slate-800/80 dark:border-slate-700">
 					<div className="flex items-start gap-3">
 						<div className={cn(
 							'w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0',
-							isCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+							isCorrect ? 'bg-green-100 text-green-600 dark:bg-emerald-950/70 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-rose-950/70 dark:text-rose-400'
 						)}>
 							{isCorrect ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
 						</div>
 						<div className="flex-1">
-							<p className="font-medium text-gray-900">Explanation:</p>
-							<p className="text-sm text-gray-600 mt-1">{explanation || expl}</p>
+							<p className="font-bold text-slate-950 dark:text-white">Explanation:</p>
+							<p className="mt-1 text-sm font-medium leading-relaxed text-slate-900 dark:text-slate-100">{explanation || expl}</p>
 						</div>
 					</div>
 				</div>

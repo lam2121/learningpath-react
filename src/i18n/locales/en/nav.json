@@ -5,12 +5,28 @@
   "profile": "Profile",
   "history": "History",
   "dayStreak": "day streak",
+  "adminPage": "Go to admin page",
   "studySettings": "Study Settings",
   "logout": "Log out",
   "login": "Log-in",
+  "logoutDialog": {
+    "title": "Log out",
+    "description": "Are you sure you want to log out?",
+    "confirm": "Log out",
+    "cancel": "Cancel",
+    "loggingOut": "Logging out..."
+  },
   "languages": {
     "en": "English",
     "vi": "Tiếng Việt",
     "jp": "日本語"
-  }
+  },
+  "theme": {
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "trainingTool": "Training Tool",
+  "smartLearning": "Smart-Learning"
 }

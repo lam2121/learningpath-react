@@ -1,5 +1,7 @@
 import { createFileRoute, redirect, isRedirect } from '@tanstack/react-router'
-import { LoginPage } from '@/feature/auth/page/LoginPage'
+import { useEffect } from 'react'
+import { getAppPath } from '@/const/appConst'
+import { ADMIN_ROLE_ID } from '@/feature/auth/helper/authHelper'
 import { fetchOnboardingStatus, getCachedOnboardingStatus } from '@/feature/onboarding/api/onboardingApi'
 
 export const Route = createFileRoute('/(auth)/login')({
@@ -8,7 +10,7 @@ export const Route = createFileRoute('/(auth)/login')({
 			const role_id = context.auth.user?.role_id
 
 			// Admin → redirect to admin dashboard
-			if (role_id === 2) {
+			if (role_id === ADMIN_ROLE_ID) {
 				throw redirect({ to: '/admin' })
 			}
 
@@ -33,5 +35,30 @@ export const Route = createFileRoute('/(auth)/login')({
 			}
 		}
 	},
-	component: LoginPage,
+	component: CareerPathLoginRedirectComponent,
 })
+
+function CareerPathLoginRedirectComponent() {
+	useEffect(() => {
+		const redirectUri = encodeURIComponent(window.location.origin + getAppPath('/sso-callback'))
+		let portalUrl: string
+		if (import.meta.env.VITE_AUTH_PORTAL_URL) {
+			const baseUrl = import.meta.env.VITE_AUTH_PORTAL_URL.replace(/\/login\/?$/, '')
+			portalUrl = `${baseUrl}/login?redirect_uri=${redirectUri}&app=careerpath`
+		} else if (import.meta.env.VITE_AUTH_API_URL && !import.meta.env.VITE_AUTH_API_URL.startsWith('/')) {
+			const baseUrl = import.meta.env.VITE_AUTH_API_URL.replace(/\/login\/?$/, '')
+			portalUrl = `${baseUrl}/login?redirect_uri=${redirectUri}&app=careerpath`
+		} else {
+			// Trên Production Server: Gọi qua /api/auth/login đã được Nginx reverse proxy sẵn
+			portalUrl = `${window.location.origin}/api/auth/login?redirect_uri=${redirectUri}&app=careerpath`
+		}
+		window.location.href = portalUrl
+	}, [])
+
+	return (
+		<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f4f9' }}>
+			<p style={{ color: '#666', fontSize: '14px' }}>Đang chuyển hướng sang Cổng Đăng Nhập...</p>
+		</div>
+	)
+}
+

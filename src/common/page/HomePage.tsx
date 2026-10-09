@@ -4,7 +4,7 @@ import { MainFooter } from '@/common/component/MainFooter'
 export function HomePage() {
     return (
         <>
-            <div className="relative min-h-screen overflow-x-hidden flex flex-col">
+            <div className="relative min-h-screen overflow-x-hidden flex flex-col bg-[#f5fbff] dark:bg-slate-950">
                 <MainNavigationMenu />
                 <div className="flex-1">
                     <Home />

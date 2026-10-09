@@ -1,6 +1,5 @@
 import { fetchWithAuthRetry } from "@/common/lib/authSession";
-
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
+import { API_BASE_URL as BASE_URL } from "@/const/appConst";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -117,7 +116,7 @@ export interface JobRoleBaseline {
 }
 
 export interface JobRoleSkillDefinition {
-  description: string
+  description: string | Record<string, string>
   example_questions: string[]
 }
 
@@ -131,7 +130,7 @@ export interface JobRoleSkillDefinitions {
 export interface JobRole {
   id: number
   name: string
-  job_description?: string | null
+  job_description?: string | Record<string, string> | null
   baseline: JobRoleBaseline
   skill_definitions?: JobRoleSkillDefinitions | null
   is_active?: boolean
