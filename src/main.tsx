@@ -22,7 +22,7 @@ if (import.meta.env.DEV && BYPASS_AUTH) {
   if (!existing) {
     localStorage.setItem(USER_KEY, JSON.stringify({
       username: 'dev_admin',
-      email: 'admin@tma.com.vn',
+      email: 'admin@builtbylam.com',
       role: 'admin',
       role_id: ADMIN_ROLE_ID,
     }))

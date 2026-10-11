@@ -33,7 +33,7 @@ export interface AuthContextValue {
    *
    * The returned user carries CareerPath's own `role_id`, which is the source of
    * truth for admin rights - the auth-service `role` claim describes the shared
-   * TMA identity and must not be used to decide CareerPath authorization.
+   * central identity and must not be used to decide CareerPath authorization.
    * Returns null if the session could not be verified.
    */
   refreshAuth: () => Promise<AuthUser | null>;

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, type HistoryState } from '@tanstack/react-router'
-import tmaLogo from '@/asset/image/tma_logo.png'
+import careerPathLogo from '@/asset/image/careerpath_logo.png'
 import bannerBg from '@/asset/image/banner_background.png'
 import { TestQuestionCard } from './TestQuestionCard'
 import type { TestQuestion, QuestionResult, DifficultyLevel } from '../../api/placementTestTypes'
@@ -543,7 +543,7 @@ export function PlacementTestEngine() {
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 h-16 bg-[#0072FF] z-40 flex items-center justify-between px-6 shadow-md">
         <div className="flex items-center gap-3">
-          <img src={tmaLogo} alt="TMA Solutions" className="h-8 w-auto" />
+          <img src={careerPathLogo} alt="AI Learning Path" className="h-8 w-auto brightness-0 invert" />
           <LanguageSwitcher
             variant="ghost"
             showLabel

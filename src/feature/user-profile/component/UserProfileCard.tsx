@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { userProfileTexts } from "../userProfileTexts";
 import { AvatarCropDialog } from "./AvatarCropDialog";
 
-import tmaLogo from "@/asset/image/tma_logo.png";
+import appLogo from "@/asset/image/careerpath_logo.png";
 import { useAuth } from "@/common/context/AuthContext";
 import { resolveAvatarUrl } from "@/common/lib/avatar";
 import { fetchCurrentUserProfile, uploadUserAvatar } from "@/feature/auth/api/authAPI";
@@ -480,10 +480,10 @@ export function UserProfileCard() {
                     <circle cx="1006" cy="214" r="8" fill="rgba(255,255,255,0.15)" />
                 </svg>
                 <img
-                    src={tmaLogo}
-                    alt="TMA Logo"
+                    src={appLogo}
+                    alt="AI Learning Path Logo"
                     aria-hidden="true"
-                    className="pointer-events-none absolute right-6 top-3 sm:top-4 h-13 sm:h-15 md:h-16 w-auto opacity-50 drop-shadow-[0_4px_16px_rgba(255,255,255,0.25)]"
+                    className="pointer-events-none absolute right-6 top-3 sm:top-4 h-13 sm:h-15 md:h-16 w-auto opacity-70 drop-shadow-[0_4px_16px_rgba(255,255,255,0.25)]"
                 />
             </div>
 

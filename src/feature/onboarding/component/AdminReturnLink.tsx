@@ -8,7 +8,7 @@ const ADMIN_ROLE_ID = 2;
 /**
  * Escape hatch back to the admin portal, for admins going through onboarding.
  *
- * The onboarding pages each render their own blue TMA header and deliberately
+ * The onboarding pages each render their own blue header and deliberately
  * expose no site navigation, so without this an admin who starts the learner
  * flow has no way back short of editing the URL. Renders nothing for learners.
  */

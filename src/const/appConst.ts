@@ -1,7 +1,8 @@
 export const APP_NAME = import.meta.env.VITE_APP_NAME || 'CareerPath AI';
 export const APP_VERSION = import.meta.env.VITE_APP_VERSION || '1.0.0';
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '/api';
-export const AUTH_BASE_URL = import.meta.env.VITE_AUTH_API_URL || '/api/auth';
+const rawAuthUrl = (import.meta.env.VITE_AUTH_API_URL || '/api/auth').replace(/\/+$/, '');
+export const AUTH_BASE_URL = rawAuthUrl.endsWith('/api/auth') ? rawAuthUrl : `${rawAuthUrl}/api/auth`;
 export const BASE_PATH = (import.meta.env.VITE_BASE_PATH || '/careerpath').replace(/\/+$/, '') || '/';
 
 export function getAppPath(subPath: string): string {
@@ -10,12 +11,14 @@ export function getAppPath(subPath: string): string {
 }
 
 export const TMA_INFO = {
-	name: import.meta.env.VITE_COMPANY_NAME || 'TMA Solutions',
-	domain: import.meta.env.VITE_COMPANY_DOMAIN || 'tma.com.vn',
-	supportEmail: import.meta.env.VITE_SUPPORT_EMAIL || 'support@tma.com.vn',
-	HOME_PAGE: import.meta.env.VITE_HOME_PAGE_URL || 'https://tma.com.vn',
-	SMART_LEARNING: import.meta.env.VITE_SMART_LEARNING_URL || 'https://smartlearning.tma.com.vn'
+	name: import.meta.env.VITE_COMPANY_NAME || 'AI Learning Path',
+	domain: import.meta.env.VITE_COMPANY_DOMAIN || 'builtbylam.com',
+	supportEmail: import.meta.env.VITE_SUPPORT_EMAIL || 'support@builtbylam.com',
+	HOME_PAGE: import.meta.env.VITE_HOME_PAGE_URL || 'https://builtbylam.com',
+	SMART_LEARNING: import.meta.env.VITE_SMART_LEARNING_URL || 'https://builtbylam.com'
 } as const;
+
+export const COMPANY_INFO = TMA_INFO;
 
 export const APP_INFO = {
 	name: 'CareerPath',

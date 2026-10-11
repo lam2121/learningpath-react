@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { LogOut, Loader2 } from 'lucide-react'
-import tmaLogo from '@/asset/image/tma_logo.png'
+import careerPathLogo from '@/asset/image/careerpath_logo.png'
 import { useAuth } from '@/common/context/AuthContext'
 import { useRadar } from '@/feature/radar'
 import type { QuestionResult, SkillAxis, DifficultyLevel } from '../../api/placementTestTypes'
@@ -226,7 +226,7 @@ export function PlacementResultView() {
       {/* Header */}
       <header className="w-full bg-[#007aff] px-6 py-4 flex items-center justify-between shadow-sm z-20">
         <div className="flex items-center gap-3">
-          <img src={tmaLogo} alt="TMA Solutions" className="h-8 w-auto" />
+          <img src={careerPathLogo} alt="AI Learning Path" className="h-8 w-auto brightness-0 invert" />
           <LanguageSwitcher
             variant="ghost"
             showLabel

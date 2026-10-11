@@ -51,7 +51,7 @@ function AdminSidebar() {
 		<aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 h-screen sticky top-0 flex flex-col">
 			<div className="p-6 border-b border-gray-100 dark:border-gray-800">
 				<h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Admin Portal</h1>
-				<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">TMA IT Communication</p>
+				<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">AI Learning Path</p>
 			</div>
 			<nav className="flex-1 p-4 space-y-1 overflow-y-auto min-h-0">
 				{navigation.map(item => (
