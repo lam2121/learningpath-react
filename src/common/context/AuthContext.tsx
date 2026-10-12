@@ -13,6 +13,11 @@ import {
   logoutUser
 } from "@/feature/auth/api/authAPI";
 import { refreshAccessToken } from "@/common/lib/authSession";
+import {
+  clearUserSession,
+  getAccessToken,
+  getRefreshToken,
+} from "@/feature/auth/helper/authHelper";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -61,9 +66,7 @@ export function setStoredUser(user: AuthUser | null): void {
 }
 
 export function clearAuthStorage(): void {
-  localStorage.removeItem(USER_KEY);
-  // Optional cleanup for legacy tokens if any remain in client storage
-  localStorage.removeItem("auth_access_token");
+  clearUserSession();
 }
 
 function buildAuthUser(profile: UserProfileResponse): AuthUser {
@@ -112,19 +115,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // 2. Check token in localStorage or attempt to refresh if we have a refresh cookie
-      let token = localStorage.getItem("auth_access_token");
+      // 2. Clean up any leftover legacy tokens from localStorage
+      try {
+        localStorage.removeItem("auth_access_token");
+        localStorage.removeItem("auth_refresh_token");
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+      } catch {}
+
+      // 3. Check token in Cookie or attempt to refresh if we have a refresh cookie
+      let token = getAccessToken();
       if (!token) {
         try {
           await refreshAccessToken();
-          token = localStorage.getItem("auth_access_token");
+          token = getAccessToken();
         } catch {
           // No active token or refresh cookie
         }
       }
 
-      // If still no token and no stored user, user is not logged in
-      if (!token && !getStoredUser()) {
+      // If still no token, no refresh cookie, and no stored user, user is not logged in
+      if (!token && !getRefreshToken() && !getStoredUser()) {
         setUser(null);
         setIsLoading(false);
         return;

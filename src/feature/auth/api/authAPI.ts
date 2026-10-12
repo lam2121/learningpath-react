@@ -116,6 +116,7 @@ export async function loginUser(data: LoginRequest): Promise<LoginResponse> {
 
 	return {
 		access_token: authData.access_token,
+		refresh_token: authData.refresh_token,
 		token_type: authData.token_type || 'bearer',
 		user_id: authData.user?.id || (authData as any).user_id,
 		email: authData.user?.email || (authData as any).email,
@@ -149,6 +150,7 @@ export async function guestLoginUser(email: string, name?: string): Promise<Logi
 
 	return {
 		access_token: authData.access_token,
+		refresh_token: authData.refresh_token,
 		token_type: authData.token_type || 'bearer',
 		user_id: authData.user.id,
 		email: authData.user.email,

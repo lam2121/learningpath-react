@@ -4,6 +4,7 @@ import { useAuth } from '@/common/context/AuthContext'
 import {
   saveUserSession,
   getAccessToken,
+  setCookie,
   TOKEN_KEY,
   REFRESH_TOKEN_KEY,
   ADMIN_ROLE_ID,
@@ -53,11 +54,17 @@ function CareerPathSSOCallbackRoute() {
           return
         }
 
-        // Save tokens immediately into localStorage so subsequent requests have them
-        localStorage.setItem(TOKEN_KEY, accessToken)
+        // Save tokens immediately into Cookies so subsequent requests have them
+        setCookie(TOKEN_KEY, accessToken, 1)
         if (refreshToken) {
-          localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
+          setCookie(REFRESH_TOKEN_KEY, refreshToken, 7)
         }
+        try {
+          localStorage.removeItem(TOKEN_KEY)
+          localStorage.removeItem(REFRESH_TOKEN_KEY)
+          localStorage.removeItem('auth_access_token')
+          localStorage.removeItem('auth_refresh_token')
+        } catch {}
 
         let parsedUser: any = {}
         if (userRaw) {
@@ -79,6 +86,7 @@ function CareerPathSSOCallbackRoute() {
         // Save session in CareerPath localStorage format
         saveUserSession({
           access_token: accessToken,
+          refresh_token: refreshToken || undefined,
           user_id: parsedUser.id || 0,
           email: parsedUser.email || '',
           username: parsedUser.username || parsedUser.name || '',

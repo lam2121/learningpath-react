@@ -30,9 +30,10 @@ export function LoginForm() {
 			// 1. Call the Central Auth Service API
 			const data = await loginUser({ identifier: username.trim(), password })
 
-			// 2. Persist user session info (including access token)
+			// 2. Persist user session info (tokens stored in Cookies, purged from localStorage)
 			saveUserSession({
 				access_token: data.access_token,
+				refresh_token: data.refresh_token,
 				email: data.email,
 				username: data.name,
 				role_id: data.role_id,
