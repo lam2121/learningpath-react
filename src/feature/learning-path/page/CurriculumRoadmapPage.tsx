@@ -226,10 +226,10 @@ export function CurriculumRoadmapPage() {
         : learningPathSuffix;
 
     return (
-        <div className="min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-blue-50/60 text-slate-950 dark:bg-slate-950 dark:text-white">
+        <div className="min-h-screen bg-blue-50/60 text-slate-950 dark:bg-slate-950 dark:text-white">
             <MainNavigationMenu />
 
-            <main className="w-full max-w-none px-2 py-3 sm:px-3 lg:px-4">
+            <main className="mx-auto w-full max-w-[1480px] px-3 py-4 sm:px-5 lg:px-6">
                 <RoadmapSummaryHeader
                     pageTitle={pageTitle}
                     error={error}

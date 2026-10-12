@@ -336,7 +336,7 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 	};
 
 	return (
-		<div className="min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden flex flex-col justify-between bg-gray-50 dark:bg-slate-950">
+		<div className="min-h-screen w-full flex flex-col justify-between bg-gray-50 dark:bg-slate-950">
 			<Toaster position="top-right" />
 
 			{/* Header with Progress & Timer */}

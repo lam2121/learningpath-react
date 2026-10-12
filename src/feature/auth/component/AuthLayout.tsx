@@ -20,7 +20,7 @@ export function AuthLayout({
 	heroDescription = 'Personalized CEFR curriculum, real-time AI speech coaching, and realistic career roleplay scenarios tailored to your level.',
 }: AuthLayoutProps) {
 	return (
-		<div className="relative min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col justify-between selection:bg-blue-500 selection:text-white transition-colors duration-300 overscroll-none">
+		<div className="relative min-h-screen w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col justify-between selection:bg-blue-500 selection:text-white transition-colors duration-300">
 			{/* Ambient Glowing Background Lights - strictly contained in overflow-hidden to prevent ghost scrolling */}
 			<div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
 				<div className="absolute -top-32 -left-32 h-[350px] w-[350px] sm:h-[500px] sm:w-[500px] rounded-full bg-blue-500/15 dark:bg-blue-600/20 blur-[90px] sm:blur-[130px] animate-pulse" />

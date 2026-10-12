@@ -20,8 +20,8 @@ export function Guide() {
   const stepDetails = t("section3.stepDetails", { returnObjects: true }) as Array<{ label: string; title: string; description: string }>;
 
   return (
-    <main className="flex-1 w-full max-w-[100vw] overflow-x-hidden">
-      <div className="min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-background text-foreground">
+    <main className="flex-1">
+      <div className="min-h-screen bg-background text-foreground">
         {/* Header */}
         <div className="border-b border-border/40 bg-gradient-to-br from-primary/5 via-background to-blue-50/30 dark:border-slate-800 dark:from-blue-950/20 dark:via-background dark:to-slate-900/50">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-14">

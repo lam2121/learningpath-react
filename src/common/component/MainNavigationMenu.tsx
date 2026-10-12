@@ -56,6 +56,7 @@ import { APP_INFO } from "@/const/appConst";
 import { CareerpathIcon } from "../../common/component/SocialMediaIcon";
 import { NotificationDropdown, StreakDropdown } from "./navbar";
 import { useCareerTrackReset } from "@/feature/user-profile/hook/useCareerTrackReset";
+import { MobileBottomBar } from "./MobileBottomBar";
 
 function estimateDays(totalMinutes: number, dailyStudyMinutes: number) {
     if (totalMinutes <= 0 || dailyStudyMinutes <= 0) {
@@ -848,6 +849,8 @@ function MobileNav({
                     isSubmitting={isLoggingOut}
                 />
             </AlertDialog>
+
+            <MobileBottomBar />
         </>
     );
 }

@@ -77,6 +77,19 @@ export function LoginForm() {
 
 	return (
 		<div className="w-full rounded-2xl sm:rounded-3xl bg-white/95 dark:bg-slate-900/95 sm:bg-white/90 sm:dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 sm:border-white/60 sm:dark:border-slate-800/90 shadow-xl sm:shadow-2xl p-5 sm:p-9 transition-all duration-300">
+			{/* Mobile App Mode Switcher (Phone Mode specific UI) */}
+			<div className="md:hidden flex p-1 mb-4 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
+				<div className="flex-1 py-1.5 text-center text-xs font-bold rounded-lg bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs">
+					Sign In
+				</div>
+				<Link
+					to="/register"
+					className="flex-1 py-1.5 text-center text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+				>
+					Sign Up
+				</Link>
+			</div>
+
 			{/* Card Header */}
 			<div className="mb-4 sm:mb-6 space-y-1 sm:space-y-2">
 				<div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-900/60 text-blue-600 dark:text-blue-400">

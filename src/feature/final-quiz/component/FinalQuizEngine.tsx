@@ -281,7 +281,7 @@ export function FinalQuizEngine() {
     const selectedAnswer = answers[currentQuestion.id];
 
     return (
-        <div className="flex min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden flex-col justify-center bg-blue-50/60 pb-12 pt-6 text-slate-950 dark:bg-slate-950 dark:text-white">
+        <div className="flex min-h-screen flex-col justify-center bg-blue-50/60 pb-12 pt-6 text-slate-950 dark:bg-slate-950 dark:text-white">
             <div className="mx-auto w-full max-w-3xl px-4 sm:px-6">
                 {/* Top Bar - No Exit Quiz button in Final Course Quiz */}
                 <div className="mb-4 flex items-center justify-between">

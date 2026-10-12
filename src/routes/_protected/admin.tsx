@@ -111,7 +111,7 @@ export const Route = createFileRoute('/_protected/admin')({
 
 function AdminLayout() {
 	return (
-		<div className="flex flex-col md:flex-row min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+		<div className="flex flex-col md:flex-row min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
 			{/* Mobile Admin Header */}
 			<header className="md:hidden sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-2.5 pt-[max(0.6rem,env(safe-area-inset-top))] flex items-center justify-between shadow-2xs">
 				<div>
@@ -138,7 +138,7 @@ function AdminLayout() {
 			</div>
 
 			<AdminSidebar />
-			<main className="flex-1 p-3.5 sm:p-6 lg:p-8 max-w-[100vw] overflow-x-hidden">
+			<main className="flex-1 p-3.5 sm:p-6 lg:p-8 min-w-0">
 				<Outlet />
 			</main>
 		</div>

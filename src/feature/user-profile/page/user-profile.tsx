@@ -113,7 +113,7 @@ export function UserProfile() {
     );
 
     return (
-        <div className="min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-[radial-gradient(ellipse_at_top,_rgba(0,114,187,0.08),_transparent_50%),linear-gradient(180deg,#f8faff_0%,#f0f4fc_100%)] transition-colors dark:bg-[radial-gradient(ellipse_at_top,_rgba(0,114,187,0.12),_transparent_50%),linear-gradient(180deg,#090d16_0%,#0f172a_100%)]">
+        <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_rgba(0,114,187,0.08),_transparent_50%),linear-gradient(180deg,#f8faff_0%,#f0f4fc_100%)] transition-colors dark:bg-[radial-gradient(ellipse_at_top,_rgba(0,114,187,0.12),_transparent_50%),linear-gradient(180deg,#090d16_0%,#0f172a_100%)]">
             <MainNavigationMenu />
 
             <div className="w-full px-3 pb-8 pt-3 sm:px-5 lg:px-8">

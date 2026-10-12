@@ -178,7 +178,7 @@ export function Home() {
         : "/login";
 
     return (
-        <main className="relative min-h-[100svh] overflow-x-hidden bg-[#f5fbff] text-slate-950 lg:h-[100svh] lg:min-h-[700px] lg:overflow-hidden dark:bg-slate-950 dark:text-white">
+        <main className="relative min-h-screen bg-[#f5fbff] text-slate-950 dark:bg-slate-950 dark:text-white">
             <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(0,114,187,0.028)_1px,transparent_1px),linear-gradient(90deg,rgba(0,114,187,0.028)_1px,transparent_1px)] bg-[size:44px_44px] dark:bg-[linear-gradient(rgba(56,189,248,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(56,189,248,0.03)_1px,transparent_1px)]" />
                 <div className="absolute -left-28 top-20 h-80 w-80 rounded-full bg-cyan-300/25 blur-3xl dark:bg-cyan-500/10" />
@@ -187,7 +187,7 @@ export function Home() {
 
             <section
                 id="top"
-                className="relative mx-auto grid w-full max-w-[1360px] gap-8 px-5 py-6 sm:px-8 lg:h-[calc(100%-72px)] lg:grid-cols-[minmax(0,1.18fr)_minmax(400px,0.82fr)] lg:items-center lg:px-10 lg:py-4 xl:gap-12"
+                className="relative mx-auto grid w-full max-w-[1360px] gap-8 px-5 py-6 sm:px-8 lg:grid-cols-[minmax(0,1.18fr)_minmax(400px,0.82fr)] lg:items-center lg:px-10 lg:py-8 xl:gap-12"
             >
                 <div className="relative z-10 max-w-[920px]">
                     <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white/90 px-4 py-2 text-[11px] font-black uppercase tracking-[0.17em] text-[#006890] shadow-[0_10px_26px_rgba(0,114,187,0.08)] dark:border-cyan-900/60 dark:bg-slate-900/90 dark:text-cyan-400 dark:shadow-[0_10px_26px_rgba(0,0,0,0.3)]">

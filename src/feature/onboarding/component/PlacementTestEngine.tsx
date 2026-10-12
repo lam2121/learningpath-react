@@ -538,7 +538,7 @@ export function PlacementTestEngine() {
   const showPrimaryAction = (!hasTimedOut && selectedId && !isAdvancing) || (hasTimedOut && !isSubmitting)
 
   return (
-    <div className="min-h-[100dvh] max-w-[100vw] overflow-x-hidden relative bg-slate-50 overscroll-none">
+    <div className="min-h-screen relative bg-slate-50">
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 h-14 sm:h-16 bg-[#0072FF] z-40 flex items-center justify-between px-3.5 sm:px-6 shadow-md pt-[max(0.4rem,env(safe-area-inset-top))]">
         <div className="flex items-center gap-2 sm:gap-3">

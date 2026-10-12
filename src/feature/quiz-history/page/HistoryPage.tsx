@@ -35,7 +35,7 @@ export function HistoryPage() {
     const finalStatus = profile?.final_quiz_history?.[0]?.status ?? null;
 
     return (
-        <div className="min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-[radial-gradient(circle_at_top_left,_rgba(96,165,250,0.12),_transparent_28%),linear-gradient(180deg,_#fbfdff_0%,_#f2f7ff_100%)] transition-colors dark:bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.1),_transparent_28%),linear-gradient(180deg,_#090d16_0%,_#0f172a_100%)]">
+        <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(96,165,250,0.12),_transparent_28%),linear-gradient(180deg,_#fbfdff_0%,_#f2f7ff_100%)] transition-colors dark:bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.1),_transparent_28%),linear-gradient(180deg,_#090d16_0%,_#0f172a_100%)]">
             <MainNavigationMenu />
 
             <div className="mx-auto w-full max-w-[1480px] px-3 pb-5 pt-3 sm:px-5 lg:px-8">
