@@ -23,7 +23,7 @@ export const Route = createFileRoute('/_protected/_user/onboarding')({
         }
     },
     component: () => (
-        <div className="min-h-screen bg-white text-slate-900 light" data-theme="light">
+        <div className="min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-white text-slate-900 light flex flex-col" data-theme="light">
             <Outlet />
         </div>
     ),

@@ -134,25 +134,25 @@ export function RoleSelectionGrid() {
       )}
 
       {/* Top Header Bar */}
-      <header className="w-full bg-[#0072FF] px-6 py-3.5 flex items-center justify-between shadow-md sticky top-0 z-30">
-        <div className="flex items-center gap-3">
-          <img src={careerPathLogo} alt="AI Learning Path" className="h-8 w-auto brightness-0 invert" />
+      <header className="w-full bg-[#0072FF] px-3 sm:px-6 py-2.5 sm:py-3.5 pt-[max(0.6rem,env(safe-area-inset-top))] flex items-center justify-between shadow-md sticky top-0 z-30">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <img src={careerPathLogo} alt="AI Learning Path" className="h-6 sm:h-8 w-auto brightness-0 invert" />
           <LanguageSwitcher
             variant="ghost"
             showLabel
-            className="text-white shadow-md border border-white/30 hover:bg-white/10 [&_svg]:text-white [&_span]:text-white"
+            className="text-white shadow-md border border-white/30 hover:bg-white/10 [&_svg]:text-white [&_span]:text-white h-7 sm:h-8 text-xs"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <AdminReturnLink />
           {isAuthenticated ? (
             <button
               id="btn-logout-role-selection"
               type="button"
               onClick={handleLogout}
-              className="px-4 py-1.5 rounded-full border border-white/40 text-white hover:bg-white/10 transition-colors text-sm font-medium flex items-center gap-2 cursor-pointer"
+              className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full border border-white/40 text-white hover:bg-white/10 transition-colors text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 cursor-pointer"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
               <span>{onboardingTexts.common.logoutButton}</span>
@@ -162,7 +162,7 @@ export function RoleSelectionGrid() {
               id="btn-login-role-selection"
               type="button"
               onClick={() => navigate({ to: '/login' })}
-              className="px-4 py-1.5 rounded-full border border-white/40 text-white hover:bg-white/10 transition-colors text-sm font-medium flex items-center gap-2 cursor-pointer"
+              className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full border border-white/40 text-white hover:bg-white/10 transition-colors text-xs sm:text-sm font-medium flex items-center gap-1.5 cursor-pointer"
             >
               <span>{onboardingTexts.common.signInButton}</span>
             </button>
@@ -171,38 +171,38 @@ export function RoleSelectionGrid() {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-10">
+      <div className="flex-1 w-full max-w-[100vw] overflow-x-hidden px-3 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-4 sm:py-10 pb-28 lg:pb-10">
         {/* Page Header */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-5 sm:mb-10">
           {/* Step indicator */}
-          <div className="flex items-center justify-center mb-6">
+          <div className="flex items-center justify-center mb-4 sm:mb-6">
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${step === 1
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${step === 1
                     ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
                     : 'bg-gray-100 text-gray-400 border border-gray-200'
                     }`}
                 >
                   {step}
                 </div>
-                {step < 3 && <div className="w-10 h-0.5 bg-gray-200 mx-2 rounded-full" />}
+                {step < 3 && <div className="w-8 sm:w-10 h-0.5 bg-gray-200 mx-1.5 sm:mx-2 rounded-full" />}
               </div>
             ))}
           </div>
 
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-sm font-medium mb-4">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500 animate-pulse" />
             {onboardingTexts.roleSelection.stepIndicator}
           </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl 2xl:text-6xl font-extrabold text-gray-900 leading-tight mb-3">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl 2xl:text-6xl font-extrabold text-gray-900 leading-tight mb-2 sm:mb-3">
             {onboardingTexts.roleSelection.pageTitle}
-            <span className="block bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 bg-clip-text text-transparent mt-1">
+            <span className="block bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 bg-clip-text text-transparent mt-0.5 sm:mt-1">
               {onboardingTexts.roleSelection.pageTitleHighlight}
             </span>
           </h1>
-          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xs sm:text-base text-gray-600 max-w-2xl mx-auto leading-relaxed">
             {onboardingTexts.roleSelection.pageSubtitle}
             <span className="font-semibold text-gray-900">{onboardingTexts.roleSelection.pageSubtitleHighlight}</span>{onboardingTexts.roleSelection.pageSubtitleEnd}
           </p>
@@ -377,6 +377,27 @@ export function RoleSelectionGrid() {
           </div>
         )}
       </div>
+
+      {/* Mobile Sticky Continue Bar */}
+      {selectedRole && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 border-t border-gray-200 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.1)] backdrop-blur-md flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-semibold text-blue-600 uppercase tracking-wider">Đã chọn lộ trình</p>
+            <p className="text-sm font-bold text-gray-900 truncate">{selectedRole.name}</p>
+          </div>
+          <button
+            id="btn-confirm-role-mobile"
+            type="button"
+            onClick={handleContinueClick}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-xs shrink-0 shadow-md flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+          >
+            <span>Tiếp tục</span>
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      )}
     </div>
   )
 }

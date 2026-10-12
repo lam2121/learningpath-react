@@ -397,7 +397,7 @@ export function FlashcardsPage() {
     }, [currentPage, totalPages]);
 
     return (
-        <div className="min-h-screen w-full bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.08),_transparent_28%),linear-gradient(180deg,_#fbfdff_0%,_#f4f7fe_100%)]">
+        <div className="min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.08),_transparent_28%),linear-gradient(180deg,_#fbfdff_0%,_#f4f7fe_100%)]">
             <MainNavigationMenu />
 
             <div className="mx-auto w-full max-w-[1800px] px-3 pb-16 pt-3 sm:px-5 lg:px-8">

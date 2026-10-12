@@ -20,27 +20,27 @@ export function Guide() {
   const stepDetails = t("section3.stepDetails", { returnObjects: true }) as Array<{ label: string; title: string; description: string }>;
 
   return (
-    <main className="flex-1">
-      <div className="min-h-screen bg-background text-foreground">
+    <main className="flex-1 w-full max-w-[100vw] overflow-x-hidden">
+      <div className="min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-background text-foreground">
         {/* Header */}
         <div className="border-b border-border/40 bg-gradient-to-br from-primary/5 via-background to-blue-50/30 dark:border-slate-800 dark:from-blue-950/20 dark:via-background dark:to-slate-900/50">
-          <div className="max-w-4xl mx-auto px-6 py-14">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-14">
             <div className="flex items-center gap-2 mb-4">
               <span className="inline-flex items-center justify-center rounded-md border text-xs font-medium w-fit whitespace-nowrap shrink-0 text-primary border-primary/30 gap-1.5 px-3 py-1 dark:text-blue-400 dark:border-blue-800/60 dark:bg-blue-950/40">
                 <GraduationCap className="w-3.5 h-3.5" aria-hidden="true" />
                 {t("badge")}
               </span>
             </div>
-            <h1 className="text-4xl font-extrabold tracking-tight mb-3 text-slate-950 dark:text-white">
+            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3 text-slate-950 dark:text-white">
               {t("headerTitle")}
             </h1>
-            <p className="text-lg font-medium text-slate-700 dark:text-slate-300 max-w-xl leading-relaxed">
+            <p className="text-base sm:text-lg font-medium text-slate-700 dark:text-slate-300 max-w-xl leading-relaxed">
               {t("headerDescription")}
             </p>
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto px-6 py-12">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-12">
           {/* Section 1: About */}
           <section className="space-y-4 mb-16">
             <h2 className="text-xl font-bold flex items-center gap-2 text-slate-950 dark:text-white">

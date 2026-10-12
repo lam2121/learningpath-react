@@ -179,9 +179,11 @@ export function Home() {
 
     return (
         <main className="relative min-h-[100svh] overflow-x-hidden bg-[#f5fbff] text-slate-950 lg:h-[100svh] lg:min-h-[700px] lg:overflow-hidden dark:bg-slate-950 dark:text-white">
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(0,114,187,0.028)_1px,transparent_1px),linear-gradient(90deg,rgba(0,114,187,0.028)_1px,transparent_1px)] bg-[size:44px_44px] dark:bg-[linear-gradient(rgba(56,189,248,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(56,189,248,0.03)_1px,transparent_1px)]" />
-            <div className="pointer-events-none absolute -left-28 top-20 h-80 w-80 rounded-full bg-cyan-300/25 blur-3xl dark:bg-cyan-500/10" />
-            <div className="pointer-events-none absolute -right-24 top-8 h-96 w-96 rounded-full bg-blue-300/20 blur-3xl dark:bg-blue-600/10" />
+            <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(0,114,187,0.028)_1px,transparent_1px),linear-gradient(90deg,rgba(0,114,187,0.028)_1px,transparent_1px)] bg-[size:44px_44px] dark:bg-[linear-gradient(rgba(56,189,248,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(56,189,248,0.03)_1px,transparent_1px)]" />
+                <div className="absolute -left-28 top-20 h-80 w-80 rounded-full bg-cyan-300/25 blur-3xl dark:bg-cyan-500/10" />
+                <div className="absolute -right-24 top-8 h-96 w-96 rounded-full bg-blue-300/20 blur-3xl dark:bg-blue-600/10" />
+            </div>
 
             <section
                 id="top"

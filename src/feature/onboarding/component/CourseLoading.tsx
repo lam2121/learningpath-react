@@ -78,16 +78,16 @@ export function CourseLoading() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex items-center justify-center p-8">
+    <div className="min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-gradient-to-br from-blue-50 via-white to-blue-100 flex items-center justify-center p-3.5 sm:p-8">
 
-      <Card className="w-full max-w-2xl rounded-3xl shadow-2xl border-0">
+      <Card className="w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl border-0">
 
-        <div className="p-8">
+        <div className="p-4 sm:p-8">
 
           {/* Header */}
 
-          <div className="relative inline-flex items-center justify-center">
-            <div className="relative flex h-32 w-32 items-center justify-center">
+          <div className="flex flex-col sm:flex-row items-center justify-center text-center sm:text-left">
+            <div className="relative flex h-24 w-24 sm:h-32 sm:w-32 items-center justify-center shrink-0">
 
               {/* Loader */}
               <LoaderCircle
@@ -96,15 +96,15 @@ export function CourseLoading() {
               />
 
               {/* Robot */}
-              <div className="flex h-15 w-15 items-center justify-center rounded-full bg-blue-100">
+              <div className="flex h-12 w-12 sm:h-15 sm:w-15 items-center justify-center rounded-full bg-blue-100">
                 <Bot
-                  className="h-10 w-10 text-blue-600"
+                  className="h-7 w-7 sm:h-10 sm:w-10 text-blue-600"
                   strokeWidth={2}
                 />
               </div>
 
             </div>
-            <h1 className="text-3xl font-bold ml-5 text-slate-800">
+            <h1 className="text-xl sm:text-3xl font-bold mt-3 sm:mt-0 sm:ml-5 text-slate-800">
               {onboardingTexts.courseLoading.pageTitle}
             </h1>
 

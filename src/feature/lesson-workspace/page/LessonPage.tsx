@@ -929,7 +929,7 @@ function LessonPageContent({ lessonId }: { lessonId: number }) {
     }
 
     return (
-        <div className="min-h-screen bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_22%,#f8fafc_100%)] text-slate-950 dark:bg-none dark:bg-slate-950 dark:text-white">
+        <div className="min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_22%,#f8fafc_100%)] text-slate-950 dark:bg-none dark:bg-slate-950 dark:text-white">
             <DailyStudyGoalDialog
                 open={showDailyStudyGoalDialog}
                 plannedMinutes={dailyStudyMinutes}

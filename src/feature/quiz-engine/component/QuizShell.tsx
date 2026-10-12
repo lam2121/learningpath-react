@@ -333,12 +333,14 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 		const mins = Math.floor(seconds / 60);
 		const secs = seconds % 60;
 		return `${mins}:${secs.toString().padStart(2, '0')}`;
-	};	return (
-		<div className="min-h-screen bg-gray-50 dark:bg-slate-950">
+	};
+
+	return (
+		<div className="min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden flex flex-col justify-between bg-gray-50 dark:bg-slate-950">
 			<Toaster position="top-right" />
 
 			{/* Header with Progress & Timer */}
-			<header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm dark:bg-slate-900 dark:border-slate-800">
+			<header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm dark:bg-slate-900 dark:border-slate-800 pt-[env(safe-area-inset-top)]">
 				<div className="max-w-3xl mx-auto px-4 py-3">
 					<div className="flex items-center justify-between gap-4 mb-3">
 						<div className="flex-1 min-w-0">
@@ -420,16 +422,17 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 
 			{/* Navigation — full width sticky bottom bar */}
 			{!showResult && (
-				<nav className="sticky bottom-0 z-30 bg-white border-t border-gray-200 dark:bg-slate-900 dark:border-slate-800">
-					<div className="max-w-5xl mx-auto px-6 py-3 flex items-center gap-4">
+				<nav className="sticky bottom-0 z-30 bg-white border-t border-gray-200 dark:bg-slate-900 dark:border-slate-800 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
+					<div className="max-w-5xl mx-auto px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
 						<Button
 							variant="outline"
 							onClick={handlePrevious}
 							disabled={submitting || currentQuestionIndex === 0}
-							className="flex-shrink-0"
+							className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4"
 						>
-							<ChevronLeft className="w-4 h-4 mr-2" />
-							Previous Question
+							<ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+							<span className="hidden sm:inline">Previous Question</span>
+							<span className="sm:hidden">Prev</span>
 						</Button>
 
 						{/* Question Number Circles */}
@@ -457,20 +460,26 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 							))}
 						</div>
 
+						{/* Compact step badge on mobile */}
+						<div className="md:hidden text-xs font-semibold text-slate-500">
+							{currentQuestionIndex + 1} / {session.questions.length}
+						</div>
+
 						{!isLastQuestion ? (
-							<Button onClick={handleNext} disabled={submitting} className="flex-shrink-0">
-								Next Question
-								<ChevronRight className="w-4 h-4 ml-2" />
+							<Button onClick={handleNext} disabled={submitting} className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4">
+								<span className="hidden sm:inline">Next Question</span>
+								<span className="sm:hidden">Next</span>
+								<ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1 sm:ml-2" />
 							</Button>
 						) : (
 							<Button
 								onClick={handleSubmit}
 								disabled={submitting || !canSubmit}
-								className="bg-green-600 hover:bg-green-700 flex-shrink-0"
+								className="bg-green-600 hover:bg-green-700 flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4"
 							>
 								{submitting ? (
 									<>
-										<Loader2 className="w-4 h-4 animate-spin mr-2" />
+										<Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin mr-1 sm:mr-2" />
 										Grading...
 									</>
 								) : (

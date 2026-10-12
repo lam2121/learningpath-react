@@ -5,7 +5,7 @@ import { MainFooter } from '@/common/component/MainFooter'
 export function GuidePage() {
     return (
         <>
-            <div className="relative min-h-screen overflow-x-hidden flex flex-col bg-background text-foreground">
+            <div className="relative min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden flex flex-col bg-background text-foreground">
 
                 <MainNavigationMenu />
 
