@@ -76,17 +76,17 @@ export function LoginForm() {
 	}
 
 	return (
-		<div className="w-full rounded-3xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/60 dark:border-slate-800/90 shadow-2xl p-6 sm:p-9 transition-all duration-300">
+		<div className="w-full rounded-2xl sm:rounded-3xl bg-white/95 dark:bg-slate-900/95 sm:bg-white/90 sm:dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 sm:border-white/60 sm:dark:border-slate-800/90 shadow-xl sm:shadow-2xl p-5 sm:p-9 transition-all duration-300">
 			{/* Card Header */}
-			<div className="mb-6 space-y-2">
-				<div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-900/60 text-blue-600 dark:text-blue-400">
+			<div className="mb-4 sm:mb-6 space-y-1 sm:space-y-2">
+				<div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-900/60 text-blue-600 dark:text-blue-400">
 					<span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-500 animate-ping" />
 					<span>Secure Sign In</span>
 				</div>
-				<h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+				<h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
 					Welcome back
 				</h1>
-				<p className="text-sm text-slate-500 dark:text-slate-400">
+				<p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
 					Enter your credentials to continue your AI English learning path.
 				</p>
 			</div>
@@ -95,7 +95,7 @@ export function LoginForm() {
 			{error && (
 				<div
 					role="alert"
-					className="mb-5 flex items-start gap-3 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 p-3.5 text-xs text-red-700 dark:text-red-400 animate-shake"
+					className="mb-3.5 sm:mb-5 flex items-start gap-2.5 sm:gap-3 rounded-xl sm:rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 p-3 text-xs text-red-700 dark:text-red-400 animate-shake"
 				>
 					<AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-red-500" />
 					<span className="leading-relaxed font-medium">{error}</span>
@@ -103,17 +103,17 @@ export function LoginForm() {
 			)}
 
 			{/* Form */}
-			<form onSubmit={handleSubmit} className="space-y-4">
+			<form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
 				{/* Username / Email Field */}
-				<div className="space-y-1.5">
+				<div className="space-y-1">
 					<label
 						htmlFor="login-username"
-						className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300"
+						className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300"
 					>
 						Username or Email
 					</label>
-					<div className="group relative flex items-center rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 focus-within:border-blue-500 dark:focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-500/10 dark:focus-within:ring-blue-400/15 transition-all duration-200 shadow-2xs overflow-hidden">
-						<div className="flex h-11 w-11 items-center justify-center text-slate-400 dark:text-slate-500 group-focus-within:text-blue-500 transition-colors">
+					<div className="group relative flex items-center rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 focus-within:border-blue-500 dark:focus-within:border-blue-400 focus-within:ring-3 focus-within:ring-blue-500/10 dark:focus-within:ring-blue-400/15 transition-all duration-200 shadow-2xs overflow-hidden">
+						<div className="flex h-10 sm:h-11 w-10 sm:w-11 items-center justify-center text-slate-400 dark:text-slate-500 group-focus-within:text-blue-500 transition-colors">
 							<User className="h-4 w-4" />
 						</div>
 						<input
@@ -125,7 +125,7 @@ export function LoginForm() {
 								setUsername(e.target.value)
 								if (error) setError(null)
 							}}
-							className="h-11 w-full bg-transparent pr-4 text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden"
+							className="h-10 sm:h-11 w-full bg-transparent pr-4 text-base sm:text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden"
 							autoComplete="username"
 							required
 						/>
@@ -133,23 +133,23 @@ export function LoginForm() {
 				</div>
 
 				{/* Password Field */}
-				<div className="space-y-1.5">
+				<div className="space-y-1">
 					<div className="flex items-center justify-between">
 						<label
 							htmlFor="login-password"
-							className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300"
+							className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300"
 						>
 							Password
 						</label>
 						<Link
 							to="/forgot-password"
-							className="text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline transition-colors"
+							className="text-[11px] sm:text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline transition-colors"
 						>
 							Forgot password?
 						</Link>
 					</div>
-					<div className="group relative flex items-center rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 focus-within:border-blue-500 dark:focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-500/10 dark:focus-within:ring-blue-400/15 transition-all duration-200 shadow-2xs overflow-hidden">
-						<div className="flex h-11 w-11 items-center justify-center text-slate-400 dark:text-slate-500 group-focus-within:text-blue-500 transition-colors">
+					<div className="group relative flex items-center rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 focus-within:border-blue-500 dark:focus-within:border-blue-400 focus-within:ring-3 focus-within:ring-blue-500/10 dark:focus-within:ring-blue-400/15 transition-all duration-200 shadow-2xs overflow-hidden">
+						<div className="flex h-10 sm:h-11 w-10 sm:w-11 items-center justify-center text-slate-400 dark:text-slate-500 group-focus-within:text-blue-500 transition-colors">
 							<Lock className="h-4 w-4" />
 						</div>
 						<input
@@ -161,7 +161,7 @@ export function LoginForm() {
 								setPassword(e.target.value)
 								if (error) setError(null)
 							}}
-							className="h-11 w-full bg-transparent pr-10 text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden"
+							className="h-10 sm:h-11 w-full bg-transparent pr-10 text-base sm:text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden"
 							autoComplete="current-password"
 							required
 						/>
@@ -169,7 +169,7 @@ export function LoginForm() {
 							type="button"
 							onClick={() => setShowPassword((v) => !v)}
 							tabIndex={-1}
-							className="absolute right-2.5 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+							className="absolute right-2 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors cursor-pointer"
 							aria-label={showPassword ? 'Hide password' : 'Show password'}
 						>
 							{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -182,7 +182,7 @@ export function LoginForm() {
 					id="login-submit-btn"
 					type="submit"
 					disabled={!username.trim() || !password || isLoading}
-					className="group relative w-full h-12 mt-2 rounded-xl font-semibold text-sm text-white shadow-lg shadow-blue-500/25 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 hover:via-indigo-500 hover:to-blue-500 active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none"
+					className="group relative w-full h-11 sm:h-12 mt-1 sm:mt-2 rounded-xl font-semibold text-sm text-white shadow-lg shadow-blue-500/25 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 hover:via-indigo-500 hover:to-blue-500 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none"
 				>
 					{isLoading ? (
 						<>
@@ -199,16 +199,16 @@ export function LoginForm() {
 			</form>
 
 			{/* Divider */}
-			<div className="relative my-6 flex items-center justify-center">
+			<div className="relative my-3.5 sm:my-6 flex items-center justify-center">
 				<div className="w-full border-t border-slate-200 dark:border-slate-800" />
-				<span className="absolute bg-white dark:bg-slate-900 px-3 text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 font-medium">
+				<span className="absolute bg-white dark:bg-slate-900 px-3 text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 font-medium">
 					or
 				</span>
 			</div>
 
 			{/* Register CTA */}
-			<div className="text-center space-y-3">
-				<p className="text-sm text-slate-600 dark:text-slate-400">
+			<div className="text-center space-y-2 sm:space-y-3">
+				<p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
 					Don&apos;t have an account yet?{' '}
 					<Link
 						to="/register"
@@ -218,8 +218,8 @@ export function LoginForm() {
 					</Link>
 				</p>
 
-				<div className="inline-flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500">
-					<ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+				<div className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500">
+					<ShieldCheck className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-emerald-500" />
 					<span>Single Sign-On & JWT encrypted session</span>
 				</div>
 			</div>

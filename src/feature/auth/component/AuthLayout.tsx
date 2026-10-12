@@ -20,43 +20,44 @@ export function AuthLayout({
 	heroDescription = 'Personalized CEFR curriculum, real-time AI speech coaching, and realistic career roleplay scenarios tailored to your level.',
 }: AuthLayoutProps) {
 	return (
-		<div className="relative min-h-screen w-full overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col justify-between selection:bg-blue-500 selection:text-white transition-colors duration-300">
-			{/* Ambient Glowing Background Lights */}
-			<div className="pointer-events-none absolute -top-40 -left-40 h-[500px] w-[500px] rounded-full bg-blue-500/15 dark:bg-blue-600/20 blur-[130px] animate-pulse" />
-			<div className="pointer-events-none absolute top-1/2 -right-40 h-[550px] w-[550px] rounded-full bg-indigo-500/15 dark:bg-indigo-600/15 blur-[140px]" />
-			<div className="pointer-events-none absolute -bottom-32 left-1/3 h-[450px] w-[450px] rounded-full bg-sky-400/10 dark:bg-sky-500/10 blur-[120px]" />
+		<div className="relative min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col justify-between selection:bg-blue-500 selection:text-white transition-colors duration-300 overscroll-none">
+			{/* Ambient Glowing Background Lights - strictly contained in overflow-hidden to prevent ghost scrolling */}
+			<div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+				<div className="absolute -top-32 -left-32 h-[350px] w-[350px] sm:h-[500px] sm:w-[500px] rounded-full bg-blue-500/15 dark:bg-blue-600/20 blur-[90px] sm:blur-[130px] animate-pulse" />
+				<div className="absolute top-1/2 -right-32 h-[350px] w-[350px] sm:h-[550px] sm:w-[550px] rounded-full bg-indigo-500/15 dark:bg-indigo-600/15 blur-[90px] sm:blur-[140px]" />
+				<div className="absolute -bottom-24 left-1/4 h-[280px] w-[280px] sm:h-[450px] sm:w-[450px] rounded-full bg-sky-400/10 dark:bg-sky-500/10 blur-[80px] sm:blur-[120px]" />
+				{/* Subtle Dot Grid Mesh */}
+				<div
+					className="absolute inset-0 opacity-[0.035] dark:opacity-[0.06]"
+					style={{
+						backgroundImage: `radial-gradient(currentColor 1px, transparent 1px)`,
+						backgroundSize: '24px 24px',
+					}}
+				/>
+			</div>
 
-			{/* Subtle Dot Grid Mesh */}
-			<div
-				className="pointer-events-none absolute inset-0 opacity-[0.035] dark:opacity-[0.06]"
-				style={{
-					backgroundImage: `radial-gradient(currentColor 1px, transparent 1px)`,
-					backgroundSize: '24px 24px',
-				}}
-			/>
-
-			{/* Top Navigation Header */}
-			<header className="relative z-20 w-full px-4 sm:px-8 py-5 flex items-center justify-between">
+			{/* Top Navigation Header (App Bar) */}
+			<header className="relative z-20 w-full px-3.5 sm:px-8 py-2.5 sm:py-5 flex items-center justify-between pt-[max(0.6rem,env(safe-area-inset-top))]">
 				{/* Brand Logo & Pill */}
 				<Link
 					to="/"
-					className="group flex items-center gap-3 transition-transform hover:scale-[1.02] active:scale-[0.98]"
+					className="group flex items-center gap-2 sm:gap-3 transition-transform hover:scale-[1.02] active:scale-[0.98]"
 				>
-					<div className="relative flex items-center justify-center p-1.5 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 shadow-sm backdrop-blur-md">
-						<img src={logo} alt="CareerPath Logo" className="h-8 sm:h-9 w-auto object-contain" />
+					<div className="relative flex items-center justify-center p-1 sm:p-1.5 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 shadow-xs backdrop-blur-md">
+						<img src={logo} alt="CareerPath Logo" className="h-6 sm:h-9 w-auto object-contain" />
 					</div>
-					<div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-900/60 text-blue-700 dark:text-blue-300 shadow-2xs">
-						<Sparkles className="h-3 w-3 text-blue-500 animate-spin-slow" />
+					<div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-900/60 text-blue-700 dark:text-blue-300 shadow-2xs">
+						<Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-blue-500 animate-spin-slow" />
 						<span>AI Learning</span>
 					</div>
 				</Link>
 
 				{/* Right Navigation Controls */}
-				<div className="flex items-center gap-2 sm:gap-3">
-					<div className="flex items-center gap-1.5 p-1 rounded-full bg-white/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 backdrop-blur-md shadow-xs">
-						<LanguageSwitcher variant="ghost" className="h-8 rounded-full px-2" />
-						<div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
-						<ThemeToggle variant="ghost" className="h-8 w-8 rounded-full p-0" />
+				<div className="flex items-center gap-1.5 sm:gap-3">
+					<div className="flex items-center gap-1 p-0.5 sm:p-1 rounded-full bg-white/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 backdrop-blur-md shadow-xs">
+						<LanguageSwitcher variant="ghost" className="h-7 sm:h-8 rounded-full px-1.5 sm:px-2 text-xs" />
+						<div className="h-3.5 w-px bg-slate-200 dark:bg-slate-800" />
+						<ThemeToggle variant="ghost" className="h-7 w-7 sm:h-8 sm:w-8 rounded-full p-0" />
 					</div>
 
 					<Link
@@ -70,9 +71,9 @@ export function AuthLayout({
 			</header>
 
 			{/* Main Content Area */}
-			<main className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
-				<div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-					{/* Left Column: Visual AI Showcase (Desktop) */}
+			<main className="relative z-10 flex-1 flex items-center justify-center px-3 sm:px-6 lg:px-8 py-2 sm:py-8 w-full max-w-full">
+				<div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-center">
+					{/* Left Column: Visual AI Showcase (Desktop Only) */}
 					<div className="hidden lg:flex lg:col-span-6 flex-col justify-center space-y-8 pr-4">
 						{/* Floating Feature Badge */}
 						<div className="inline-flex items-center gap-2 self-start px-3.5 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-sky-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 backdrop-blur-md shadow-2xs">
@@ -148,7 +149,7 @@ export function AuthLayout({
 						</div>
 					</div>
 
-					{/* Right Column: Form Container */}
+					{/* Right Column: Form Container (App View on Mobile) */}
 					<div className="lg:col-span-6 w-full flex justify-center lg:justify-end">
 						<div className="w-full max-w-md sm:max-w-lg">
 							{children}
@@ -157,10 +158,10 @@ export function AuthLayout({
 				</div>
 			</main>
 
-			{/* Bottom Footer */}
-			<footer className="relative z-10 w-full px-4 sm:px-8 py-4 text-center text-xs text-slate-500 dark:text-slate-400">
+			{/* Bottom Footer (App Bar Safe Bottom) */}
+			<footer className="relative z-10 w-full px-3 sm:px-8 py-2 sm:py-3.5 text-center text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 pb-[max(0.6rem,env(safe-area-inset-bottom))]">
 				<p>
-					© {new Date().getFullYear()} CareerPath • AI Learning Path (builtbylam.com). All rights reserved.
+					© {new Date().getFullYear()} CareerPath • AI Learning Path
 				</p>
 			</footer>
 		</div>
