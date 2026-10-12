@@ -1,13 +1,14 @@
 import { RegisterForm } from '../component/RegisterForm'
-import backgroundImage from '@/asset/image/banner_background.png'
-import logo from '@/asset/image/careerpath_logo.png'
+import { AuthLayout } from '../component/AuthLayout'
+
 export function RegisterPage() {
 	return (
-		<div className="relative min-h-screen bg-cover bg-center " style={{ backgroundImage: `url(${backgroundImage})` }}>
-			<img src={logo} alt="CareerPath Logo" className="absolute top-6 left-6 w-28 sm:w-40 h-auto z-10" />
-			<div className="register-page">
-				<RegisterForm />
-			</div>
-		</div>
+		<AuthLayout
+			badgeText="Join the AI Learning Revolution"
+			heroHeadline="Empower Your English Skills for Global Opportunities"
+			heroDescription="From technical discussions to executive presentations — build the communication mastery you need with personalized AI roadmaps."
+		>
+			<RegisterForm />
+		</AuthLayout>
 	)
 }
