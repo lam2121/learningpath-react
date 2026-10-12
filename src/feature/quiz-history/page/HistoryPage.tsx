@@ -41,23 +41,23 @@ export function HistoryPage() {
             <div className="mx-auto w-full max-w-[1480px] px-3 pb-5 pt-3 sm:px-5 lg:px-8">
                 <div className="mt-2 space-y-4">
                     {/* Header Banner */}
-                    <section className="relative overflow-hidden rounded-[28px] border border-sky-100 bg-[linear-gradient(135deg,#f6fbff_0%,#ffffff_42%,#eaf4ff_100%)] p-4 shadow-[0_20px_56px_rgba(96,165,250,0.12)] sm:p-5 dark:border-sky-900/40 dark:bg-[linear-gradient(135deg,_rgba(30,58,138,0.25)_0%,_rgba(15,23,42,0.95)_42%,_rgba(15,23,42,1)_100%)] dark:shadow-[0_20px_56px_rgba(0,0,0,0.45)]">
+                    <section className="relative overflow-hidden rounded-2xl sm:rounded-[28px] border border-sky-100 bg-[linear-gradient(135deg,#f6fbff_0%,#ffffff_42%,#eaf4ff_100%)] p-3.5 sm:p-5 shadow-[0_14px_36px_rgba(96,165,250,0.12)] dark:border-sky-900/40 dark:bg-[linear-gradient(135deg,_rgba(30,58,138,0.25)_0%,_rgba(15,23,42,0.95)_42%,_rgba(15,23,42,1)_100%)] dark:shadow-[0_20px_56px_rgba(0,0,0,0.45)]">
                         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(125,211,252,0.16),_transparent_26%),radial-gradient(circle_at_bottom_left,_rgba(186,230,253,0.18),_transparent_24%)] dark:bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.15),_transparent_26%),radial-gradient(circle_at_bottom_left,_rgba(125,211,252,0.1),_transparent_24%)]" />
 
-                        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div className="max-w-3xl">
-                                <p className="inline-flex rounded-full bg-cyan-600 px-3 py-1 text-sm font-semibold uppercase tracking-[0.14em] text-white shadow-sm dark:bg-cyan-500">
+                                <p className="inline-flex rounded-full bg-cyan-600 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.14em] text-white shadow-sm dark:bg-cyan-500">
                                     {t("page.badge", { defaultValue: "History" })}
                                 </p>
-                                <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl lg:text-6xl dark:text-white">
+                                <h1 className="mt-1.5 text-2xl font-black tracking-tight text-slate-950 sm:text-4xl lg:text-5xl dark:text-white">
                                     {t("page.title", { defaultValue: "Assessment History" })}
                                 </h1>
-                                <p className="mt-2 text-base font-medium leading-7 text-slate-600 sm:text-lg dark:text-slate-300">
+                                <p className="mt-1 text-xs sm:text-base font-medium leading-relaxed text-slate-600 dark:text-slate-300">
                                     {t("page.subtitle", { defaultValue: "Review the highest saved attempt for your lesson quizzes, topic assessments, and final graduation examination." })}
                                 </p>
                             </div>
 
-                            <div className="flex items-center gap-3 self-start rounded-2xl bg-white/90 px-4 py-3 shadow-[0_10px_24px_rgba(96,165,250,0.12)] ring-1 ring-sky-100 dark:bg-slate-800/90 dark:ring-slate-700 dark:shadow-[0_10px_24px_rgba(0,0,0,0.3)]">
+                            <div className="hidden sm:flex items-center gap-3 self-start rounded-2xl bg-white/90 px-4 py-3 shadow-[0_10px_24px_rgba(96,165,250,0.12)] ring-1 ring-sky-100 dark:bg-slate-800/90 dark:ring-slate-700 dark:shadow-[0_10px_24px_rgba(0,0,0,0.3)]">
                                 <div className="rounded-xl bg-amber-50 p-2 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400">
                                     <Medal className="h-5 w-5" />
                                 </div>
@@ -71,7 +71,7 @@ export function HistoryPage() {
                     {/* Quiz Type Tabs: Lessons, Topics, Final Course Quiz */}
                     <Tabs defaultValue="lessons" className="w-full">
                         <div className="flex justify-start">
-                            <TabsList className="h-12 w-full flex-wrap sm:w-auto p-1 bg-white/90 border border-cyan-100 shadow-[0_8px_20px_rgba(96,165,250,0.12)] rounded-2xl gap-1 dark:bg-slate-900/90 dark:border-slate-800 dark:shadow-[0_8px_20px_rgba(0,0,0,0.4)]">
+                            <TabsList className="h-11 sm:h-12 w-full grid grid-cols-3 sm:w-auto sm:flex p-1 bg-white/90 border border-cyan-100 shadow-[0_8px_20px_rgba(96,165,250,0.12)] rounded-2xl gap-1 dark:bg-slate-900/90 dark:border-slate-800 dark:shadow-[0_8px_20px_rgba(0,0,0,0.4)]">
                                 <TabsTrigger
                                     value="lessons"
                                     className="h-10 rounded-xl px-4 text-xs font-bold sm:text-sm text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white data-[state=active]:bg-[#0072BB] data-[state=active]:text-white dark:data-[state=active]:bg-blue-600 data-[state=active]:shadow-md"

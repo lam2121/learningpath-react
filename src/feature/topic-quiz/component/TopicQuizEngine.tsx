@@ -367,7 +367,7 @@ export function TopicQuizEngine({ topicId, topicName, topicOrder }: TopicQuizEng
                 </div>
 
                 {/* Question Card */}
-                <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900 sm:p-8 [&_p]:text-base [&_span]:text-base [&_label]:text-base [&_button]:text-base">
+                <div className="overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-800 dark:bg-slate-900 sm:p-8 [&_p]:text-base [&_span]:text-base [&_label]:text-base [&_button]:text-base">
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3 dark:border-slate-800">
                         <div className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1 text-xs font-bold ${axis.bg} ${axis.color}`}>
                             <div className={`h-2 w-2 rounded-full ${axis.dot}`} />
@@ -423,27 +423,27 @@ export function TopicQuizEngine({ topicId, topicName, topicOrder }: TopicQuizEng
                 </div>
 
                 {/* Bottom Navigation Buttons */}
-                <div className="mt-5 flex items-center justify-between gap-4">
+                <div className="mt-5 flex items-center justify-between gap-3 sm:gap-4">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={handlePrevious}
                         disabled={currentIndex === 0}
-                        className="h-12 rounded-xl px-6 text-sm font-semibold"
+                        className="h-11 sm:h-12 flex-1 sm:flex-none rounded-xl px-4 sm:px-6 text-sm font-semibold justify-center"
                     >
-                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        <ArrowLeft className="mr-1.5 sm:mr-2 h-4 w-4" />
                         Previous
                     </Button>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3 flex-1 sm:flex-none justify-end">
                         {currentIndex < totalQuestions - 1 ? (
                             <Button
                                 type="button"
                                 onClick={handleNext}
-                                className="h-12 rounded-xl bg-blue-600 px-8 text-sm font-bold text-white hover:bg-blue-700"
+                                className="h-11 sm:h-12 w-full sm:w-auto rounded-xl bg-blue-600 px-6 sm:px-8 text-sm font-bold text-white hover:bg-blue-700 justify-center"
                             >
                                 Next
-                                <ArrowRight className="ml-2 h-4 w-4" />
+                                <ArrowRight className="ml-1.5 sm:ml-2 h-4 w-4" />
                             </Button>
                         ) : (
                             <Button

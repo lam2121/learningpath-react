@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, BookOpen, Layers3, Loader2, Play, Sparkles } from "lucide-react";
+import { ArrowRight, BookOpen, Layers3, Loader2, Play, Sparkles, Target, BarChart2 } from "lucide-react";
+import { cn } from "@/shadcn/lib/util";
 
 import { MainNavigationMenu } from "@/common/component/MainNavigationMenu";
 import { Button } from "@/shadcn/component/ui/button";
@@ -31,7 +32,9 @@ export function UserProfile() {
     useTranslation("profile");
     const [roadmap, setRoadmap] = useState<RoadmapResponse | null>(null);
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
-    const [isLoading, setIsLoading] = useState(true); const [isStudyPlanExpanded, setIsStudyPlanExpanded] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isStudyPlanExpanded, setIsStudyPlanExpanded] = useState(false);
+    const [mobileTab, setMobileTab] = useState<'roadmap' | 'plan' | 'stats'>('roadmap');
 
     useEffect(() => {
         let isMounted = true;
@@ -117,7 +120,142 @@ export function UserProfile() {
             <MainNavigationMenu />
 
             <div className="w-full px-3 pb-8 pt-3 sm:px-5 lg:px-8">
-                <div className="mt-2 space-y-6">
+                {/* ── PHONE MODE (md:hidden) ── */}
+                <div className="md:hidden mt-1 space-y-3">
+                    {/* Native App-Style Segment Switcher */}
+                    <div className="flex p-1 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 shadow-2xs">
+                        <button
+                            type="button"
+                            onClick={() => setMobileTab('roadmap')}
+                            className={cn(
+                                "flex-1 py-2 px-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5",
+                                mobileTab === 'roadmap'
+                                    ? "bg-blue-600 text-white shadow-xs"
+                                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                            )}
+                        >
+                            <BookOpen className="h-3.5 w-3.5" />
+                            <span>Lộ trình</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setMobileTab('plan')}
+                            className={cn(
+                                "flex-1 py-2 px-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5",
+                                mobileTab === 'plan'
+                                    ? "bg-blue-600 text-white shadow-xs"
+                                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                            )}
+                        >
+                            <Target className="h-3.5 w-3.5" />
+                            <span>Mục tiêu</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setMobileTab('stats')}
+                            className={cn(
+                                "flex-1 py-2 px-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5",
+                                mobileTab === 'stats'
+                                    ? "bg-blue-600 text-white shadow-xs"
+                                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                            )}
+                        >
+                            <BarChart2 className="h-3.5 w-3.5" />
+                            <span>Hồ sơ & Kỹ năng</span>
+                        </button>
+                    </div>
+
+                    {/* Tab 1: Roadmap & Up Next Lesson */}
+                    {mobileTab === 'roadmap' && (
+                        <div className="space-y-3">
+                            <div className="rounded-2xl border border-blue-200 bg-white dark:border-blue-900/80 dark:bg-slate-900 p-4 shadow-sm">
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 dark:bg-blue-950/80 px-2.5 py-0.5 text-[11px] font-bold text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                        <Sparkles className="h-3 w-3" />
+                                        {userProfileTexts.nextStepBadge()}
+                                    </span>
+                                    {totalAssignedLessons > 0 && (
+                                        <span className="text-xs font-bold text-slate-500">
+                                            {completedLessonCount}/{totalAssignedLessons} bài ({progressPercent}%)
+                                        </span>
+                                    )}
+                                </div>
+
+                                {nextLesson ? (
+                                    <div className="space-y-3">
+                                        <div>
+                                            <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                                                {nextTopic?.name || 'Topic'}
+                                            </p>
+                                            <h3 className="text-base font-extrabold text-slate-900 dark:text-white mt-0.5">
+                                                {nextLesson.title}
+                                            </h3>
+                                        </div>
+
+                                        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                            <div
+                                                className="h-full rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 transition-all duration-500"
+                                                style={{ width: `${progressPercent}%` }}
+                                            />
+                                        </div>
+
+                                        <Button asChild className="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-700 font-bold text-sm shadow-md shadow-blue-500/20">
+                                            <Link to={`/lessons/${nextLesson.id}`}>
+                                                <Play className="h-4 w-4 mr-1.5 fill-current" />
+                                                Học bài tiếp theo ngay
+                                            </Link>
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-3">
+                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                            {allAssignedLessonsCompleted ? "Chúc mừng! Bạn đã hoàn thành tất cả bài học." : "Lộ trình đang được cập nhật."}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                                    <span className="text-xs text-slate-500">
+                                        {roadmap?.topics?.length ?? 0} chủ đề · {formatHours(roadmap?.total_estimated_minutes)}
+                                    </span>
+                                    <Button asChild variant="ghost" size="sm" className="h-7 text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400 p-0">
+                                        <Link to="/lessons/learning-path" className="flex items-center gap-1">
+                                            Toàn bộ lộ trình
+                                            <ArrowRight className="h-3 w-3" />
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Tab 2: Daily Plan & AI Coach */}
+                    {mobileTab === 'plan' && (
+                        <div>
+                            <DailyPlanView
+                                nextTopic={nextTopic}
+                                nextLesson={nextLesson}
+                                hasRoadmap={Boolean(roadmap?.topics.length)}
+                                completedLessonCount={completedLessonCount}
+                                totalAssignedLessons={totalAssignedLessons}
+                                allAssignedLessonsCompleted={allAssignedLessonsCompleted}
+                                onStudyPlanExpandedChange={setIsStudyPlanExpanded}
+                            />
+                        </div>
+                    )}
+
+                    {/* Tab 3: Profile, Skills Radar & History */}
+                    {mobileTab === 'stats' && (
+                        <div className="space-y-4">
+                            <UserProfileCard />
+                            <LearningHistoryChart showLoginHistory />
+                            <LoginHistoryCard compact stretch />
+                        </div>
+                    )}
+                </div>
+
+                {/* ── DESKTOP MODE (hidden md:block) ── */}
+                <div className="hidden md:block mt-2 space-y-6">
                     <UserProfileCard />
 
                     <div

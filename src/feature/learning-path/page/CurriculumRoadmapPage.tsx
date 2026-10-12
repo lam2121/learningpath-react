@@ -45,6 +45,7 @@ export function CurriculumRoadmapPage() {
     const [finalQuizStatus, setFinalQuizStatus] = useState<'locked' | 'ready' | 'passed' | 'failed'>('locked');
     const [finalQuizScore, setFinalQuizScore] = useState<number | null>(null);
     const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
+    const [mobileTab, setMobileTab] = useState<'topics' | 'lessons'>('topics');
     const lastAppliedParamRef = useRef<number | undefined>(undefined);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -237,13 +238,39 @@ export function CurriculumRoadmapPage() {
                     startLesson={startLesson}
                 />
 
+                {/* Mobile Mode Switcher Tabs */}
+                <div className="lg:hidden flex p-1 mt-4 mb-2 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 shadow-2xs">
+                    <button
+                        type="button"
+                        onClick={() => setMobileTab('topics')}
+                        className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all ${
+                            mobileTab === 'topics'
+                                ? 'bg-blue-600 text-white shadow-xs'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                        }`}
+                    >
+                        Danh sách chủ đề ({topics.length})
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setMobileTab('lessons')}
+                        className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all ${
+                            mobileTab === 'lessons'
+                                ? 'bg-blue-600 text-white shadow-xs'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                        }`}
+                    >
+                        Bài học chi tiết {selectedTopic ? `· Topic ${selectedTopic.sort_order}` : ''}
+                    </button>
+                </div>
+
                 <div
                     className="
-                        mt-5 grid w-full grid-cols-1 items-stretch gap-5
+                        mt-2 sm:mt-5 grid w-full grid-cols-1 items-stretch gap-5
                         lg:grid-cols-[minmax(340px,0.9fr)_minmax(0,1.1fr)]
                     "
                 >
-                    <section className="flex h-full min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <section className={`${mobileTab === 'topics' ? 'flex' : 'hidden lg:flex'} h-full min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900`}>
                         <div className="mb-4 flex shrink-0 items-center justify-between gap-4">
                             <h2 className="text-xl font-bold text-slate-950 sm:text-2xl dark:text-white">
                                 {t("topicRoadmap", { defaultValue: "Topic roadmap" })}
@@ -269,7 +296,10 @@ export function CurriculumRoadmapPage() {
                                              key={topic.id}
                                              topic={topic}
                                              isSelected={topic.id === selectedTopic?.id}
-                                             onClick={() => setSelectedTopicId(topic.id)}
+                                             onClick={() => {
+                                                 setSelectedTopicId(topic.id);
+                                                 setMobileTab('lessons');
+                                             }}
                                          />
                                     ))}
                                 </div>
@@ -287,7 +317,17 @@ export function CurriculumRoadmapPage() {
                         )}
                     </section>
 
-                    <section className="flex h-full min-w-0 flex-col rounded-2xl border border-blue-200 bg-white p-5 shadow-sm ring-1 ring-blue-100/70 dark:border-blue-900 dark:bg-slate-900 dark:ring-blue-950 sm:p-6">
+                    <section className={`${mobileTab === 'lessons' ? 'flex' : 'hidden lg:flex'} h-full min-w-0 flex-col rounded-2xl border border-blue-200 bg-white p-4 sm:p-6 shadow-sm ring-1 ring-blue-100/70 dark:border-blue-900 dark:bg-slate-900 dark:ring-blue-950`}>
+                        {/* Mobile back to topics button */}
+                        <div className="lg:hidden mb-3">
+                            <button
+                                type="button"
+                                onClick={() => setMobileTab('topics')}
+                                className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400 py-1 px-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/60"
+                            >
+                                ← Quay lại danh sách chủ đề
+                            </button>
+                        </div>
                         {isLoading ? (
                             <div className="flex min-h-[320px] flex-1 items-center justify-center">
                                 <div className="flex items-center gap-3 text-sm font-medium text-slate-500 dark:text-slate-400">

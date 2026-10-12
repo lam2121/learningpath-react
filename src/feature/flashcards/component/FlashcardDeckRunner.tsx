@@ -267,35 +267,35 @@ export function FlashcardDeckRunner({
                 </div>
             </div>
 
-            {/* Deck Controls (Prev, Flip, Next) */}
-            <div className="flex items-center justify-between pt-2">
+            {/* Deck Controls (Prev, Flip, Next - Mobile responsive flex) */}
+            <div className="flex items-center justify-between gap-1.5 sm:gap-3 pt-2">
                 <Button
                     variant="outline"
                     onClick={onPrev}
                     disabled={currentIndex === 0}
-                    className="h-10 px-4 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-100 disabled:opacity-40"
+                    className="h-10 flex-1 sm:flex-none px-2.5 sm:px-4 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-100 disabled:opacity-40 text-xs sm:text-sm font-semibold justify-center"
                 >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    <span>{userProfileTexts.previousCard()}</span>
+                    <ChevronLeft className="h-4 w-4 sm:mr-1 shrink-0" />
+                    <span className="truncate">{userProfileTexts.previousCard()}</span>
                 </Button>
 
                 <Button
                     variant="outline"
                     onClick={onFlip}
-                    className="h-10 px-5 rounded-xl border-indigo-200 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100 font-semibold"
+                    className="h-10 flex-1 sm:flex-none px-3 sm:px-5 rounded-xl border-indigo-200 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100 font-bold text-xs sm:text-sm justify-center"
                 >
-                    <RotateCw className="h-4 w-4 mr-1.5" />
-                    <span>{userProfileTexts.flipCard()}</span>
+                    <RotateCw className="h-4 w-4 sm:mr-1.5 shrink-0" />
+                    <span className="truncate">{userProfileTexts.flipCard()}</span>
                 </Button>
 
                 <Button
                     variant="outline"
                     onClick={onNext}
                     disabled={currentIndex >= totalCards - 1}
-                    className="h-10 px-4 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-100 disabled:opacity-40"
+                    className="h-10 flex-1 sm:flex-none px-2.5 sm:px-4 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-100 disabled:opacity-40 text-xs sm:text-sm font-semibold justify-center"
                 >
-                    <span>{userProfileTexts.nextCard()}</span>
-                    <ChevronRight className="h-4 w-4 ml-1" />
+                    <span className="truncate">{userProfileTexts.nextCard()}</span>
+                    <ChevronRight className="h-4 w-4 sm:ml-1 shrink-0" />
                 </Button>
             </div>
 

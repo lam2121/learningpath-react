@@ -394,18 +394,18 @@ export function FlashcardsPage() {
                             </p>
                         </div>
 
-                        {/* Top Action & Stat Pill */}
-                        <div className="flex flex-wrap items-center gap-3 self-start sm:self-center">
+                        {/* Top Action & Stat Pill (Mobile compact grid) */}
+                        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 w-full sm:w-auto">
                             {!isLoading && cards.length > 0 && (
-                                <div className="flex items-center gap-3 rounded-2xl bg-white/95 px-4 py-3 shadow-[0_10px_24px_rgba(99,102,241,0.1)] ring-1 ring-indigo-100">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 font-bold">
-                                        <Brain className="h-5 w-5" />
+                                <div className="flex items-center gap-2.5 rounded-2xl bg-white/95 p-3 sm:px-4 sm:py-3 shadow-xs ring-1 ring-indigo-100">
+                                    <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 font-bold shrink-0">
+                                        <Brain className="h-4 w-4 sm:h-5 sm:w-5" />
                                     </div>
-                                    <div>
-                                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                    <div className="min-w-0">
+                                        <p className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">
                                             {userProfileTexts.totalDeck()}
                                         </p>
-                                        <p className="text-lg font-black text-slate-900">
+                                        <p className="text-sm sm:text-lg font-black text-slate-900 truncate">
                                             {cards.length} {userProfileTexts.flashcards()}
                                         </p>
                                     </div>
@@ -413,15 +413,15 @@ export function FlashcardsPage() {
                             )}
 
                             {!isLoading && Object.keys(submissionResults).length > 0 && (
-                                <div className="flex items-center gap-3 rounded-2xl bg-white/95 px-4 py-3 shadow-[0_10px_24px_rgba(16,185,129,0.1)] ring-1 ring-emerald-100">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 font-bold">
-                                        <CheckCircle2 className="h-5 w-5" />
+                                <div className="flex items-center gap-2.5 rounded-2xl bg-white/95 p-3 sm:px-4 sm:py-3 shadow-xs ring-1 ring-emerald-100">
+                                    <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 font-bold shrink-0">
+                                        <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
                                     </div>
-                                    <div>
-                                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                    <div className="min-w-0">
+                                        <p className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">
                                             {userProfileTexts.quizScore()}
                                         </p>
-                                        <p className="text-lg font-black text-emerald-600">
+                                        <p className="text-sm sm:text-lg font-black text-emerald-600 truncate">
                                             {Object.values(submissionResults).filter((r) => r.isCorrect).length} / {Object.keys(submissionResults).length}
                                         </p>
                                     </div>
@@ -431,7 +431,7 @@ export function FlashcardsPage() {
                             {cards.length > 0 && (
                                 <Button
                                     onClick={() => setPracticeModalOpen(true)}
-                                    className="h-11 gap-2 rounded-2xl bg-indigo-600 px-5 font-bold text-white shadow-md shadow-indigo-200 hover:bg-indigo-700 transition-all"
+                                    className="col-span-2 sm:col-span-1 h-11 gap-2 rounded-2xl bg-indigo-600 px-5 font-bold text-white shadow-md shadow-indigo-200 hover:bg-indigo-700 transition-all w-full sm:w-auto"
                                 >
                                     <Layers className="h-4 w-4" />
                                     <span>{userProfileTexts.deckMode()}</span>
@@ -464,28 +464,28 @@ export function FlashcardsPage() {
                             )}
                         </div>
 
-                        {/* Controls: Shuffle, Flip All */}
-                        <div className="flex items-center gap-2 self-end sm:self-auto">
+                        {/* Controls: Shuffle, Flip All (Full-width side-by-side on mobile) */}
+                        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center w-full sm:w-auto">
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={handleShuffle}
-                                className="h-11 px-4 gap-1.5 rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-semibold shadow-2xs"
+                                className="h-11 px-3 sm:px-4 gap-1.5 rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-semibold shadow-2xs w-full sm:w-auto justify-center"
                                 title={userProfileTexts.shuffleCards()}
                             >
-                                <Shuffle className="h-4 w-4 text-slate-500" />
-                                <span>{userProfileTexts.shuffleCards()}</span>
+                                <Shuffle className="h-4 w-4 text-slate-500 shrink-0" />
+                                <span className="truncate">{userProfileTexts.shuffleCards()}</span>
                             </Button>
 
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={handleFlipAll}
-                                className="h-11 px-4 gap-1.5 rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-semibold shadow-2xs"
+                                className="h-11 px-3 sm:px-4 gap-1.5 rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-semibold shadow-2xs w-full sm:w-auto justify-center"
                                 title={userProfileTexts.flipCard()}
                             >
-                                <RotateCw className="h-4 w-4 text-slate-500" />
-                                <span>{userProfileTexts.flipCardAll()}</span>
+                                <RotateCw className="h-4 w-4 text-slate-500 shrink-0" />
+                                <span className="truncate">{userProfileTexts.flipCardAll()}</span>
                             </Button>
                         </div>
                     </div>

@@ -222,20 +222,20 @@ export function UserFlashcardsDialog({
             <DialogContent className="max-w-2xl sm:max-w-3xl overflow-hidden p-0 border-slate-200 bg-slate-50/50 shadow-2xl rounded-3xl dark:border-slate-800 dark:bg-slate-900">
                 {/* Header */}
                 <div className="border-b border-slate-200/80 bg-white px-6 py-5 dark:border-slate-800 dark:bg-slate-900">
-                    <DialogHeader className="flex flex-row items-center justify-between gap-4 space-y-0 text-left">
-                        <div className="flex items-center gap-3.5">
-                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none">
-                                <Brain className="h-6 w-6" />
+                    <DialogHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 space-y-0 text-left">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none">
+                                <Brain className="h-5 w-5 sm:h-6 sm:w-6" />
                             </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                            <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <DialogTitle className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">
                                         {userProfileTexts.flashcardsTitle()}
                                     </DialogTitle>
                                     {!isLoading && cards.length > 0 && (
                                         <Badge
                                             variant="secondary"
-                                            className="bg-indigo-50 text-indigo-700 font-semibold px-2.5 py-0.5 dark:bg-indigo-950/80 dark:text-indigo-300"
+                                            className="bg-indigo-50 text-indigo-700 font-semibold px-2 py-0.5 text-xs dark:bg-indigo-950/80 dark:text-indigo-300"
                                         >
                                             {userProfileTexts.savedWordsCount(cards.length)}
                                         </Badge>
@@ -249,7 +249,7 @@ export function UserFlashcardsDialog({
 
                         {/* Mode Switcher Tabs */}
                         {cards.length > 0 && (
-                            <div className="flex items-center rounded-xl bg-slate-100 p-1 border border-slate-200/70 mr-6 dark:bg-slate-800 dark:border-slate-700">
+                            <div className="flex items-center rounded-xl bg-slate-100 p-1 border border-slate-200/70 dark:bg-slate-800 dark:border-slate-700 w-full sm:w-auto justify-center">
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab("deck")}

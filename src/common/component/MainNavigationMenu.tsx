@@ -293,8 +293,10 @@ export function MainNavigationMenu({
                     </div>
 
                     <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-                        <ThemeToggle variant="outline" className="h-9 px-2" />
-                        <LanguageSwitcher variant="outline" className="h-9 px-2.5" />
+                        <div className="hidden sm:flex items-center gap-1.5">
+                            <ThemeToggle variant="outline" className="h-9 px-2" />
+                            <LanguageSwitcher variant="outline" className="h-9 px-2.5" />
+                        </div>
 
                         {auth.isAuthenticated ? (
                             <>
@@ -353,6 +355,15 @@ export function MainNavigationMenu({
                                         </DropdownMenuLabel>
 
                                         <DropdownMenuSeparator />
+
+                                        <div className="sm:hidden px-2 py-1.5 flex items-center justify-between">
+                                            <span className="text-xs text-slate-500 font-medium">Giao diện</span>
+                                            <ThemeToggle variant="outline" />
+                                        </div>
+                                        <div className="sm:hidden px-2 py-1.5 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 mb-1">
+                                            <span className="text-xs text-slate-500 font-medium">Ngôn ngữ</span>
+                                            <LanguageSwitcher variant="outline" />
+                                        </div>
 
                                         <DropdownMenuItem asChild>
                                             <Link
@@ -455,32 +466,34 @@ export function MainNavigationMenu({
                             </Button>
                         )}
 
-                        <Sheet>
-                            <SheetTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    aria-label="Toggle menu"
-                                    className="ml-1 text-sidebar-primary md:hidden"
-                                >
-                                    <Menu className="h-5 w-5" />
-                                    <span className="sr-only">
-                                        Toggle Menu
-                                    </span>
-                                </Button>
-                            </SheetTrigger>
+                        {!auth.isAuthenticated && (
+                            <Sheet>
+                                <SheetTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        aria-label="Toggle menu"
+                                        className="ml-1 text-sidebar-primary md:hidden"
+                                    >
+                                        <Menu className="h-5 w-5" />
+                                        <span className="sr-only">
+                                            Toggle Menu
+                                        </span>
+                                    </Button>
+                                </SheetTrigger>
 
-                            <SheetContent
-                                side="left"
-                                className="w-[300px] p-0"
-                            >
-                                <MobileNav
-                                    onNavigateIntent={onNavigateIntent}
-                                    avatarUrl={avatarUrl}
-                                    displayName={displayName}
-                                    initials={initials}
-                                />
-                            </SheetContent>
-                        </Sheet>
+                                <SheetContent
+                                    side="left"
+                                    className="w-[300px] p-0"
+                                >
+                                    <MobileNav
+                                        onNavigateIntent={onNavigateIntent}
+                                        avatarUrl={avatarUrl}
+                                        displayName={displayName}
+                                        initials={initials}
+                                    />
+                                </SheetContent>
+                            </Sheet>
+                        )}
                     </div>
                 </div>
             </header>

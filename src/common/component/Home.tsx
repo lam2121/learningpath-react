@@ -195,7 +195,7 @@ export function Home() {
                         {t("badge", { defaultValue: "Role-specific professional English" })}
                     </div>
 
-                    <h1 className="mt-5 max-w-3xl text-4xl font-black leading-[1.1] tracking-[-0.055em] sm:text-5xl xl:text-[3.7rem]">
+                    <h1 className="mt-3 sm:mt-5 max-w-3xl text-2xl sm:text-4xl lg:text-5xl xl:text-[3.7rem] font-black leading-[1.15] tracking-[-0.04em]">
                         {t("heroTitle", { defaultValue: "Know exactly what English" })}
                         <span className="mt-2 block pb-2 bg-[linear-gradient(135deg,#005596_0%,#0072bb_48%,#00a9ce_100%)] bg-clip-text text-transparent dark:bg-[linear-gradient(135deg,#38bdf8_0%,#60a5fa_50%,#93c5fd_100%)]">
                             {t("heroTitleGradient", { defaultValue: "to learn for your career." })}
@@ -209,10 +209,25 @@ export function Home() {
                         })}
                     </p>
 
-                    <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                    {/* Mobile-Only Compact Companion Note */}
+                    <div className="lg:hidden mt-4 p-3 rounded-2xl bg-cyan-50/90 dark:bg-slate-900/90 border border-cyan-100 dark:border-slate-800 flex items-center gap-3 shadow-2xs">
+                        <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shrink-0 shadow-xs">
+                            <Sparkles className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1 text-xs">
+                            <p className="font-bold text-slate-900 dark:text-white leading-tight">
+                                {t("companionTitle", { defaultValue: "Hi! Ready to find your path?" })}
+                            </p>
+                            <p className="text-slate-500 dark:text-slate-400 text-[11px] truncate mt-0.5">
+                                {t("companionDescription", { defaultValue: "Turn your real English gaps into achievable steps." })}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="mt-4 sm:mt-6 flex flex-col gap-2.5 sm:flex-row">
                         <Link
                             to={primaryTarget}
-                            className="inline-flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#005596,#0072bb_60%,#009fc7)] px-6 text-base font-black text-white shadow-[0_18px_38px_rgba(0,114,187,0.26)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_42px_rgba(0,114,187,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0072bb] focus-visible:ring-offset-3 dark:shadow-[0_18px_38px_rgba(14,165,233,0.2)] dark:hover:shadow-[0_22px_42px_rgba(14,165,233,0.3)]"
+                            className="inline-flex min-h-12 sm:min-h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#005596,#0072bb_60%,#009fc7)] px-6 text-sm sm:text-base font-black text-white shadow-[0_14px_30px_rgba(0,114,187,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_38px_rgba(0,114,187,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0072bb] dark:shadow-[0_14px_30px_rgba(14,165,233,0.2)]"
                         >
                             {isAuthenticated ? t("continue", { defaultValue: "Continue" }) : t("startTest", { defaultValue: "Start my placement test" })}
                             <ArrowRight className="h-5 w-5" />
@@ -267,7 +282,7 @@ export function Home() {
                     </div>
                 </div>
 
-                <div className="relative z-10 mx-auto w-full max-w-[570px] lg:ml-auto">
+                <div className="hidden lg:block relative z-10 mx-auto w-full max-w-[570px] lg:ml-auto">
                     <div className="absolute -inset-6 -z-10 rounded-[3rem] bg-[linear-gradient(135deg,rgba(103,232,249,0.5),rgba(186,230,253,0.08),rgba(147,197,253,0.46))] blur-2xl dark:bg-[linear-gradient(135deg,rgba(14,165,233,0.18),rgba(30,41,59,0.1),rgba(59,130,246,0.15))]" />
                     <div className="relative flex min-h-[500px] flex-col overflow-hidden rounded-[2.25rem] border border-white/90 bg-[linear-gradient(145deg,#ffffff_0%,#edfaff_52%,#dff4ff_100%)] px-6 pb-6 pt-6 shadow-[0_30px_80px_rgba(0,85,150,0.18)] sm:min-h-[560px] sm:px-8 sm:pt-8 dark:border-slate-800 dark:bg-[linear-gradient(145deg,#0f172a_0%,#090d16_52%,#0f172a_100%)] dark:shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
                         <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-cyan-300/30 blur-2xl dark:bg-cyan-500/10" />
