@@ -12,6 +12,7 @@ import {
   fetchCurrentUserProfile,
   logoutUser
 } from "@/feature/auth/api/authAPI";
+import { refreshAccessToken } from "@/common/lib/authSession";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -99,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
-  // Xác thực phiên làm việc thực tế từ Cookie server khi ứng dụng vừa mount
+  // Xác thực phiên làm việc thực tế từ Cookie / Token khi ứng dụng vừa mount (F5 / reload)
   useEffect(() => {
     const verifyServerSession = async () => {
       // 1. Skip if on sso-callback or URL has access_token fragment (sso-callback will handle it)
@@ -111,9 +112,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // 2. If no token in localStorage, user is not logged in. Do NOT call /user/me!
-      const token = localStorage.getItem("auth_access_token");
+      // 2. Check token in localStorage or attempt to refresh if we have a refresh cookie
+      let token = localStorage.getItem("auth_access_token");
       if (!token) {
+        try {
+          await refreshAccessToken();
+          token = localStorage.getItem("auth_access_token");
+        } catch {
+          // No active token or refresh cookie
+        }
+      }
+
+      // If still no token and no stored user, user is not logged in
+      if (!token && !getStoredUser()) {
         setUser(null);
         setIsLoading(false);
         return;
@@ -126,20 +137,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(serverUser);
         setStoredUser(serverUser);
       } catch (error) {
-        // If the error is a network/connectivity failure (backend offline),
-        // keep the stored user so temporary outages don't kick the user out.
-        const isNetworkFailure =
-          error instanceof TypeError ||
-          (error instanceof Error &&
-            (error.message.toLowerCase().includes("failed to fetch") ||
-              error.message.toLowerCase().includes("networkerror") ||
-              error.message.toLowerCase().includes("load failed")));
+        const isUnauthorized =
+          error instanceof Error &&
+          (error.message.includes("401") ||
+            error.message.toLowerCase().includes("unauthorized") ||
+            error.message.toLowerCase().includes("invalid token"));
 
-        if (!isNetworkFailure) {
+        if (isUnauthorized) {
+          // Only clear session if genuinely unauthorized and refresh failed
           setUser(null);
           clearAuthStorage();
         } else {
-          console.warn("Backend server unreachable during session verification; preserving local session.");
+          // For network issues, 500 server errors, or transient issues, keep the stored user
+          // so F5 / reload does NOT kick the user out of the app!
+          const stored = getStoredUser();
+          if (stored) {
+            console.warn("Server error during verification; preserving local session.", error);
+            setUser(stored);
+          } else {
+            setUser(null);
+            clearAuthStorage();
+          }
         }
       } finally {
         setIsLoading(false);
@@ -217,16 +235,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStoredUser(serverUser);
       return serverUser;
     } catch (error) {
-      const isNetworkFailure =
-        error instanceof TypeError ||
-        (error instanceof Error &&
-          (error.message.toLowerCase().includes("failed to fetch") ||
-            error.message.toLowerCase().includes("networkerror") ||
-            error.message.toLowerCase().includes("load failed")));
+      const isUnauthorized =
+        error instanceof Error &&
+        (error.message.includes("401") ||
+          error.message.toLowerCase().includes("unauthorized") ||
+          error.message.toLowerCase().includes("invalid token"));
 
-      if (!isNetworkFailure) {
+      if (isUnauthorized) {
         setUser(null);
         clearAuthStorage();
+        return null;
+      }
+
+      const stored = getStoredUser();
+      if (stored) {
+        setUser(stored);
+        return stored;
       }
       return null;
     }

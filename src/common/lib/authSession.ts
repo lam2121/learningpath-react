@@ -63,6 +63,11 @@ export async function refreshAccessToken(): Promise<void> {
     if (!response.ok) {
       throw new Error("Refresh token expired or invalid");
     }
+
+    const data = await response.json().catch(() => null);
+    if (data?.access_token) {
+      localStorage.setItem(TOKEN_KEY, data.access_token);
+    }
   })();
 
   try {
