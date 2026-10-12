@@ -1,5 +1,7 @@
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useEffect, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useScrollDirection } from "@/common/hook/useScrollDirection";
+import { MobilePageTitle } from "./MobilePageTitle";
 import {
     NavigationMenu,
     NavigationMenuItem,
@@ -266,24 +268,49 @@ export function MainNavigationMenu({
         );
     };
 
+    const scrollDirection = useScrollDirection();
+    const isMobileHeaderHidden = scrollDirection === 'down' && auth.isAuthenticated;
+
     return (
         <div>
-            <div className="h-13" />
+            {/* Desktop spacer — always h-13 */}
+            <div className="hidden md:block h-13" />
+            {/* Mobile spacer — thinner h-12 to match the slim app-bar */}
+            <div className="block md:hidden h-12" />
 
-            <header className="fixed top-0 z-50 w-full border-b border-gray-300 bg-white/95 backdrop-blur-sm transition-colors dark:border-slate-800 dark:bg-slate-900/95">
-                <div className="flex h-13 w-full items-center justify-between px-4 py-3 sm:px-6">
-                    <div className="flex min-w-0 items-center gap-4 lg:gap-6">
+            <header
+                className={cn(
+                    "fixed top-0 z-50 w-full transition-colors",
+                    // Desktop: standard website header
+                    "md:border-b md:border-gray-300 md:bg-white/95 md:backdrop-blur-sm",
+                    "md:dark:border-slate-800 md:dark:bg-slate-900/95",
+                    // Mobile: sleek app-bar with stronger glassmorphism
+                    "border-b border-slate-200/80 bg-white/85 backdrop-blur-xl backdrop-saturate-150",
+                    "dark:border-slate-800/60 dark:bg-slate-900/85",
+                    // Auto-hide on scroll (mobile only, authenticated)
+                    "mobile-header-slide",
+                )}
+                data-hidden={isMobileHeaderHidden ? "true" : "false"}
+            >
+                <div className="flex h-12 md:h-13 w-full items-center justify-between px-3 sm:px-4 md:px-6">
+                    <div className="flex min-w-0 items-center gap-3 md:gap-4 lg:gap-6">
                         <Link
                             to="/"
                             onClick={(event) => handleNavigationClick(event, "/")}
-                            className="flex shrink-0 items-center gap-3"
+                            className="flex shrink-0 items-center gap-2 md:gap-3"
                         >
-                            <CareerpathIcon className="h-10 w-10" />
+                            {/* Smaller logo on mobile */}
+                            <CareerpathIcon className="h-8 w-8 md:h-10 md:w-10" />
 
-                            <div className="hidden text-base font-semibold text-sidebar-primary sm:block">
+                            <div className="hidden md:block text-base font-semibold text-sidebar-primary">
                                 {APP_INFO.APP_NAME}
                             </div>
                         </Link>
+
+                        {/* Mobile: dynamic page title; Desktop: nav links */}
+                        <div className="md:hidden min-w-0 flex-1">
+                            <MobilePageTitle />
+                        </div>
 
                         <NavigationMenu>
                             <NavigationMenuList className="hidden md:flex">
@@ -292,7 +319,7 @@ export function MainNavigationMenu({
                         </NavigationMenu>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                    <div className="flex shrink-0 items-center gap-1 sm:gap-1.5 md:gap-2">
                         <div className="hidden sm:flex items-center gap-1.5">
                             <ThemeToggle variant="outline" className="h-9 px-2" />
                             <LanguageSwitcher variant="outline" className="h-9 px-2.5" />
@@ -312,9 +339,9 @@ export function MainNavigationMenu({
                                         <Button
                                             variant="ghost"
                                             aria-label="Open user menu"
-                                            className="ml-3 relative h-9 w-9 rounded-full p-0 sm:ml-4 transition-transform hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-blue-500"
+                                            className="ml-1.5 sm:ml-3 md:ml-4 relative h-8 w-8 md:h-9 md:w-9 rounded-full p-0 transition-transform hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-blue-500"
                                         >
-                                            <Avatar className="h-9 w-9 border border-slate-200 shadow-xs dark:border-slate-800">
+                                            <Avatar className="h-8 w-8 md:h-9 md:w-9 border border-slate-200 shadow-xs dark:border-slate-800">
                                                 <AvatarImage
                                                     src={avatarUrl}
                                                     alt={displayName}

@@ -119,16 +119,16 @@ export function UserProfile() {
         <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_rgba(0,114,187,0.08),_transparent_50%),linear-gradient(180deg,#f8faff_0%,#f0f4fc_100%)] transition-colors dark:bg-[radial-gradient(ellipse_at_top,_rgba(0,114,187,0.12),_transparent_50%),linear-gradient(180deg,#090d16_0%,#0f172a_100%)]">
             <MainNavigationMenu />
 
-            <div className="w-full px-3 pb-8 pt-3 sm:px-5 lg:px-8">
+            <div className="w-full px-3 pb-8 pt-3 sm:px-5 lg:px-8 mobile-page-bottom mobile-page-enter">
                 {/* ── PHONE MODE (md:hidden) ── */}
                 <div className="md:hidden mt-1 space-y-3">
                     {/* Native App-Style Segment Switcher */}
-                    <div className="flex p-1 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 shadow-2xs">
+                    <div className="flex p-1 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
                         <button
                             type="button"
                             onClick={() => setMobileTab('roadmap')}
                             className={cn(
-                                "flex-1 py-2 px-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5",
+                                "flex-1 py-2 px-2 text-xs font-bold rounded-xl transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5",
                                 mobileTab === 'roadmap'
                                     ? "bg-blue-600 text-white shadow-xs"
                                     : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
@@ -141,7 +141,7 @@ export function UserProfile() {
                             type="button"
                             onClick={() => setMobileTab('plan')}
                             className={cn(
-                                "flex-1 py-2 px-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5",
+                                "flex-1 py-2 px-2 text-xs font-bold rounded-xl transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5",
                                 mobileTab === 'plan'
                                     ? "bg-blue-600 text-white shadow-xs"
                                     : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
@@ -154,7 +154,7 @@ export function UserProfile() {
                             type="button"
                             onClick={() => setMobileTab('stats')}
                             className={cn(
-                                "flex-1 py-2 px-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5",
+                                "flex-1 py-2 px-2 text-xs font-bold rounded-xl transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5",
                                 mobileTab === 'stats'
                                     ? "bg-blue-600 text-white shadow-xs"
                                     : "text-slate-600 dark:text-slate-400 hover:text-slate-900"

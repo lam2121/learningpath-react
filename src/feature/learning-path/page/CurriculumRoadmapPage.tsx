@@ -227,10 +227,10 @@ export function CurriculumRoadmapPage() {
         : learningPathSuffix;
 
     return (
-        <div className="min-h-screen bg-blue-50/60 text-slate-950 dark:bg-slate-950 dark:text-white">
+        <div className="min-h-screen bg-blue-50/60 text-slate-950 dark:bg-slate-950 dark:text-white mobile-page-enter">
             <MainNavigationMenu />
 
-            <main className="mx-auto w-full max-w-[1480px] px-3 py-4 sm:px-5 lg:px-6">
+            <main className="mx-auto w-full max-w-[1480px] px-3 py-3 sm:px-5 sm:py-4 lg:px-6 mobile-page-bottom">
                 <RoadmapSummaryHeader
                     pageTitle={pageTitle}
                     error={error}
@@ -238,15 +238,23 @@ export function CurriculumRoadmapPage() {
                     startLesson={startLesson}
                 />
 
-                {/* Mobile Mode Switcher Tabs */}
-                <div className="lg:hidden flex p-1 mt-4 mb-2 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 shadow-2xs">
+                {/* Mobile Mode Switcher Tabs — Premium segmented control */}
+                <div className="lg:hidden relative flex p-1 mt-3 mb-2 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
+                    {/* Sliding background indicator */}
+                    <div
+                        className="absolute top-1 bottom-1 rounded-xl bg-blue-600 shadow-sm transition-all duration-300 ease-out"
+                        style={{
+                            left: mobileTab === 'topics' ? '0.25rem' : '50%',
+                            right: mobileTab === 'lessons' ? '0.25rem' : '50%',
+                        }}
+                    />
                     <button
                         type="button"
                         onClick={() => setMobileTab('topics')}
-                        className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all ${
+                        className={`relative z-10 flex-1 py-2.5 px-3 text-xs font-bold rounded-xl transition-colors duration-200 ${
                             mobileTab === 'topics'
-                                ? 'bg-blue-600 text-white shadow-xs'
-                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                                ? 'text-white'
+                                : 'text-slate-600 dark:text-slate-400 active:text-slate-900'
                         }`}
                     >
                         Danh sách chủ đề ({topics.length})
@@ -254,10 +262,10 @@ export function CurriculumRoadmapPage() {
                     <button
                         type="button"
                         onClick={() => setMobileTab('lessons')}
-                        className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all ${
+                        className={`relative z-10 flex-1 py-2.5 px-3 text-xs font-bold rounded-xl transition-colors duration-200 ${
                             mobileTab === 'lessons'
-                                ? 'bg-blue-600 text-white shadow-xs'
-                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                                ? 'text-white'
+                                : 'text-slate-600 dark:text-slate-400 active:text-slate-900'
                         }`}
                     >
                         Bài học chi tiết {selectedTopic ? `· Topic ${selectedTopic.sort_order}` : ''}

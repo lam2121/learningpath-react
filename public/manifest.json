@@ -1,0 +1,24 @@
+{
+  "name": "CareerPath - AI Learning Platform",
+  "short_name": "CareerPath",
+  "description": "Personalized AI-powered English learning journeys and career roadmaps",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8faff",
+  "theme_color": "#005596",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/careerpath_logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/careerpath_logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

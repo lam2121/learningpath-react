@@ -178,7 +178,7 @@ export function Home() {
         : "/login";
 
     return (
-        <main className="relative min-h-screen bg-[#f5fbff] text-slate-950 dark:bg-slate-950 dark:text-white">
+        <main className="relative min-h-screen bg-[#f5fbff] text-slate-950 dark:bg-slate-950 dark:text-white mobile-page-enter">
             <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(0,114,187,0.028)_1px,transparent_1px),linear-gradient(90deg,rgba(0,114,187,0.028)_1px,transparent_1px)] bg-[size:44px_44px] dark:bg-[linear-gradient(rgba(56,189,248,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(56,189,248,0.03)_1px,transparent_1px)]" />
                 <div className="absolute -left-28 top-20 h-80 w-80 rounded-full bg-cyan-300/25 blur-3xl dark:bg-cyan-500/10" />
@@ -187,54 +187,56 @@ export function Home() {
 
             <section
                 id="top"
-                className="relative mx-auto grid w-full max-w-[1360px] gap-8 px-5 py-6 sm:px-8 lg:grid-cols-[minmax(0,1.18fr)_minmax(400px,0.82fr)] lg:items-center lg:px-10 lg:py-8 xl:gap-12"
+                className="relative mx-auto grid w-full max-w-[1360px] gap-8 px-4 py-5 sm:px-8 sm:py-6 lg:grid-cols-[minmax(0,1.18fr)_minmax(400px,0.82fr)] lg:items-center lg:px-10 lg:py-8 xl:gap-12"
             >
                 <div className="relative z-10 max-w-[920px]">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white/90 px-4 py-2 text-[11px] font-black uppercase tracking-[0.17em] text-[#006890] shadow-[0_10px_26px_rgba(0,114,187,0.08)] dark:border-cyan-900/60 dark:bg-slate-900/90 dark:text-cyan-400 dark:shadow-[0_10px_26px_rgba(0,0,0,0.3)]">
-                        <Sparkles className="h-4 w-4" />
+                    <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white/90 px-3.5 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-[11px] font-black uppercase tracking-[0.17em] text-[#006890] shadow-[0_10px_26px_rgba(0,114,187,0.08)] dark:border-cyan-900/60 dark:bg-slate-900/90 dark:text-cyan-400 dark:shadow-[0_10px_26px_rgba(0,0,0,0.3)]">
+                        <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         {t("badge", { defaultValue: "Role-specific professional English" })}
                     </div>
 
-                    <h1 className="mt-3 sm:mt-5 max-w-3xl text-2xl sm:text-4xl lg:text-5xl xl:text-[3.7rem] font-black leading-[1.15] tracking-[-0.04em]">
+                    <h1 className="mt-3 sm:mt-5 max-w-3xl text-[1.65rem] sm:text-4xl lg:text-5xl xl:text-[3.7rem] font-black leading-[1.12] tracking-[-0.04em]">
                         {t("heroTitle", { defaultValue: "Know exactly what English" })}
                         <span className="mt-2 block pb-2 bg-[linear-gradient(135deg,#005596_0%,#0072bb_48%,#00a9ce_100%)] bg-clip-text text-transparent dark:bg-[linear-gradient(135deg,#38bdf8_0%,#60a5fa_50%,#93c5fd_100%)]">
                             {t("heroTitleGradient", { defaultValue: "to learn for your career." })}
                         </span>
                     </h1>
 
-                    <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8 dark:text-slate-300">
+                    <p className="mt-3 sm:mt-5 max-w-2xl text-[14px] leading-6 text-slate-600 sm:text-lg sm:leading-8 dark:text-slate-300">
                         {t("heroDescription", {
                             defaultValue:
                                 "A fair placement test finds your real gaps across four workplace skills, then builds an 8-topic roadmap around your profession and level.",
                         })}
                     </p>
 
-                    {/* Mobile-Only Compact Companion Note */}
-                    <div className="lg:hidden mt-4 p-3 rounded-2xl bg-cyan-50/90 dark:bg-slate-900/90 border border-cyan-100 dark:border-slate-800 flex items-center gap-3 shadow-2xs">
-                        <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shrink-0 shadow-xs">
-                            <Sparkles className="h-4 w-4" />
-                        </div>
-                        <div className="min-w-0 flex-1 text-xs">
-                            <p className="font-bold text-slate-900 dark:text-white leading-tight">
-                                {t("companionTitle", { defaultValue: "Hi! Ready to find your path?" })}
-                            </p>
-                            <p className="text-slate-500 dark:text-slate-400 text-[11px] truncate mt-0.5">
-                                {t("companionDescription", { defaultValue: "Turn your real English gaps into achievable steps." })}
-                            </p>
+                    {/* Mobile-Only Companion Card with gradient border */}
+                    <div className="lg:hidden mt-5 p-[1px] rounded-2xl bg-gradient-to-r from-cyan-400/60 via-blue-500/40 to-indigo-400/60 dark:from-cyan-600/40 dark:via-blue-600/30 dark:to-indigo-500/40 shadow-sm">
+                        <div className="rounded-[calc(1rem-1px)] bg-white/95 dark:bg-slate-900/95 p-4 flex items-center gap-3.5">
+                            <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shrink-0 shadow-[0_4px_12px_rgba(0,114,187,0.3)]">
+                                <Sparkles className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="font-bold text-[13px] text-slate-900 dark:text-white leading-tight">
+                                    {t("companionTitle", { defaultValue: "Hi! Ready to find your path?" })}
+                                </p>
+                                <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5 line-clamp-2">
+                                    {t("companionDescription", { defaultValue: "Turn your real English gaps into achievable steps." })}
+                                </p>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="mt-4 sm:mt-6 flex flex-col gap-2.5 sm:flex-row">
+                    <div className="mt-5 sm:mt-6 flex flex-col gap-3.5 sm:gap-2.5 sm:flex-row">
                         <Link
                             to={primaryTarget}
-                            className="inline-flex min-h-12 sm:min-h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#005596,#0072bb_60%,#009fc7)] px-6 text-sm sm:text-base font-black text-white shadow-[0_14px_30px_rgba(0,114,187,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_38px_rgba(0,114,187,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0072bb] dark:shadow-[0_14px_30px_rgba(14,165,233,0.2)]"
+                            className="inline-flex min-h-[3.25rem] sm:min-h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#005596,#0072bb_60%,#009fc7)] px-6 text-[15px] sm:text-base font-black text-white shadow-[0_14px_30px_rgba(0,114,187,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_38px_rgba(0,114,187,0.32)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0072bb] dark:shadow-[0_14px_30px_rgba(14,165,233,0.2)]"
                         >
                             {isAuthenticated ? t("continue", { defaultValue: "Continue" }) : t("startTest", { defaultValue: "Start my placement test" })}
                             <ArrowRight className="h-5 w-5" />
                         </Link>
                         <Link
                             to="/guide"
-                            className="inline-flex min-h-13 items-center justify-center gap-1 rounded-2xl border border-[#0072bb]/20 bg-white/90 px-5 text-sm font-black text-[#005596] shadow-sm transition hover:-translate-y-0.5 hover:border-[#0072bb]/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0072bb] focus-visible:ring-offset-3 dark:border-slate-800 dark:bg-slate-900/90 dark:text-cyan-400 dark:hover:border-cyan-700/60 dark:hover:bg-slate-800/90"
+                            className="inline-flex min-h-[3.25rem] sm:min-h-13 items-center justify-center gap-1 rounded-2xl border border-[#0072bb]/20 bg-white/90 px-5 text-[15px] sm:text-sm font-black text-[#005596] shadow-sm transition hover:-translate-y-0.5 hover:border-[#0072bb]/40 hover:shadow-md active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0072bb] focus-visible:ring-offset-3 dark:border-slate-800 dark:bg-slate-900/90 dark:text-cyan-400 dark:hover:border-cyan-700/60 dark:hover:bg-slate-800/90"
                         >
                             {t("howItWorks", { defaultValue: "How it works" })}
                             <ChevronRight className="h-4 w-4" />
@@ -252,20 +254,20 @@ export function Home() {
                         ))}
                     </div>
 
-                    <div className="mt-6 rounded-[1.6rem] border border-white bg-white/80 p-4 shadow-[0_16px_38px_rgba(0,85,150,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-[0_16px_38px_rgba(0,0,0,0.3)]">
-                        <div className="mb-3 flex items-center justify-between gap-3 px-1">
-                            <p className="text-[11px] font-black uppercase tracking-[0.17em] text-[#0072bb] sm:text-xs dark:text-cyan-400">
+                    <div className="mt-5 sm:mt-6 rounded-[1.4rem] sm:rounded-[1.6rem] border border-white bg-white/80 p-3.5 sm:p-4 shadow-[0_16px_38px_rgba(0,85,150,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-[0_16px_38px_rgba(0,0,0,0.3)]">
+                        <div className="mb-2.5 sm:mb-3 flex items-center justify-between gap-3 px-0.5 sm:px-1">
+                            <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.17em] text-[#0072bb] dark:text-cyan-400">
                                 {t("journeyTitle", { defaultValue: "One clear journey" })}
                             </p>
-                            <p className="text-[11px] font-bold text-slate-400 sm:text-xs dark:text-slate-500">
+                            <p className="text-[10px] sm:text-[11px] font-bold text-slate-400 dark:text-slate-500 hidden sm:block">
                                 {t("journeySubtitle", { defaultValue: "No hidden graduation rules" })}
                             </p>
                         </div>
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 sm:grid-cols-4">
                             {journey.map((step, index) => {
                                 const StepIcon = step.icon;
                                 return (
-                                    <div key={step.labelKey} className="flex min-w-0 items-center gap-3 rounded-2xl bg-cyan-50/80 px-3.5 py-3 ring-1 ring-cyan-100 dark:bg-slate-800/80 dark:ring-slate-700/60">
+                                    <div key={step.labelKey} className="flex min-w-0 items-center gap-2.5 sm:gap-3 rounded-2xl bg-cyan-50/80 px-3 py-2.5 sm:px-3.5 sm:py-3 ring-1 ring-cyan-100 dark:bg-slate-800/80 dark:ring-slate-700/60">
                                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#0072bb] shadow-sm dark:bg-slate-900 dark:text-cyan-400 dark:ring-1 dark:ring-slate-700/50">
                                             <StepIcon className="h-4.5 w-4.5" />
                                         </span>

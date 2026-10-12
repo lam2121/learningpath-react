@@ -364,7 +364,7 @@ export function FlashcardsPage() {
         <div className="min-h-screen w-full bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.08),_transparent_28%),linear-gradient(180deg,_#fbfdff_0%,_#f4f7fe_100%)]">
             <MainNavigationMenu />
 
-            <div className="mx-auto w-full max-w-[1800px] px-3 pb-16 pt-3 sm:px-5 lg:px-8">
+            <div className="mx-auto w-full max-w-[1800px] px-3 pb-16 pt-3 sm:px-5 lg:px-8 mobile-page-bottom mobile-page-enter">
                 {/* Back to Profile Link */}
                 <div className="mb-3">
                     <Link
@@ -377,7 +377,7 @@ export function FlashcardsPage() {
                 </div>
 
                 {/* Hero Header Banner */}
-                <section className="relative overflow-hidden rounded-[28px] border border-indigo-100 bg-[linear-gradient(135deg,#f8faff_0%,#ffffff_42%,#eef2ff_100%)] p-5 sm:p-7 shadow-[0_20px_56px_rgba(99,102,241,0.1)]">
+                <section className="relative overflow-hidden rounded-2xl sm:rounded-[28px] border border-indigo-100 bg-[linear-gradient(135deg,#f8faff_0%,#ffffff_42%,#eef2ff_100%)] p-4 sm:p-7 shadow-[0_20px_56px_rgba(99,102,241,0.1)]">
                     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(165,180,252,0.18),_transparent_26%),radial-gradient(circle_at_bottom_left,_rgba(199,210,254,0.2),_transparent_24%)]" />
 
                     <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
@@ -386,10 +386,10 @@ export function FlashcardsPage() {
                                 <Brain className="h-3.5 w-3.5" />
                                 <span>{userProfileTexts.flashcards()}</span>
                             </p>
-                            <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-5xl">
+                            <h1 className="mt-2.5 sm:mt-3 text-2xl font-black tracking-tight text-slate-950 sm:text-5xl">
                                 {userProfileTexts.flashcardsTitle()}
                             </h1>
-                            <p className="mt-2 text-base font-medium leading-7 text-slate-600 sm:text-lg">
+                            <p className="mt-1.5 sm:mt-2 text-sm sm:text-lg font-medium leading-relaxed sm:leading-7 text-slate-600">
                                 {userProfileTexts.flashcardsSubtitle()}
                             </p>
                         </div>

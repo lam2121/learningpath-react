@@ -487,7 +487,7 @@ export function UserProfileCard() {
                 />
             </div>
 
-            <CardContent className="relative z-10 px-6 pb-6 pt-0 sm:px-8">
+            <CardContent className="relative z-10 px-4 pb-5 pt-0 sm:px-8 sm:pb-6">
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
                     {/* Avatar with negative top margin overlapping banner */}
                     <div className="relative -mt-12 sm:-mt-14 inline-flex h-fit shrink-0 group">
@@ -547,31 +547,31 @@ export function UserProfileCard() {
                             </div>
 
                             {/* Only Time Cards made bigger */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-4 md:mt-5 md:min-w-[380px] lg:min-w-[420px]">
-                                <div className="group rounded-2xl border border-slate-300 bg-slate-50/80 p-4 shadow-xs transition-all hover:border-emerald-400 hover:bg-emerald-50/40 hover:shadow-md dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-emerald-700 dark:hover:bg-slate-800">
-                                    <div className="flex items-center gap-2.5 text-emerald-700 dark:text-emerald-400">
-                                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 shadow-xs">
-                                            <CalendarDays className="h-4 w-4" />
+                            <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 mt-3 sm:mt-5 md:min-w-[380px] lg:min-w-[420px]">
+                                <div className="group rounded-2xl border border-slate-300 bg-slate-50/80 p-3 sm:p-4 shadow-xs transition-all hover:border-emerald-400 hover:bg-emerald-50/40 hover:shadow-md dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-emerald-700 dark:hover:bg-slate-800">
+                                    <div className="flex items-center gap-2 sm:gap-2.5 text-emerald-700 dark:text-emerald-400">
+                                        <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg sm:rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 shadow-xs">
+                                            <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                         </span>
-                                        <p className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                                        <p className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
                                             {userProfileTexts.started()}
                                         </p>
                                     </div>
-                                    <p className="mt-2 text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100">
+                                    <p className="mt-1.5 sm:mt-2 text-xs sm:text-base lg:text-lg font-extrabold text-slate-900 dark:text-slate-100 truncate">
                                         {startedAtLabel}
                                     </p>
                                 </div>
 
-                                <div className="group rounded-2xl border border-slate-300 bg-slate-50/80 p-4 shadow-xs transition-all hover:border-blue-400 hover:bg-blue-50/40 hover:shadow-md dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-blue-700 dark:hover:bg-slate-800">
-                                    <div className="flex items-center gap-2.5 text-blue-700 dark:text-blue-400">
-                                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400 shadow-xs">
-                                            <Target className="h-4 w-4" />
+                                <div className="group rounded-2xl border border-slate-300 bg-slate-50/80 p-3 sm:p-4 shadow-xs transition-all hover:border-blue-400 hover:bg-blue-50/40 hover:shadow-md dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-blue-700 dark:hover:bg-slate-800">
+                                    <div className="flex items-center gap-2 sm:gap-2.5 text-blue-700 dark:text-blue-400">
+                                        <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg sm:rounded-xl bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400 shadow-xs">
+                                            <Target className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                         </span>
-                                        <p className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                                        <p className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
                                             {userProfileTexts.targetFinish()}
                                         </p>
                                     </div>
-                                    <p className="mt-2 text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100">
+                                    <p className="mt-1.5 sm:mt-2 text-xs sm:text-base lg:text-lg font-extrabold text-slate-900 dark:text-slate-100 truncate">
                                         {estimatedFinishLabel}
                                     </p>
                                 </div>
@@ -581,7 +581,7 @@ export function UserProfileCard() {
                 </div>
 
                 {/* 4 Metric Tiles */}
-                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                <div className="mt-4 sm:mt-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
                     {STATUS_BAR_ITEMS.map((item) => {
                         const Icon = item.icon;
                         const payload = values[item.key];
@@ -589,19 +589,19 @@ export function UserProfileCard() {
                         return (
                             <div
                                 key={item.key}
-                                className={`group relative flex items-start gap-3.5 rounded-2xl border border-slate-300 bg-white p-4.5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900 ${item.hoverBorder}`}
+                                className={`group relative flex items-start gap-2.5 sm:gap-3.5 rounded-2xl border border-slate-300 bg-white p-3 sm:p-4.5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900 ${item.hoverBorder}`}
                             >
-                                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white shadow-md transition-transform duration-300 group-hover:scale-105 ${item.iconBg} ${item.glow}`}>
-                                    <Icon className="h-5 w-5" />
+                                <div className={`flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl text-white shadow-md transition-transform duration-300 group-hover:scale-105 ${item.iconBg} ${item.glow}`}>
+                                    <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-xs font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                                    <p className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300 truncate">
                                         {itemLabelMap[item.key] || item.label}
                                     </p>
-                                    <p className={`mt-0.5 text-2xl font-black tracking-tight ${item.valueColor}`}>
+                                    <p className={`mt-0.5 text-xl sm:text-2xl font-black tracking-tight ${item.valueColor}`}>
                                         {payload.value}
                                     </p>
-                                    <p className={`mt-1 text-xs font-semibold leading-relaxed ${item.helperColor}`}>
+                                    <p className={`mt-0.5 sm:mt-1 text-[11px] sm:text-xs font-semibold leading-relaxed line-clamp-1 sm:line-clamp-none ${item.helperColor}`}>
                                         {payload.helper}
                                     </p>
                                 </div>
