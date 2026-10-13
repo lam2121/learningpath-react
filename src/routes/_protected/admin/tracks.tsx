@@ -7,6 +7,7 @@ import { Badge } from '@/shadcn/component/ui/badge';
 import { Alert, AlertDescription } from '@/shadcn/component/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shadcn/component/ui/dialog';
 import { Toaster } from '@/shadcn/component/ui/sonner';
+import { cn } from '@/shadcn/lib/util';
 import {
 	GenerateMoreTopicsModal,
 	GenerationCenterDialog,
@@ -308,28 +309,124 @@ function TracksPage() {
 			<Toaster position="top-right" />
 			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Career Tracks</h1>
-					<p className="text-gray-500 dark:text-gray-400">Manage career tracks and D/C/T/G budget</p>
+					<h1 className="text-xl sm:text-2xl font-bold font-display text-gray-900 dark:text-gray-100">Career Tracks</h1>
+					<p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Manage career tracks and D/C/T/G budget</p>
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="flex items-center gap-2 flex-wrap">
 					{failedLessons.length > 0 && (
 						<Button
 							variant="outline"
-							className="border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+							size="sm"
+							className="h-8 text-xs border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
 							onClick={() => setFixingLesson(failedLessons[0])}
 						>
-							<Wrench className="mr-2 h-4 w-4 text-amber-600" />
-							Fix Failed Lessons ({failedLessons.length})
+							<Wrench className="mr-1.5 h-3.5 w-3.5 text-amber-600" />
+							Fix Lessons ({failedLessons.length})
 						</Button>
 					)}
-					<Button onClick={() => { setEditingTrack(undefined); setShowForm(true); }}>
-						<Plus className="mr-2 h-4 w-4" />
-						Add New Track
+					<Button size="sm" className="h-8 text-xs" onClick={() => { setEditingTrack(undefined); setShowForm(true); }}>
+						<Plus className="mr-1.5 h-3.5 w-3.5" />
+						Add Track
 					</Button>
 				</div>
 			</div>
 
-			<div className="overflow-x-auto rounded-lg border dark:border-gray-800 bg-white dark:bg-gray-900">
+			{/* Mobile Tracks Cards View - zero horizontal scroll */}
+			<div className="md:hidden flex flex-col gap-3">
+				{tracks.map(track => {
+					const rowStatus = getRowStatus(track);
+					const isRunning = track.placementGenerationStatus === 'in_progress'
+						|| track.placementGenerationStatus === 'pending'
+						|| track.courseGenerationStatus === 'in_progress'
+						|| track.courseGenerationStatus === 'pending';
+					const trackFailed = failedLessons.filter(fl => fl.roleId === track.id);
+					return (
+						<div
+							key={track.id}
+							className="rounded-2xl border border-border/80 bg-card p-3.5 shadow-2xs space-y-2.5"
+						>
+							<div className="flex items-start justify-between gap-2">
+								<div className="min-w-0">
+									<h3 className="font-bold font-display text-sm text-foreground truncate">{track.name}</h3>
+									<p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{track.jobDescription}</p>
+								</div>
+								<Badge variant={track.isActive ? 'default' : 'secondary'} className="shrink-0 text-[10px]">
+									{track.isActive ? 'Active' : 'Inactive'}
+								</Badge>
+							</div>
+
+							<div className="grid grid-cols-2 gap-2 text-xs py-2 border-y border-border/60">
+								<div>
+									<span className="text-muted-foreground text-[10px] uppercase font-semibold block">Learners</span>
+									<span className="font-semibold text-foreground">{track.activeLearnerCount} active</span>
+								</div>
+								<div>
+									<span className="text-muted-foreground text-[10px] uppercase font-semibold block">Generation</span>
+									<Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", rowStatus.className)}>
+										{rowStatus.label}
+									</Badge>
+								</div>
+							</div>
+
+							<div className="flex items-center justify-between gap-2 pt-0.5">
+								<div className="flex items-center gap-1.5">
+									<Button
+										variant="outline"
+										size="sm"
+										className="h-7 text-xs px-2.5"
+										onClick={() => openGenerationCenter(track)}
+									>
+										{isRunning ? <Loader2 className="mr-1 h-3 w-3 animate-spin text-blue-600" /> : <Sparkles className="mr-1 h-3 w-3" />}
+										Manage
+									</Button>
+									{trackFailed.length > 0 && (
+										<Button
+											variant="outline"
+											size="sm"
+											className="h-7 text-xs border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200 px-2"
+											onClick={() => setFixingLesson(trackFailed[0])}
+										>
+											<Wrench className="mr-1 h-3 w-3 text-amber-600" />
+											Fix ({trackFailed.length})
+										</Button>
+									)}
+								</div>
+
+								<div className="flex items-center gap-1">
+									<Button variant="ghost" size="icon" className="h-7 w-7" title="Edit Track" onClick={() => { setEditingTrack(track); setShowForm(true); }}>
+										<Edit className="h-3.5 w-3.5" />
+									</Button>
+									{!track.isActive && (
+										<Button
+											variant="ghost"
+											size="icon"
+											className="h-7 w-7 text-green-600 hover:text-green-700"
+											title="Reactivate track"
+											disabled={mutating}
+											onClick={() => handleActivate(track)}
+										>
+											<RotateCcw className="h-3.5 w-3.5" />
+										</Button>
+									)}
+									<Button
+										variant="ghost"
+										size="icon"
+										className="h-7 w-7 text-red-500 hover:text-red-700"
+										title="Delete track"
+										disabled={isRunning || mutating}
+										onClick={() => setConfirmDelete(track)}
+									>
+										<Trash2 className="h-3.5 w-3.5" />
+									</Button>
+								</div>
+							</div>
+						</div>
+					);
+				})}
+			</div>
+
+			{/* Desktop Table View */}
+			<div className="hidden md:block overflow-x-auto rounded-lg border dark:border-gray-800 bg-white dark:bg-gray-900">
 				<table className="w-full">
 					<thead>
 						<tr className="bg-gray-50 dark:bg-gray-800 text-left text-sm text-gray-500 dark:text-gray-400">
