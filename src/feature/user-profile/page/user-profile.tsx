@@ -116,22 +116,22 @@ export function UserProfile() {
     );
 
     return (
-        <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_rgba(0,114,187,0.08),_transparent_50%),linear-gradient(180deg,#f8faff_0%,#f0f4fc_100%)] transition-colors dark:bg-[radial-gradient(ellipse_at_top,_rgba(0,114,187,0.12),_transparent_50%),linear-gradient(180deg,#090d16_0%,#0f172a_100%)]">
+        <div className="min-h-screen bg-background text-foreground relative transition-colors">
             <MainNavigationMenu />
 
             <div className="w-full px-3 pb-8 pt-3 sm:px-5 lg:px-8 mobile-page-bottom mobile-page-enter">
                 {/* ── PHONE MODE (md:hidden) ── */}
                 <div className="md:hidden mt-1 space-y-3">
                     {/* Native App-Style Segment Switcher */}
-                    <div className="flex p-1 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
+                    <div className="flex p-1 rounded-2xl bg-card border border-border shadow-elevation-1">
                         <button
                             type="button"
                             onClick={() => setMobileTab('roadmap')}
                             className={cn(
                                 "flex-1 py-2 px-2 text-xs font-bold rounded-xl transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5",
                                 mobileTab === 'roadmap'
-                                    ? "bg-blue-600 text-white shadow-xs"
-                                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                                    ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                                    : "text-muted-foreground hover:text-foreground"
                             )}
                         >
                             <BookOpen className="h-3.5 w-3.5" />
@@ -300,55 +300,55 @@ export function UserProfile() {
                                     </svg>
                                 </div>
 
-                                <Card className="group relative overflow-hidden rounded-3xl border border-blue-300 bg-gradient-to-br from-blue-50/70 via-indigo-50/20 to-white py-0 gap-0 shadow-[0_12px_36px_rgba(37,99,235,0.08)] transition-all duration-300 hover:shadow-[0_20px_50px_rgba(37,99,235,0.14)] dark:border-blue-700 dark:bg-[linear-gradient(135deg,_rgba(30,58,138,0.2)_0%,_rgba(15,23,42,0.95)_45%,_rgba(15,23,42,1)_100%)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.4)] animate-border-blink">
-                                    {/* Top Brand Highlight Accent Bar: Flush at top to cap the section without white space */}
-                                    <div className="h-2 w-full bg-gradient-to-r from-[#005596] via-[#0072BB] to-[#00A9CE]" />
+                                <Card className="group relative overflow-hidden rounded-3xl border border-border/80 bg-card py-0 gap-0 shadow-elevation-2 transition-all duration-300 hover:shadow-elevation-4">
+                                    {/* Top Brand Highlight Accent Bar */}
+                                    <div className="h-2 w-full bg-gradient-to-r from-primary via-accent-violet to-primary" />
 
                                     {/* Ambient light blooms */}
-                                    <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-400/10 blur-3xl dark:bg-blue-600/10" />
-                                    <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-cyan-400/10 blur-3xl dark:bg-cyan-600/10" />
+                                    <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+                                    <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-accent-violet/10 blur-3xl" />
 
                                     <CardHeader className="relative px-6 pb-4 pt-4 sm:px-8 sm:pt-5">
                                         <div className="flex items-start justify-between gap-4">
                                             <div className="space-y-3">
                                                 <div className="flex flex-wrap items-center gap-2">
-                                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-300 bg-blue-100/90 px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-900 shadow-2xs dark:border-blue-700 dark:bg-blue-950/80 dark:text-blue-200">
+                                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary shadow-2xs">
                                                         <span className="relative flex h-2 w-2">
-                                                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-500 opacity-75" />
-                                                            <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-600" />
+                                                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                                                            <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
                                                         </span>
-                                                        <Sparkles className="h-3.5 w-3.5 text-blue-700 dark:text-blue-400" />
+                                                        <Sparkles className="h-3.5 w-3.5 text-primary" />
                                                         {userProfileTexts.nextStepBadge()}
                                                     </span>
 
                                                     {totalAssignedLessons > 0 ? (
-                                                        <span className="rounded-full border border-slate-300/80 bg-white/95 px-3 py-1 text-xs font-bold text-slate-800 shadow-2xs dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                                        <span className="rounded-full border border-border bg-card px-3 py-1 text-xs font-bold text-foreground shadow-2xs">
                                                             {userProfileTexts.lessonProgressFraction(completedLessonCount, totalAssignedLessons, progressPercent)}
                                                         </span>
                                                     ) : null}
                                                 </div>
 
-                                                <CardTitle className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
+                                                <CardTitle className="font-display text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-foreground">
                                                     <span className="relative inline-block">
                                                         <span className="relative z-10">{userProfileTexts.exploreLearningPath()}</span>
                                                         {/* Authentic Highlighter Marker Stroke */}
                                                         <span
                                                             aria-hidden="true"
-                                                            className="absolute bottom-1 sm:bottom-1.5 left-0 right-0 h-3.5 sm:h-4.5 -rotate-0.5 rounded-sm bg-gradient-to-r from-yellow-300/70 via-yellow-200/80 to-amber-200/60 dark:from-yellow-400/35 dark:via-yellow-300/25 dark:to-transparent -z-0 pointer-events-none"
+                                                            className="absolute bottom-1 sm:bottom-1.5 left-0 right-0 h-3.5 sm:h-4.5 -rotate-0.5 rounded-sm bg-gradient-to-r from-yellow-300/70 via-yellow-200/80 to-amber-200/60 dark:from-yellow-400/30 dark:via-yellow-300/20 dark:to-transparent -z-0 pointer-events-none"
                                                         />
                                                     </span>
                                                 </CardTitle>
 
-                                                <p className="max-w-2xl text-sm sm:text-base font-medium leading-relaxed text-slate-700 dark:text-slate-200">
+                                                <p className="max-w-2xl text-sm sm:text-base font-medium leading-relaxed text-muted-foreground">
                                                     {userProfileTexts.continueRoadmap()}
                                                 </p>
 
                                                 {/* Mini curriculum progress bar */}
                                                 {totalAssignedLessons > 0 ? (
                                                     <div className="pt-1 max-w-md">
-                                                        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-800">
+                                                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                                                             <div
-                                                                className="h-full rounded-full bg-gradient-to-r from-blue-600 to-[#00A9CE] transition-all duration-700 ease-out"
+                                                                className="h-full rounded-full bg-gradient-to-r from-primary to-accent-violet transition-all duration-700 ease-out"
                                                                 style={{ width: `${progressPercent}%` }}
                                                             />
                                                         </div>
@@ -356,7 +356,7 @@ export function UserProfile() {
                                                 ) : null}
                                             </div>
 
-                                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#005596] via-[#0072BB] to-[#00A9CE] text-white shadow-md shadow-blue-500/20">
+                                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md shadow-primary/20">
                                                 <BookOpen className="h-5 w-5" />
                                             </div>
                                         </div>
@@ -364,12 +364,12 @@ export function UserProfile() {
 
                                     <CardContent className="relative px-6 pb-6 pt-0 sm:px-8 sm:pb-8">
                                         {isLoading ? (
-                                            <div className="flex min-h-[120px] items-center gap-3 rounded-2xl border border-blue-200 bg-white/85 px-5 text-slate-600 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-300 font-medium">
-                                                <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                                            <div className="flex min-h-[120px] items-center gap-3 rounded-2xl border border-border bg-card px-5 text-muted-foreground font-medium">
+                                                <Loader2 className="h-5 w-5 animate-spin text-primary" />
                                                 {userProfileTexts.loadingLearningPath()}
                                             </div>
                                         ) : (
-                                            <div className="rounded-2xl border border-slate-300 bg-white/95 p-5 shadow-xs backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/85">
+                                            <div className="rounded-2xl border border-border bg-card/90 p-5 shadow-xs backdrop-blur-md">
                                                 <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                                                     <div className="space-y-3.5">
                                                         <div className="flex flex-wrap items-center gap-2">
@@ -378,18 +378,18 @@ export function UserProfile() {
                                                                     <span className={`rounded-full px-3.5 py-1 text-xs font-bold uppercase tracking-wider ${getTrackBadgeClasses(roadmap.track)}`}>
                                                                         {userProfileTexts.trackName(roadmap.track)}
                                                                     </span>
-                                                                    <span className="rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-xs font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                                                    <span className="rounded-full border border-border bg-muted/60 px-3 py-1 text-xs font-bold text-foreground">
                                                                         {userProfileTexts.topicsCount(roadmap.topics.length)}
                                                                     </span>
                                                                     {roadmap.total_estimated_minutes > 0 ? (
-                                                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-xs font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                                                                            <Layers3 className="h-3.5 w-3.5 text-blue-700 dark:text-blue-400" />
+                                                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 px-3 py-1 text-xs font-bold text-foreground">
+                                                                            <Layers3 className="h-3.5 w-3.5 text-primary" />
                                                                             {formatHours(roadmap.total_estimated_minutes)}
                                                                         </span>
                                                                     ) : null}
                                                                 </>
                                                             ) : (
-                                                                <span className="rounded-full bg-slate-100 px-3.5 py-1 text-xs font-bold text-slate-800 dark:bg-slate-800 dark:text-slate-200">
+                                                                <span className="rounded-full bg-muted px-3.5 py-1 text-xs font-bold text-foreground">
                                                                     {userProfileTexts.exploreTopics()}
                                                                 </span>
                                                             )}
@@ -397,25 +397,25 @@ export function UserProfile() {
 
                                                         {/* Up Next Lesson & Topic Callout Strip */}
                                                         {nextLesson ? (
-                                                            <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-blue-300 bg-blue-50/90 p-3 text-xs text-slate-900 shadow-2xs dark:border-blue-700 dark:bg-blue-950/60 dark:text-slate-100">
-                                                                <div className="flex items-center gap-1.5 font-black uppercase tracking-wider text-blue-800 dark:text-blue-300">
-                                                                    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-2xs">
+                                                            <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-primary/20 bg-primary/5 p-3 text-xs text-foreground shadow-2xs backdrop-blur-xs">
+                                                                <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-primary">
+                                                                    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xs">
                                                                         <Play className="ml-0.5 h-2.5 w-2.5 fill-current" />
                                                                     </span>
                                                                     <span>{userProfileTexts.upNextLabel()}</span>
                                                                 </div>
 
                                                                 <div className="flex flex-wrap items-center gap-2">
-                                                                    <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 bg-white/95 px-2.5 py-1 text-xs font-bold text-slate-900 shadow-2xs dark:border-slate-700 dark:bg-slate-800 dark:text-white">
-                                                                        <span className="text-blue-700 dark:text-blue-400 font-extrabold uppercase text-[11px] tracking-wide">
+                                                                    <span className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-1 text-xs font-bold text-foreground shadow-2xs">
+                                                                        <span className="text-primary font-extrabold uppercase text-[11px] tracking-wide">
                                                                             {userProfileTexts.lessonLabelPrefix()}
                                                                         </span>
                                                                         <span>'{nextLesson.title}'</span>
                                                                     </span>
 
                                                                     {nextTopic ? (
-                                                                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50/90 px-2.5 py-1 text-xs font-bold text-slate-900 shadow-2xs dark:border-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-100">
-                                                                            <span className="text-indigo-700 dark:text-indigo-300 font-extrabold uppercase text-[11px] tracking-wide">
+                                                                        <span className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-muted/60 px-2.5 py-1 text-xs font-bold text-foreground shadow-2xs">
+                                                                            <span className="text-primary font-extrabold uppercase text-[11px] tracking-wide">
                                                                                 {userProfileTexts.topicLabelPrefix()}
                                                                             </span>
                                                                             <span>{nextTopic.name}</span>
@@ -425,14 +425,14 @@ export function UserProfile() {
                                                             </div>
                                                         ) : null}
 
-                                                        <p className="max-w-3xl text-sm sm:text-base font-medium leading-relaxed text-slate-700 dark:text-slate-200">
+                                                        <p className="max-w-3xl text-sm sm:text-base font-medium leading-relaxed text-muted-foreground">
                                                             {roadmap?.topics.length
                                                                 ? userProfileTexts.openRoadmapDesc()
                                                                 : userProfileTexts.openRoadmapPendingDesc()}
                                                         </p>
                                                     </div>
 
-                                                    <Button asChild className="group h-13 min-w-[220px] rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-base font-bold text-white shadow-lg shadow-blue-500/25 transition-all duration-200 hover:scale-[1.02] hover:shadow-xl hover:shadow-blue-500/35 active:scale-[0.99]">
+                                                    <Button asChild className="group h-12 min-w-[220px] rounded-2xl bg-primary hover:bg-primary/90 text-base font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-200 active:scale-95">
                                                         <Link to="/lessons/learning-path">
                                                             {userProfileTexts.openLearningPath()}
                                                             <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-200 group-hover:translate-x-1" />

@@ -48,14 +48,14 @@ export function FlashcardDeckRunner({
     return (
         <div className="space-y-4">
             {/* Top Stats & Shuffle */}
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
-                <div className="flex items-center gap-2">
-                    <span className="font-mono text-indigo-600">
+            <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
+                <div className="flex items-center gap-2.5">
+                    <span className="font-mono font-bold text-primary">
                         {userProfileTexts.cardCounter(currentIndex + 1, totalCards)}
                     </span>
-                    <div className="h-1.5 w-24 sm:w-36 rounded-full bg-slate-200 overflow-hidden">
+                    <div className="h-2 w-24 sm:w-40 rounded-full bg-muted overflow-hidden">
                         <div
-                            className="h-full bg-indigo-600 transition-all duration-300 rounded-full"
+                            className="h-full bg-gradient-to-r from-primary to-accent-violet transition-all duration-300 rounded-full"
                             style={{
                                 width: `${((currentIndex + 1) / totalCards) * 100}%`,
                             }}
@@ -67,7 +67,7 @@ export function FlashcardDeckRunner({
                     variant="ghost"
                     size="sm"
                     onClick={onShuffle}
-                    className="h-8 gap-1.5 text-xs font-semibold text-slate-600 hover:text-indigo-600"
+                    className="h-8 gap-1.5 text-xs font-semibold text-muted-foreground hover:text-primary transition-colors"
                     title={userProfileTexts.shuffleCards()}
                 >
                     <Shuffle className="h-3.5 w-3.5" />
@@ -77,7 +77,7 @@ export function FlashcardDeckRunner({
 
             {/* 3D Flip Card Container */}
             <div
-                className="relative w-full h-[340px] sm:h-[370px] select-none cursor-pointer"
+                className="relative w-full h-[340px] sm:h-[370px] select-none cursor-pointer group"
                 style={{ perspective: "1000px" }}
                 onClick={onFlip}
             >
@@ -91,7 +91,7 @@ export function FlashcardDeckRunner({
                 >
                     {/* FRONT SIDE */}
                     <div
-                        className="absolute inset-0 rounded-3xl p-7 sm:p-9 flex flex-col justify-between items-center text-center bg-white border-2 border-indigo-100/90 shadow-[0_12px_36px_rgba(79,70,229,0.08)] hover:border-indigo-300 hover:shadow-[0_18px_45px_rgba(79,70,229,0.14)] transition-all dark:bg-slate-900 dark:border-indigo-900/60 dark:hover:border-indigo-700 dark:shadow-[0_12px_36px_rgba(0,0,0,0.4)]"
+                        className="absolute inset-0 rounded-3xl p-7 sm:p-9 flex flex-col justify-between items-center text-center bg-card border-2 border-border/80 shadow-elevation-2 hover:border-primary/50 hover:shadow-elevation-4 transition-all duration-300"
                         style={{
                             backfaceVisibility: "hidden",
                             WebkitBackfaceVisibility: "hidden",
@@ -99,22 +99,22 @@ export function FlashcardDeckRunner({
                     >
                         {/* Front Top */}
                         <div className="w-full flex items-center justify-between">
-                            <span className="rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:bg-indigo-950/80 dark:text-indigo-300">
+                            <span className="rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-primary">
                                 Vocabulary
                             </span>
-                            <span className="font-mono text-xs text-slate-400 dark:text-slate-500">
+                            <span className="font-mono text-xs text-muted-foreground">
                                 #{currentIndex + 1}
                             </span>
                         </div>
 
                         {/* Front Center: Word & IPA */}
                         <div className="flex flex-col items-center gap-3">
-                            <h3 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white break-words max-w-full">
+                            <h3 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground break-words max-w-full">
                                 {activeCard.word_eng}
                             </h3>
 
                             {activeCard.transcription && (
-                                <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3.5 py-1 text-sm font-mono text-indigo-700 dark:bg-slate-800 dark:text-indigo-300">
+                                <div className="inline-flex items-center gap-1.5 rounded-full bg-muted/80 px-3.5 py-1 text-sm font-mono text-primary border border-border/40">
                                     <span>{activeCard.transcription}</span>
                                 </div>
                             )}
@@ -123,10 +123,10 @@ export function FlashcardDeckRunner({
                             <button
                                 type="button"
                                 onClick={(e) => onSpeak(activeCard.word_eng, e)}
-                                className={`mt-2 flex h-11 w-11 items-center justify-center rounded-full transition-all shadow-sm ${
+                                className={`mt-2 flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200 shadow-sm ${
                                     speakingText === activeCard.word_eng
-                                        ? "bg-indigo-600 text-white scale-110 ring-4 ring-indigo-200"
-                                        : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:scale-105 dark:bg-indigo-950/60 dark:text-indigo-400 dark:hover:bg-indigo-900"
+                                        ? "bg-primary text-primary-foreground scale-110 ring-4 ring-primary/30 animate-pulse"
+                                        : "bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105 active:scale-95"
                                 }`}
                                 title={userProfileTexts.listenPronunciation()}
                             >
@@ -135,7 +135,7 @@ export function FlashcardDeckRunner({
                         </div>
 
                         {/* Front Bottom: Flip Instruction */}
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 transition-colors">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground group-hover:text-primary transition-colors">
                             <RotateCw className="h-3.5 w-3.5" />
                             <span>{userProfileTexts.clickToFlip()}</span>
                         </div>
@@ -143,7 +143,7 @@ export function FlashcardDeckRunner({
 
                     {/* BACK SIDE */}
                     <div
-                        className="absolute inset-0 rounded-3xl p-6 sm:p-8 flex flex-col justify-between bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white border-2 border-indigo-500/30 shadow-[0_18px_45px_rgba(15,23,42,0.3)] transition-all overflow-y-auto"
+                        className="absolute inset-0 rounded-3xl p-6 sm:p-8 flex flex-col justify-between bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white border-2 border-primary/30 shadow-elevation-4 transition-all overflow-y-auto"
                         style={{
                             backfaceVisibility: "hidden",
                             WebkitBackfaceVisibility: "hidden",
@@ -152,13 +152,13 @@ export function FlashcardDeckRunner({
                     >
                         {/* Back Top: English reminder & Delete */}
                         <div className="w-full flex items-center justify-between border-b border-white/10 pb-3">
-                            <span className="font-semibold text-xs tracking-wider uppercase text-indigo-300">
+                            <span className="font-display font-bold text-xs tracking-wider uppercase text-primary-foreground/80">
                                 {activeCard.word_eng}
                             </span>
                             <button
                                 type="button"
                                 onClick={(e) => onDelete(activeCard.id, e)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-white/10 transition-colors"
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
                                 title={userProfileTexts.deleteFlashcard()}
                             >
                                 <Trash2 className="h-4 w-4" />
@@ -169,11 +169,11 @@ export function FlashcardDeckRunner({
                         <div className="my-auto space-y-3.5 text-left py-2">
                             {/* Meaning for Vietnamese mode */}
                             {isVI && activeCard.word_vi && (
-                                <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+                                <div className="bg-white/5 rounded-2xl p-3.5 border border-white/10 backdrop-blur-xs">
                                     <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                                         🇻🇳 {userProfileTexts.vietnameseMeaning()}
                                     </span>
-                                    <p className="text-xl sm:text-2xl font-bold text-emerald-400">
+                                    <p className="font-display text-xl sm:text-2xl font-bold text-emerald-400">
                                         {activeCard.word_vi}
                                     </p>
                                 </div>
@@ -181,11 +181,11 @@ export function FlashcardDeckRunner({
 
                             {/* Meaning for Japanese mode */}
                             {isJA && (
-                                <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+                                <div className="bg-white/5 rounded-2xl p-3.5 border border-white/10 backdrop-blur-xs">
                                     <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                                         🇯🇵 {userProfileTexts.japaneseMeaning()}
                                     </span>
-                                    <div className="text-xl sm:text-2xl font-bold text-emerald-400">
+                                    <div className="font-display text-xl sm:text-2xl font-bold text-emerald-400">
                                         {activeCard.word_ja ? (
                                             <RubyText text={activeCard.word_ja} />
                                         ) : (
@@ -199,15 +199,15 @@ export function FlashcardDeckRunner({
 
                             {/* English mode: Target English word prominently without VI or JA meanings */}
                             {isEN && (
-                                <div className="bg-white/5 rounded-xl p-3.5 border border-white/10 text-center">
+                                <div className="bg-white/5 rounded-2xl p-3.5 border border-white/10 text-center backdrop-blur-xs">
                                     <div className="flex items-center justify-center gap-2">
-                                        <h4 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                                        <h4 className="font-display text-2xl sm:text-3xl font-black text-white tracking-tight">
                                             {activeCard.word_eng}
                                         </h4>
                                         <button
                                             type="button"
                                             onClick={(e) => onSpeak(activeCard.word_eng, e)}
-                                            className="p-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors"
+                                            className="p-1.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-transform active:scale-95"
                                             title={userProfileTexts.listenPronunciation()}
                                         >
                                             <Volume2 className="h-4 w-4" />
@@ -223,8 +223,8 @@ export function FlashcardDeckRunner({
 
                             {/* Context */}
                             {activeCard.context && (
-                                <div className="text-xs sm:text-sm text-slate-300 leading-relaxed bg-white/5 rounded-xl p-3 border border-white/10">
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300 block mb-1">
+                                <div className="text-xs sm:text-sm text-slate-300 leading-relaxed bg-white/5 rounded-2xl p-3.5 border border-white/10 backdrop-blur-xs">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground/70 block mb-1">
                                         {userProfileTexts.contextExplanation()}
                                     </span>
                                     {activeCard.context}
@@ -233,25 +233,25 @@ export function FlashcardDeckRunner({
 
                             {/* Workplace Example */}
                             {activeCard.workspace_example && (
-                                <div className="rounded-xl bg-indigo-950/60 p-3.5 border border-indigo-500/20 backdrop-blur-xs">
-                                    <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-indigo-300 mb-1">
+                                <div className="rounded-2xl bg-indigo-950/60 p-3.5 border border-primary/20 backdrop-blur-xs shadow-inner">
+                                    <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-indigo-200 mb-1">
                                         <span>{userProfileTexts.workplaceExample()}</span>
                                         <button
                                             type="button"
                                             onClick={(e) =>
                                                 onSpeak(activeCard.workspace_example!, e)
                                             }
-                                            className={`p-1 rounded transition-colors ${
+                                            className={`p-1 rounded-lg transition-transform ${
                                                 speakingText === activeCard.workspace_example
                                                     ? "text-emerald-400 scale-110"
-                                                    : "text-slate-300 hover:text-white"
+                                                    : "text-slate-300 hover:text-white active:scale-90"
                                             }`}
                                             title={userProfileTexts.listenExample()}
                                         >
                                             <Volume2 className="h-3.5 w-3.5" />
                                         </button>
                                     </div>
-                                    <p className="text-xs sm:text-sm italic text-slate-100 leading-relaxed">
+                                    <p className="text-xs sm:text-sm italic text-slate-100 leading-relaxed font-sans">
                                         "{activeCard.workspace_example}"
                                     </p>
                                 </div>
@@ -268,12 +268,12 @@ export function FlashcardDeckRunner({
             </div>
 
             {/* Deck Controls (Prev, Flip, Next - Mobile responsive flex) */}
-            <div className="flex items-center justify-between gap-1.5 sm:gap-3 pt-2">
+            <div className="flex items-center justify-between gap-2 sm:gap-3 pt-2">
                 <Button
                     variant="outline"
                     onClick={onPrev}
                     disabled={currentIndex === 0}
-                    className="h-10 flex-1 sm:flex-none px-2.5 sm:px-4 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-100 disabled:opacity-40 text-xs sm:text-sm font-semibold justify-center"
+                    className="h-11 flex-1 sm:flex-none px-3 sm:px-5 rounded-2xl border-border hover:bg-muted text-foreground disabled:opacity-40 text-xs sm:text-sm font-semibold justify-center transition-transform active:scale-95"
                 >
                     <ChevronLeft className="h-4 w-4 sm:mr-1 shrink-0" />
                     <span className="truncate">{userProfileTexts.previousCard()}</span>
@@ -282,7 +282,7 @@ export function FlashcardDeckRunner({
                 <Button
                     variant="outline"
                     onClick={onFlip}
-                    className="h-10 flex-1 sm:flex-none px-3 sm:px-5 rounded-xl border-indigo-200 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100 font-bold text-xs sm:text-sm justify-center"
+                    className="h-11 flex-1 sm:flex-none px-4 sm:px-6 rounded-2xl border-primary/30 text-primary bg-primary/10 hover:bg-primary/20 font-bold text-xs sm:text-sm justify-center transition-transform active:scale-95 shadow-xs"
                 >
                     <RotateCw className="h-4 w-4 sm:mr-1.5 shrink-0" />
                     <span className="truncate">{userProfileTexts.flipCard()}</span>
@@ -292,14 +292,14 @@ export function FlashcardDeckRunner({
                     variant="outline"
                     onClick={onNext}
                     disabled={currentIndex >= totalCards - 1}
-                    className="h-10 flex-1 sm:flex-none px-2.5 sm:px-4 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-100 disabled:opacity-40 text-xs sm:text-sm font-semibold justify-center"
+                    className="h-11 flex-1 sm:flex-none px-3 sm:px-5 rounded-2xl border-border hover:bg-muted text-foreground disabled:opacity-40 text-xs sm:text-sm font-semibold justify-center transition-transform active:scale-95"
                 >
                     <span className="truncate">{userProfileTexts.nextCard()}</span>
                     <ChevronRight className="h-4 w-4 sm:ml-1 shrink-0" />
                 </Button>
             </div>
 
-            <p className="text-center text-[11px] text-slate-400 font-medium">
+            <p className="text-center text-[11px] text-muted-foreground font-medium">
                 {userProfileTexts.keyboardHint()}
             </p>
         </div>

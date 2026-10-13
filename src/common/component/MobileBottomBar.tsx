@@ -70,16 +70,16 @@ export function MobileBottomBar() {
         aria-label="Mobile Bottom Navigation"
         className={cn(
           'fixed bottom-0 left-0 right-0 z-40 md:hidden',
-          // Glassmorphism with gradient top border
-          'bg-white/90 backdrop-blur-xl backdrop-saturate-150',
-          'shadow-[0_-2px_24px_rgba(0,0,0,0.08)]',
-          'dark:bg-slate-900/90 dark:shadow-[0_-2px_24px_rgba(0,0,0,0.3)]',
+          // Glassmorphism with elevation
+          'bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/75',
+          'border-t border-border/50',
+          'shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.35)]',
           // Safe area inset for modern phones with gesture bars
           'pb-[max(0.5rem,env(safe-area-inset-bottom))]',
         )}
       >
-        {/* Gradient top border line */}
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-400/40 to-transparent dark:via-blue-500/30" />
+        {/* Subtle accent glow line on top border */}
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
         <div className="flex h-[3.5rem] items-center justify-around px-1">
           {navItems.map((item) => {
@@ -90,10 +90,10 @@ export function MobileBottomBar() {
                 to={item.to}
                 className={cn(
                   'relative flex flex-1 flex-col items-center justify-center gap-0.5 py-1',
-                  'transition-colors duration-200',
+                  'transition-all duration-200',
                   item.isActive
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300',
+                    ? 'text-primary'
+                    : 'text-muted-foreground hover:text-foreground',
                 )}
               >
                 {/* Icon wrapper with bounce animation on selection */}
@@ -101,14 +101,14 @@ export function MobileBottomBar() {
                   <Icon
                     className={cn(
                       'h-[22px] w-[22px] transition-transform duration-200',
-                      item.isActive && 'stroke-[2.4]',
+                      item.isActive && 'stroke-[2.4] scale-105',
                       item.isActive && justChanged && 'mobile-tab-icon-bounce',
                     )}
                   />
 
                   {/* Dark mode glow under active icon */}
                   {item.isActive && (
-                    <div className="mobile-tab-glow bg-blue-500/50 dark:bg-blue-400/50 hidden dark:block" />
+                    <div className="mobile-tab-glow bg-primary/40 hidden dark:block" />
                   )}
                 </div>
 
@@ -122,12 +122,12 @@ export function MobileBottomBar() {
                   {item.label}
                 </span>
 
-                {/* Active indicator pill */}
+                {/* Active indicator pill with subtle glow */}
                 {item.isActive && (
                   <div
                     className={cn(
                       'mobile-tab-active-pill',
-                      'bg-blue-600 dark:bg-blue-400',
+                      'bg-primary shadow-[0_0_8px_var(--glow-primary)]',
                     )}
                   />
                 )}

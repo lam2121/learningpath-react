@@ -55,11 +55,11 @@ export function TestQuestionCard({
       className={`transition-all duration-300 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}
     >
       {/* Card */}
-      <div className="bg-white border border-gray-200 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-xl">
+      <div className="bg-card border border-border/80 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-xl transition-all">
         {/* Top meta */}
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           {/* Axis badge */}
-          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${axis.bg} border border-gray-100`}>
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${axis.bg} border border-border/50`}>
             <div className={`w-2 h-2 rounded-full ${axis.dot}`} />
             <span className={`text-xs font-semibold ${axis.color}`}>{axis.label}</span>
           </div>
@@ -71,7 +71,7 @@ export function TestQuestionCard({
               return (
                 <div
                   key={i}
-                  className={`w-2 h-2 rounded-full transition-colors ${i < tier ? axis.dot : 'bg-gray-200'
+                  className={`w-2 h-2 rounded-full transition-colors ${i < tier ? axis.dot : 'bg-muted'
                     }`}
                 />
               )
@@ -83,8 +83,8 @@ export function TestQuestionCard({
         </div>
 
         {/* Question */}
-        <h2 className="text-base sm:text-lg font-bold text-gray-900 leading-snug mb-4 sm:mb-6">
-          <span className="text-gray-400 mr-2">Q{questionNumber}.</span>
+        <h2 className="font-display text-base sm:text-lg font-bold text-foreground leading-snug mb-4 sm:mb-6">
+          <span className="text-muted-foreground mr-2">Q{questionNumber}.</span>
           {question.question}
         </h2>
 
@@ -99,16 +99,16 @@ export function TestQuestionCard({
                 type="button"
                 onClick={() => onSelect(opt.id)}
                 className={`
-                  w-full flex items-start gap-3 sm:gap-4 px-3.5 py-3 sm:px-5 sm:py-4 rounded-xl text-left transition-all duration-200
+                  w-full flex items-start gap-3 sm:gap-4 px-3.5 py-3 sm:px-5 sm:py-4 rounded-xl text-left transition-all duration-200 card-interactive-subtle
                   ${isSelected
-                    ? `${axis.bg} border-2 ${axis.dot.replace('bg-', 'border-')} text-gray-900 shadow-md scale-[1.01]`
-                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900 hover:scale-[1.005]'
+                    ? `${axis.bg} border-2 ${axis.dot.replace('bg-', 'border-')} text-foreground shadow-md scale-[1.01]`
+                    : 'bg-card border border-border/80 text-muted-foreground hover:bg-accent/40 hover:border-border hover:text-foreground hover:scale-[1.005]'
                   }
                 `}
               >
                 {/* Option letter */}
                 <span
-                  className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-colors ${isSelected ? 'bg-white text-gray-900 shadow-sm border border-gray-200' : 'bg-gray-100 text-gray-500'
+                  className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-colors ${isSelected ? 'bg-white text-gray-900 shadow-sm border border-border' : 'bg-muted text-muted-foreground'
                     }`}
                 >
                   {optionLabels[idx]}

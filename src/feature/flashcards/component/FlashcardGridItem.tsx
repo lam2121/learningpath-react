@@ -63,14 +63,14 @@ export function FlashcardGridItem({
 }: FlashcardGridItemProps) {
     const frontBorderClass = result
         ? result.isCorrect
-            ? "border-emerald-300 ring-2 ring-emerald-100 shadow-[0_12px_36px_rgba(16,185,129,0.14)]"
-            : "border-rose-300 ring-2 ring-rose-100 shadow-[0_12px_36px_rgba(244,63,94,0.14)]"
-        : "border-slate-200/90 shadow-[0_10px_30px_rgba(15,23,42,0.06)] group-hover:border-indigo-300 group-hover:shadow-[0_16px_40px_rgba(99,102,241,0.12)]";
+            ? "border-emerald-500/70 ring-2 ring-emerald-500/20 shadow-elevation-2"
+            : "border-rose-500/70 ring-2 ring-rose-500/20 shadow-elevation-2"
+        : "border-border/80 shadow-elevation-1 hover:border-primary/50 hover:shadow-elevation-3";
 
     return (
         <div
             onClick={(e) => onToggleFlip(card.id, e)}
-            className="relative h-[390px] w-full select-none cursor-pointer group"
+            className="relative h-[400px] w-full select-none cursor-pointer group transition-transform duration-200"
             style={{ perspective: "1000px" }}
         >
             <div
@@ -83,7 +83,7 @@ export function FlashcardGridItem({
             >
                 {/* FRONT FACE (W1, W2, ... Wn) */}
                 <div
-                    className={`absolute inset-0 rounded-3xl p-5 flex flex-col justify-between items-center text-center bg-white border-2 transition-all ${frontBorderClass}`}
+                    className={`absolute inset-0 rounded-3xl p-5 flex flex-col justify-between items-center text-center bg-card text-card-foreground border-2 transition-all duration-300 ${frontBorderClass}`}
                     style={{
                         backfaceVisibility: "hidden",
                         WebkitBackfaceVisibility: "hidden",
@@ -91,7 +91,7 @@ export function FlashcardGridItem({
                 >
                     {/* Top Header: Word Index Badge & Options */}
                     <div className="w-full flex items-center justify-between">
-                        <span className="inline-flex items-center font-mono font-bold text-xs px-2.5 py-1 rounded-xl bg-indigo-50 text-indigo-700">
+                        <span className="inline-flex items-center font-mono font-bold text-xs px-2.5 py-1 rounded-xl bg-primary/10 text-primary">
                             W{cardIndex}
                         </span>
 
@@ -100,10 +100,10 @@ export function FlashcardGridItem({
                             <button
                                 type="button"
                                 onClick={(e) => onSpeak(card.word_eng, e)}
-                                className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
+                                className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200 ${
                                     speakingText === card.word_eng
-                                        ? "bg-indigo-600 text-white scale-110 shadow-md ring-2 ring-indigo-300"
-                                        : "bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600"
+                                        ? "bg-primary text-primary-foreground scale-110 shadow-md ring-2 ring-primary/40"
+                                        : "bg-muted text-muted-foreground hover:bg-primary/15 hover:text-primary active:scale-95"
                                 }`}
                                 title={userProfileTexts.listenPronunciation()}
                             >
@@ -117,12 +117,12 @@ export function FlashcardGridItem({
                     {/* Center Content: Word & IPA or English Challenge */}
                     {studyMode !== "en" ? (
                         <div className="flex flex-col items-center gap-2 px-2">
-                            <h3 className="text-2xl font-black tracking-tight text-slate-900 break-words max-w-full">
+                            <h3 className="font-display text-2xl font-black tracking-tight text-foreground break-words max-w-full">
                                 {card.word_eng}
                             </h3>
 
                             {card.transcription && (
-                                <div className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-0.5 text-xs font-mono text-indigo-700 font-medium">
+                                <div className="inline-flex items-center gap-1 rounded-full bg-muted/80 px-3 py-0.5 text-xs font-mono text-primary font-medium border border-border/40">
                                     <span>{card.transcription}</span>
                                 </div>
                             )}
@@ -248,14 +248,14 @@ export function FlashcardGridItem({
                                         type="submit"
                                         size="sm"
                                         disabled={!userInput?.trim()}
-                                        className="h-9 px-3 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-all shrink-0"
+                                        className="h-9 px-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 active:scale-95 transition-all shrink-0 shadow-xs"
                                     >
                                         <Send className="h-3.5 w-3.5 sm:mr-1" />
                                         <span className="text-xs">{userProfileTexts.submitAnswer()}</span>
                                     </Button>
                                 </div>
 
-                                <div className="flex items-center justify-between gap-2 text-[11px] text-slate-400 px-1">
+                                <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground px-1">
                                     {isListening ? (
                                         <span className="inline-flex items-center gap-1 font-medium text-rose-500">
                                             <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
@@ -278,19 +278,19 @@ export function FlashcardGridItem({
                                             e.stopPropagation();
                                             onShowAnswer(card.id);
                                         }}
-                                        className="hover:text-indigo-600 underline font-medium transition-colors"
+                                        className="hover:text-primary underline font-medium transition-colors"
                                     >
                                         {userProfileTexts.showAnswer()}
                                     </button>
                                 </div>
                             </form>
                         ) : result.isCorrect ? (
-                            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/90 p-2.5 text-center transition-all animate-in fade-in zoom-in-95">
-                                <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-700">
-                                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-center transition-all animate-in fade-in zoom-in-95">
+                                <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                    <CheckCircle2 className="h-4 w-4 shrink-0" />
                                     <span>{userProfileTexts.correct()}</span>
                                 </div>
-                                <div className="mt-1 text-sm font-bold text-emerald-900 break-words">
+                                <div className="mt-1 text-sm font-bold text-foreground break-words">
                                     {studyMode === "vi" ? (
                                         card.word_vi || "—"
                                     ) : studyMode === "ja" ? (
@@ -305,20 +305,20 @@ export function FlashcardGridItem({
                                         e.stopPropagation();
                                         onResetAnswer(card.id);
                                     }}
-                                    className="mt-1 text-[11px] font-semibold text-emerald-700 hover:text-emerald-900 underline inline-flex items-center gap-1"
+                                    className="mt-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 underline inline-flex items-center gap-1"
                                 >
                                     <RotateCcw className="h-3 w-3" />
                                     <span>{userProfileTexts.tryAgain()}</span>
                                 </button>
                             </div>
                         ) : (
-                            <div className="rounded-2xl border border-rose-200 bg-rose-50/90 p-2.5 text-center transition-all animate-in fade-in zoom-in-95">
-                                <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-rose-700">
-                                    <XCircle className="h-4 w-4 text-rose-600 shrink-0" />
+                            <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-2.5 text-center transition-all animate-in fade-in zoom-in-95">
+                                <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-rose-600 dark:text-rose-400">
+                                    <XCircle className="h-4 w-4 shrink-0" />
                                     <span>{userProfileTexts.incorrect()}</span>
                                 </div>
-                                <div className="mt-1 text-xs text-slate-700 flex items-center justify-center gap-1 flex-wrap text-center">
-                                    <span className="text-[10px] uppercase font-semibold text-slate-400">
+                                <div className="mt-1 text-xs text-muted-foreground flex items-center justify-center gap-1 flex-wrap text-center">
+                                    <span className="text-[10px] uppercase font-semibold text-muted-foreground/80">
                                         {userProfileTexts.yourAnswer()}
                                     </span>
                                     {userInput?.trim() ? (
@@ -326,14 +326,14 @@ export function FlashcardGridItem({
                                             "{userInput}"
                                         </span>
                                     ) : (
-                                        <span className="text-[11px] font-medium text-slate-400">—</span>
+                                        <span className="text-[11px] font-medium text-muted-foreground">—</span>
                                     )}
                                 </div>
-                                <div className="mt-0.5 text-xs text-slate-700 flex items-center justify-center gap-1 flex-wrap text-center">
-                                    <span className="text-[10px] uppercase font-semibold text-slate-400">
+                                <div className="mt-0.5 text-xs text-muted-foreground flex items-center justify-center gap-1 flex-wrap text-center">
+                                    <span className="text-[10px] uppercase font-semibold text-muted-foreground/80">
                                         {userProfileTexts.expectedAnswer()}
                                     </span>
-                                    <span className="font-bold text-emerald-700">
+                                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
                                         {studyMode === "vi" ? (
                                             card.word_vi || "—"
                                         ) : studyMode === "ja" ? (
@@ -349,7 +349,7 @@ export function FlashcardGridItem({
                                         e.stopPropagation();
                                         onResetAnswer(card.id);
                                     }}
-                                    className="mt-1 text-[11px] font-semibold text-rose-700 hover:text-rose-900 underline inline-flex items-center gap-1"
+                                    className="mt-1 text-[11px] font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400 underline inline-flex items-center gap-1"
                                 >
                                     <RotateCcw className="h-3 w-3" />
                                     <span>{userProfileTexts.tryAgain()}</span>
@@ -359,8 +359,8 @@ export function FlashcardGridItem({
                     </div>
 
                     {/* Bottom Hint */}
-                    <div className="w-full pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-400">
-                        <span className="flex items-center gap-1 group-hover:text-indigo-600 transition-colors">
+                    <div className="w-full pt-3 border-t border-border/60 flex items-center justify-between text-xs font-semibold text-muted-foreground">
+                        <span className="flex items-center gap-1 group-hover:text-primary transition-colors">
                             <RotateCw className="h-4 w-4" />
                             {userProfileTexts.clickToFlip()}
                         </span>
@@ -368,17 +368,17 @@ export function FlashcardGridItem({
                         <button
                             type="button"
                             onClick={(e) => onDelete(card.id, e)}
-                            className="p-1 text-red-500 hover:text-red-600 transition-colors"
+                            className="p-1 text-muted-foreground hover:text-rose-500 transition-colors"
                             title={userProfileTexts.deleteFlashcard()}
                         >
-                            <Trash2 className="h-5 w-5" />
+                            <Trash2 className="h-4 w-4" />
                         </button>
                     </div>
                 </div>
 
                 {/* BACK FACE (Meaning, Context, Workplace Example) */}
                 <div
-                    className="absolute inset-0 rounded-3xl p-6 flex flex-col justify-between bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white border-2 border-indigo-500/30 shadow-[0_16px_40px_rgba(15,23,42,0.25)] transition-all overflow-y-auto"
+                    className="absolute inset-0 rounded-3xl p-6 flex flex-col justify-between bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white border-2 border-primary/30 shadow-elevation-4 transition-all overflow-y-auto"
                     style={{
                         backfaceVisibility: "hidden",
                         WebkitBackfaceVisibility: "hidden",
@@ -387,7 +387,7 @@ export function FlashcardGridItem({
                 >
                     {/* Back Top: Index & Delete */}
                     <div className="w-full flex items-center justify-between border-b border-white/10 pb-2.5">
-                        <span className="font-mono text-xs text-indigo-300 font-bold">
+                        <span className="font-mono text-xs text-primary-foreground/80 font-bold">
                             {studyMode === "en"
                                 ? `W${cardIndex} • ${userProfileTexts.englishSolution()}`
                                 : `W${cardIndex} • ${card.word_eng}`}
@@ -395,10 +395,10 @@ export function FlashcardGridItem({
                         <button
                             type="button"
                             onClick={(e) => onDelete(card.id, e)}
-                            className="p-1 rounded-lg text-red-400 hover:text-red-400 hover:bg-white/10 transition-colors"
+                            className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
                             title={userProfileTexts.deleteFlashcard()}
                         >
-                            <Trash2 className="h-5 w-5" />
+                            <Trash2 className="h-4 w-4" />
                         </button>
                     </div>
 
@@ -410,7 +410,7 @@ export function FlashcardGridItem({
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 block mb-0.5">
                                     🇻🇳 {userProfileTexts.vietnameseMeaning()}
                                 </span>
-                                <p className="text-base sm:text-lg font-bold text-emerald-300">
+                                <p className="font-display text-base sm:text-lg font-bold text-emerald-300">
                                     {card.word_vi}
                                 </p>
                             </div>
@@ -422,7 +422,7 @@ export function FlashcardGridItem({
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 block mb-0.5">
                                     🇯🇵 {userProfileTexts.japaneseMeaning()}
                                 </span>
-                                <div className="text-base sm:text-lg font-bold text-emerald-300">
+                                <div className="font-display text-base sm:text-lg font-bold text-emerald-300">
                                     {card.word_ja ? (
                                         <RubyText text={card.word_ja} />
                                     ) : (
@@ -436,13 +436,13 @@ export function FlashcardGridItem({
                         {studyMode === "en" && (
                             <div className="rounded-2xl bg-white/10 p-3.5 border border-white/15 text-center">
                                 <div className="flex items-center justify-center gap-2">
-                                    <h4 className="text-2xl font-black text-white tracking-tight">
+                                    <h4 className="font-display text-2xl font-black text-white tracking-tight">
                                         {card.word_eng}
                                     </h4>
                                     <button
                                         type="button"
                                         onClick={(e) => onSpeak(card.word_eng, e)}
-                                        className="p-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors"
+                                        className="p-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-transform active:scale-95"
                                         title={userProfileTexts.listenPronunciation()}
                                     >
                                         <Volume2 className="h-4 w-4" />

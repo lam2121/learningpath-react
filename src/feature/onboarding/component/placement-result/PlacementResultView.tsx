@@ -252,16 +252,16 @@ export function PlacementResultView() {
           {/* Celebration header */}
           <div className="text-center mb-10">
             <div className="text-6xl mb-4 animate-in zoom-in-50 duration-500">{onboardingTexts.placementResult.celebrationEmoji}</div>
-            <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 mb-3">
+            <h1 className="font-display text-4xl sm:text-5xl font-extrabold text-slate-900 dark:text-white mb-3">
               {onboardingTexts.placementResult.testCompleteTitle}
             </h1>
-            <p className="text-slate-600 text-base font-medium">
+            <p className="text-slate-600 dark:text-slate-300 text-base font-medium">
               {onboardingTexts.placementResult.testCompleteSubtitle(totalQuestions)}
             </p>
           </div>
 
           {/* ── Overall score & Starting Track ─────────────── */}
-          <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-8 mb-6 flex flex-col md:flex-row items-stretch">
+          <div className="bg-card border border-border/80 shadow-md rounded-3xl p-8 mb-6 flex flex-col md:flex-row items-stretch card-interactive-subtle">
             {/* LEFT SIDE: Score */}
             <div className="flex-1 flex items-center justify-center gap-6 pr-0 md:pr-8">
               {/* Score circle */}

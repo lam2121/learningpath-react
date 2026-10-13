@@ -34,23 +34,21 @@ export function FlashcardTableList({
         <div className="space-y-4">
             {/* Search Filter */}
             <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={userProfileTexts.searchFlashcards()}
-                    className="pl-9 pr-9 h-10 bg-white border-slate-200 rounded-xl text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-500"
+                    className="pl-9 pr-9 h-11 bg-card border-border rounded-2xl text-sm shadow-elevation-1 focus-visible:ring-primary"
                 />
                 {searchQuery && (
                     <button
                         type="button"
                         onClick={() => setSearchQuery("")}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs font-bold"
                     >
                         <VolumeX className="h-3.5 w-3.5 hidden" />
-                        <span className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                            ✕
-                        </span>
+                        <span>✕</span>
                     </button>
                 )}
             </div>
@@ -58,7 +56,7 @@ export function FlashcardTableList({
             {/* List Content */}
             <div className="max-h-[380px] overflow-y-auto space-y-2.5 pr-1">
                 {filteredCards.length === 0 ? (
-                    <div className="text-center py-12 text-slate-400 dark:text-slate-500">
+                    <div className="text-center py-12 text-muted-foreground">
                         <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
                         <p className="text-sm font-medium">
                             {userProfileTexts.noMatchingWords()}
@@ -72,32 +70,32 @@ export function FlashcardTableList({
                         return (
                             <div
                                 key={card.id}
-                                className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-indigo-300 hover:shadow-xs transition-all dark:bg-slate-800/90 dark:border-slate-700 dark:hover:border-indigo-500"
+                                className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-card border border-border/80 shadow-elevation-1 hover:border-primary/40 hover:shadow-elevation-2 transition-all duration-200"
                             >
                                 <div className="min-w-0 flex-1">
                                     <div className="flex flex-wrap items-baseline gap-2">
-                                        <h5 className="font-bold text-slate-900 dark:text-white text-base">
+                                        <h5 className="font-display font-bold text-foreground text-base">
                                             {card.word_eng}
                                         </h5>
                                         {card.transcription && (
-                                            <span className="text-xs font-mono text-indigo-600 dark:text-indigo-400">
+                                            <span className="text-xs font-mono text-primary font-medium">
                                                 {card.transcription}
                                             </span>
                                         )}
                                         {isVI && card.word_vi && (
-                                            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md dark:bg-emerald-950/80 dark:text-emerald-400">
+                                            <span className="text-xs font-semibold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md dark:text-emerald-400">
                                                 🇻🇳 {card.word_vi}
                                             </span>
                                         )}
                                         {isJA && (
-                                            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md dark:bg-emerald-950/80 dark:text-emerald-400">
+                                            <span className="text-xs font-semibold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md dark:text-emerald-400">
                                                 🇯🇵 <RubyText text={card.word_ja || "—"} />
                                             </span>
                                         )}
                                     </div>
 
                                     {card.workspace_example && (
-                                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 italic line-clamp-2">
+                                        <p className="mt-1 text-xs text-muted-foreground italic line-clamp-2">
                                             "{card.workspace_example}"
                                         </p>
                                     )}
@@ -109,10 +107,10 @@ export function FlashcardTableList({
                                     <button
                                         type="button"
                                         onClick={() => onSpeak(card.word_eng)}
-                                        className={`p-2 rounded-xl border border-slate-200 dark:border-slate-700 transition-colors ${
+                                        className={`p-2 rounded-xl border border-border transition-colors ${
                                             speakingText === card.word_eng
-                                                ? "bg-indigo-600 text-white border-indigo-600"
-                                                : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
+                                                ? "bg-primary text-primary-foreground border-primary"
+                                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                         }`}
                                         title={userProfileTexts.listenPronunciation()}
                                     >
@@ -125,7 +123,7 @@ export function FlashcardTableList({
                                         onClick={() => {
                                             onSelectCard(originalIndex >= 0 ? originalIndex : 0);
                                         }}
-                                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-600 text-xs font-semibold hover:bg-indigo-100 transition-colors dark:bg-indigo-950/60 dark:text-indigo-400 dark:hover:bg-indigo-900"
+                                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
                                         title={userProfileTexts.practiceThisWord()}
                                     >
                                         <Play className="h-3 w-3 fill-current" />
@@ -136,7 +134,7 @@ export function FlashcardTableList({
                                     <button
                                         type="button"
                                         onClick={(e) => onDelete(card.id, e)}
-                                        className="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                        className="p-2 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
                                         title={userProfileTexts.deleteFlashcard()}
                                     >
                                         <Trash2 className="h-4 w-4" />

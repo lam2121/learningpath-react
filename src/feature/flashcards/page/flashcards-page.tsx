@@ -361,15 +361,15 @@ export function FlashcardsPage() {
     }, [currentPage, totalPages]);
 
     return (
-        <div className="min-h-screen w-full bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.08),_transparent_28%),linear-gradient(180deg,_#fbfdff_0%,_#f4f7fe_100%)]">
+        <div className="min-h-screen w-full bg-background text-foreground relative">
             <MainNavigationMenu />
 
             <div className="mx-auto w-full max-w-[1800px] px-3 pb-16 pt-3 sm:px-5 lg:px-8 mobile-page-bottom mobile-page-enter">
                 {/* Back to Profile Link */}
-                <div className="mb-3">
+                <div className="mb-4">
                     <Link
                         to="/profile"
-                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors"
                     >
                         <ArrowLeft className="h-4 w-4" />
                         <span>{userProfileTexts.backToProfile()}</span>
@@ -377,35 +377,36 @@ export function FlashcardsPage() {
                 </div>
 
                 {/* Hero Header Banner */}
-                <section className="relative overflow-hidden rounded-2xl sm:rounded-[28px] border border-indigo-100 bg-[linear-gradient(135deg,#f8faff_0%,#ffffff_42%,#eef2ff_100%)] p-4 sm:p-7 shadow-[0_20px_56px_rgba(99,102,241,0.1)]">
-                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(165,180,252,0.18),_transparent_26%),radial-gradient(circle_at_bottom_left,_rgba(199,210,254,0.2),_transparent_24%)]" />
+                <section className="relative overflow-hidden rounded-3xl border border-border/80 bg-card p-5 sm:p-8 shadow-elevation-2">
+                    <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+                    <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-accent-violet/10 blur-3xl" />
 
-                    <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="max-w-3xl">
-                            <p className="inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-3.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white shadow-xs">
+                    <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="max-w-3xl space-y-2">
+                            <p className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-primary shadow-2xs">
                                 <Brain className="h-3.5 w-3.5" />
                                 <span>{userProfileTexts.flashcards()}</span>
                             </p>
-                            <h1 className="mt-2.5 sm:mt-3 text-2xl font-black tracking-tight text-slate-950 sm:text-5xl">
+                            <h1 className="font-display text-2xl font-black tracking-tight text-foreground sm:text-5xl">
                                 {userProfileTexts.flashcardsTitle()}
                             </h1>
-                            <p className="mt-1.5 sm:mt-2 text-sm sm:text-lg font-medium leading-relaxed sm:leading-7 text-slate-600">
+                            <p className="text-sm sm:text-base font-normal leading-relaxed text-muted-foreground">
                                 {userProfileTexts.flashcardsSubtitle()}
                             </p>
                         </div>
 
                         {/* Top Action & Stat Pill (Mobile compact grid) */}
-                        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-3 w-full sm:w-auto">
                             {!isLoading && cards.length > 0 && (
-                                <div className="flex items-center gap-2.5 rounded-2xl bg-white/95 p-3 sm:px-4 sm:py-3 shadow-xs ring-1 ring-indigo-100">
-                                    <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 font-bold shrink-0">
-                                        <Brain className="h-4 w-4 sm:h-5 sm:w-5" />
+                                <div className="flex items-center gap-3 rounded-2xl bg-muted/60 border border-border/60 p-3 sm:px-4 sm:py-3 shadow-elevation-1 backdrop-blur-xs">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary font-bold shrink-0">
+                                        <Brain className="h-5 w-5" />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">
+                                        <p className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">
                                             {userProfileTexts.totalDeck()}
                                         </p>
-                                        <p className="text-sm sm:text-lg font-black text-slate-900 truncate">
+                                        <p className="font-display text-sm sm:text-lg font-black text-foreground truncate">
                                             {cards.length} {userProfileTexts.flashcards()}
                                         </p>
                                     </div>
@@ -413,15 +414,15 @@ export function FlashcardsPage() {
                             )}
 
                             {!isLoading && Object.keys(submissionResults).length > 0 && (
-                                <div className="flex items-center gap-2.5 rounded-2xl bg-white/95 p-3 sm:px-4 sm:py-3 shadow-xs ring-1 ring-emerald-100">
-                                    <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 font-bold shrink-0">
-                                        <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                                <div className="flex items-center gap-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 p-3 sm:px-4 sm:py-3 shadow-elevation-1 backdrop-blur-xs">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold shrink-0">
+                                        <CheckCircle2 className="h-5 w-5" />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">
+                                        <p className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">
                                             {userProfileTexts.quizScore()}
                                         </p>
-                                        <p className="text-sm sm:text-lg font-black text-emerald-600 truncate">
+                                        <p className="font-display text-sm sm:text-lg font-black text-emerald-600 dark:text-emerald-400 truncate">
                                             {Object.values(submissionResults).filter((r) => r.isCorrect).length} / {Object.keys(submissionResults).length}
                                         </p>
                                     </div>
@@ -431,7 +432,7 @@ export function FlashcardsPage() {
                             {cards.length > 0 && (
                                 <Button
                                     onClick={() => setPracticeModalOpen(true)}
-                                    className="col-span-2 sm:col-span-1 h-11 gap-2 rounded-2xl bg-indigo-600 px-5 font-bold text-white shadow-md shadow-indigo-200 hover:bg-indigo-700 transition-all w-full sm:w-auto"
+                                    className="col-span-2 sm:col-span-1 h-12 gap-2 rounded-2xl bg-primary px-6 font-bold text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90 active:scale-95 transition-all w-full sm:w-auto"
                                 >
                                     <Layers className="h-4 w-4" />
                                     <span>{userProfileTexts.deckMode()}</span>
@@ -446,18 +447,18 @@ export function FlashcardsPage() {
                     <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                         {/* Search Bar */}
                         <div className="relative flex-1 max-w-md">
-                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder={userProfileTexts.searchFlashcards()}
-                                className="pl-9 pr-9 h-11 bg-white border-slate-200 rounded-2xl text-sm shadow-2xs focus-visible:ring-indigo-500"
+                                className="pl-9 pr-9 h-11 bg-card border-border rounded-2xl text-sm shadow-elevation-1 focus-visible:ring-primary"
                             />
                             {searchQuery && (
                                 <button
                                     type="button"
                                     onClick={() => setSearchQuery("")}
-                                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs font-bold"
                                 >
                                     ✕
                                 </button>
@@ -470,10 +471,10 @@ export function FlashcardsPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={handleShuffle}
-                                className="h-11 px-3 sm:px-4 gap-1.5 rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-semibold shadow-2xs w-full sm:w-auto justify-center"
+                                className="h-11 px-3 sm:px-4 gap-1.5 rounded-2xl border-border bg-card text-foreground hover:bg-muted font-semibold shadow-elevation-1 w-full sm:w-auto justify-center transition-transform active:scale-95"
                                 title={userProfileTexts.shuffleCards()}
                             >
-                                <Shuffle className="h-4 w-4 text-slate-500 shrink-0" />
+                                <Shuffle className="h-4 w-4 text-muted-foreground shrink-0" />
                                 <span className="truncate">{userProfileTexts.shuffleCards()}</span>
                             </Button>
 
@@ -481,10 +482,10 @@ export function FlashcardsPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={handleFlipAll}
-                                className="h-11 px-3 sm:px-4 gap-1.5 rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-semibold shadow-2xs w-full sm:w-auto justify-center"
+                                className="h-11 px-3 sm:px-4 gap-1.5 rounded-2xl border-border bg-card text-foreground hover:bg-muted font-semibold shadow-elevation-1 w-full sm:w-auto justify-center transition-transform active:scale-95"
                                 title={userProfileTexts.flipCard()}
                             >
-                                <RotateCw className="h-4 w-4 text-slate-500 shrink-0" />
+                                <RotateCw className="h-4 w-4 text-muted-foreground shrink-0" />
                                 <span className="truncate">{userProfileTexts.flipCardAll()}</span>
                             </Button>
                         </div>
@@ -494,39 +495,39 @@ export function FlashcardsPage() {
                 {/* Main Content Area */}
                 <div className="mt-6">
                     {isLoading ? (
-                        <div className="flex flex-col items-center justify-center py-24 text-slate-400">
-                            <Loader2 className="h-10 w-10 animate-spin text-indigo-500" />
-                            <p className="mt-3 text-base font-semibold text-slate-600">
+                        <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
+                            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                            <p className="mt-3 text-base font-semibold text-foreground">
                                 {userProfileTexts.flashcards()}...
                             </p>
                         </div>
                     ) : error ? (
-                        <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-700 max-w-lg mx-auto">
+                        <div className="rounded-3xl border border-destructive/30 bg-destructive/10 p-8 text-center text-destructive max-w-lg mx-auto">
                             <p className="font-bold text-lg">{error}</p>
                             <Button
                                 variant="outline"
                                 onClick={() => void loadFlashcards()}
-                                className="mt-4 border-red-200 text-red-700 hover:bg-red-100 rounded-xl"
+                                className="mt-4 border-destructive/30 text-destructive hover:bg-destructive/15 rounded-xl"
                             >
                                 {userProfileTexts.tryAgain()}
                             </Button>
                         </div>
                     ) : cards.length === 0 ? (
                         /* Empty State */
-                        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white/70 py-20 px-6 text-center shadow-2xs">
-                            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-indigo-50 text-indigo-600 ring-8 ring-indigo-50/50 mb-5 shadow-inner">
+                        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card/70 py-20 px-6 text-center shadow-elevation-1">
+                            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 text-primary ring-8 ring-primary/5 mb-5 shadow-inner">
                                 <Sparkles className="h-10 w-10" />
                             </div>
-                            <h3 className="text-center text-2xl font-bold text-slate-900">
+                            <h3 className="font-display text-center text-2xl font-bold text-foreground">
                                 {userProfileTexts.noFlashcardsTitle()}
                             </h3>
-                            <p className="mt-2 text-center max-w-md text-base leading-relaxed text-slate-600">
+                            <p className="mt-2 text-center max-w-md text-base leading-relaxed text-muted-foreground">
                                 {userProfileTexts.noFlashcardsDesc()}
                             </p>
                             <Link to="/profile">
                                 <Button
                                     variant="default"
-                                    className="mt-6 rounded-2xl bg-indigo-600 px-6 font-semibold text-white shadow-md shadow-indigo-200 hover:bg-indigo-700"
+                                    className="mt-6 rounded-2xl bg-primary px-6 font-semibold text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90"
                                 >
                                     {userProfileTexts.backToProfile()}
                                 </Button>
@@ -534,7 +535,7 @@ export function FlashcardsPage() {
                         </div>
                     ) : filteredCards.length === 0 ? (
                         /* Search No Results */
-                        <div className="rounded-3xl border border-slate-200 bg-white py-16 text-center text-slate-400 shadow-2xs">
+                        <div className="rounded-3xl border border-border bg-card py-16 text-center text-muted-foreground shadow-elevation-1">
                             <BookOpen className="h-10 w-10 mx-auto mb-2 opacity-50" />
                             <p className="text-base font-medium">
                                 {userProfileTexts.noMatchingWords()}
@@ -588,7 +589,7 @@ export function FlashcardsPage() {
 
                             {/* Pagination Controls Footer */}
                             {totalPages > 0 && filteredCards.length > 0 && (
-                                <div className="mt-12 mb-6 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
+                                <div className="mt-12 mb-6 flex flex-wrap items-center justify-center gap-2">
                                     {/* Previous Page Button */}
                                     <button
                                         type="button"
@@ -599,7 +600,7 @@ export function FlashcardsPage() {
                                             }
                                         }}
                                         disabled={currentPage <= 1}
-                                        className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-2xs"
+                                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-elevation-1 active:scale-95"
                                         aria-label={t("previousPage", { defaultValue: "Previous page" })}
                                     >
                                         <ChevronLeft className="h-4 w-4" />
@@ -610,7 +611,7 @@ export function FlashcardsPage() {
                                         item === "..." ? (
                                             <span
                                                 key={`ellipsis-${i}`}
-                                                className="flex h-9 min-w-9 sm:h-10 sm:min-w-10 px-2 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-400 select-none shadow-2xs"
+                                                className="flex h-10 min-w-10 px-2 items-center justify-center rounded-xl border border-border/50 bg-card/50 text-xs font-bold text-muted-foreground select-none"
                                             >
                                                 ...
                                             </span>
@@ -622,10 +623,10 @@ export function FlashcardsPage() {
                                                     setCurrentPage(item);
                                                     window.scrollTo({ top: 200, behavior: "smooth" });
                                                 }}
-                                                className={`flex h-9 min-w-9 sm:h-10 sm:min-w-10 px-2.5 sm:px-3 items-center justify-center rounded-lg border text-sm font-semibold transition-colors shadow-2xs ${
+                                                className={`flex h-10 min-w-10 px-3 items-center justify-center rounded-xl border text-sm font-semibold transition-all shadow-elevation-1 active:scale-95 ${
                                                     item === currentPage
-                                                        ? "border-blue-600 text-blue-600 bg-white font-bold ring-1 ring-blue-600/20"
-                                                        : "border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-900"
+                                                        ? "border-primary bg-primary text-primary-foreground font-bold shadow-xs"
+                                                        : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
                                                 }`}
                                             >
                                                 {item}
@@ -643,7 +644,7 @@ export function FlashcardsPage() {
                                             }
                                         }}
                                         disabled={currentPage >= totalPages}
-                                        className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-2xs"
+                                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-elevation-1 active:scale-95"
                                         aria-label={t("nextPage", { defaultValue: "Next page" })}
                                     >
                                         <ChevronRight className="h-4 w-4" />

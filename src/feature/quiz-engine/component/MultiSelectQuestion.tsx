@@ -65,27 +65,27 @@ export function MultiSelectQuestion({
 	}, [selectedIndices, onAnswerChange]);
 
 	return (
-		<div className="space-y-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
+		<div className="space-y-6 rounded-3xl border border-border/80 bg-card p-5 shadow-elevation-1 sm:p-7">
 			<div className="flex flex-wrap items-center justify-between gap-3">
-				<h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-					Question {questionNumber} / {totalQuestions} · <span className="text-gray-500 font-normal dark:text-slate-400">Multi-Select</span>
+				<h3 className="font-display text-lg font-bold text-foreground">
+					Question {questionNumber} / {totalQuestions} · <span className="text-muted-foreground font-normal">Multi-Select</span>
 				</h3>
 				{isSubmitted && (
 					<div className={cn(
-						'flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium',
-						isCorrect ? 'bg-green-100 text-green-700 dark:bg-emerald-950/70 dark:text-emerald-300' : 'bg-red-100 text-red-700 dark:bg-rose-950/70 dark:text-rose-300'
+						'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border',
+						isCorrect ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400' : 'bg-destructive/10 text-destructive border-destructive/20'
 					)}>
-						{isCorrect ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+						{isCorrect ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
 						{isCorrect ? 'Correct' : 'Incorrect'}
 					</div>
 				)}
 			</div>
 
 			{/* Scenario */}
-			<div className="rounded-xl border border-purple-200 bg-purple-50 p-4 sm:p-5 dark:border-purple-900/50 dark:bg-purple-950/30">
-				<p className="font-bold text-purple-950 mb-2 dark:text-purple-200">Scenario:</p>
-				<p className="text-base font-medium text-slate-900 sm:text-lg dark:text-slate-100">{stem}</p>
-				<p className="text-sm font-semibold text-purple-900 mt-2 dark:text-purple-200">Select ALL that apply.</p>
+			<div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5 backdrop-blur-xs">
+				<p className="font-bold text-xs uppercase tracking-wider text-primary mb-1.5">Scenario</p>
+				<p className="font-display text-base font-semibold text-foreground sm:text-lg leading-relaxed">{stem}</p>
+				<p className="text-xs font-semibold text-muted-foreground mt-2">Select all options that apply.</p>
 			</div>
 
 			{/* Options */}
@@ -99,17 +99,17 @@ export function MultiSelectQuestion({
 						<Label
 							key={index}
 							className={cn(
-								'relative flex items-start gap-3 rounded-xl border-2 p-4 transition-all cursor-pointer',
-								'hover:bg-gray-50 dark:hover:bg-slate-800',
+								'relative flex items-start gap-3.5 rounded-2xl border-2 p-4 transition-all duration-200 cursor-pointer',
+								'hover:bg-muted/50',
 								isSubmitted
 									? revealAnswer && isCorrectOption
-										? 'border-green-400 bg-green-50 dark:border-emerald-600 dark:bg-emerald-950/40'
+										? 'border-emerald-500 bg-emerald-500/10'
 										: isSelected
-										? 'border-red-400 bg-red-50 dark:border-rose-600 dark:bg-rose-950/40'
-										: 'border-gray-200 opacity-60 dark:border-slate-800 dark:opacity-40'
+										? 'border-rose-500 bg-rose-500/10'
+										: 'border-border/60 opacity-50'
 									: isSelected
-									? 'border-blue-400 bg-blue-50 dark:border-blue-500 dark:bg-blue-950/40'
-									: 'border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-800/60'
+									? 'border-primary bg-primary/10 shadow-xs'
+									: 'border-border bg-card'
 							)}
 						>
 							<Checkbox
@@ -118,37 +118,37 @@ export function MultiSelectQuestion({
 								onCheckedChange={() => toggleOption(index)}
 								id={`ms-option-${questionNumber}-${index}`}
 								className={cn(
-									'focus-visible:ring-2 focus-visible:ring-blue-500',
-									showResult && isCorrectOption && 'text-green-600 border-green-500',
-									showResult && isSelected && !isCorrectOption && 'text-red-600 border-red-500'
+									'mt-0.5 focus-visible:ring-2 focus-visible:ring-primary',
+									showResult && isCorrectOption && 'text-emerald-600 border-emerald-500',
+									showResult && isSelected && !isCorrectOption && 'text-rose-600 border-rose-500'
 								)}
 							/>
 							<span className={cn(
-								'flex min-w-0 flex-1 items-start gap-3 text-gray-900 dark:text-slate-100',
+								'flex min-w-0 flex-1 items-start gap-3 text-foreground',
 								showResult && revealAnswer && isCorrectOption && 'font-medium',
-								showResult && isSelected && !isCorrectOption && 'line-through text-red-500 dark:text-red-400'
+								showResult && isSelected && !isCorrectOption && 'line-through text-rose-500'
 							)}>
 								<span className={cn(
-									'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-sm font-semibold',
+									'flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border text-xs font-bold transition-colors',
 									isSubmitted
 										? revealAnswer && isCorrectOption
-											? 'bg-green-500 border-green-500 text-white'
+											? 'bg-emerald-500 border-emerald-500 text-white'
 											: isSelected
-											? 'bg-red-500 border-red-500 text-white'
-											: 'border-gray-300 text-gray-400 dark:border-slate-700 dark:text-slate-500'
+											? 'bg-rose-500 border-rose-500 text-white'
+											: 'border-border text-muted-foreground'
 										: isSelected
-										? 'border-blue-500 text-blue-600 bg-blue-50 dark:border-blue-500 dark:text-blue-300 dark:bg-blue-950/60'
-										: 'border-gray-300 text-gray-500 dark:border-slate-700 dark:text-slate-400'
+										? 'border-primary text-primary bg-primary/15'
+										: 'border-border text-muted-foreground'
 								)}>
 									{String.fromCharCode(65 + index)}
 								</span>
-								<span className="min-w-0">{option}</span>
+								<span className="min-w-0 text-sm sm:text-base leading-relaxed pt-0.5">{option}</span>
 							</span>
 							{showResult && revealAnswer && isCorrectOption && (
-								<Check className="w-5 h-5 text-green-500" />
+								<Check className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
 							)}
 							{showResult && isSelected && !isCorrectOption && (
-								<X className="w-5 h-5 text-red-500" />
+								<X className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
 							)}
 						</Label>
 					);
@@ -157,17 +157,17 @@ export function MultiSelectQuestion({
 
 			{/* Explanation */}
 			{isSubmitted && revealAnswer && (
-				<div className="p-4 rounded-xl bg-gray-50 border border-gray-200 dark:bg-slate-800/80 dark:border-slate-700">
+				<div className="p-4 sm:p-5 rounded-2xl bg-muted/60 border border-border">
 					<div className="flex items-start gap-3">
 						<div className={cn(
-							'w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0',
-							isCorrect ? 'bg-green-100 text-green-600 dark:bg-emerald-950/70 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-rose-950/70 dark:text-rose-400'
+							'w-8 h-8 flex items-center justify-center rounded-xl flex-shrink-0',
+							isCorrect ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-destructive/15 text-destructive'
 						)}>
 							{isCorrect ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
 						</div>
 						<div className="flex-1">
-							<p className="font-bold text-slate-950 dark:text-white">Explanation:</p>
-							<p className="mt-1 text-sm font-medium leading-relaxed text-slate-900 dark:text-slate-100">{explanation || expl}</p>
+							<p className="font-bold text-sm text-foreground">Explanation</p>
+							<p className="mt-1 text-sm font-normal leading-relaxed text-muted-foreground">{explanation || expl}</p>
 						</div>
 					</div>
 				</div>

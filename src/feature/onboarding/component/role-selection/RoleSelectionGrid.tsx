@@ -196,7 +196,7 @@ export function RoleSelectionGrid() {
             {onboardingTexts.roleSelection.stepIndicator}
           </div>
 
-          <h1 className="text-2xl sm:text-4xl lg:text-5xl 2xl:text-6xl font-extrabold text-gray-900 leading-tight mb-2 sm:mb-3">
+          <h1 className="font-display text-2xl sm:text-4xl lg:text-5xl 2xl:text-6xl font-extrabold text-gray-900 leading-tight mb-2 sm:mb-3">
             {onboardingTexts.roleSelection.pageTitle}
             <span className="block bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 bg-clip-text text-transparent mt-0.5 sm:mt-1">
               {onboardingTexts.roleSelection.pageTitleHighlight}

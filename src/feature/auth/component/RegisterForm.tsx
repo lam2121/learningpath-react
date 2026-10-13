@@ -90,7 +90,7 @@ export function RegisterForm() {
 					<span className="inline-block h-1.5 w-1.5 rounded-full bg-indigo-500 animate-ping" />
 					<span>Join CareerPath</span>
 				</div>
-				<h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+				<h1 className="font-display text-xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
 					Create an Account
 				</h1>
 				<p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">

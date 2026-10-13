@@ -83,7 +83,7 @@ export function AuthLayout({
 
 						{/* Headline & Description */}
 						<div className="space-y-4">
-							<h1 className="text-3xl sm:text-4xl xl:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.15]">
+							<h1 className="font-display text-3xl sm:text-4xl xl:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.15]">
 								{heroHeadline.split(' ').slice(0, -2).join(' ')}{' '}
 								<span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-500 bg-clip-text text-transparent">
 									{heroHeadline.split(' ').slice(-2).join(' ')}
@@ -96,7 +96,7 @@ export function AuthLayout({
 
 						{/* Feature Pills */}
 						<div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-							<div className="p-3.5 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 backdrop-blur-md shadow-xs flex items-center gap-3 transition-transform hover:-translate-y-0.5">
+							<div className="p-3.5 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 backdrop-blur-md shadow-xs flex items-center gap-3 card-interactive-subtle">
 								<div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400">
 									<Target className="h-4 w-4" />
 								</div>
@@ -106,7 +106,7 @@ export function AuthLayout({
 								</div>
 							</div>
 
-							<div className="p-3.5 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 backdrop-blur-md shadow-xs flex items-center gap-3 transition-transform hover:-translate-y-0.5">
+							<div className="p-3.5 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 backdrop-blur-md shadow-xs flex items-center gap-3 card-interactive-subtle">
 								<div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400">
 									<Bot className="h-4 w-4" />
 								</div>
@@ -116,7 +116,7 @@ export function AuthLayout({
 								</div>
 							</div>
 
-							<div className="p-3.5 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 backdrop-blur-md shadow-xs flex items-center gap-3 transition-transform hover:-translate-y-0.5">
+							<div className="p-3.5 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 backdrop-blur-md shadow-xs flex items-center gap-3 card-interactive-subtle">
 								<div className="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400">
 									<Zap className="h-4 w-4" />
 								</div>

@@ -36,23 +36,37 @@ function StatCard({ title, value, subtitle, icon: Icon, color }: {
 	icon: React.ComponentType<{ className?: string }>; 
 	color: 'blue' | 'green' | 'orange' | 'red' 
 }) {
-	const colors = {
-		blue: 'bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400',
-		green: 'bg-green-100 dark:bg-green-950 text-green-600 dark:text-green-400',
-		orange: 'bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400',
-		red: 'bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400'
+	const colorStyles = {
+		blue: {
+			icon: 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/40',
+			glow: 'hover:border-blue-300 dark:hover:border-blue-700/60',
+		},
+		green: {
+			icon: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/40',
+			glow: 'hover:border-emerald-300 dark:hover:border-emerald-700/60',
+		},
+		orange: {
+			icon: 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/40',
+			glow: 'hover:border-amber-300 dark:hover:border-amber-700/60',
+		},
+		red: {
+			icon: 'bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400 border border-rose-200/50 dark:border-rose-800/40',
+			glow: 'hover:border-rose-300 dark:hover:border-rose-700/60',
+		},
 	};
 	
+	const style = colorStyles[color];
+
 	return (
-		<Card>
-			<CardContent className="p-6">
-				<div className="flex items-center justify-between">
-					<div>
-						<p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
-						<p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{value}</p>
-						<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>
+		<Card className={cn('card-interactive border-border/80 bg-card transition-all duration-200 shadow-xs hover:shadow-md', style.glow)}>
+			<CardContent className="p-5 sm:p-6">
+				<div className="flex items-start justify-between gap-3">
+					<div className="min-w-0 flex-1">
+						<p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
+						<p className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-foreground mt-1.5 truncate">{value}</p>
+						<p className="text-xs text-muted-foreground mt-1 truncate">{subtitle}</p>
 					</div>
-					<div className={cn('w-12 h-12 rounded-xl flex items-center justify-center', colors[color])}>
+					<div className={cn('w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs transition-transform duration-200', style.icon)}>
 						<Icon className="h-6 w-6" />
 					</div>
 				</div>
@@ -248,51 +262,59 @@ function DashboardPage() {
 			)}
 
 			{/* Kill Switch Status */}
-			<Card>
+			<Card className="border-border/80 bg-card shadow-xs">
 				<CardContent className="p-6">
-					<div className="flex items-center justify-between">
+					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 						<div className="flex items-center gap-4">
-							<div className={cn('w-12 h-12 rounded-lg flex items-center justify-center', killSwitchOn ? 'bg-red-100 dark:bg-red-950' : 'bg-green-100 dark:bg-green-950')}>
-								<Shield className={cn('h-6 w-6', killSwitchOn ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400')} />
+							<div className={cn('w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border shadow-xs', killSwitchOn ? 'bg-rose-50 border-rose-200/60 text-rose-600 dark:bg-rose-950/60 dark:border-rose-900/60 dark:text-rose-400' : 'bg-emerald-50 border-emerald-200/60 text-emerald-600 dark:bg-emerald-950/60 dark:border-emerald-900/60 dark:text-emerald-400')}>
+								<Shield className="h-6 w-6" />
 							</div>
 							<div>
-								<h3 className="font-semibold text-gray-900 dark:text-gray-100">Emergency Kill Switch</h3>
-								<p className="text-sm text-gray-500 dark:text-gray-400">
+								<h3 className="font-bold text-foreground">Emergency Kill Switch</h3>
+								<p className="text-xs text-muted-foreground mt-0.5">
 									{killSwitchOn ? 'AI Generation is DISABLED - serving cache only' : 'AI Generation operating normally'}
 								</p>
 							</div>
 						</div>
-						<Badge variant={killSwitchOn ? 'destructive' : 'default'} className="text-base px-3 py-1">
-							STATUS: {killSwitchOn ? 'DISABLED' : 'ENABLED'}
+						<Badge variant={killSwitchOn ? 'destructive' : 'default'} className="w-fit text-xs px-3 py-1 font-semibold">
+							STATUS: {killSwitchOn ? 'DISABLED' : 'ACTIVE'}
 						</Badge>
 					</div>
 				</CardContent>
 			</Card>
 
 			{/* Quick Actions */}
-			<Card>
+			<Card className="border-border/80 bg-card shadow-xs">
 				<CardContent className="p-6">
-					<h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Quick Actions</h3>
+					<h3 className="font-bold text-foreground mb-4">Quick Actions</h3>
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-						<Link to="/admin/tracks" className="p-4 rounded-lg border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-							<Plus className="h-8 w-8 text-blue-600 dark:text-blue-400 mb-2" />
-							<h4 className="font-medium text-gray-900 dark:text-gray-100">Create New Track</h4>
-							<p className="text-sm text-gray-500 dark:text-gray-400">Add new career track with D/C/T/G budget</p>
+						<Link to="/admin/tracks" className="group p-5 rounded-2xl border border-border/70 bg-card hover:border-primary/40 hover:bg-accent/30 card-interactive shadow-xs hover:shadow-md transition-all">
+							<div className="w-11 h-11 rounded-xl flex items-center justify-center bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/40 mb-3 group-hover:scale-110 transition-transform">
+								<Plus className="h-5 w-5" />
+							</div>
+							<h4 className="font-bold text-foreground group-hover:text-primary transition-colors">Create New Track</h4>
+							<p className="text-xs text-muted-foreground mt-1 leading-relaxed">Add new career track with D/C/T/G budget</p>
 						</Link>
-						<Link to="/admin/costs" className="p-4 rounded-lg border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-							<DollarSign className="h-8 w-8 text-green-600 dark:text-green-400 mb-2" />
-							<h4 className="font-medium text-gray-900 dark:text-gray-100">View Cost Dashboard</h4>
-							<p className="text-sm text-gray-500 dark:text-gray-400">Track AI costs by generator</p>
+						<Link to="/admin/costs" className="group p-5 rounded-2xl border border-border/70 bg-card hover:border-emerald-500/40 hover:bg-accent/30 card-interactive shadow-xs hover:shadow-md transition-all">
+							<div className="w-11 h-11 rounded-xl flex items-center justify-center bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/40 mb-3 group-hover:scale-110 transition-transform">
+								<DollarSign className="h-5 w-5" />
+							</div>
+							<h4 className="font-bold text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">View Cost Dashboard</h4>
+							<p className="text-xs text-muted-foreground mt-1 leading-relaxed">Track AI costs by generator</p>
 						</Link>
-						<Link to="/admin/usage-logs" className="p-4 rounded-lg border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-							<ScrollText className="h-8 w-8 text-indigo-600 dark:text-indigo-400 mb-2" />
-							<h4 className="font-medium text-gray-900 dark:text-gray-100">Inspect AI Usage Logs</h4>
-							<p className="text-sm text-gray-500 dark:text-gray-400">Review call history and clear old records</p>
+						<Link to="/admin/usage-logs" className="group p-5 rounded-2xl border border-border/70 bg-card hover:border-indigo-500/40 hover:bg-accent/30 card-interactive shadow-xs hover:shadow-md transition-all">
+							<div className="w-11 h-11 rounded-xl flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-800/40 mb-3 group-hover:scale-110 transition-transform">
+								<ScrollText className="h-5 w-5" />
+							</div>
+							<h4 className="font-bold text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Inspect AI Usage Logs</h4>
+							<p className="text-xs text-muted-foreground mt-1 leading-relaxed">Review call history and clear old records</p>
 						</Link>
-						<Link to="/admin/rejected" className="p-4 rounded-lg border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-							<AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400 mb-2" />
-							<h4 className="font-medium text-gray-900 dark:text-gray-100">Review Rejected Content</h4>
-							<p className="text-sm text-gray-500 dark:text-gray-400">View and process content rejected by validator</p>
+						<Link to="/admin/rejected" className="group p-5 rounded-2xl border border-border/70 bg-card hover:border-rose-500/40 hover:bg-accent/30 card-interactive shadow-xs hover:shadow-md transition-all">
+							<div className="w-11 h-11 rounded-xl flex items-center justify-center bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/50 dark:border-rose-800/40 mb-3 group-hover:scale-110 transition-transform">
+								<AlertTriangle className="h-5 w-5" />
+							</div>
+							<h4 className="font-bold text-foreground group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">Review Rejected Content</h4>
+							<p className="text-xs text-muted-foreground mt-1 leading-relaxed">View and process content rejected by validator</p>
 						</Link>
 					</div>
 				</CardContent>

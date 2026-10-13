@@ -234,7 +234,11 @@ export function MainNavigationMenu({
                         <Link
                             to="/"
                             onClick={(event) => handleNavigationClick(event, "/")}
-                            className="rounded-lg px-4 py-2 !text-base font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white"
+                            activeProps={{
+                                className: "bg-primary/10 text-primary font-semibold dark:bg-primary/20 dark:text-blue-400 shadow-2xs",
+                            }}
+                            activeOptions={{ exact: true }}
+                            className="rounded-lg px-3.5 py-1.5 !text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-foreground"
                         >
                             {t("home", { ns: "nav", defaultValue: "Home" })}
                         </Link>
@@ -246,7 +250,10 @@ export function MainNavigationMenu({
                         <Link
                             to="/lessons/learning-path"
                             onClick={(event) => handleNavigationClick(event, "/lessons/learning-path")}
-                            className="rounded-lg px-4 py-2 !text-base font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white"
+                            activeProps={{
+                                className: "bg-primary/10 text-primary font-semibold dark:bg-primary/20 dark:text-blue-400 shadow-2xs",
+                            }}
+                            className="rounded-lg px-3.5 py-1.5 !text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-foreground"
                         >
                             {t("path", { ns: "nav", defaultValue: "Path" })}
                         </Link>
@@ -258,7 +265,10 @@ export function MainNavigationMenu({
                         <Link
                             to="/guide"
                             onClick={(event) => handleNavigationClick(event, "/guide")}
-                            className="rounded-lg px-4 py-2 !text-base font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white"
+                            activeProps={{
+                                className: "bg-primary/10 text-primary font-semibold dark:bg-primary/20 dark:text-blue-400 shadow-2xs",
+                            }}
+                            className="rounded-lg px-3.5 py-1.5 !text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-foreground"
                         >
                             {t("howItWorks", { ns: "nav", defaultValue: "How It Works" })}
                         </Link>
@@ -280,14 +290,8 @@ export function MainNavigationMenu({
 
             <header
                 className={cn(
-                    "fixed top-0 z-50 w-full transition-colors",
-                    // Desktop: standard website header
-                    "md:border-b md:border-gray-300 md:bg-white/95 md:backdrop-blur-sm",
-                    "md:dark:border-slate-800 md:dark:bg-slate-900/95",
-                    // Mobile: sleek app-bar with stronger glassmorphism
-                    "border-b border-slate-200/80 bg-white/85 backdrop-blur-xl backdrop-saturate-150",
-                    "dark:border-slate-800/60 dark:bg-slate-900/85",
-                    // Auto-hide on scroll (mobile only, authenticated)
+                    "fixed top-0 z-50 w-full transition-all duration-300",
+                    "border-b border-border/60 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70 shadow-xs",
                     "mobile-header-slide",
                 )}
                 data-hidden={isMobileHeaderHidden ? "true" : "false"}
@@ -339,9 +343,9 @@ export function MainNavigationMenu({
                                         <Button
                                             variant="ghost"
                                             aria-label="Open user menu"
-                                            className="ml-1.5 sm:ml-3 md:ml-4 relative h-8 w-8 md:h-9 md:w-9 rounded-full p-0 transition-transform hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-blue-500"
+                                            className="ml-1.5 sm:ml-3 md:ml-4 relative h-8 w-8 md:h-9 md:w-9 rounded-full p-0 transition-transform duration-200 hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-primary ring-offset-2"
                                         >
-                                            <Avatar className="h-8 w-8 md:h-9 md:w-9 border border-slate-200 shadow-xs dark:border-slate-800">
+                                            <Avatar className="h-8 w-8 md:h-9 md:w-9 border border-border/80 shadow-xs ring-1 ring-primary/20">
                                                 <AvatarImage
                                                     src={avatarUrl}
                                                     alt={displayName}
@@ -355,12 +359,12 @@ export function MainNavigationMenu({
                                     </DropdownMenuTrigger>
 
                                     <DropdownMenuContent
-                                        className="w-56 p-1.5"
+                                        className="w-60 p-2 rounded-xl border border-border/70 bg-popover/95 backdrop-blur-md shadow-xl animate-scale-in"
                                         align="end"
                                     >
                                         <DropdownMenuLabel className="p-2.5 font-normal">
                                             <div className="flex items-center gap-3">
-                                                <Avatar className="h-10 w-10 border border-slate-200 shadow-xs dark:border-slate-800 shrink-0">
+                                                <Avatar className="h-10 w-10 border border-border/70 shadow-xs shrink-0 ring-2 ring-primary/20">
                                                     <AvatarImage
                                                         src={avatarUrl}
                                                         alt={displayName}
@@ -371,10 +375,21 @@ export function MainNavigationMenu({
                                                     </AvatarFallback>
                                                 </Avatar>
                                                 <div className="flex flex-col min-w-0 flex-1">
-                                                    <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
-                                                        {displayName}
-                                                    </p>
-                                                    <p className="truncate text-xs text-muted-foreground">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <p className="truncate text-sm font-bold text-foreground">
+                                                            {displayName}
+                                                        </p>
+                                                        {auth.user?.role_id === 2 ? (
+                                                            <span className="shrink-0 rounded-full bg-violet-100 px-1.5 py-0.5 text-[9px] font-bold text-violet-700 dark:bg-violet-950/80 dark:text-violet-300 border border-violet-200/60 dark:border-violet-800/60">
+                                                                Admin
+                                                            </span>
+                                                        ) : (
+                                                            <span className="shrink-0 rounded-full bg-blue-100 px-1.5 py-0.5 text-[9px] font-bold text-blue-700 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
+                                                                Learner
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="truncate text-xs text-muted-foreground mt-0.5">
                                                         {auth.user?.email}
                                                     </p>
                                                 </div>
@@ -480,8 +495,7 @@ export function MainNavigationMenu({
                         ) : (
                             <Button
                                 asChild
-                                variant="outline"
-                                className="text-[15px]"
+                                className="h-9 px-4 text-sm font-semibold shadow-xs bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 hover:shadow-md"
                             >
                                 <Link
                                     to="/login"

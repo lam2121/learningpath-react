@@ -23,29 +23,29 @@ export function SectionButton({
             type="button"
             onClick={onClick}
             className={[
-                "w-full rounded-2xl border px-3 py-3 text-left transition-all sm:px-4",
+                "w-full rounded-2xl border px-3 py-3 text-left transition-all sm:px-4 card-interactive-subtle",
                 isActive
-                    ? "border-blue-500 bg-blue-50 text-blue-900 shadow-sm dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-100"
-                    : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-900 dark:hover:bg-slate-800/80",
+                    ? "border-primary bg-primary/10 text-primary shadow-xs ring-1 ring-primary/20 dark:bg-primary/20"
+                    : "border-border/70 bg-card text-foreground hover:border-border hover:bg-accent/40",
             ].join(" ")}
         >
             <div className="flex items-start gap-3">
                 <div
                     className={[
-                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border",
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors",
                         isActive
-                            ? "border-blue-200 bg-white text-blue-600 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-300"
-                            : "border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400",
+                            ? "border-primary bg-primary text-primary-foreground shadow-xs"
+                            : "border-border bg-muted/40 text-muted-foreground",
                     ].join(" ")}
                 >
                     <Icon className="h-5 w-5" />
                 </div>
 
                 <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                         {eyebrow}
                     </p>
-                    <p className="mt-1 font-semibold">{label}</p>
+                    <p className="mt-1 font-bold">{label}</p>
                 </div>
             </div>
         </button>
@@ -64,16 +64,16 @@ export function PanelShell({
     children: ReactNode;
 }) {
     return (
-        <section className="rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <header className="border-b border-slate-200 bg-slate-50 px-4 py-4 sm:px-6 sm:py-5 dark:border-slate-800 dark:bg-slate-800/60">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-600 dark:text-blue-300">
+        <section className="rounded-3xl border border-border/80 bg-card shadow-xs transition-shadow duration-300 hover:shadow-md">
+            <header className="border-b border-border/60 bg-accent/30 px-4 py-4 sm:px-6 sm:py-5 rounded-t-3xl">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-primary">
                     {eyebrow}
                 </p>
-                <h2 className="mt-2 text-xl font-bold text-slate-950 dark:text-white sm:text-2xl">
+                <h2 className="font-display mt-2 text-xl font-bold text-foreground sm:text-2xl">
                     {title}
                 </h2>
                 {note ? (
-                    <div className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                    <div className="mt-2 text-sm font-medium text-muted-foreground">
                         {note}
                     </div>
                 ) : null}
@@ -92,7 +92,7 @@ export function EmptyPanel({
 }) {
     return (
         <PanelShell eyebrow="Unavailable" title={title}>
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500 sm:px-6 sm:py-10 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400">
+            <div className="rounded-2xl border border-dashed border-border/80 bg-accent/20 px-4 py-8 text-center text-sm text-muted-foreground sm:px-6 sm:py-10">
                 {message}
             </div>
         </PanelShell>

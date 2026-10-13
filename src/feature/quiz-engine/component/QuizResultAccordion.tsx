@@ -42,37 +42,37 @@ export function QuizResultAccordion({
 	};
 
 	return (
-		<div className="space-y-6 p-6 bg-white rounded-2xl border border-gray-100 shadow-sm dark:bg-slate-900 dark:border-slate-800">
+		<div className="space-y-6 p-6 sm:p-8 bg-card rounded-3xl border border-border/80 shadow-elevation-2">
 			{/* Result Header */}
 			<div className="text-center space-y-4">
 				<div className={cn(
-					'inline-flex items-center gap-2 px-6 py-3 rounded-full text-lg font-semibold',
-					passed ? 'bg-green-100 text-green-700 dark:bg-emerald-950/70 dark:text-emerald-300' : 'bg-red-100 text-red-700 dark:bg-rose-950/70 dark:text-rose-300'
+					'inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-base font-bold border',
+					passed ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400' : 'bg-destructive/10 text-destructive border-destructive/20'
 				)}>
 					{passed ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
 					{passed ? 'PASSED' : 'FAILED'}
 				</div>
 				
-				<div className="text-4xl font-bold text-gray-900 dark:text-white">
+				<div className="font-display text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground">
 					{Math.round(scorePercent)}%
 				</div>
 				
-				<p className="text-gray-600 dark:text-slate-400">
-					Score: {result.score.toFixed(1)} / {result.maxScore} · {result.type === 'final' ? 'Final Test' : result.type === 'topic' ? 'Topic Quiz' : 'Lesson Quiz'}
+				<p className="text-sm font-medium text-muted-foreground">
+					Score: <span className="font-bold text-foreground">{result.score.toFixed(1)} / {result.maxScore}</span> · {result.type === 'final' ? 'Final Test' : result.type === 'topic' ? 'Topic Quiz' : 'Lesson Quiz'}
 				</p>
 
 				{/* Skill Breakdown */}
-				<div className="grid grid-cols-4 gap-3 pt-4 border-t border-gray-100 dark:border-slate-800">
+				<div className="grid grid-cols-4 gap-2.5 sm:gap-3.5 pt-4 border-t border-border">
 					{(['D', 'C', 'T', 'G'] as const).map(skill => {
 						const data = result.skillBreakdown[skill];
 						const pct = data.total > 0 ? Math.round((data.score / data.total) * 100) : 0;
 						return (
-							<div key={skill} className="text-center p-3 rounded-xl bg-gray-50 dark:bg-slate-800/70">
-								<div className={cn('text-2xl font-bold', skillColors[skill].replace('bg-', 'text-').replace('100', '600').replace('700', '700'))}>
+							<div key={skill} className="text-center p-3 rounded-2xl bg-muted/60 border border-border">
+								<div className={cn('font-display text-xl sm:text-2xl font-bold', skillColors[skill].replace('bg-', 'text-').replace('100', '600').replace('700', '700'))}>
 									{pct}%
 								</div>
-								<div className="text-xs text-gray-500 dark:text-slate-400">{skillLabels[skill]}</div>
-								<div className="text-xs text-gray-400 dark:text-slate-500 mt-1">{data.score}/{data.total}</div>
+								<div className="text-xs font-semibold text-muted-foreground mt-0.5">{skillLabels[skill]}</div>
+								<div className="text-[11px] font-mono text-muted-foreground/80 mt-1">{data.score}/{data.total}</div>
 							</div>
 						);
 					})}
@@ -80,21 +80,21 @@ export function QuizResultAccordion({
 			</div>
 
 			{/* AI Summary */}
-			<div className="p-4 rounded-xl bg-blue-50 border border-blue-100 dark:bg-blue-950/40 dark:border-blue-900/40">
+			<div className="p-4 sm:p-5 rounded-2xl bg-primary/5 border border-primary/20 backdrop-blur-xs">
 				<div className="flex items-start gap-3">
-					<div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 dark:bg-blue-900/60">
-						<Brain className="w-4 h-4 text-blue-600 dark:text-blue-300" />
+					<div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0 text-primary">
+						<Brain className="w-4 h-4" />
 					</div>
 					<div className="flex-1">
-						<p className="font-medium text-blue-900 dark:text-blue-200">AI Feedback:</p>
-						<p className="text-blue-700 text-sm mt-1 dark:text-blue-300">{result.aiSummary}</p>
+						<p className="font-bold text-sm text-foreground">AI Feedback</p>
+						<p className="text-muted-foreground text-sm mt-1 leading-relaxed">{result.aiSummary}</p>
 					</div>
 				</div>
 			</div>
 
 			{/* Question Accordion List */}
 			<div className="space-y-3">
-				<h3 className="text-lg font-semibold text-gray-900 dark:text-white">Question Details</h3>
+				<h3 className="font-display text-lg font-bold text-foreground">Question Details</h3>
 				<Accordion type="multiple" className="space-y-2">
 					{result.questionResults.map((qr) => (
 						<AccordionItem key={qr.index} value={String(qr.index)}>

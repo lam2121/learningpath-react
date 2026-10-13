@@ -39,14 +39,13 @@ export function VocabularyWord({
                         cursor-pointer
                         rounded-md
                         border-b-2
-                        border-blue-500
+                        border-primary
                         px-1
                         font-medium
-                        text-blue-700
+                        text-primary
                         transition-all
                         duration-200
-                        hover:bg-blue-100
-                        hover:text-blue-900
+                        hover:bg-primary/10
                     "
                 >
                     {word}
@@ -55,17 +54,17 @@ export function VocabularyWord({
 
             <HoverCardContent
                 align="start"
-                className="w-[360px] space-y-4"
+                className="w-[360px] space-y-4 rounded-2xl border border-border/80 bg-popover/95 backdrop-blur-md p-4 shadow-xl animate-scale-in"
             >
                 {/* Header */}
                 <div className="flex items-start justify-between">
                     <div>
-                        <h3 className="text-lg font-bold">
+                        <h3 className="font-display text-lg font-bold text-foreground">
                             {word}
                         </h3>
 
                         {pronunciation && (
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm text-muted-foreground">
                                 {pronunciation}
                             </p>
                         )}
@@ -75,24 +74,25 @@ export function VocabularyWord({
                         onClick={speak}
                         className="
                             rounded-full
-                            bg-blue-100
+                            bg-primary/10
                             p-2
-                            transition
-                            hover:bg-blue-200
+                            text-primary
+                            transition-colors
+                            hover:bg-primary/20
                         "
                     >
-                        <Volume2 className="h-4 w-4 text-blue-600" />
+                        <Volume2 className="h-4 w-4" />
                     </button>
                 </div>
 
                 {/* Definition */}
 
                 <div>
-                    <p className="text-sm font-semibold">
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                         Definition
                     </p>
 
-                    <p className="mt-1 text-sm text-slate-600">
+                    <p className="mt-1 text-sm text-foreground">
                         {definition}
                     </p>
                 </div>
@@ -100,12 +100,12 @@ export function VocabularyWord({
                 {/* AI Explanation */}
 
                 {aiExplanation && (
-                    <div className="rounded-lg bg-blue-50 p-3">
-                        <p className="text-xs font-semibold uppercase text-blue-600">
+                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+                        <p className="text-xs font-bold uppercase tracking-wider text-primary">
                             AI Explanation
                         </p>
 
-                        <p className="mt-1 text-sm">
+                        <p className="mt-1 text-sm text-foreground">
                             {aiExplanation}
                         </p>
                     </div>

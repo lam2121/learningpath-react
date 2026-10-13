@@ -154,20 +154,20 @@ export function OrderingQuestion({
 	}, [userAnswer, isSubmitted, originalSteps]);
 
 	return (
-		<div className="space-y-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
+		<div className="space-y-6 rounded-3xl border border-border/80 bg-card p-5 shadow-elevation-1 sm:p-7">
 			<div className="flex flex-wrap items-center justify-between gap-3">
-				<h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-					Question {questionNumber} / {totalQuestions} · <span className="text-gray-500 font-normal dark:text-slate-400">Ordering</span>
+				<h3 className="font-display text-lg font-bold text-foreground">
+					Question {questionNumber} / {totalQuestions} · <span className="text-muted-foreground font-normal">Ordering</span>
 				</h3>
-				<div className="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700 dark:bg-amber-950/70 dark:text-amber-300">
-					T
+				<div className="rounded-full bg-amber-500/10 border border-amber-500/20 px-3 py-1 text-xs font-bold text-amber-600 dark:text-amber-400">
+					Sequence
 				</div>
 			</div>
 
 			{/* Instruction */}
-			<div className="rounded-xl border border-orange-200 bg-orange-50 p-4 dark:border-amber-900/50 dark:bg-amber-950/30">
-				<p className="font-bold text-orange-950 mb-2 dark:text-amber-200">📋 Instruction:</p>
-				<p className="font-medium text-slate-900 dark:text-slate-100">{instruction}</p>
+			<div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 sm:p-5 backdrop-blur-xs">
+				<p className="font-bold text-xs uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-1.5">Instruction</p>
+				<p className="font-display text-base font-semibold text-foreground sm:text-lg leading-relaxed">{instruction}</p>
 			</div>
 
 			{/* Drag and Drop List */}
@@ -186,53 +186,53 @@ export function OrderingQuestion({
 						onTouchEnd={handleTouchEnd}
 						onTouchCancel={handleTouchEnd}
 						className={cn(
-							'relative flex items-start gap-3 rounded-xl border-2 p-4 transition-all sm:items-center sm:gap-4',
-							'bg-white hover:bg-gray-50 dark:bg-slate-800/60 dark:hover:bg-slate-800',
+							'relative flex items-start gap-3.5 rounded-2xl border-2 p-4 transition-all duration-200 sm:items-center sm:gap-4',
+							'bg-card hover:bg-muted/50 border-border',
 							isSubmitted
 								? revealAnswer && orderedSteps.every((s, i) => s === correctOrder[i])
-									? 'border-green-300 bg-green-50 dark:border-emerald-600 dark:bg-emerald-950/40'
+									? 'border-emerald-500 bg-emerald-500/10'
 									: showFailedState
-										? 'border-red-300 bg-red-50 dark:border-rose-600 dark:bg-rose-950/40'
-										: 'border-gray-200 dark:border-slate-800'
+										? 'border-rose-500 bg-rose-500/10'
+										: 'border-border'
 								: draggedIndex === index
-								? 'border-blue-400 bg-blue-50 opacity-75 rotate-1 scale-105 shadow-lg dark:border-blue-500 dark:bg-blue-950/60'
-								: 'border-gray-200 dark:border-slate-800'
+								? 'border-primary bg-primary/10 opacity-80 scale-102 shadow-elevation-3'
+								: 'border-border'
 						)}
 						style={{ cursor: isSubmitted ? 'default' : 'grab' }}
 					>
 						{/* Drag Handle */}
 						<div className={cn(
-							'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
-							'text-gray-400 hover:text-gray-600 active:text-gray-900 dark:text-slate-500 dark:hover:text-slate-300 dark:active:text-white',
-							isSubmitted && 'cursor-default opacity-50'
+							'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+							'text-muted-foreground hover:text-foreground active:text-primary',
+							isSubmitted && 'cursor-default opacity-40'
 						)}>
 							<GripVertical className="w-5 h-5" />
 						</div>
 
 						{/* Step Number */}
 						<div className={cn(
-							'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg font-bold',
+							'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base font-bold font-mono',
 							isSubmitted
 								? revealAnswer && step === correctOrder[index]
-									? 'bg-green-100 text-green-700 dark:bg-emerald-950/70 dark:text-emerald-300'
+									? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
 									: showFailedState
-										? 'bg-red-100 text-red-700 dark:bg-rose-950/70 dark:text-rose-300'
-										: 'bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-300'
-								: 'bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-300'
+										? 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
+										: 'bg-muted text-muted-foreground'
+								: 'bg-muted text-foreground'
 						)}>
 							{index + 1}
 						</div>
 
 						{/* Step Content */}
-						<div className="min-w-0 flex-1 break-words font-medium text-gray-900 dark:text-slate-100">{step}</div>
+						<div className="min-w-0 flex-1 break-words font-semibold text-foreground text-sm sm:text-base leading-relaxed">{step}</div>
 
 						{/* Result Indicators */}
 						{isSubmitted && revealAnswer && (
 							<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
 								{step === correctOrder[index] ? (
-									<Check className="w-5 h-5 text-green-500" />
+									<Check className="w-5 h-5 text-emerald-500" />
 								) : (
-									<X className="w-5 h-5 text-red-500" />
+									<X className="w-5 h-5 text-rose-500" />
 								)}
 							</div>
 						)}
@@ -242,17 +242,17 @@ export function OrderingQuestion({
 			
 			{/* Explanation */}
 			{isSubmitted && revealAnswer && (
-				<div className="p-4 rounded-xl bg-gray-50 border border-gray-200 dark:bg-slate-800/80 dark:border-slate-700">
+				<div className="p-4 sm:p-5 rounded-2xl bg-muted/60 border border-border">
 					<div className="flex items-start gap-3">
 						<div className={cn(
-							'w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0',
-							isCorrect ? 'bg-green-100 text-green-600 dark:bg-emerald-950/70 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-rose-950/70 dark:text-rose-400'
+							'w-8 h-8 flex items-center justify-center rounded-xl flex-shrink-0',
+							isCorrect ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-destructive/15 text-destructive'
 						)}>
 							{isCorrect ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
 						</div>
 						<div className="flex-1">
-							<p className="font-bold text-slate-950 dark:text-white">Explanation:</p>
-							<p className="mt-1 text-sm font-medium leading-relaxed text-slate-900 dark:text-slate-100">{explanation || expl}</p>
+							<p className="font-bold text-sm text-foreground">Explanation</p>
+							<p className="mt-1 text-sm font-normal leading-relaxed text-muted-foreground">{explanation || expl}</p>
 						</div>
 					</div>
 				</div>

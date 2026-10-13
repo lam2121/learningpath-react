@@ -85,26 +85,27 @@ export function FillBlankQuestion({
 	};
 
 	return (
-		<div className="space-y-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900" data-question-type="fill_blank">
+		<div className="space-y-6 rounded-3xl border border-border/80 bg-card p-5 shadow-elevation-1 sm:p-7" data-question-type="fill_blank">
 			{/* Question Header */}
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div className="flex flex-wrap items-center gap-2">
-					<span className="text-sm font-medium text-gray-500 dark:text-slate-400">Question {questionNumber} / {totalQuestions}</span>
-					<span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950/70 dark:text-blue-300">Fill-in-the-blank</span>
+					<span className="font-display text-lg font-bold text-foreground">Question {questionNumber} / {totalQuestions}</span>
+					<span className="rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-xs font-semibold text-primary">Fill-in-the-blank</span>
 				</div>
 				{isSubmitted && (
 					<div className={cn(
-						'flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium',
-						isCorrect ? 'bg-green-100 text-green-700 dark:bg-emerald-950/70 dark:text-emerald-300' : 'bg-red-100 text-red-700 dark:bg-rose-950/70 dark:text-rose-300'
+						'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border',
+						isCorrect ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400' : 'bg-destructive/10 text-destructive border-destructive/20'
 					)}>
-						{isCorrect ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+						{isCorrect ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
 						{isCorrect ? 'Correct' : 'Incorrect'}
 					</div>
 				)}
 			</div>
 
 			{/* Question Stem */}
-			<div className="prose prose-sm max-w-none">
+			<div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5 backdrop-blur-xs">
+				<p className="font-bold text-xs uppercase tracking-wider text-primary mb-1.5">Sentence</p>
 				{renderStem()}
 			</div>
 
@@ -125,12 +126,12 @@ export function FillBlankQuestion({
 							<Label
 								htmlFor={`fill-option-${questionNumber}-${index}`}
 								className={cn(
-									'flex items-start gap-3 rounded-xl border-2 p-4 transition-all cursor-pointer',
-									'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50 dark:border-slate-800 dark:bg-slate-800/60 dark:hover:border-blue-500 dark:hover:bg-slate-800',
-									isOptionSelected && !isSubmitted && 'border-blue-500 bg-blue-50 dark:border-blue-500 dark:bg-blue-950/40',
-									isOptionCorrect && 'border-green-400 bg-green-50 dark:border-emerald-600 dark:bg-emerald-950/40',
-									isOptionWrong && 'border-red-400 bg-red-50 dark:border-rose-600 dark:bg-rose-950/40',
-									isSubmitted && !isOptionSelected && !isOptionCorrect && 'opacity-60',
+									'flex items-start gap-3.5 rounded-2xl border-2 p-4 transition-all duration-200 cursor-pointer',
+									'border-border bg-card hover:bg-muted/50',
+									isOptionSelected && !isSubmitted && 'border-primary bg-primary/10 shadow-xs',
+									isOptionCorrect && 'border-emerald-500 bg-emerald-500/10',
+									isOptionWrong && 'border-rose-500 bg-rose-500/10',
+									isSubmitted && !isOptionSelected && !isOptionCorrect && 'opacity-50',
 									isSubmitted && 'cursor-default',
 								)}
 							>
@@ -138,22 +139,22 @@ export function FillBlankQuestion({
 								<RadioGroupItem
 									value={option}
 									id={`fill-option-${questionNumber}-${index}`}
-									className="shrink-0"
+									className="mt-0.5 shrink-0"
 								/>
 
 								{/* Status icon */}
 								<div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
 									{isOptionCorrect ? (
-										<Check className="w-5 h-5 text-green-600" />
+										<Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
 									) : isOptionWrong ? (
-										<X className="w-5 h-5 text-red-600" />
+										<X className="w-5 h-5 text-rose-600 dark:text-rose-400" />
 									) : null}
 								</div>
 
-								<span className="min-w-0 flex-1 text-base font-medium text-gray-900 dark:text-slate-100">{option}</span>
+								<span className="min-w-0 flex-1 text-base font-semibold text-foreground">{option}</span>
 
 								{isOptionCorrect && (
-									<span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 sm:ml-auto dark:bg-emerald-950/80 dark:text-emerald-300">
+									<span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 sm:ml-auto">
 										Correct Answer
 									</span>
 								)}

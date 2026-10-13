@@ -336,26 +336,26 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 	};
 
 	return (
-		<div className="min-h-screen w-full flex flex-col justify-between bg-gray-50 dark:bg-slate-950">
+		<div className="min-h-screen w-full flex flex-col justify-between bg-background text-foreground">
 			<Toaster position="top-right" />
 
 			{/* Header with Progress & Timer */}
-			<header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm dark:bg-slate-900 dark:border-slate-800 pt-[env(safe-area-inset-top)]">
+			<header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border shadow-elevation-1 pt-[env(safe-area-inset-top)]">
 				<div className="max-w-3xl mx-auto px-4 py-3">
 					<div className="flex items-center justify-between gap-4 mb-3">
 						<div className="flex-1 min-w-0">
-							<div className="flex items-center gap-2 text-sm text-gray-500 mb-1 dark:text-slate-400">
-								<span>{session.targetName}</span>
-								<span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-medium capitalize dark:bg-blue-950/70 dark:text-blue-300">{type}</span>
+							<div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+								<span className="truncate">{session.targetName}</span>
+								<span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-semibold capitalize">{type}</span>
 							</div>
-							<h1 className="text-lg font-semibold text-gray-900 truncate dark:text-white">
+							<h1 className="font-display text-lg font-bold text-foreground truncate">
 								Question {currentQuestionIndex + 1} / {session.questions.length}
 							</h1>
 						</div>
 						{type === 'final' && timeRemaining !== null && (
 							<div className={cn(
-								'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-mono font-semibold',
-								timeRemaining < 300 ? 'bg-red-50 text-red-600 animate-pulse dark:bg-rose-950/50 dark:text-rose-400' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300'
+								'flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-mono font-bold shadow-2xs',
+								timeRemaining < 300 ? 'bg-destructive/10 text-destructive border border-destructive/20 animate-pulse' : 'bg-muted text-foreground border border-border'
 							)}>
 								<Clock className="w-4 h-4" />
 								{formatTime(timeRemaining)}
@@ -368,8 +368,8 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 
 					{/* Network Status */}
 					{networkStatus === 'offline' && (
-						<div className="mt-2 flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg dark:bg-amber-950/40 dark:text-amber-300">
-							<WifiOff className="w-3 h-3" />
+						<div className="mt-2 flex items-center gap-2 text-xs text-amber-600 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-xl">
+							<WifiOff className="w-3.5 h-3.5" />
 							<span>Offline - Saving locally</span>
 						</div>
 					)}
@@ -377,7 +377,7 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 			</header>
 
 			{/* Question Content */}
-			<main className="max-w-3xl mx-auto px-4 py-6">
+			<main className="max-w-3xl mx-auto px-4 py-6 w-full">
 				{/* Question Renderer */}
 				<div className="animate-fade-in">
 					{currentQuestion.type === 'fill_blank' && (
@@ -422,13 +422,13 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 
 			{/* Navigation — full width sticky bottom bar */}
 			{!showResult && (
-				<nav className="sticky bottom-0 z-30 bg-white border-t border-gray-200 dark:bg-slate-900 dark:border-slate-800 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
-					<div className="max-w-5xl mx-auto px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
+				<nav className="sticky bottom-0 z-30 bg-card/85 backdrop-blur-md border-t border-border pb-[env(safe-area-inset-bottom)] shadow-elevation-3">
+					<div className="max-w-5xl mx-auto px-3 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-2 sm:gap-4">
 						<Button
 							variant="outline"
 							onClick={handlePrevious}
 							disabled={submitting || currentQuestionIndex === 0}
-							className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4"
+							className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4 rounded-xl border-border hover:bg-muted text-foreground transition-transform active:scale-95"
 						>
 							<ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
 							<span className="hidden sm:inline">Previous Question</span>
@@ -438,7 +438,7 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 						{/* Question Number Circles */}
 						<div
 							ref={dotsContainerRef}
-							className="hidden md:flex flex-1 items-center gap-1.5 overflow-x-auto p-1"
+							className="hidden md:flex flex-1 items-center gap-1.5 overflow-x-auto p-1 justify-center"
 						>
 							{session.questions.map((_, i) => (
 								<button
@@ -446,13 +446,13 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 									onClick={() => setCurrentQuestionIndex(i)}
 									data-active={i === currentQuestionIndex}
 									className={cn(
-										'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all',
-										i === currentQuestionIndex && 'bg-blue-600 text-white ring-2 ring-blue-300',
-										answers[i] && i !== currentQuestionIndex && 'bg-green-500 text-white',
-										!answers[i] && i !== currentQuestionIndex && 'bg-gray-200 text-gray-600 hover:bg-gray-300 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700',
+										'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-200',
+										i === currentQuestionIndex && 'bg-primary text-primary-foreground ring-4 ring-primary/25 scale-105 shadow-xs',
+										answers[i] && i !== currentQuestionIndex && 'bg-emerald-500 text-white',
+										!answers[i] && i !== currentQuestionIndex && 'bg-muted text-muted-foreground hover:bg-muted/80',
 										'hover:scale-105'
 									)}
-									aria-label={`Câu ${i + 1}`}
+									aria-label={`Question ${i + 1}`}
 									disabled={showResult}
 								>
 									{i + 1}
@@ -461,12 +461,16 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 						</div>
 
 						{/* Compact step badge on mobile */}
-						<div className="md:hidden text-xs font-semibold text-slate-500">
+						<div className="md:hidden text-xs font-semibold text-muted-foreground">
 							{currentQuestionIndex + 1} / {session.questions.length}
 						</div>
 
 						{!isLastQuestion ? (
-							<Button onClick={handleNext} disabled={submitting} className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4">
+							<Button
+								onClick={handleNext}
+								disabled={submitting}
+								className="flex-shrink-0 text-xs sm:text-sm px-3.5 sm:px-5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs transition-transform active:scale-95"
+							>
 								<span className="hidden sm:inline">Next Question</span>
 								<span className="sm:hidden">Next</span>
 								<ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1 sm:ml-2" />
@@ -475,7 +479,7 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 							<Button
 								onClick={handleSubmit}
 								disabled={submitting || !canSubmit}
-								className="bg-green-600 hover:bg-green-700 flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4"
+								className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex-shrink-0 text-xs sm:text-sm px-3.5 sm:px-5 rounded-xl shadow-md shadow-emerald-500/20 transition-transform active:scale-95"
 							>
 								{submitting ? (
 									<>
@@ -493,8 +497,8 @@ export function QuizShell({ type, targetId, onComplete }: QuizShellProps) {
 
 			{/* Result View */}
 			{showResult && result && (
-				<div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-					<div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-slide-up relative dark:bg-slate-900 dark:border dark:border-slate-800">
+				<div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+					<div className="bg-card border border-border rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in relative shadow-elevation-5">
 						<div className="absolute top-4 right-4 z-10">
 							<Button variant="ghost" size="sm" onClick={() => navigate({ to: '/dashboard' })}>Close</Button>
 						</div>

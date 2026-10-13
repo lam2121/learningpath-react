@@ -219,29 +219,29 @@ export function UserFlashcardsDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl sm:max-w-3xl overflow-hidden p-0 border-slate-200 bg-slate-50/50 shadow-2xl rounded-3xl dark:border-slate-800 dark:bg-slate-900">
+            <DialogContent className="max-w-2xl sm:max-w-3xl overflow-hidden p-0 border-border bg-card/95 shadow-elevation-5 rounded-3xl backdrop-blur-md">
                 {/* Header */}
-                <div className="border-b border-slate-200/80 bg-white px-6 py-5 dark:border-slate-800 dark:bg-slate-900">
+                <div className="border-b border-border/70 bg-card px-6 py-5">
                     <DialogHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 space-y-0 text-left">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md shadow-primary/20">
                                 <Brain className="h-5 w-5 sm:h-6 sm:w-6" />
                             </div>
                             <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <DialogTitle className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                                    <DialogTitle className="font-display text-lg sm:text-xl font-bold tracking-tight text-foreground">
                                         {userProfileTexts.flashcardsTitle()}
                                     </DialogTitle>
                                     {!isLoading && cards.length > 0 && (
                                         <Badge
                                             variant="secondary"
-                                            className="bg-indigo-50 text-indigo-700 font-semibold px-2 py-0.5 text-xs dark:bg-indigo-950/80 dark:text-indigo-300"
+                                            className="bg-primary/10 text-primary font-semibold px-2 py-0.5 text-xs border border-primary/20"
                                         >
                                             {userProfileTexts.savedWordsCount(cards.length)}
                                         </Badge>
                                     )}
                                 </div>
-                                <DialogDescription className="mt-0.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                                <DialogDescription className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
                                     {userProfileTexts.flashcardsSubtitle()}
                                 </DialogDescription>
                             </div>
@@ -249,14 +249,14 @@ export function UserFlashcardsDialog({
 
                         {/* Mode Switcher Tabs */}
                         {cards.length > 0 && (
-                            <div className="flex items-center rounded-xl bg-slate-100 p-1 border border-slate-200/70 dark:bg-slate-800 dark:border-slate-700 w-full sm:w-auto justify-center">
+                            <div className="flex items-center rounded-2xl bg-muted p-1 border border-border/60 w-full sm:w-auto justify-center">
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab("deck")}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                                         activeTab === "deck"
-                                            ? "bg-white text-indigo-600 shadow-xs dark:bg-slate-700 dark:text-indigo-300"
-                                            : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                                            ? "bg-card text-primary shadow-xs font-bold"
+                                            : "text-muted-foreground hover:text-foreground"
                                     }`}
                                 >
                                     <Layers className="h-3.5 w-3.5" />
@@ -265,10 +265,10 @@ export function UserFlashcardsDialog({
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab("list")}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                                         activeTab === "list"
-                                            ? "bg-white text-indigo-600 shadow-xs dark:bg-slate-700 dark:text-indigo-300"
-                                            : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                                            ? "bg-card text-primary shadow-xs font-bold"
+                                            : "text-muted-foreground hover:text-foreground"
                                     }`}
                                 >
                                     <ListFilter className="h-3.5 w-3.5" />

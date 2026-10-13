@@ -141,7 +141,7 @@ export function ForgotPassForm() {
 					{step === 3 && <Lock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
 					<span>Bước {step} / 3: {step === 1 ? 'Xác thực Email' : step === 2 ? 'Nhập mã OTP' : 'Mật khẩu mới'}</span>
 				</div>
-				<h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+				<h1 className="font-display text-xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
 					{step === 1 && 'Khôi phục mật khẩu'}
 					{step === 2 && 'Xác thực mã OTP'}
 					{step === 3 && 'Đặt mật khẩu mới'}

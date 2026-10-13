@@ -33,22 +33,21 @@ export function TopicButton({
             onClick={onClick}
             aria-pressed={isSelected}
             className={[
-                "w-full min-w-0 rounded-xl border p-4 text-left transition-all duration-200",
+                "w-full min-w-0 rounded-xl border p-4 text-left transition-all duration-200 card-interactive-subtle",
                 "focus-visible:outline-none focus-visible:ring-2",
-                "focus-visible:ring-blue-500 focus-visible:ring-offset-2",
-                "dark:focus-visible:ring-offset-slate-900",
+                "focus-visible:ring-primary focus-visible:ring-offset-2",
                 isSelected
-                    ? "border-blue-500 bg-blue-50/80 shadow-sm dark:border-blue-900 dark:bg-blue-950/30"
-                    : "border-slate-200 bg-white hover:border-blue-200 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-900 dark:hover:bg-slate-800/60",
+                    ? "border-primary bg-primary/10 shadow-xs ring-1 ring-primary/20 dark:bg-primary/20"
+                    : "border-border/70 bg-card hover:border-border hover:bg-accent/40",
             ].join(" ")}
         >
             <div className="flex items-start gap-3">
                 <span
                     className={[
-                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-bold",
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-bold transition-colors",
                         isSelected
-                            ? "border-blue-600 bg-blue-600 text-white"
-                            : "border-slate-300 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300",
+                            ? "border-primary bg-primary text-primary-foreground shadow-xs"
+                            : "border-border bg-muted/40 text-muted-foreground",
                     ].join(" ")}
                 >
                     {topic.sort_order}

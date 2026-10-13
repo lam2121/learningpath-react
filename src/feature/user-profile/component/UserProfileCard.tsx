@@ -449,10 +449,10 @@ export function UserProfileCard() {
     };
 
     return (
-        <Card className="gap-0 overflow-hidden rounded-3xl border border-slate-300 bg-white py-0 shadow-[0_20px_50px_rgba(15,23,42,0.06)] dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)]">
+        <Card className="gap-0 overflow-hidden rounded-3xl border border-border/80 bg-card py-0 shadow-elevation-2">
             {/* Header Cover Banner */}
-            <div className="relative h-32 sm:h-36 overflow-hidden bg-[linear-gradient(135deg,#003566_0%,#005596_35%,#0072BB_68%,#00A9CE_100%)]">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,_rgba(255,255,255,0.25)_0%,transparent_50%),radial-gradient(circle_at_80%_80%,_rgba(0,169,206,0.3)_0%,transparent_50%)]" />
+            <div className="relative h-32 sm:h-36 overflow-hidden bg-gradient-to-r from-primary via-accent-violet to-primary">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,_rgba(255,255,255,0.25)_0%,transparent_50%),radial-gradient(circle_at_80%_80%,_rgba(255,255,255,0.15)_0%,transparent_50%)]" />
                 <svg
                     aria-hidden="true"
                     viewBox="0 0 1200 220"
@@ -491,13 +491,13 @@ export function UserProfileCard() {
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
                     {/* Avatar with negative top margin overlapping banner */}
                     <div className="relative -mt-12 sm:-mt-14 inline-flex h-fit shrink-0 group">
-                        <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-4 border-white shadow-xl ring-2 ring-blue-500/20 dark:border-slate-900 transition-transform group-hover:scale-[1.02]">
+                        <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-4 border-card shadow-xl ring-2 ring-primary/20 transition-transform group-hover:scale-[1.02]">
                             <AvatarImage
                                 src={avatarUrl}
                                 alt={displayName}
                                 className="object-cover"
                             />
-                            <AvatarFallback className="bg-gradient-to-br from-blue-600 to-indigo-700 text-xl font-bold text-white">
+                            <AvatarFallback className="bg-gradient-to-br from-primary to-accent-violet text-xl font-bold text-white">
                                 {initials || "?"}
                             </AvatarFallback>
                         </Avatar>
@@ -508,7 +508,7 @@ export function UserProfileCard() {
                                 type="button"
                                 aria-label={cameraButtonTitle}
                                 onClick={handleCameraClick}
-                                className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-gradient-to-tr from-blue-600 to-cyan-600 text-white shadow-lg transition-transform hover:scale-110 active:scale-95 dark:border-slate-900"
+                                className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-card bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-110 active:scale-95"
                                 title={cameraButtonTitle}
                             >
                                 <Camera className="h-4 w-4" />
@@ -528,50 +528,50 @@ export function UserProfileCard() {
                     <div className="min-w-0 flex-1 pt-0">
                         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                             <div className="min-w-0 pt-4 sm:pt-6">
-                                <h2 className="break-words text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
+                                <h2 className="font-display break-words text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-foreground">
                                     {displayName}
                                 </h2>
 
                                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 px-3.5 py-1 text-xs font-bold text-white shadow-sm shadow-blue-500/25">
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1 text-xs font-bold text-primary-foreground shadow-sm shadow-primary/25">
                                         <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                                         {careerName}
                                     </span>
                                     <Badge
                                         variant="secondary"
-                                        className="rounded-full border border-slate-300/80 bg-slate-100/90 px-3 py-1 text-xs font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                        className="rounded-full border border-border bg-muted/80 px-3 py-1 text-xs font-bold text-foreground"
                                     >
                                         {finishBadgeLabel}
                                     </Badge>
                                 </div>
                             </div>
 
-                            {/* Only Time Cards made bigger */}
+                            {/* Timeline Cards */}
                             <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 mt-3 sm:mt-5 md:min-w-[380px] lg:min-w-[420px]">
-                                <div className="group rounded-2xl border border-slate-300 bg-slate-50/80 p-3 sm:p-4 shadow-xs transition-all hover:border-emerald-400 hover:bg-emerald-50/40 hover:shadow-md dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-emerald-700 dark:hover:bg-slate-800">
-                                    <div className="flex items-center gap-2 sm:gap-2.5 text-emerald-700 dark:text-emerald-400">
-                                        <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg sm:rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 shadow-xs">
+                                <div className="group rounded-2xl border border-border bg-muted/40 p-3 sm:p-4 shadow-elevation-1 transition-all hover:border-emerald-500/40 hover:bg-muted/70">
+                                    <div className="flex items-center gap-2 sm:gap-2.5 text-emerald-600 dark:text-emerald-400">
+                                        <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg sm:rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs">
                                             <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                         </span>
-                                        <p className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
+                                        <p className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-muted-foreground truncate">
                                             {userProfileTexts.started()}
                                         </p>
                                     </div>
-                                    <p className="mt-1.5 sm:mt-2 text-xs sm:text-base lg:text-lg font-extrabold text-slate-900 dark:text-slate-100 truncate">
+                                    <p className="font-display mt-1.5 sm:mt-2 text-xs sm:text-base lg:text-lg font-extrabold text-foreground truncate">
                                         {startedAtLabel}
                                     </p>
                                 </div>
 
-                                <div className="group rounded-2xl border border-slate-300 bg-slate-50/80 p-3 sm:p-4 shadow-xs transition-all hover:border-blue-400 hover:bg-blue-50/40 hover:shadow-md dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-blue-700 dark:hover:bg-slate-800">
-                                    <div className="flex items-center gap-2 sm:gap-2.5 text-blue-700 dark:text-blue-400">
-                                        <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg sm:rounded-xl bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400 shadow-xs">
+                                <div className="group rounded-2xl border border-border bg-muted/40 p-3 sm:p-4 shadow-elevation-1 transition-all hover:border-primary/40 hover:bg-muted/70">
+                                    <div className="flex items-center gap-2 sm:gap-2.5 text-primary">
+                                        <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg sm:rounded-xl bg-primary/15 text-primary shadow-2xs">
                                             <Target className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                         </span>
-                                        <p className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
+                                        <p className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-muted-foreground truncate">
                                             {userProfileTexts.targetFinish()}
                                         </p>
                                     </div>
-                                    <p className="mt-1.5 sm:mt-2 text-xs sm:text-base lg:text-lg font-extrabold text-slate-900 dark:text-slate-100 truncate">
+                                    <p className="font-display mt-1.5 sm:mt-2 text-xs sm:text-base lg:text-lg font-extrabold text-foreground truncate">
                                         {estimatedFinishLabel}
                                     </p>
                                 </div>
@@ -589,19 +589,19 @@ export function UserProfileCard() {
                         return (
                             <div
                                 key={item.key}
-                                className={`group relative flex items-start gap-2.5 sm:gap-3.5 rounded-2xl border border-slate-300 bg-white p-3 sm:p-4.5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900 ${item.hoverBorder}`}
+                                className={`group relative flex items-start gap-2.5 sm:gap-3.5 rounded-2xl border border-border bg-card p-3 sm:p-4.5 shadow-elevation-1 transition-all duration-300 card-interactive-subtle ${item.hoverBorder}`}
                             >
                                 <div className={`flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl text-white shadow-md transition-transform duration-300 group-hover:scale-105 ${item.iconBg} ${item.glow}`}>
                                     <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300 truncate">
+                                    <p className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-muted-foreground truncate">
                                         {itemLabelMap[item.key] || item.label}
                                     </p>
-                                    <p className={`mt-0.5 text-xl sm:text-2xl font-black tracking-tight ${item.valueColor}`}>
+                                    <p className={`font-display mt-0.5 text-xl sm:text-2xl font-black tracking-tight ${item.valueColor}`}>
                                         {payload.value}
                                     </p>
-                                    <p className={`mt-0.5 sm:mt-1 text-[11px] sm:text-xs font-semibold leading-relaxed line-clamp-1 sm:line-clamp-none ${item.helperColor}`}>
+                                    <p className="mt-0.5 sm:mt-1 text-[11px] sm:text-xs font-medium leading-relaxed line-clamp-1 sm:line-clamp-none text-muted-foreground">
                                         {payload.helper}
                                     </p>
                                 </div>

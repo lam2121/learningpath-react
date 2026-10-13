@@ -227,7 +227,7 @@ export function CurriculumRoadmapPage() {
         : learningPathSuffix;
 
     return (
-        <div className="min-h-screen bg-blue-50/60 text-slate-950 dark:bg-slate-950 dark:text-white mobile-page-enter">
+        <div className="min-h-screen bg-background text-foreground mobile-page-enter">
             <MainNavigationMenu />
 
             <main className="mx-auto w-full max-w-[1480px] px-3 py-3 sm:px-5 sm:py-4 lg:px-6 mobile-page-bottom">
@@ -239,10 +239,10 @@ export function CurriculumRoadmapPage() {
                 />
 
                 {/* Mobile Mode Switcher Tabs — Premium segmented control */}
-                <div className="lg:hidden relative flex p-1 mt-3 mb-2 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
+                <div className="lg:hidden relative flex p-1 mt-3 mb-2 rounded-2xl bg-card border border-border/70 shadow-xs">
                     {/* Sliding background indicator */}
                     <div
-                        className="absolute top-1 bottom-1 rounded-xl bg-blue-600 shadow-sm transition-all duration-300 ease-out"
+                        className="absolute top-1 bottom-1 rounded-xl bg-primary shadow-xs transition-all duration-300 ease-out"
                         style={{
                             left: mobileTab === 'topics' ? '0.25rem' : '50%',
                             right: mobileTab === 'lessons' ? '0.25rem' : '50%',
@@ -253,8 +253,8 @@ export function CurriculumRoadmapPage() {
                         onClick={() => setMobileTab('topics')}
                         className={`relative z-10 flex-1 py-2.5 px-3 text-xs font-bold rounded-xl transition-colors duration-200 ${
                             mobileTab === 'topics'
-                                ? 'text-white'
-                                : 'text-slate-600 dark:text-slate-400 active:text-slate-900'
+                                ? 'text-primary-foreground'
+                                : 'text-muted-foreground active:text-foreground'
                         }`}
                     >
                         Danh sách chủ đề ({topics.length})
@@ -264,8 +264,8 @@ export function CurriculumRoadmapPage() {
                         onClick={() => setMobileTab('lessons')}
                         className={`relative z-10 flex-1 py-2.5 px-3 text-xs font-bold rounded-xl transition-colors duration-200 ${
                             mobileTab === 'lessons'
-                                ? 'text-white'
-                                : 'text-slate-600 dark:text-slate-400 active:text-slate-900'
+                                ? 'text-primary-foreground'
+                                : 'text-muted-foreground active:text-foreground'
                         }`}
                     >
                         Bài học chi tiết {selectedTopic ? `· Topic ${selectedTopic.sort_order}` : ''}
@@ -278,7 +278,7 @@ export function CurriculumRoadmapPage() {
                         lg:grid-cols-[minmax(340px,0.9fr)_minmax(0,1.1fr)]
                     "
                 >
-                    <section className={`${mobileTab === 'topics' ? 'flex' : 'hidden lg:flex'} h-full min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900`}>
+                    <section className={`${mobileTab === 'topics' ? 'flex' : 'hidden lg:flex'} h-full min-w-0 flex-col rounded-2xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs`}>
                         <div className="mb-4 flex shrink-0 items-center justify-between gap-4">
                             <h2 className="text-xl font-bold text-slate-950 sm:text-2xl dark:text-white">
                                 {t("topicRoadmap", { defaultValue: "Topic roadmap" })}
@@ -325,7 +325,7 @@ export function CurriculumRoadmapPage() {
                         )}
                     </section>
 
-                    <section className={`${mobileTab === 'lessons' ? 'flex' : 'hidden lg:flex'} h-full min-w-0 flex-col rounded-2xl border border-blue-200 bg-white p-4 sm:p-6 shadow-sm ring-1 ring-blue-100/70 dark:border-blue-900 dark:bg-slate-900 dark:ring-blue-950`}>
+                    <section className={`${mobileTab === 'lessons' ? 'flex' : 'hidden lg:flex'} h-full min-w-0 flex-col rounded-2xl border border-primary/20 bg-card p-4 sm:p-6 shadow-xs ring-1 ring-primary/10`}>
                         {/* Mobile back to topics button */}
                         <div className="lg:hidden mb-3">
                             <button

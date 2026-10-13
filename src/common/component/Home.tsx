@@ -195,7 +195,7 @@ export function Home() {
                         {t("badge", { defaultValue: "Role-specific professional English" })}
                     </div>
 
-                    <h1 className="mt-3 sm:mt-5 max-w-3xl text-[1.65rem] sm:text-4xl lg:text-5xl xl:text-[3.7rem] font-black leading-[1.12] tracking-[-0.04em]">
+                    <h1 className="font-display mt-3 sm:mt-5 max-w-3xl text-[1.65rem] sm:text-4xl lg:text-5xl xl:text-[3.7rem] font-black leading-[1.12] tracking-[-0.04em]">
                         {t("heroTitle", { defaultValue: "Know exactly what English" })}
                         <span className="mt-2 block pb-2 bg-[linear-gradient(135deg,#005596_0%,#0072bb_48%,#00a9ce_100%)] bg-clip-text text-transparent dark:bg-[linear-gradient(135deg,#38bdf8_0%,#60a5fa_50%,#93c5fd_100%)]">
                             {t("heroTitleGradient", { defaultValue: "to learn for your career." })}

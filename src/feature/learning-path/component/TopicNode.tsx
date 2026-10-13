@@ -96,13 +96,11 @@ export function TopicNode({
             onClick={onClick}
             className={`
                 relative flex min-h-[210px] w-full flex-col rounded-2xl
-                border bg-white p-5 text-left shadow-sm
-                transition-all duration-200
-                hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg
-                dark:bg-slate-900 dark:hover:border-blue-700
+                border bg-card p-5 text-left
+                card-interactive
                 ${status === "current"
-                    ? "border-blue-400 ring-2 ring-blue-100 dark:ring-blue-950"
-                    : "border-slate-200 dark:border-slate-800"
+                    ? "border-primary ring-2 ring-primary/25 glow-primary"
+                    : "border-border/80 hover:border-border"
                 }
             `}
         >

@@ -437,19 +437,19 @@ export function ListeningAudioPlayer({
       : 0
 
   return (
-    <div className="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50/90 via-indigo-50/60 to-purple-50/90 p-5 md:p-6 shadow-md dark:border-blue-900/60 dark:bg-gradient-to-br dark:from-slate-900 dark:via-blue-950/40 dark:to-slate-900 transition-all">
+    <div className="rounded-3xl border border-border/70 bg-card p-5 md:p-6 shadow-sm hover:shadow-md transition-all">
       {/* Hidden audio element for high fidelity playback */}
       <audio ref={audioRef} preload="auto" />
 
       {/* Top Header & Track Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-blue-100 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/50">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 shrink-0">
             <Headphones className="h-6 w-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-primary">
                 {title}
               </span>
               {ratePercent < 0 && (
@@ -458,7 +458,7 @@ export function ListeningAudioPlayer({
                 </Badge>
               )}
             </div>
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+            <h3 className="font-display text-base sm:text-lg font-bold text-foreground">
               {subtitle}
             </h3>
           </div>

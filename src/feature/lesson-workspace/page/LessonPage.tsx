@@ -983,10 +983,10 @@ function LessonPageContent({ lessonId }: { lessonId: number }) {
             />
 
             <main className="mx-auto max-w-[1480px] px-3 py-4 sm:px-6 sm:py-6 xl:px-8">
-                <header className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
+                <header className="rounded-[28px] border border-border/80 bg-card p-4 shadow-xs sm:p-6 transition-all hover:shadow-md">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="flex flex-wrap items-center gap-3">
-                            <Button variant="outline" size="sm" onClick={handleBackToRoadmap}>
+                            <Button variant="outline" size="sm" onClick={handleBackToRoadmap} className="border-border/80 hover:bg-accent/50">
                                 <ArrowLeft className="mr-2 h-4 w-4" />
                                 {language === "ja" ? "ロードマップに戻る" : language === "vi" ? "Quay lại lộ trình" : "Back to roadmap"}
                             </Button>
@@ -1009,17 +1009,17 @@ function LessonPageContent({ lessonId }: { lessonId: number }) {
 
                     <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
                         <div className="min-w-0">
-                            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-300">
+                            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
                                 {language === "ja"
                                     ? `トピック ${topic.sort_order} · ${topic.name}`
                                     : language === "vi"
                                         ? `Chủ đề ${topic.sort_order} · ${topic.name}`
                                         : `Topic ${topic.sort_order} · ${topic.name}`}
                             </p>
-                            <h1 className="mt-3 break-words text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+                            <h1 className="font-display mt-3 break-words text-2xl font-bold tracking-tight text-foreground sm:text-4xl">
                                 {lesson.title}
                             </h1>
-                            <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                            <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
                                 {language === "ja"
                                     ? "このページでは、データベースのロードマップから選択したレッスンのC-1理論とC-2クイズコンテンツを表示します。"
                                     : language === "vi"
@@ -1029,16 +1029,16 @@ function LessonPageContent({ lessonId }: { lessonId: number }) {
                         </div>
 
                         {/* Readiness summary card: visible on desktop, hidden on phone to save vertical space */}
-                        <div className="hidden lg:grid gap-3 rounded-3xl bg-slate-50 p-4 sm:p-5 dark:bg-slate-800/60">
+                        <div className="hidden lg:grid gap-3 rounded-2xl border border-border/60 bg-accent/30 p-4 sm:p-5">
                             <div className="flex items-center gap-3">
-                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-xs">
                                     <BookOpen className="h-5 w-5" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                                         {language === "ja" ? "利用可能" : language === "vi" ? "SẴN SÀNG" : "READY NOW"}
                                     </p>
-                                    <p className="font-semibold text-slate-950 dark:text-white">
+                                    <p className="font-bold text-foreground">
                                         {language === "ja"
                                             ? "7つの理論セクション + クイズ"
                                             : language === "vi"
@@ -1047,7 +1047,7 @@ function LessonPageContent({ lessonId }: { lessonId: number }) {
                                     </p>
                                 </div>
                             </div>
-                            <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
+                            <p className="text-sm leading-6 text-muted-foreground">
                                 {language === "ja"
                                     ? "左側のナビゲーションを使用して、7つの理論セクションと最終クイズタブの間を移動します。"
                                     : language === "vi"
@@ -1059,7 +1059,7 @@ function LessonPageContent({ lessonId }: { lessonId: number }) {
                 </header>
 
                 {/* Mobile horizontal section selector (prevents scrolling through 8 full-width cards on phone) */}
-                <div className="xl:hidden sticky top-14 z-20 -mx-3 sm:-mx-6 mb-3 px-3 sm:px-6 py-2.5 bg-white/95 backdrop-blur-md border-y border-slate-200/80 shadow-2xs dark:bg-slate-900/95 dark:border-slate-800">
+                <div className="xl:hidden sticky top-14 z-20 -mx-3 sm:-mx-6 mb-3 px-3 sm:px-6 py-2.5 bg-background/90 backdrop-blur-xl border-y border-border/60 shadow-xs">
                     <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth py-0.5">
                         {SECTION_META.map((meta) => {
                             const Icon = meta.icon;
@@ -1073,8 +1073,8 @@ function LessonPageContent({ lessonId }: { lessonId: number }) {
                                     onClick={() => handleSectionChange(meta.key)}
                                     className={`flex shrink-0 items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
                                         isActive
-                                            ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-500/20"
-                                            : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                                            ? "bg-primary text-primary-foreground shadow-xs ring-2 ring-primary/20"
+                                            : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
                                     }`}
                                 >
                                     <Icon className="h-3.5 w-3.5 shrink-0" />
@@ -1088,12 +1088,12 @@ function LessonPageContent({ lessonId }: { lessonId: number }) {
                 <div className="mt-3 xl:mt-6 grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
                     {/* Desktop sidebar */}
                     <aside className="hidden xl:block xl:sticky xl:top-24 xl:self-start">
-                        <div className="rounded-[28px] border border-slate-200 bg-white p-3 sm:p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <div className="rounded-[28px] border border-border/80 bg-card p-3 sm:p-4 shadow-xs">
                             <div className="mb-4 px-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                                     {language === "ja" ? "レッスンマップ" : language === "vi" ? "BẢN ĐỒ BÀI HỌC" : "Lesson map"}
                                 </p>
-                                <p className="mt-2 text-lg font-semibold text-slate-950 dark:text-white">
+                                <p className="mt-2 text-lg font-bold text-foreground">
                                     {language === "ja" ? "8つのセクション" : language === "vi" ? "8 phần học" : "8 sections"}
                                 </p>
                             </div>
