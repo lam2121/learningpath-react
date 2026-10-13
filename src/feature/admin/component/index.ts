@@ -17,3 +17,4 @@ export {
 export { GenerationCenterDialog } from './GenerationCenterDialog';
 export { RejectedContentTable } from './RejectedContentTable';
 export { UsageLogTable } from './UsageLogTable';
+export { LessonFixModal, type LessonFixTarget } from './LessonFixModal';

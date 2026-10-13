@@ -5,8 +5,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/shadcn/component/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shadcn/component/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/shadcn/component/ui/dialog';
-import { AlertTriangle, CheckCircle, XCircle, Loader2, Copy, Eye } from 'lucide-react';
+import { AlertTriangle, CheckCircle, XCircle, Loader2, Copy, Eye, Wrench } from 'lucide-react';
 import { fetchRejectedContent, updateRejectedContentStatus, type RejectedContent } from '../api/adminApi';
+import { LessonFixModal, type LessonFixTarget } from './LessonFixModal';
+
+function parseLessonInfo(preview: string | null): { lessonId: number | null; title: string | null; step: string | null } {
+	if (!preview) return { lessonId: null, title: null, step: null };
+	const idMatch = preview.match(/lesson_id=(\d+)/);
+	const titleMatch = preview.match(/title=([^&]+)/);
+	const stepMatch = preview.match(/step=([^&]+)/);
+	return {
+		lessonId: idMatch ? Number(idMatch[1]) : null,
+		title: titleMatch ? decodeURIComponent(titleMatch[1]) : null,
+		step: stepMatch ? stepMatch[1] : null,
+	};
+}
 
 export function RejectedContentTable() {
 	const [items, setItems] = useState<RejectedContent[]>([]);
@@ -15,6 +28,7 @@ export function RejectedContentTable() {
 	const [debouncedRole, setDebouncedRole] = useState('');
 	const [selectedItem, setSelectedItem] = useState<RejectedContent | null>(null);
 	const [updating, setUpdating] = useState<number | null>(null);
+	const [fixLessonTarget, setFixLessonTarget] = useState<LessonFixTarget | null>(null);
 	const requestSeq = useRef(0);
 
 	useEffect(() => {
@@ -185,28 +199,53 @@ pending: { label: 'Pending', color: 'bg-amber-100 dark:bg-amber-900 text-amber-8
 											>
 												<Copy className="h-4 w-4" />
 											</Button>
-											{item.status === 'pending' && (
-												<>
-													<Button
-														variant="outline"
-														size="sm"
-														onClick={() => handleStatusChange(item.id, 'fixed')}
-														disabled={updating === item.id}
-														className="h-8 text-xs"
-													>
-														{updating === item.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Fixed'}
-													</Button>
-													<Button
-														variant="ghost"
-														size="sm"
-														onClick={() => handleStatusChange(item.id, 'ignored')}
-														disabled={updating === item.id}
-														className="h-8 text-xs text-gray-500 dark:text-gray-400"
-													>
-Ignore
-													</Button>
-												</>
-											)}
+											{item.status === 'pending' && (() => {
+												const parsed = parseLessonInfo(item.inputPreview);
+												const isLesson = item.generator === 'C1' || item.generator === 'C2' || Boolean(parsed.lessonId);
+												return (
+													<>
+														{isLesson && parsed.lessonId && (
+															<Button
+																variant="default"
+																size="sm"
+																onClick={() => {
+																	setFixLessonTarget({
+																		id: parsed.lessonId!,
+																		title: parsed.title || `Lesson #${parsed.lessonId}`,
+																		roleName: item.role,
+																		hasPartialTheory: item.generator === 'C2' || parsed.step === 'C2',
+																		failedStep: item.generator || parsed.step || 'C1',
+																		errorMessage: item.error,
+																	});
+																}}
+																className="h-8 gap-1 bg-amber-600 hover:bg-amber-700 text-xs text-white"
+																title="Fix / Retry Lesson Generation"
+															>
+																<Wrench className="h-3 w-3" />
+																Fix
+															</Button>
+														)}
+														<Button
+															variant="outline"
+															size="sm"
+															onClick={() => handleStatusChange(item.id, 'fixed')}
+															disabled={updating === item.id}
+															className="h-8 text-xs"
+														>
+															{updating === item.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Fixed'}
+														</Button>
+														<Button
+															variant="ghost"
+															size="sm"
+															onClick={() => handleStatusChange(item.id, 'ignored')}
+															disabled={updating === item.id}
+															className="h-8 text-xs text-gray-500 dark:text-gray-400"
+														>
+															Ignore
+														</Button>
+													</>
+												);
+											})()}
 										</div>
 									</TableCell>
 								</TableRow>
@@ -298,22 +337,51 @@ Ignore
 					</div>
 
 					<DialogFooter>
-						{selectedItem?.status === 'pending' && (
-							<>
-								<Button variant="outline" onClick={() => handleStatusChange(selectedItem!.id, 'ignored')}>
-									Ignore
-								</Button>
-								<Button onClick={() => handleStatusChange(selectedItem!.id, 'fixed')}>
-									Fix
-								</Button>
-							</>
-						)}
+						{selectedItem?.status === 'pending' && (() => {
+							const parsed = parseLessonInfo(selectedItem.inputPreview);
+							const isLesson = selectedItem.generator === 'C1' || selectedItem.generator === 'C2' || Boolean(parsed.lessonId);
+							return (
+								<>
+									{isLesson && parsed.lessonId && (
+										<Button
+											className="gap-1 bg-amber-600 hover:bg-amber-700 text-white"
+											onClick={() => {
+												setFixLessonTarget({
+													id: parsed.lessonId!,
+													title: parsed.title || `Lesson #${parsed.lessonId}`,
+													roleName: selectedItem.role,
+													hasPartialTheory: selectedItem.generator === 'C2' || parsed.step === 'C2',
+													failedStep: selectedItem.generator || parsed.step || 'C1',
+													errorMessage: selectedItem.error,
+												});
+											}}
+										>
+											<Wrench className="h-4 w-4" />
+											Fix Lesson
+										</Button>
+									)}
+									<Button variant="outline" onClick={() => handleStatusChange(selectedItem!.id, 'ignored')}>
+										Ignore
+									</Button>
+									<Button onClick={() => handleStatusChange(selectedItem!.id, 'fixed')}>
+										Mark Fixed
+									</Button>
+								</>
+							);
+						})()}
 						<Button variant="outline" onClick={() => setSelectedItem(null)}>
 							Close
 						</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			<LessonFixModal
+				isOpen={Boolean(fixLessonTarget)}
+				onClose={() => setFixLessonTarget(null)}
+				lesson={fixLessonTarget}
+				onSuccess={() => loadItems(appliedFilters)}
+			/>
 		</div>
 	);
 }

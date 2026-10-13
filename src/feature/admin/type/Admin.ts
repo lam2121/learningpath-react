@@ -146,6 +146,21 @@ export interface RejectedContent {
 	status: 'pending' | 'fixed' | 'ignored';
 }
 
+export interface FailedLesson {
+	id: number;
+	title: string;
+	primarySkill: string;
+	difficultyTier: string;
+	topicId: number;
+	topicName: string;
+	roleId: number;
+	roleName: string;
+	hasPartialTheory: boolean;
+	failedStep: string;
+	errorMessage: string | null;
+	createdAt: string | null;
+}
+
 export interface ValidatorCheck {
 	check: string;
 	passed: boolean;

@@ -1,6 +1,10 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, Presentation } from "lucide-react";
+import { ChevronRight, Presentation, Wrench } from "lucide-react";
+import { useAuth } from "@/common/context/AuthContext";
+import { Button } from "@/shadcn/component/ui/button";
+import { LessonFixModal } from "@/feature/admin/component";
 import type { RoadmapLesson } from "../api/roadmapApi";
 import {
     isLessonGenerated,
@@ -24,6 +28,12 @@ export function LessonCard({
     isWeakestReview = false,
 }: LessonCardProps) {
     const { t } = useTranslation("profile");
+    const auth = useAuth();
+    const isAdmin =
+        auth.user?.role === "admin"
+        || auth.user?.role_id === 2
+        || (auth.user as { roleId?: number } | undefined)?.roleId === 2;
+    const [showFixModal, setShowFixModal] = useState(false);
     const isGenerated = isLessonGenerated(lesson);
     const isFailed = isLessonGenerationFailed(lesson);
     const isReadyToStudy = isLessonReadyToStudy(lesson);
@@ -97,6 +107,23 @@ export function LessonCard({
                                 ? t("lessonLockedDesc", { defaultValue: "This lesson is generated, but you need to pass the previous lesson in this topic to unlock it." })
                                 : t("lessonReadyDesc", { defaultValue: "Theory and quiz content are ready for this lesson." })}
                 </p>
+
+                {isFailed && isAdmin && (
+                    <div className="mt-3">
+                        <Button
+                            size="sm"
+                            className="h-7 gap-1 bg-amber-600 px-2.5 text-xs font-semibold text-white hover:bg-amber-700"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setShowFixModal(true);
+                            }}
+                        >
+                            <Wrench className="h-3 w-3" />
+                            Fix Lesson (Admin)
+                        </Button>
+                    </div>
+                )}
             </div>
 
             <div
@@ -115,17 +142,32 @@ export function LessonCard({
     const className =
         "group flex h-full w-full min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all dark:border-slate-800 dark:bg-slate-900 sm:gap-4 sm:p-5";
 
-    if (!isReadyToStudy) {
-        return <div className={`${className} opacity-80`}>{content}</div>;
-    }
-
     return (
-        <Link
-            to="/lessons/$lessonId"
-            params={{ lessonId: String(lesson.id) }}
-            className={`${className} hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:hover:border-blue-700`}
-        >
-            {content}
-        </Link>
+        <>
+            {!isReadyToStudy ? (
+                <div className={`${className} opacity-80`}>{content}</div>
+            ) : (
+                <Link
+                    to="/lessons/$lessonId"
+                    params={{ lessonId: String(lesson.id) }}
+                    className={`${className} hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:hover:border-blue-700`}
+                >
+                    {content}
+                </Link>
+            )}
+
+            <LessonFixModal
+                isOpen={showFixModal}
+                onClose={() => setShowFixModal(false)}
+                lesson={{
+                    id: lesson.id,
+                    title: lesson.title,
+                    primarySkill: lesson.primary_skill,
+                    difficultyTier: lesson.difficulty_tier,
+                    hasPartialTheory: Boolean(lesson.theory_content),
+                    failedStep: lesson.theory_content ? "C2" : "C1",
+                }}
+            />
+        </>
     );
 }

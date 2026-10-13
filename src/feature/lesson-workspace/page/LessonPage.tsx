@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, BookOpen } from "lucide-react";
+import { ArrowLeft, BookOpen, Wrench } from "lucide-react";
 import { MainNavigationMenu } from "@/common/component/MainNavigationMenu";
 import { useAuth } from "@/common/context/AuthContext";
+import { LessonFixModal } from "@/feature/admin/component";
 import { fetchCurrentUserProfile } from "@/feature/auth/api/authAPI";
 import type { UserProfileResponse } from "@/feature/auth/type/Auth";
 import {
@@ -138,6 +139,11 @@ function LessonPageContent({ lessonId }: { lessonId: number }) {
     const navigate = useNavigate();
     const { language } = useLessonLanguage();
     const userId = Number(auth.user?.id);
+    const isAdmin =
+        auth.user?.role === "admin"
+        || auth.user?.role_id === 2
+        || (auth.user as { roleId?: number } | undefined)?.roleId === 2;
+    const [showFixModal, setShowFixModal] = useState(false);
     const [roadmap, setRoadmap] = useState<RoadmapResponse | null>(null);
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
     const [loading, setLoading] = useState(true);
@@ -887,7 +893,20 @@ function LessonPageContent({ lessonId }: { lessonId: number }) {
                                         ? "Nội dung lý thuyết và bài kiểm tra cho bài học này chưa được tạo."
                                         : "Theory and quiz content have not been generated for this lesson yet.")}
                         </p>
-                        <div className="mt-6">
+                        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                            {isFailed && isAdmin && (
+                                <Button
+                                    className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
+                                    onClick={() => setShowFixModal(true)}
+                                >
+                                    <Wrench className="h-4 w-4" />
+                                    {language === "ja"
+                                        ? "レッスンを修正 (管理者)"
+                                        : language === "vi"
+                                            ? "Sửa bài học (Admin)"
+                                            : "Fix Lesson (Admin)"}
+                                </Button>
+                            )}
                             <Button asChild variant="outline">
                                 <Link to="/lessons/learning-path">
                                     {language === "ja" ? "ロードマップに戻る" : language === "vi" ? "Quay lại lộ trình" : "Back to roadmap"}
@@ -896,6 +915,26 @@ function LessonPageContent({ lessonId }: { lessonId: number }) {
                         </div>
                     </div>
                 </main>
+
+                <LessonFixModal
+                    isOpen={showFixModal}
+                    onClose={() => setShowFixModal(false)}
+                    lesson={{
+                        id: lesson.id,
+                        title: lesson.title,
+                        topicName: topic?.name,
+                        roleName: track,
+                        primarySkill: lesson.primary_skill,
+                        difficultyTier: lesson.difficulty_tier,
+                        hasPartialTheory: Boolean(lesson.theory_content),
+                        failedStep: lesson.theory_content ? "C2" : "C1",
+                    }}
+                    onSuccess={() => {
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1200);
+                    }}
+                />
             </div>
         );
     }

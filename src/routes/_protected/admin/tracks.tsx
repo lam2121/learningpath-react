@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, Edit, Loader2, Plus, RotateCcw, Sparkles, Trash2 } from 'lucide-react';
+import { AlertCircle, Edit, Loader2, Plus, RotateCcw, Sparkles, Trash2, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/shadcn/component/ui/button';
 import { Badge } from '@/shadcn/component/ui/badge';
@@ -12,12 +12,14 @@ import {
 	GenerationCenterDialog,
 	ResetTrackLearnersModal,
 	RoleCreationForm,
+	LessonFixModal,
 } from '@/feature/admin/component';
 import {
 	activateTrack,
 	deleteTrack,
 	fetchGenerationSummary,
 	fetchTracks,
+	fetchFailedLessons,
 	generateCourse,
 	generateMoreTopics,
 	generatePlacement,
@@ -25,6 +27,7 @@ import {
 	type CareerTrack,
 	type GenerationSummary,
 	type SkillKey,
+	type FailedLesson,
 } from '@/feature/admin/api/adminApi';
 
 type Workflow = 'placement' | 'course' | 'course-resume';
@@ -101,12 +104,18 @@ function TracksPage() {
 	const [showMoreTopics, setShowMoreTopics] = useState(false);
 	const [confirmDelete, setConfirmDelete] = useState<CareerTrack | null>(null);
 	const [mutating, setMutating] = useState(false);
+	const [failedLessons, setFailedLessons] = useState<FailedLesson[]>([]);
+	const [fixingLesson, setFixingLesson] = useState<FailedLesson | null>(null);
 
 	const loadTracks = useCallback(async () => {
 		setLoading(true);
 		try {
-			const data = await fetchTracks();
+			const [data, failed] = await Promise.all([
+				fetchTracks(),
+				fetchFailedLessons(),
+			]);
 			setTracks(data);
+			setFailedLessons(failed);
 			setSelectedTrack(prev => (prev ? data.find(track => track.id === prev.id) ?? prev : prev));
 		} catch (error) {
 			console.error('Failed to load tracks:', error);
@@ -302,10 +311,22 @@ function TracksPage() {
 					<h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Career Tracks</h1>
 					<p className="text-gray-500 dark:text-gray-400">Manage career tracks and D/C/T/G budget</p>
 				</div>
-				<Button onClick={() => { setEditingTrack(undefined); setShowForm(true); }}>
-					<Plus className="mr-2 h-4 w-4" />
-					Add New Track
-				</Button>
+				<div className="flex items-center gap-2">
+					{failedLessons.length > 0 && (
+						<Button
+							variant="outline"
+							className="border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+							onClick={() => setFixingLesson(failedLessons[0])}
+						>
+							<Wrench className="mr-2 h-4 w-4 text-amber-600" />
+							Fix Failed Lessons ({failedLessons.length})
+						</Button>
+					)}
+					<Button onClick={() => { setEditingTrack(undefined); setShowForm(true); }}>
+						<Plus className="mr-2 h-4 w-4" />
+						Add New Track
+					</Button>
+				</div>
 			</div>
 
 			<div className="overflow-x-auto rounded-lg border dark:border-gray-800 bg-white dark:bg-gray-900">
@@ -328,6 +349,7 @@ function TracksPage() {
 								|| track.placementGenerationStatus === 'pending'
 								|| track.courseGenerationStatus === 'in_progress'
 								|| track.courseGenerationStatus === 'pending';
+							const trackFailed = failedLessons.filter(fl => fl.roleId === track.id);
 							return (
 								<tr key={track.id} className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
 									<td className="p-4 font-medium text-gray-900 dark:text-gray-100">{track.name}</td>
@@ -356,6 +378,18 @@ function TracksPage() {
 													{isRunning ? <Loader2 className="mr-1 h-3 w-3 animate-spin text-blue-600" /> : <Sparkles className="mr-1 h-3 w-3" />}
 													Manage
 												</Button>
+												{trackFailed.length > 0 && (
+													<Button
+														variant='outline'
+														size='sm'
+														className='h-8 text-xs border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200'
+														onClick={() => setFixingLesson(trackFailed[0])}
+														title={`Fix ${trackFailed.length} failed lesson(s) in this track`}
+													>
+														<Wrench className="mr-1 h-3 w-3 text-amber-600" />
+														Fix ({trackFailed.length})
+													</Button>
+												)}
 												<Badge variant="outline" className={rowStatus.className}>
 													{rowStatus.label}
 												</Badge>
@@ -484,6 +518,13 @@ function TracksPage() {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			<LessonFixModal
+				isOpen={Boolean(fixingLesson)}
+				onClose={() => setFixingLesson(null)}
+				lesson={fixingLesson}
+				onSuccess={loadTracks}
+			/>
 		</div>
 	)
 }

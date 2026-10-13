@@ -32,6 +32,7 @@ import type {
 	AdminUser,
 	AdminUserFilters,
 	AdminUserPage,
+	FailedLesson,
 	UsageLog,
 	UsageLogFilters,
 	UsageLogClearResult,
@@ -70,6 +71,7 @@ export type {
 	AdminUser,
 	AdminUserFilters,
 	AdminUserPage,
+	FailedLesson,
 };
 
 export { DEFAULT_BASELINE } from '../type/Admin';
@@ -146,6 +148,23 @@ export async function generateCourse(roleId: number, force = false, resume = fal
 
 export async function generateMoreTopics(roleId: number, skill: SkillKey, count: number): Promise<GenerateResponse> {
 	const res = await axiosJWT.post<GenerateResponse>(`/admin/roles/${roleId}/generate-topics`, { skill, count });
+	return res.data;
+}
+
+export async function generateLessonContent(
+	lessonId: number,
+	options?: { force?: boolean; resume?: boolean }
+): Promise<GenerateResponse> {
+	const params = new URLSearchParams();
+	if (options?.force) params.set('force', 'true');
+	if (options?.resume !== undefined) params.set('resume', String(options.resume));
+	const query = params.toString() ? `?${params.toString()}` : '';
+	const res = await axiosJWT.post<GenerateResponse>(`/admin/lessons/${lessonId}/generate${query}`);
+	return res.data;
+}
+
+export async function fetchFailedLessons(): Promise<FailedLesson[]> {
+	const res = await axiosJWT.get<FailedLesson[]>('/admin/lessons/failed');
 	return res.data;
 }
 

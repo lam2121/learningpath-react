@@ -1,10 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+    AlertTriangle,
     Bell,
     BookOpen,
     FileText,
     Trash2,
+    Wrench,
     type LucideIcon,
 } from "lucide-react";
 
@@ -25,6 +27,8 @@ import {
     fetchRoadmap,
     type RoadmapResponse,
 } from "@/feature/learning-path/api/roadmapApi";
+import { fetchFailedLessons, type FailedLesson } from "@/feature/admin/api/adminApi";
+import { LessonFixModal } from "@/feature/admin/component";
 
 type NotificationItem = {
     id: string;
@@ -34,6 +38,8 @@ type NotificationItem = {
     unread: boolean;
     topicId?: number;
     icon: LucideIcon;
+    failedLesson?: FailedLesson;
+    actionType?: "fix_lesson";
 };
 
 function getSeenStorageKey(userId: number) {
@@ -94,11 +100,29 @@ function writeDismissedIds(userId: number, ids: string[]) {
 
 function buildNotifications(
     roadmap: RoadmapResponse | null,
+    failedLessons: FailedLesson[],
     seenIds: Set<string>,
     dismissedIds: Set<string>,
 ): NotificationItem[] {
+    const failedNotifications: NotificationItem[] = failedLessons
+        .filter((fl) => !dismissedIds.has(`failed-lesson-${fl.id}`))
+        .map((fl) => ({
+            id: `failed-lesson-${fl.id}`,
+            title: `Lesson Failed: ${fl.title}`,
+            description: `${fl.roleName || "Track"} • ${
+                fl.failedStep === "C2"
+                    ? "Quiz failed (Theory saved - saves ~70% tokens on resume)"
+                    : fl.errorMessage || "Generation failed at Step C1"
+            }`,
+            time: "Fix required",
+            icon: AlertTriangle,
+            unread: !seenIds.has(`failed-lesson-${fl.id}`),
+            failedLesson: fl,
+            actionType: "fix_lesson",
+        }));
+
     if (!roadmap) {
-        return [];
+        return failedNotifications;
     }
 
     const topicNotifications = roadmap.topics
@@ -136,13 +160,20 @@ function buildNotifications(
         )
         .reverse();
 
-    return [...lessonNotifications, ...topicNotifications];
+    return [...failedNotifications, ...lessonNotifications, ...topicNotifications];
 }
 
 export function NotificationDropdown() {
     const auth = useAuth();
     const userId = Number(auth.user?.id);
+    const isAdmin =
+        auth.user?.role === "admin"
+        || auth.user?.role_id === 2
+        || (auth.user as { roleId?: number } | undefined)?.roleId === 2;
+
     const [roadmap, setRoadmap] = useState<RoadmapResponse | null>(null);
+    const [failedLessons, setFailedLessons] = useState<FailedLesson[]>([]);
+    const [fixingLesson, setFixingLesson] = useState<FailedLesson | null>(null);
     const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
     const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
     const hasViewedCurrentOpenRef = useRef(false);
@@ -156,6 +187,7 @@ export function NotificationDropdown() {
 
         if (!Number.isFinite(userId)) {
             setRoadmap(null);
+            setFailedLessons([]);
             setSeenIds(new Set());
             setDismissedIds(new Set());
             return;
@@ -177,6 +209,24 @@ export function NotificationDropdown() {
             }
         };
 
+        const loadFailedLessons = async () => {
+            if (!isAdmin) return;
+            try {
+                const list = await fetchFailedLessons();
+                if (isMounted) {
+                    setFailedLessons(list);
+                }
+            } catch {
+                if (isMounted) {
+                    setFailedLessons([]);
+                }
+            }
+        };
+
+        const loadAll = async () => {
+            await Promise.allSettled([loadRoadmap(), loadFailedLessons()]);
+        };
+
         const scheduleReconnect = (delayMs: number) => {
             if (!isMounted || reconnectTimer !== null) {
                 return;
@@ -188,7 +238,7 @@ export function NotificationDropdown() {
                 }
                 reconnectInFlight = true;
                 try {
-                    await loadRoadmap();
+                    await loadAll();
                     if (!isMounted) {
                         return;
                     }
@@ -214,7 +264,11 @@ export function NotificationDropdown() {
             });
 
             stream.addEventListener("roadmap_updated", () => {
-                void loadRoadmap();
+                void loadAll();
+            });
+
+            stream.addEventListener("admin_notification", () => {
+                void loadAll();
             });
 
             stream.onerror = () => {
@@ -224,10 +278,10 @@ export function NotificationDropdown() {
             };
         };
 
-        void loadRoadmap();
+        void loadAll();
 
         refreshTimer = window.setInterval(() => {
-            void loadRoadmap();
+            void loadAll();
         }, 30_000);
 
         connectStream();
@@ -236,7 +290,7 @@ export function NotificationDropdown() {
             if (document.visibilityState === "hidden") {
                 return;
             }
-            void loadRoadmap();
+            void loadAll();
         };
 
         window.addEventListener("focus", handleWindowFocus);
@@ -254,11 +308,11 @@ export function NotificationDropdown() {
             window.removeEventListener("focus", handleWindowFocus);
             document.removeEventListener("visibilitychange", handleWindowFocus);
         };
-    }, [userId]);
+    }, [userId, isAdmin]);
 
     const notifications = useMemo(
-        () => buildNotifications(roadmap, seenIds, dismissedIds),
-        [roadmap, seenIds, dismissedIds],
+        () => buildNotifications(roadmap, failedLessons, seenIds, dismissedIds),
+        [roadmap, failedLessons, seenIds, dismissedIds],
     );
     const unreadCount = notifications.filter((item) => item.unread).length;
     const readCount = notifications.length - unreadCount;
@@ -341,7 +395,8 @@ export function NotificationDropdown() {
     };
 
     return (
-        <DropdownMenu onOpenChange={handleOpenChange}>
+        <>
+            <DropdownMenu onOpenChange={handleOpenChange}>
             <DropdownMenuTrigger asChild>
                 <Button
                     variant="ghost"
@@ -406,6 +461,77 @@ export function NotificationDropdown() {
                     notifications.map((item) => {
                         const Icon = item.icon;
 
+                        if (item.actionType === "fix_lesson" && item.failedLesson) {
+                            const failed = item.failedLesson;
+                            return (
+                                <DropdownMenuItem
+                                    key={item.id}
+                                    onSelect={(e) => {
+                                        e.preventDefault();
+                                        setFixingLesson(failed);
+                                    }}
+                                    className={`cursor-pointer items-start rounded-lg border px-3 py-3 transition-colors ${
+                                        item.unread
+                                            ? "border-rose-200 bg-rose-50/80 focus:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/40 dark:focus:bg-rose-900/50"
+                                            : "border-transparent bg-slate-50/70 focus:bg-slate-100 dark:bg-slate-800/60 dark:focus:bg-slate-800"
+                                    }`}
+                                >
+                                    <div className="flex w-full gap-3">
+                                        <div
+                                            className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                                                item.unread
+                                                    ? "bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300"
+                                                    : "bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
+                                            }`}
+                                        >
+                                            <Icon className="h-5 w-5" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <p
+                                                    className={`font-medium ${
+                                                        item.unread
+                                                            ? "text-rose-950 dark:text-rose-200"
+                                                            : "text-slate-700 dark:text-slate-300"
+                                                    }`}
+                                                >
+                                                    {item.title}
+                                                </p>
+                                                <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+                                                    Failed
+                                                </span>
+                                            </div>
+                                            <p
+                                                className={`text-sm ${
+                                                    item.unread
+                                                        ? "text-rose-800 dark:text-rose-300"
+                                                        : "text-slate-500 dark:text-slate-400"
+                                                }`}
+                                            >
+                                                {item.description}
+                                            </p>
+                                            <div className="mt-2 flex items-center justify-between gap-2">
+                                                <span className="text-xs text-slate-400 dark:text-slate-500">
+                                                    {item.time}
+                                                </span>
+                                                <Button
+                                                    size="sm"
+                                                    className="h-7 gap-1 bg-amber-600 px-2.5 text-xs font-semibold text-white hover:bg-amber-700"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setFixingLesson(failed);
+                                                    }}
+                                                >
+                                                    <Wrench className="h-3 w-3" />
+                                                    Fix Lesson
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </DropdownMenuItem>
+                            );
+                        }
+
                         return (
                             <DropdownMenuItem
                                 key={item.id}
@@ -467,5 +593,18 @@ export function NotificationDropdown() {
                 )}
             </DropdownMenuContent>
         </DropdownMenu>
+
+        <LessonFixModal
+            isOpen={Boolean(fixingLesson)}
+            onClose={() => setFixingLesson(null)}
+            lesson={fixingLesson}
+            onSuccess={() => {
+                if (isAdmin) {
+                    void fetchFailedLessons().then(setFailedLessons).catch(() => {});
+                }
+                void fetchRoadmap().then(setRoadmap).catch(() => {});
+            }}
+        />
+        </>
     );
 }
