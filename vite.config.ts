@@ -35,7 +35,31 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
         },
       },
-    }
+    },
+    build: {
+      chunkSizeWarningLimit: 600,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules/recharts') || id.includes('node_modules/d3-') || id.includes('node_modules/victory')) {
+              return 'vendor-charts'
+            }
+            if (id.includes('node_modules/@tanstack')) {
+              return 'vendor-tanstack'
+            }
+            if (id.includes('node_modules/@radix-ui')) {
+              return 'vendor-radix'
+            }
+            if (id.includes('node_modules/lucide-react') || id.includes('node_modules/react-icons')) {
+              return 'vendor-icons'
+            }
+            if (id.includes('node_modules/i18next') || id.includes('node_modules/react-i18next')) {
+              return 'vendor-i18n'
+            }
+          },
+        },
+      },
+    },
   }
 })
 

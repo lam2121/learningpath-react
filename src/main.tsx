@@ -57,21 +57,25 @@ const router = createRouter({
   }
 })
 
+import { GlobalErrorBoundary } from './common/component/GlobalErrorBoundary'
+
 const rootElement = document.getElementById('root')!
 if (!rootElement.innerHTML) {
 	const root = createRoot(rootElement)
 	root.render(
 		<StrictMode>
-			<QueryClientProvider client={queryClient}>
-				<AuthProvider>
-					<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-						<RadarProvider>
-							<GeminiGradientDefs />
-							<MainApp router={router} queryClient={queryClient} />
-						</RadarProvider>
-					</ThemeProvider>
-				</AuthProvider>
-			</QueryClientProvider>
+			<GlobalErrorBoundary>
+				<QueryClientProvider client={queryClient}>
+					<AuthProvider>
+						<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+							<RadarProvider>
+								<GeminiGradientDefs />
+								<MainApp router={router} queryClient={queryClient} />
+							</RadarProvider>
+						</ThemeProvider>
+					</AuthProvider>
+				</QueryClientProvider>
+			</GlobalErrorBoundary>
 		</StrictMode>,
 	)
 }
