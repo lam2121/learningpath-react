@@ -251,24 +251,26 @@ export function CurriculumRoadmapPage() {
                     <button
                         type="button"
                         onClick={() => setMobileTab('topics')}
-                        className={`relative z-10 flex-1 py-2.5 px-3 text-xs font-bold rounded-xl transition-colors duration-200 ${
+                        className={`relative z-10 flex-1 py-2 px-2.5 text-xs font-bold rounded-xl transition-colors duration-200 ${
                             mobileTab === 'topics'
                                 ? 'text-primary-foreground'
                                 : 'text-muted-foreground active:text-foreground'
                         }`}
                     >
-                        Danh sách chủ đề ({topics.length})
+                        {t("topicsListTab", { count: topics.length, defaultValue: `Chủ đề (${topics.length})` })}
                     </button>
                     <button
                         type="button"
                         onClick={() => setMobileTab('lessons')}
-                        className={`relative z-10 flex-1 py-2.5 px-3 text-xs font-bold rounded-xl transition-colors duration-200 ${
+                        className={`relative z-10 flex-1 py-2 px-2.5 text-xs font-bold rounded-xl transition-colors duration-200 ${
                             mobileTab === 'lessons'
                                 ? 'text-primary-foreground'
                                 : 'text-muted-foreground active:text-foreground'
                         }`}
                     >
-                        Bài học chi tiết {selectedTopic ? `· Topic ${selectedTopic.sort_order}` : ''}
+                        {selectedTopic
+                            ? t("topicLessonsWithOrder", { order: selectedTopic.sort_order, defaultValue: `Bài học · Topic ${selectedTopic.sort_order}` })
+                            : t("topicLessonsTab", { defaultValue: "Bài học chi tiết" })}
                     </button>
                 </div>
 
@@ -331,9 +333,9 @@ export function CurriculumRoadmapPage() {
                             <button
                                 type="button"
                                 onClick={() => setMobileTab('topics')}
-                                className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400 py-1 px-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/60"
+                                className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400 py-1.5 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 transition-colors"
                             >
-                                ← Quay lại danh sách chủ đề
+                                {t("backToTopics", { defaultValue: "← Quay lại danh sách chủ đề" })}
                             </button>
                         </div>
                         {isLoading ? (
@@ -394,7 +396,7 @@ export function CurriculumRoadmapPage() {
 
                                 <TopicQuizCard topic={selectedTopic} />
 
-                                <div className="mt-4 shrink-0">
+                                <div className="hidden lg:block mt-4 shrink-0">
                                     <div className="flex items-start gap-2.5 rounded-xl bg-blue-50 px-4 py-3 text-sm font-medium text-blue-900 dark:bg-blue-950/50 dark:text-blue-200">
                                         <Info className="mt-0.5 h-4 w-4 shrink-0" />
 

@@ -86,9 +86,9 @@ export function ScenarioSection({ section }: { section: ParsedTheorySection }) {
                             </div>
                         </div>
 
-                        <div className="mt-4 space-y-3.5 text-base leading-7 text-slate-800 text-justify [text-align:justify] dark:text-slate-100">
+                        <div className="mt-4 space-y-3.5 text-base leading-7 text-slate-800 dark:text-slate-100">
                             {primaryParagraphs.map((para, idx) => (
-                                <p key={idx} className="leading-relaxed text-justify [text-align:justify]">
+                                <p key={idx} className="leading-relaxed text-left text-wrap-pretty">
                                     {renderInlineTokens(para)}
                                 </p>
                             ))}
@@ -125,9 +125,9 @@ export function ScenarioSection({ section }: { section: ParsedTheorySection }) {
                                 </div>
                             </div>
 
-                            <div className="mt-4 space-y-3.5 text-base leading-7 text-slate-800 dark:text-slate-100 text-justify [text-align:justify]">
+                            <div className="mt-4 space-y-3.5 text-base leading-7 text-slate-800 dark:text-slate-100">
                                 {secondaryParagraphs.map((para, idx) => (
-                                    <p key={idx} className="leading-relaxed text-justify [text-align:justify]">
+                                    <p key={idx} className="leading-relaxed text-left text-wrap-pretty">
                                         {isJa ? (
                                             <RubyText text={para} showFurigana={showFurigana} />
                                         ) : (
@@ -187,7 +187,7 @@ export function ScenarioSection({ section }: { section: ParsedTheorySection }) {
                                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-sm">
                                         {index + 1}
                                     </span>
-                                    <div className="mt-0.5 leading-relaxed text-justify [text-align:justify] space-y-1 flex-1">
+                                    <div className="mt-0.5 leading-relaxed text-left space-y-1 flex-1">
                                         <div className="text-base font-semibold text-slate-950 dark:text-white">
                                             {renderInlineTokens(decTextEn)}
                                         </div>

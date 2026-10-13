@@ -455,12 +455,12 @@ export function DialogueSection({ section }: { section: ParsedTheorySection }) {
 
                             {/* Content: Spoken dialogue clearly separated under the boundary */}
                             <div className="p-5 space-y-3">
-                                <div className="text-base font-medium leading-relaxed text-slate-900 dark:text-slate-100 text-justify [text-align:justify]">
+                                <div className="text-base font-medium leading-relaxed text-slate-900 dark:text-slate-100 text-left">
                                     {renderInlineTokens(line.textEn || line.text)}
                                 </div>
 
                                 {language !== "en" && line.text && line.text !== line.textEn && (
-                                    <div className="rounded-2xl border border-slate-200/80 bg-white/80 dark:border-slate-800 dark:bg-slate-900/80 p-3.5 text-sm font-medium text-slate-700 dark:text-slate-300 text-justify [text-align:justify]">
+                                    <div className="rounded-2xl border border-slate-200/80 bg-white/80 dark:border-slate-800 dark:bg-slate-900/80 p-3.5 text-sm font-medium text-slate-700 dark:text-slate-300 text-left">
                                         <div className="mb-1 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                             {language === "ja" ? "日本語参考訳" : "Bản dịch tham khảo"}
                                         </div>

@@ -61,14 +61,9 @@ export function MobileBottomBar() {
   }, [activeKey]);
 
   return (
-    <>
-      {/* Spacer to prevent page bottom content from being obscured by the bottom bar on mobile */}
-      <div className="h-[4.5rem] md:hidden" aria-hidden="true" />
-
-      {/* Premium native-app style bottom navigation bar */}
-      <nav
-        aria-label="Mobile Bottom Navigation"
-        className={cn(
+    <nav
+      aria-label="Mobile Bottom Navigation"
+      className={cn(
           'fixed bottom-0 left-0 right-0 z-40 md:hidden',
           // Glassmorphism with elevation
           'bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/75',
@@ -136,6 +131,5 @@ export function MobileBottomBar() {
           })}
         </div>
       </nav>
-    </>
   );
 }

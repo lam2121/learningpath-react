@@ -241,11 +241,11 @@ button {
     letter-spacing: -0.025em;
   }
 
-  p:not(.text-center):not(.text-left):not(.text-right):not([class*="text-center"]):not([class*="text-left"]):not([class*="text-right"]),
+  p:not(.text-center):not(.text-right):not([class*="text-center"]):not([class*="text-right"]),
   article:not(.text-center):not([class*="text-center"]),
   [data-slot="card-description"]:not(.text-center):not([class*="text-center"]) {
-    text-align: justify;
-    text-justify: inter-word;
+    text-align: left;
+    text-wrap: pretty;
   }
 
   .text-center,

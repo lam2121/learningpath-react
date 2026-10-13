@@ -266,7 +266,7 @@ export function RoleSelectionGrid() {
                     <button
                       id="btn-confirm-role"
                       onClick={handleContinueClick}
-                      className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-semibold shadow-md transition-all duration-200 active:scale-[0.98] flex items-center gap-2 whitespace-nowrap"
+                      className="hidden lg:flex px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-semibold shadow-md transition-all duration-200 active:scale-[0.98] items-center gap-2 whitespace-nowrap"
                     >
                       <span>{onboardingTexts.roleSelection.continueWith(selectedRole.name)}</span>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -352,7 +352,7 @@ export function RoleSelectionGrid() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-gray-50/80 rounded-2xl border border-dashed border-gray-300 p-12 text-center h-full flex flex-col items-center justify-center min-h-[400px]">
+                <div className="hidden lg:flex bg-gray-50/80 rounded-2xl border border-dashed border-gray-300 p-12 text-center h-full flex-col items-center justify-center min-h-[400px]">
                   <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
                     <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
@@ -380,10 +380,10 @@ export function RoleSelectionGrid() {
 
       {/* Mobile Sticky Continue Bar */}
       {selectedRole && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 border-t border-gray-200 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.1)] backdrop-blur-md flex items-center justify-between gap-3">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 border-t border-gray-200 dark:border-slate-800 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.1)] backdrop-blur-md flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold text-blue-600 uppercase tracking-wider">Đã chọn lộ trình</p>
-            <p className="text-sm font-bold text-gray-900 truncate">{selectedRole.name}</p>
+            <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">{onboardingTexts.roleSelection.careerTrackBadge}</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{selectedRole.name}</p>
           </div>
           <button
             id="btn-confirm-role-mobile"
@@ -391,7 +391,7 @@ export function RoleSelectionGrid() {
             onClick={handleContinueClick}
             className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-xs shrink-0 shadow-md flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
           >
-            <span>Tiếp tục</span>
+            <span>{onboardingTexts.roleSelection.continueWith(selectedRole.name)}</span>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
